@@ -1,0 +1,21 @@
+[project]
+name = "starwinds_analysis"
+description = "Process SWMF/BATSRUS output with PyVista"
+dynamic = ['version']
+dependencies = ["numpy", "matplotlib", "pyvista",]
+
+[build-system]
+requires = ["versioneer", "setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "starwinds_analysis/_version.py"
+versionfile_build = "starwinds_analysis/_version.py"
+tag_prefix = "v"
+parentdir_prefix = ""
+
+[project.optional-dependencies]
+tests = ["pytest", "pytest-console-scripts", ]
+

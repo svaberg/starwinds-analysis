@@ -1,0 +1,25 @@
+name: starwinds-analysis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  # - pyvista
+  - numpy
+  - scipy
+  - matplotlib
+  - slugify
+  - pip
+  #
+  # These packages are used for testing
+  #
+  - pytest
+  - pytest-cov
+  - pip:
+    - pyvista  # TODO install with conda.
+    - pytest-console-scripts
+  #
+  # This package is used for Codacy integration
+  #
+  - codacy-coverage
+  
