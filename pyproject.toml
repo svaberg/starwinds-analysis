@@ -2,7 +2,7 @@
 name = "starwinds_analysis"
 description = "Process SWMF/BATSRUS output with PyVista"
 dynamic = ['version']
-dependencies = ["numpy", "matplotlib", "pyvista",]
+dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "starwinds_readplt@git+https://github.com/svaberg/starwinds-readplt"]
 
 [build-system]
 requires = ["versioneer", "setuptools", "setuptools-scm"]
