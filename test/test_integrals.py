@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from starwinds_analysis import reader
 import logging
 log = logging.getLogger(__name__)
+import pytest
 
 def length(v):
     return np.linalg.norm(v, axis=1)
