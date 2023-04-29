@@ -10,14 +10,18 @@ dependencies:
   - matplotlib
   - slugify
   - pip
+  - git
+  - pip:
+    - pyvista  # TODO install with conda.
+    - pytest-console-scripts
+    - git+https://github.com/svaberg/starwinds-readplt.git
+    
   #
   # These packages are used for testing
   #
   - pytest
   - pytest-cov
-  - pip:
-    - pyvista  # TODO install with conda.
-    - pytest-console-scripts
+    
   #
   # This package is used for Codacy integration
   #
