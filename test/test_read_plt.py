@@ -1,6 +1,7 @@
 import pyvista as pv
 import numpy as np
 import logging
+import pytest
 log = logging.getLogger(__name__)
 from starwinds_readplt.dataset import Dataset
 from starwinds_analysis import reader

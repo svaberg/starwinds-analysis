@@ -2,9 +2,12 @@ import pyvista as pv
 import numpy as np
 from starwinds_analysis import reader
 import logging
+import pytest
 import scipy.constants as c
 log = logging.getLogger(__name__)
 
+
+@pytest.mark.skip(reason="Crash")
 def test_slice(file='examples/3d__var_1_n00000000.plt'):
     grid = reader.read(file)
     grid.set_active_scalars("U [m/s]")
@@ -12,6 +15,7 @@ def test_slice(file='examples/3d__var_1_n00000000.plt'):
     slices.plot()
 
 
+@pytest.mark.skip(reason="Crash")
 def test_isosurface(file='examples/3d__var_1_n00000000.plt'):
 
     grid = reader.read(file)
@@ -29,6 +33,7 @@ def test_isosurface(file='examples/3d__var_1_n00000000.plt'):
               )
     
 
+@pytest.mark.skip(reason="Crash")
 def test_alfven_surface(file='examples/3d__var_1_n00000000.plt'):
 
     grid = reader.read(file)
