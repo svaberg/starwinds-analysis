@@ -312,6 +312,51 @@ def build_griblet_vector_spherical_components_graph(
     return graph
 
 
+def build_griblet_auto_vector_spherical_components_graph(
+    variable_names: Sequence[str],
+    *,
+    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+    prefixes: Sequence[str] | None = None,
+    components: Sequence[str] = ("r", "theta", "phi"),
+):
+    """
+    Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged
+    griblet graph for their spherical components.
+    """
+    griblet = importlib.import_module("griblet")
+    pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
+
+    by_prefix: dict[str, dict[str, str]] = {}
+    for name in variable_names:
+        m = pattern.match(name)
+        if not m:
+            continue
+        prefix = m.group("prefix")
+        comp = m.group("comp")
+        unit = m.group("unit")
+        slot = by_prefix.setdefault(prefix, {"unit": unit})
+        if slot["unit"] != unit:
+            continue
+        slot[comp] = name
+
+    wanted = set(prefixes) if prefixes is not None else None
+    merged = griblet.ComputationGraph()
+    for prefix, info in sorted(by_prefix.items()):
+        if wanted is not None and prefix not in wanted:
+            continue
+        if not {"x", "y", "z"}.issubset(info):
+            continue
+        merged.merge(
+            build_griblet_vector_spherical_components_graph(
+                prefix=prefix,
+                unit=info["unit"],
+                coord_fields=coord_fields,
+                register_components=components,
+            )
+        )
+    return merged
+
+
 def _infer_radius_name_from_coord(x_name: str) -> str | None:
     m = re.match(r"^X \[(.+)\]$", x_name)
     if m:

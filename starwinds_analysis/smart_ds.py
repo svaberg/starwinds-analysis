@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from copy import deepcopy
-import importlib
 
 import numpy as np
 
 from starwinds_readplt.dataset import Dataset
+from starwinds_analysis._smart_ds_graph import (
+    compute_via_graph as _compute_via_graph,
+    explain_field as _explain_field,
+    graph_field_names as _graph_field_names,
+    resolve_field as _resolve_field,
+)
+from starwinds_analysis._smart_ds_resample import resample_smart_ds
 
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
@@ -97,10 +102,9 @@ class SmartDs:
         for name in self._field_functions:
             if name not in names:
                 names.append(name)
-        if self._computation_graph is not None and hasattr(self._computation_graph, "fields"):
-            for name in self._computation_graph.fields():
-                if name not in names:
-                    names.append(name)
+        for name in _graph_field_names(self):
+            if name not in names:
+                names.append(name)
         return tuple(names)
 
     def __contains__(self, name: object) -> bool:
@@ -202,6 +206,37 @@ class SmartDs:
         )
         return self
 
+    def add_spherical_graph(
+        self,
+        *,
+        coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+        vectors: Sequence[str] = ("B", "U"),
+        components: Sequence[str] = ("r", "theta", "phi"),
+        merge: bool = True,
+    ):
+        """
+        Attach griblet recipes for spherical geometry/vector components.
+
+        Unlike ``add_spherical_fields()``, this registers recipes in the attached
+        computation graph and resolves them via ``griblet`` on demand.
+        """
+        from starwinds_analysis.recipes.spherical import (
+            build_griblet_auto_vector_spherical_components_graph,
+            build_griblet_spherical_geometry_graph,
+        )
+
+        graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
+        graph.merge(
+            build_griblet_auto_vector_spherical_components_graph(
+                self.variables,
+                coord_fields=coord_fields,
+                prefixes=tuple(vectors),
+                components=tuple(components),
+            )
+        )
+        self.set_computation_graph(graph, merge=merge)
+        return self
+
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()
@@ -235,55 +270,13 @@ class SmartDs:
         return value
 
     def resolve(self, name: str):
-        """
-        Resolve a field through the attached griblet computation graph.
-
-        Returns ``(cost, tree)`` from ``griblet.DependencySolver.resolve_field``.
-        """
-        graph = self._build_runtime_graph()
-        griblet = self._import_griblet()
-        solver = griblet.DependencySolver(graph)
-        return solver.resolve_field(name)
+        return _resolve_field(self, name)
 
     def explain(self, name: str, *, return_tree: bool = False):
-        """
-        Return a human-readable computation path (if griblet is configured).
-        """
-        cost, tree = self.resolve(name)
-        if return_tree:
-            return cost, tree
-
-        lines: list[str] = []
-
-        def walk(node, depth=0):
-            meta = getattr(node, "recipe_metadata", {}) or {}
-            desc = meta.get("description", "")
-            planned = getattr(node, "cost", None)
-            parts = [node.field]
-            if planned is not None:
-                parts.append(f"(cost={planned})")
-            if desc:
-                parts.append(f"- {desc}")
-            lines.append("  " * depth + " ".join(parts))
-            for dep in getattr(node, "deps", []):
-                walk(dep, depth + 1)
-
-        walk(tree)
-        header = f"{name} total_cost={cost}"
-        return "\n".join([header, *lines])
+        return _explain_field(self, name, return_tree=return_tree)
 
     def _compute_via_graph(self, name: str):
-        if self._computation_graph is None:
-            raise IndexError(
-                f"Field '{name}' not available. Raw fields: {self._dataset.variables}. "
-                f"Computed fields: {list(self._field_functions)}."
-            )
-
-        graph = self._build_runtime_graph()
-        griblet = self._import_griblet()
-        solver = griblet.DependencySolver(graph)
-        _cost, tree = solver.resolve_field(name)
-        return self._evaluate_resolved_tree(tree, graph)
+        return _compute_via_graph(self, name)
 
     def resample(
         self,
@@ -320,154 +313,18 @@ class SmartDs:
             Optional cell connectivity for the resampled dataset. Defaults to an empty
             connectivity array, which is suitable for point-wise analysis.
         """
-        sample_points = np.asarray(sample_points, dtype=float)
-        if sample_points.ndim == 1:
-            sample_points = sample_points[np.newaxis, :]
-        if sample_points.ndim != 2:
-            raise ValueError("sample_points must have shape (n_points, ndim)")
-
-        ndim = sample_points.shape[1]
-        if coordinate_fields is None:
-            coordinate_fields = self._infer_coordinate_fields(ndim)
-        coordinate_fields = tuple(coordinate_fields)
-        if len(coordinate_fields) != ndim:
-            raise ValueError(
-                f"Expected {ndim} coordinate fields, got {len(coordinate_fields)}: "
-                f"{coordinate_fields}"
-            )
-
-        for coord_name in coordinate_fields:
-            if not self.has_field(coord_name):
-                raise IndexError(f"Coordinate field '{coord_name}' not available")
-
-        if fields is None:
-            output_variables = list(self._dataset.variables)
-        else:
-            output_variables = list(coordinate_fields)
-            for name in fields:
-                if name not in output_variables:
-                    output_variables.append(name)
-
-        # Source coordinates used for interpolation.
-        source_coords = np.column_stack(
-            [np.asarray(self.variable(name)).ravel() for name in coordinate_fields]
+        return resample_smart_ds(
+            self,
+            sample_points,
+            coordinate_fields=coordinate_fields,
+            fields=fields,
+            method=method,
+            fill_value=fill_value,
+            corners=corners,
+            copy_aux=copy_aux,
+            title=title,
+            zone=zone,
         )
-        coord_mask = np.isfinite(source_coords).all(axis=1)
-        if not np.any(coord_mask):
-            raise ValueError("No finite source coordinates available for resampling")
-
-        # Build output points table matching Dataset(points, ..., variables=...).
-        out_points = np.full((sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
-        out_index = {name: i for i, name in enumerate(output_variables)}
-
-        for dim, coord_name in enumerate(coordinate_fields):
-            if coord_name in out_index:
-                out_points[:, out_index[coord_name]] = sample_points[:, dim]
-
-        for name in output_variables:
-            if name in coordinate_fields:
-                continue
-
-            values = np.asarray(self.variable(name)).ravel()
-            if values.shape[0] != source_coords.shape[0]:
-                raise ValueError(
-                    f"Field '{name}' has length {values.shape[0]} but coordinates have "
-                    f"length {source_coords.shape[0]}"
-                )
-            valid = coord_mask & np.isfinite(values)
-            if not np.any(valid):
-                continue
-
-            out_points[:, out_index[name]] = self._interpolate(
-                source_coords[valid],
-                values[valid],
-                sample_points,
-                method=method,
-                fill_value=fill_value,
-            )
-
-        if corners is None:
-            corners_arr = np.empty((0, 0), dtype=int)
-        else:
-            corners_arr = np.asarray(corners)
-
-        if copy_aux:
-            aux = deepcopy(self._dataset.aux)
-        else:
-            aux = self._dataset.aux
-
-        if title is None:
-            title = self._dataset.title
-        if zone is None:
-            zone = f"{self._dataset.zone} (resampled)"
-
-        new_dataset = Dataset(
-            out_points,
-            corners_arr,
-            aux,
-            title,
-            output_variables,
-            zone,
-        )
-
-        return type(self)(
-            new_dataset,
-            field_functions=self._field_functions,
-            aliases=self._aliases,
-            cache_enabled=self._cache_enabled,
-            computation_graph=self._computation_graph,
-            include_aux_in_loader=self._include_aux_in_loader,
-        )
-
-    def _build_runtime_graph(self):
-        if self._computation_graph is None:
-            raise RuntimeError("No computation graph attached")
-        griblet = self._import_griblet()
-        runtime_graph = griblet.ComputationGraph()
-        runtime_graph.merge(self._build_loader_graph())
-        runtime_graph.merge(self._computation_graph)
-        return runtime_graph
-
-    def _build_loader_graph(self):
-        """
-        Build a zero-dependency graph exposing raw dataset variables (+ selected aux).
-        """
-        griblet = self._import_griblet()
-        graph = griblet.ComputationGraph()
-
-        for raw_name in self._dataset.variables:
-            graph.add_recipe(
-                field=raw_name,
-                func=lambda raw_name=raw_name: self._dataset.variable(raw_name),
-                deps=[],
-                cost=0.0,
-                metadata={"description": "Dataset raw field"},
-            )
-
-        for alias_name, candidates in self._aliases.items():
-            if alias_name in self._dataset.variables:
-                continue
-            raw_name = next((c for c in candidates if c in self._dataset.variables), None)
-            if raw_name is None:
-                continue
-            graph.add_recipe(
-                field=alias_name,
-                func=lambda raw_name=raw_name: self._dataset.variable(raw_name),
-                deps=[],
-                cost=0.0,
-                metadata={"description": f"Alias for {raw_name}"},
-            )
-
-        if self._include_aux_in_loader:
-            for key, value in self._dataset.aux.items():
-                graph.add_recipe(
-                    field=key,
-                    func=lambda value=value: value,
-                    deps=[],
-                    cost=0.0,
-                    metadata={"description": "Dataset aux"},
-                )
-        return graph
 
     def _resolve_raw_name(self, name: str) -> str | None:
         if name in self._dataset.variables:
@@ -491,61 +348,6 @@ class SmartDs:
         raise ValueError(
             "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
-
-    @staticmethod
-    def _import_griblet():
-        try:
-            return importlib.import_module("griblet")
-        except ImportError as e:
-            raise ImportError(
-                "griblet is required for computation-graph resolution. Install griblet "
-                "or use local register_field(...) functions."
-            ) from e
-
-    @staticmethod
-    def _evaluate_resolved_tree(node, graph):
-        """
-        Evaluate a griblet-resolved computation tree.
-
-        Uses tolerant dependency matching (tuple/list) to stay compatible with the
-        current griblet recipe storage/evaluator behavior.
-        """
-        if getattr(node, "used_primary", False):
-            for recipe in graph.recipes[node.field]:
-                if len(recipe["deps"]) == 0:
-                    return recipe["func"]()
-            raise RuntimeError(f"No zero-dependency recipe for {node.field}")
-
-        values = [SmartDs._evaluate_resolved_tree(dep, graph) for dep in node.deps]
-        dep_fields = tuple(dep.field for dep in node.deps)
-        for recipe in graph.recipes[node.field]:
-            if tuple(recipe["deps"]) == dep_fields:
-                return recipe["func"](*values)
-        raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
-
-    @staticmethod
-    def _interpolate(source_points, values, sample_points, *, method: str, fill_value: float):
-        try:
-            from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-        except ImportError as e:
-            raise ImportError(
-                "Resampling requires scipy (scipy.interpolate). Install scipy to use "
-                "SmartDs.resample()."
-            ) from e
-
-        if method == "nearest":
-            interpolator = NearestNDInterpolator(source_points, values)
-            out = interpolator(sample_points)
-        elif method == "linear":
-            interpolator = LinearNDInterpolator(source_points, values, fill_value=fill_value)
-            out = interpolator(sample_points)
-        else:
-            raise ValueError("method must be 'nearest' or 'linear'")
-
-        out = np.asarray(out, dtype=float)
-        if out.ndim == 0:
-            out = out[np.newaxis]
-        return out
 
 
 __all__ = ["SmartDs"]

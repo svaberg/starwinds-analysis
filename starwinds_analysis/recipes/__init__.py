@@ -1,5 +1,6 @@
 from .spherical import (
     auto_register_vector_spherical_components,
+    build_griblet_auto_vector_spherical_components_graph,
     build_griblet_spherical_geometry_graph,
     build_griblet_vector_spherical_components_graph,
     cartesian_to_spherical_angles,
@@ -11,6 +12,7 @@ from .spherical import (
 
 __all__ = [
     "auto_register_vector_spherical_components",
+    "build_griblet_auto_vector_spherical_components_graph",
     "build_griblet_spherical_geometry_graph",
     "build_griblet_vector_spherical_components_graph",
     "cartesian_to_spherical_angles",
