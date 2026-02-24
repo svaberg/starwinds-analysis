@@ -208,3 +208,26 @@ def test_griblet_graph_resolution_and_explain():
     explanation = sds.explain("theta [rad]")
     assert "theta [rad]" in explanation
     assert "X [R]" in explanation
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("griblet") is None,
+    reason="griblet not installed in this environment",
+)
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_griblet_add_spherical_graph_on_real_example_data():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.add_spherical_graph(vectors=("B",))
+
+    theta = np.asarray(sds.variable("theta [rad]"))
+    b_r = np.asarray(sds.variable("B_r [Gauss]"))
+
+    assert theta.shape == sds.variable("X [R]").shape
+    assert b_r.shape == sds.variable("B_x [Gauss]").shape
+
+    finite_theta = np.isfinite(theta)
+    assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
+
+    expl = sds.explain("B_r [Gauss]")
+    assert "B_r [Gauss]" in expl
+    assert "B_x [Gauss]" in expl

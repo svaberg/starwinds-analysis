@@ -36,6 +36,14 @@ br = sds.variable("B_r [Gauss]")
 uphi = sds.variable("U_phi [km/s]")
 ```
 
+If `griblet` is installed, you can also attach spherical *recipes* (dependency-path
+resolution) instead of local field functions:
+
+```python
+sds.add_spherical_graph(vectors=("B", "U"))
+print(sds.explain("B_r [Gauss]"))
+```
+
 Spherical conventions used by the helper recipes:
 
 - `theta [rad]`: colatitude in `[0, pi]`
