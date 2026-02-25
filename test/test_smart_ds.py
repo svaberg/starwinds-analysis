@@ -281,7 +281,18 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     m_a = np.asarray(sds.variable("M_A [none]"))
     np.testing.assert_allclose(m_a, u / c_a, rtol=1e-10, atol=1e-10)
 
+    ma = np.asarray(sds.variable("Ma [none]"))
+    np.testing.assert_allclose(ma, u / c_s, rtol=1e-10, atol=1e-10)
+
+    p_b = np.asarray(sds.variable("P_b [Pa]"))
+    np.testing.assert_allclose(p_b, b**2 / (2 * (4e-7 * np.pi)), rtol=1e-10, atol=1e-10)
+
+    beta = np.asarray(sds.variable("beta [none]"))
+    np.testing.assert_allclose(beta, p_si / p_b, rtol=1e-10, atol=1e-10)
+
     expl = sds.explain("M_A [none]")
     assert "M_A [none]" in expl
     assert "c_A [m/s]" in expl
     assert "U [m/s]" in expl
+
+    assert "beta [none]" in sds.explain("beta [none]")

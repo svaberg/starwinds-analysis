@@ -191,6 +191,27 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         cost=0.1,
         metadata={"description": "Alfven Mach number"},
     )
+    graph.add_recipe(
+        "Ma [none]",
+        lambda U, cs: np.asarray(U) / np.asarray(cs),
+        deps=["U [m/s]", "c_s [m/s]"],
+        cost=0.1,
+        metadata={"description": "Sonic Mach number"},
+    )
+    graph.add_recipe(
+        "P_b [Pa]",
+        lambda B: np.asarray(B) ** 2 / (2.0 * _MU0),
+        deps=["B [T]"],
+        cost=0.12,
+        metadata={"description": "Magnetic pressure"},
+    )
+    graph.add_recipe(
+        "beta [none]",
+        lambda P, Pb: np.asarray(P) / np.asarray(Pb),
+        deps=["P [Pa]", "P_b [Pa]"],
+        cost=0.12,
+        metadata={"description": "Plasma beta"},
+    )
 
     return graph
 
