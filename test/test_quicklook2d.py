@@ -142,12 +142,23 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
         mode="binned",
         ncols=2,
     )
+    orbit_fig, _oaxs, orbit_results = orbit_local_comparison_figure(
+        sds,
+        10.0,
+        body_radius_m=SUN_RADIUS_M,
+        n_points=96,
+        shell_n_polar=12,
+        shell_n_azimuth=24,
+        method="nearest",
+    )
 
     saved = save_quicklook2d_bundle(
         tmp_path,
         shell_fig=shell_fig,
         diagnostics=diagnostics,
+        orbit_results={"r10_xy": orbit_results},
         radius_figures={"binned": radius_fig},
+        orbit_figures={"r10_xy": orbit_fig},
         prefix="demo",
         band_radius_range=(2.0, 8.0),
         star_mass_kg=1.98847e30,
@@ -157,12 +168,18 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     shell_png = tmp_path / "demo.shells.png"
     json_path = tmp_path / "demo.shells.json"
     npz_path = tmp_path / "demo.shells.npz"
+    orbits_json_path = tmp_path / "demo.orbits.json"
+    orbits_npz_path = tmp_path / "demo.orbits.npz"
     radius_png = tmp_path / "demo.radius.binned.png"
+    orbit_png = tmp_path / "demo.orbits.r10_xy.png"
 
     assert shell_png.exists()
     assert json_path.exists()
     assert npz_path.exists()
+    assert orbits_json_path.exists()
+    assert orbits_npz_path.exists()
     assert radius_png.exists()
+    assert orbit_png.exists()
     assert "figures" in saved and "files" in saved
 
     payload = json.loads(json_path.read_text())
@@ -177,8 +194,19 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     assert any(k.startswith("mass_loss__") for k in keys)
     assert any(k.startswith("torque__") for k in keys)
 
+    orbit_payload = json.loads(orbits_json_path.read_text())
+    assert "r10_xy" in orbit_payload
+    assert "mass_loss" in orbit_payload["r10_xy"]
+    assert "torque" in orbit_payload["r10_xy"]
+
+    with np.load(orbits_npz_path) as data:
+        orbit_keys = set(data.files)
+    assert any("mass_loss" in k for k in orbit_keys)
+    assert any("torque" in k for k in orbit_keys)
+
     plt.close(shell_fig)
     plt.close(radius_fig)
+    plt.close(orbit_fig)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -209,6 +237,8 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     assert (tmp_path / "e2e.shells.png").exists()
     assert (tmp_path / "e2e.shells.json").exists()
     assert (tmp_path / "e2e.shells.npz").exists()
+    assert (tmp_path / "e2e.orbits.json").exists()
+    assert (tmp_path / "e2e.orbits.npz").exists()
     assert (tmp_path / "e2e.slices.rho.png").exists()
     assert (tmp_path / "e2e.slices.b_r.png").exists()
     assert (tmp_path / "e2e.radius.binned.png").exists()

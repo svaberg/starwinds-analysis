@@ -43,6 +43,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
 - open-wind magnetisation (`Upsilon_open`) scaling helper (old quicklook-style analytical diagnostic)
 - local-vs-shell orbit comparison plots (mass loss and torque) in `quicklook2d`
+- orbit local-vs-shell comparison summary export (`JSON` + `NPZ`) in quicklook bundles
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -287,7 +288,7 @@ Status:
 - shell-vs-local comparison plots/summary stats
 
 Status:
-- Implemented (v1): pure local formula helpers, circular-orbit sampling wrappers, shell comparison summaries, and local-vs-shell comparison plots in `quicklook2d`.
+- Implemented (v1): pure local formula helpers, circular-orbit sampling wrappers, shell comparison summaries, local-vs-shell comparison plots, and orbit comparison summary export in `quicklook2d`.
 
 ## Definition of Success for the New "Quicklook" (Non-3D)
 
