@@ -8,6 +8,7 @@ from starwinds_analysis.analysis.shells import (
     resolve_batsrus_vector_xyz_si,
     resolve_field_with_scale,
     sample_spherical_shells,
+    sample_spherical_shells_fibonacci,
 )
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
@@ -20,6 +21,8 @@ def open_magnetic_flux_vs_radius(
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
+    sampling: str = "fibonacci",
+    fibonacci_randomize: bool = False,
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
@@ -29,17 +32,29 @@ def open_magnetic_flux_vs_radius(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
 
-    shells = sample_spherical_shells(
-        smart_ds,
-        radii,
+    sampler_kwargs = dict(
+        smart_ds=smart_ds,
+        radii=radii,
         fields=(bx_name, by_name, bz_name),
         coordinate_fields=coordinate_fields,
-        n_polar=n_polar,
-        n_azimuth=n_azimuth,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    if sampling == "fibonacci":
+        shells = sample_spherical_shells_fibonacci(
+            **sampler_kwargs,
+            n_points=max(8, int(n_polar) * int(n_azimuth)),
+            randomize=fibonacci_randomize,
+        )
+    elif sampling == "grid":
+        shells = sample_spherical_shells(
+            **sampler_kwargs,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
+        )
+    else:
+        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     bx = b_scale * shells.fields[bx_name]
     by = b_scale * shells.fields[by_name]
@@ -77,6 +92,7 @@ def axisymmetric_open_flux_vs_radius(
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
+    sampling: str = "grid",
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
@@ -85,6 +101,8 @@ def axisymmetric_open_flux_vs_radius(
 
     Axisymmetry is defined here as the azimuthal mean of `B_r` at each `(r, theta)`.
     """
+    if sampling != "grid":
+        raise ValueError("axisymmetric_open_flux_vs_radius currently requires sampling='grid'")
     prof = open_magnetic_flux_vs_radius(
         smart_ds,
         radii,
@@ -92,6 +110,7 @@ def axisymmetric_open_flux_vs_radius(
         coordinate_fields=coordinate_fields,
         n_polar=n_polar,
         n_azimuth=n_azimuth,
+        sampling="grid",
         method=method,
         fill_value=fill_value,
     )
@@ -136,6 +155,8 @@ def energy_flux_vs_radius(
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
+    sampling: str = "fibonacci",
+    fibonacci_randomize: bool = False,
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
@@ -146,17 +167,29 @@ def energy_flux_vs_radius(
     e_name, e_scale = resolve_field_with_scale(smart_ds, energy_field_candidates)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
 
-    shells = sample_spherical_shells(
-        smart_ds,
-        radii,
+    sampler_kwargs = dict(
+        smart_ds=smart_ds,
+        radii=radii,
         fields=(e_name, ux_name, uy_name, uz_name),
         coordinate_fields=coordinate_fields,
-        n_polar=n_polar,
-        n_azimuth=n_azimuth,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    if sampling == "fibonacci":
+        shells = sample_spherical_shells_fibonacci(
+            **sampler_kwargs,
+            n_points=max(8, int(n_polar) * int(n_azimuth)),
+            randomize=fibonacci_randomize,
+        )
+    elif sampling == "grid":
+        shells = sample_spherical_shells(
+            **sampler_kwargs,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
+        )
+    else:
+        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     e = e_scale * shells.fields[e_name]
     ux = u_scale * shells.fields[ux_name]

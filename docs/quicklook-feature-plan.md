@@ -29,6 +29,7 @@ Out of scope for this plan:
 Implemented from this plan so far (non-3D, NumPy/SciPy only):
 
 - spherical shell sampling + area-weighted integration primitives
+- Fibonacci-sphere shell quadrature now used as the default first-pass sampler for mass-loss/torque/open-flux/energy shell integrals (grid sampler retained for axisymmetric flux)
 - weighted statistics helpers
 - wind mass-loss profile on spherical shells (`dotM(r)`)
 - wind torque profile on spherical shells (magnetic + dynamic + total)
@@ -89,11 +90,11 @@ The table below maps high-use non-3D features from the old script to the new rep
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
 | Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
 | Radial “monster” histogram plots | Implemented (modernized v1) | `hist2d` radius-vs-value histogram quicklook mode added; not a byte-for-byte port of the old volume-weighted style |
-| Shell mass-loss integral (`add_integral_mass`) | Implemented (v1) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
-| Shell torque integral (`add_integral_momentum`) | Implemented (v1) | Spherical-shell magnetic/dynamic/total profile API added |
-| Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1) | Signed and unsigned/open flux shell profiles added |
-| Shell energy flux (`add_integral_energy`) | Implemented (v1) | Uses `E * U_r` shell integration |
-| Axisymmetric open flux + fraction | Implemented (v1) | Azimuthal-mean `B_r` shell diagnostic added |
+| Shell mass-loss integral (`add_integral_mass`) | Implemented (v1, Fibonacci default) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
+| Shell torque integral (`add_integral_momentum`) | Implemented (v1, Fibonacci default) | Spherical-shell magnetic/dynamic/total profile API added |
+| Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
+| Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
+| Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |

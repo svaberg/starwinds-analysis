@@ -8,6 +8,7 @@ from starwinds_analysis.analysis.shells import (
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,
     sample_spherical_shells,
+    sample_spherical_shells_fibonacci,
 )
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
@@ -20,6 +21,8 @@ def mass_loss_vs_radius(
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
+    sampling: str = "fibonacci",
+    fibonacci_randomize: bool = False,
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
@@ -32,17 +35,29 @@ def mass_loss_vs_radius(
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
 
-    shells = sample_spherical_shells(
-        smart_ds,
-        radii,
+    sampler_kwargs = dict(
+        smart_ds=smart_ds,
+        radii=radii,
         fields=(rho_name, ux_name, uy_name, uz_name),
         coordinate_fields=coordinate_fields,
-        n_polar=n_polar,
-        n_azimuth=n_azimuth,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    if sampling == "fibonacci":
+        shells = sample_spherical_shells_fibonacci(
+            **sampler_kwargs,
+            n_points=max(8, int(n_polar) * int(n_azimuth)),
+            randomize=fibonacci_randomize,
+        )
+    elif sampling == "grid":
+        shells = sample_spherical_shells(
+            **sampler_kwargs,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
+        )
+    else:
+        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     rho = rho_scale * shells.fields[rho_name]
     ux = u_scale * shells.fields[ux_name]
@@ -75,4 +90,3 @@ def plot_mass_loss_profile(ax, profile, *, show_negative=True):
 
 
 __all__ = ["mass_loss_vs_radius", "plot_mass_loss_profile"]
-

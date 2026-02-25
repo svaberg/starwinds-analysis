@@ -19,7 +19,11 @@ from starwinds_analysis.analysis.shell_summary import (
     summarize_shell_diagnostics_band,
     summarize_shell_series,
 )
-from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
+from starwinds_analysis.analysis.shells import (
+    integrate_shell_scalar,
+    sample_spherical_shells,
+    sample_spherical_shells_fibonacci,
+)
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 from starwinds_analysis.analysis.torque import torque_vs_radius
 from starwinds_analysis.analysis.wind_scaling import (
@@ -55,6 +59,26 @@ def test_sample_spherical_shells_area_matches_sphere():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_sample_spherical_shells_fibonacci_area_matches_sphere():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    radii = np.array([2.0, 5.0, 10.0])
+
+    shells = sample_spherical_shells_fibonacci(
+        sds,
+        radii,
+        fields=(),
+        n_points=12 * 24,
+        method="nearest",
+        length_unit_to_m=SUN_RADIUS_M,
+    )
+
+    area_total = np.sum(shells.area, axis=(-2, -1))
+    expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
+    np.testing.assert_allclose(area_total, expected, rtol=1e-12, atol=0.0)
+    assert shells.x.shape[-1] == 1
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     profile = mass_loss_vs_radius(
@@ -75,6 +99,7 @@ def test_mass_loss_profile_runs_on_example():
     assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
+    assert profile["shell_samples"].x.shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -99,6 +124,7 @@ def test_torque_profile_runs_on_example():
     assert np.all(np.isfinite(cov))
     assert np.all((cov > 0.90) & (cov <= 1.0 + 1e-12))
     assert np.any(np.isfinite(tot))
+    assert profile["shell_samples"].x.shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -147,6 +173,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
     assert np.all(total[finite] >= 0)
     assert np.all(frac[finite] >= -1e-12)
     assert np.all(frac[finite] <= 1.0 + 1e-12)
+    assert profile["shell_samples"].x.shape[-1] > 1  # grid sampler retained for axisymmetry
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

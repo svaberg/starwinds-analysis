@@ -5,7 +5,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid
+from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 
 
 @dataclass
@@ -15,9 +15,15 @@ class SphericalShellSamples:
 
     Shapes:
     - `radii`: `(nr,)`
+    Grid sampler:
     - `theta`, `phi`: `(ntheta, nphi)`
     - `x`, `y`, `z`, `area`: `(nr, ntheta, nphi)`
     - each `fields[name]`: `(nr, ntheta, nphi)`
+
+    Fibonacci sampler:
+    - `theta`, `phi`: `(npts, 1)`
+    - `x`, `y`, `z`, `area`: `(nr, npts, 1)`
+    - each `fields[name]`: `(nr, npts, 1)`
     """
 
     radii: np.ndarray
@@ -28,6 +34,27 @@ class SphericalShellSamples:
     z: np.ndarray
     area: np.ndarray
     fields: dict[str, np.ndarray]
+
+
+def _resample_shell_points(
+    smart_ds,
+    sample_points,
+    *,
+    fields,
+    coordinate_fields,
+    method,
+    fill_value,
+    title_suffix="shell samples",
+):
+    return smart_ds.resample(
+        sample_points,
+        coordinate_fields=coordinate_fields,
+        fields=tuple(dict.fromkeys(fields)),
+        method=method,
+        fill_value=fill_value,
+        title=f"{getattr(smart_ds, 'title', 'dataset')} ({title_suffix})",
+        zone="shell-samples",
+    )
 
 
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
@@ -108,14 +135,14 @@ def sample_spherical_shells(
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]
     sample_points = xyz.reshape(-1, 3)
 
-    resampled = smart_ds.resample(
+    resampled = _resample_shell_points(
+        smart_ds,
         sample_points,
+        fields=fields,
         coordinate_fields=coordinate_fields,
-        fields=tuple(dict.fromkeys(fields)),
         method=method,
         fill_value=fill_value,
-        title=f"{getattr(smart_ds, 'title', 'dataset')} (shell samples)",
-        zone="shell-samples",
+        title_suffix="shell samples (grid)",
     )
 
     field_arrays = {}
@@ -136,6 +163,77 @@ def sample_spherical_shells(
         y=xyz[..., 1],
         z=xyz[..., 2],
         area=area,
+        fields=field_arrays,
+    )
+
+
+def sample_spherical_shells_fibonacci(
+    smart_ds,
+    radii,
+    *,
+    fields=(),
+    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    n_points: int = 512,
+    randomize: bool = False,
+    method: str = "nearest",
+    fill_value: float = np.nan,
+    length_unit_to_m: float | None = None,
+):
+    """
+    Resample fields onto equal-area Fibonacci sphere points on each shell.
+
+    The returned arrays use shape `(nr, n_points, 1)` so they remain compatible with
+    existing shell integrations that sum over the last two axes.
+    """
+    radii = np.atleast_1d(np.asarray(radii, dtype=float))
+    if radii.ndim != 1:
+        raise ValueError("radii must be 1D")
+    if np.any(radii <= 0):
+        raise ValueError("radii must be > 0")
+    n_points = int(n_points)
+    if n_points < 8:
+        raise ValueError("n_points must be >= 8")
+
+    unit = np.asarray(fibonacci_sphere(n_points, randomize=randomize), dtype=float)
+    xhat = unit[:, 0][:, None]
+    yhat = unit[:, 1][:, None]
+    zhat = unit[:, 2][:, None]
+    theta = np.arccos(np.clip(zhat, -1.0, 1.0))
+    phi = np.arctan2(yhat, xhat)
+
+    xyz_unit = np.stack((xhat, yhat, zhat), axis=-1)  # (npts, 1, 3)
+    xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]  # (nr, npts, 1, 3)
+    sample_points = xyz.reshape(-1, 3)
+
+    resampled = _resample_shell_points(
+        smart_ds,
+        sample_points,
+        fields=fields,
+        coordinate_fields=coordinate_fields,
+        method=method,
+        fill_value=fill_value,
+        title_suffix="shell samples (fibonacci)",
+    )
+
+    field_arrays = {}
+    for name in tuple(dict.fromkeys(fields)):
+        field_arrays[name] = np.asarray(resampled.variable(name), dtype=float).reshape(
+            radii.size, n_points, 1
+        )
+
+    area_unit = (4.0 * math.pi) / float(n_points)
+    area = (radii[:, None, None] ** 2) * area_unit
+    if length_unit_to_m is not None:
+        area = area * float(length_unit_to_m) ** 2
+
+    return SphericalShellSamples(
+        radii=radii,
+        theta=theta,
+        phi=phi,
+        x=xyz[..., 0],
+        y=xyz[..., 1],
+        z=xyz[..., 2],
+        area=np.broadcast_to(area, (radii.size, n_points, 1)).copy(),
         fields=field_arrays,
     )
 
@@ -219,4 +317,5 @@ __all__ = [
     "resolve_batsrus_vector_xyz_si",
     "resolve_field_with_scale",
     "sample_spherical_shells",
+    "sample_spherical_shells_fibonacci",
 ]
