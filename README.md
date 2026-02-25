@@ -44,6 +44,19 @@ sds.add_spherical_graph(vectors=("B", "U"))
 print(sds.explain("B_r [Gauss]"))
 ```
 
+For BATSRUS-style inputs, `SmartDs` can also attach a recipe graph for common unit
+normalization (to SI where possible) and a few derived quantities:
+
+```python
+sds.add_batsrus_graph()
+
+rho = sds.variable("Rho [kg/m^3]")
+bx = sds.variable("B_x [T]")
+c_s = sds.variable("c_s [m/s]")
+m_a = sds.variable("M_A [none]")
+print(sds.explain("M_A [none]"))
+```
+
 Spherical conventions used by the helper recipes:
 
 - `theta [rad]`: colatitude in `[0, pi]`
