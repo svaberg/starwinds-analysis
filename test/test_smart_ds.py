@@ -9,7 +9,7 @@ from starwinds_readplt.dataset import Dataset
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 
 
 def make_dataset_2d():
@@ -150,6 +150,15 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     np.testing.assert_allclose(b_theta[0], -3.0)
     np.testing.assert_allclose(b_phi[0], 2.0)
 
+    lat = sds.variable("latitude [rad]")
+    lon = sds.variable("longitude [rad]")
+    lat_deg = sds.variable("latitude [deg]")
+    lon_deg = sds.variable("longitude [deg]")
+    np.testing.assert_allclose(lat, (np.pi / 2) - theta)
+    np.testing.assert_allclose(lon, phi)
+    np.testing.assert_allclose(lat_deg, np.degrees(lat))
+    np.testing.assert_allclose(lon_deg, np.degrees(lon))
+
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_add_spherical_fields_on_real_example_data():
@@ -204,6 +213,17 @@ def test_griblet_graph_resolution_and_explain():
 
     r = sds.variable("R [R]")
     np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
+
+    lat = sds.variable("latitude [rad]")
+    lon = sds.variable("longitude [rad]")
+    lat_deg = sds.variable("latitude [deg]")
+    lon_deg = sds.variable("longitude [deg]")
+    theta = sds.variable("theta [rad]")
+    phi = sds.variable("phi [rad]")
+    np.testing.assert_allclose(lat, (np.pi / 2) - theta)
+    np.testing.assert_allclose(lon, phi)
+    np.testing.assert_allclose(lat_deg, np.degrees(lat))
+    np.testing.assert_allclose(lon_deg, np.degrees(lon))
 
     explanation = sds.explain("theta [rad]")
     assert "theta [rad]" in explanation
