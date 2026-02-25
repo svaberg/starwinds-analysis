@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +17,11 @@ from starwinds_analysis.analysis.fluxes import (
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
 from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
 from starwinds_analysis.utils import triangles
+from starwinds_analysis.visualisation.histograms import (
+    plot_binned_vs_radius,
+    plot_cumulative_hists,
+    plot_vs_radius,
+)
 from starwinds_analysis.visualisation.slice import (
     plot_xz_slice_tripcolor_with_cross_quantiles,
     plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
@@ -65,6 +72,21 @@ _SLICE_STYLES = {
     "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
     "marginal_points": plot_xz_slice_with_marginal_points,
     "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+}
+
+RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
+    "wind_basic": (
+        "Rho [kg/m^3]",
+        "U [m/s]",
+        "B [T]",
+        "P [Pa]",
+    ),
+    "wind_raw": (
+        "Rho [g/cm^3]",
+        "U_x [km/s]",
+        "B_x [Gauss]",
+        "P [dyne/cm^2]",
+    ),
 }
 
 
@@ -142,6 +164,54 @@ def plot_slice_quicklook(
         ax_main.tricontour(tris, values, **kwargs)
 
     return fig, axes, cbar
+
+
+def plot_radius_quicklook(
+    ds,
+    *,
+    fields=None,
+    preset: str | None = None,
+    mode: str = "binned",
+    ncols: int = 2,
+    figsize=None,
+    **plot_kwargs,
+):
+    """
+    Radius/scatter/cumulative quicklook wrapper over `visualisation.histograms`.
+    """
+    if fields is None:
+        if preset is None:
+            raise ValueError("Provide either fields=... or preset=...")
+        if preset not in RADIAL_SUMMARY_PRESETS:
+            raise KeyError(f"Unknown radial preset '{preset}'")
+        fields = tuple(f for f in RADIAL_SUMMARY_PRESETS[preset] if _has_field(ds, f))
+        if not fields:
+            raise KeyError(f"No fields from preset '{preset}' are available")
+    else:
+        fields = tuple(fields)
+
+    n = len(fields)
+    if n == 0:
+        raise ValueError("No fields requested")
+    ncols = max(1, int(ncols))
+    nrows = int(np.ceil(n / ncols))
+    if figsize is None:
+        figsize = (4.0 * ncols, 3.0 * nrows)
+    fig, axs = plt.subplots(nrows, ncols, figsize=figsize, constrained_layout=True)
+    axs = np.asarray(axs).ravel()
+
+    if mode == "binned":
+        plot_binned_vs_radius(ds, axs, fields=fields, **plot_kwargs)
+    elif mode == "scatter":
+        plot_vs_radius(ds, axs, fields=fields, **plot_kwargs)
+    elif mode in ("cdf", "cumulative"):
+        plot_cumulative_hists(ds, axs, fields=fields, **plot_kwargs)
+    else:
+        raise KeyError("mode must be 'binned', 'scatter', or 'cdf'")
+
+    for ax in axs[n:]:
+        ax.set_visible(False)
+    return fig, axs[:n]
 
 
 def compute_shell_diagnostics(
@@ -245,12 +315,138 @@ def quicklook_shell_figure(
     return fig, axs, diagnostics
 
 
+def summarize_shell_diagnostics(diagnostics):
+    """
+    JSON-friendly summary (stats only) of shell diagnostics.
+    """
+    out = {}
+    for name, profile in diagnostics.items():
+        if not isinstance(profile, dict):
+            continue
+        pdata = {}
+        for key, value in profile.items():
+            if key == "shell_samples":
+                continue
+            arr = np.asarray(value)
+            if arr.ndim == 0:
+                try:
+                    pdata[key] = float(arr)
+                except Exception:
+                    pdata[key] = str(value)
+                continue
+            finite = np.isfinite(arr)
+            pdata[key] = {
+                "shape": list(arr.shape),
+                "n": int(arr.size),
+                "n_finite": int(np.count_nonzero(finite)),
+                "min": float(np.nanmin(arr)) if np.any(finite) else np.nan,
+                "max": float(np.nanmax(arr)) if np.any(finite) else np.nan,
+                "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
+            }
+        out[name] = pdata
+    return out
+
+
+def flatten_shell_diagnostics_arrays(diagnostics):
+    """
+    Flatten shell diagnostic arrays for `np.savez`.
+    """
+    arrays = {}
+    for name, profile in diagnostics.items():
+        if not isinstance(profile, dict):
+            continue
+        for key, value in profile.items():
+            if key == "shell_samples":
+                continue
+            arr = np.asarray(value)
+            if arr.ndim == 0:
+                continue
+            flat_key = f"{name}__{_slug_key(key)}"
+            arrays[flat_key] = arr
+    return arrays
+
+
+def save_shell_diagnostics_json(path, diagnostics):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = summarize_shell_diagnostics(diagnostics)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    return path
+
+
+def save_shell_diagnostics_npz(path, diagnostics):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    arrays = flatten_shell_diagnostics_arrays(diagnostics)
+    np.savez(path, **arrays)
+    return path
+
+
+def save_quicklook2d_bundle(
+    output_dir,
+    *,
+    shell_fig=None,
+    diagnostics=None,
+    slice_figures=None,
+    radius_figures=None,
+    prefix: str = "quicklook2d",
+):
+    """
+    Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle.
+    """
+    outdir = Path(output_dir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    saved = {"figures": {}, "files": {}}
+
+    if shell_fig is not None:
+        p = outdir / f"{prefix}.shells.png"
+        shell_fig.savefig(p)
+        saved["figures"]["shells"] = p
+
+    for group_name, figs in (("slices", slice_figures), ("radius", radius_figures)):
+        if not figs:
+            continue
+        for key, fig in figs.items():
+            p = outdir / f"{prefix}.{group_name}.{_slug_key(str(key))}.png"
+            fig.savefig(p)
+            saved["figures"][f"{group_name}:{key}"] = p
+
+    if diagnostics is not None:
+        saved["files"]["shells_json"] = save_shell_diagnostics_json(
+            outdir / f"{prefix}.shells.json", diagnostics
+        )
+        saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
+            outdir / f"{prefix}.shells.npz", diagnostics
+        )
+
+    return saved
+
+
+def _slug_key(s: str) -> str:
+    out = []
+    for ch in str(s):
+        if ch.isalnum():
+            out.append(ch.lower())
+        else:
+            out.append("_")
+    slug = "".join(out)
+    while "__" in slug:
+        slug = slug.replace("__", "_")
+    return slug.strip("_") or "item"
+
+
 __all__ = [
+    "RADIAL_SUMMARY_PRESETS",
     "SLICE_PRESETS",
     "SlicePreset",
     "compute_shell_diagnostics",
+    "flatten_shell_diagnostics_arrays",
     "plot_shell_diagnostics",
+    "plot_radius_quicklook",
     "plot_slice_quicklook",
     "quicklook_shell_figure",
+    "save_quicklook2d_bundle",
+    "save_shell_diagnostics_json",
+    "save_shell_diagnostics_npz",
+    "summarize_shell_diagnostics",
 ]
-
