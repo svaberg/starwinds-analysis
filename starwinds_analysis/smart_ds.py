@@ -35,6 +35,11 @@ class SmartDs:
     The current implementation is intentionally simple: if a requested field exists
     in the underlying dataset it is returned directly, and optional registered field
     functions can be used for lazy derived quantities.
+
+    Centering note (current limitation):
+    - SmartDs does not yet track field centering metadata (point-centered vs cell-centered).
+    - In current resampling/sample workflows, values are effectively treated as samples
+      at the provided coordinates (often used as cell-centered values in notebooks/analysis).
     """
 
     def __init__(
@@ -388,6 +393,12 @@ class SmartDs:
         corners
             Optional cell connectivity for the resampled dataset. Defaults to an empty
             connectivity array, which is suitable for point-wise analysis.
+
+        Notes
+        -----
+        SmartDs currently does not track centering metadata. Resampling therefore
+        treats source values as samples at the source coordinates and returns values
+        at the requested target coordinates without explicit point/cell centering semantics.
         """
         return resample_smart_ds(
             self,
