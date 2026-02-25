@@ -478,6 +478,70 @@ def flatten_shell_diagnostics_arrays(diagnostics):
     return arrays
 
 
+def summarize_orbit_results(orbit_results):
+    """
+    JSON-friendly summary of orbit local-vs-shell comparison results.
+    """
+    out = {}
+    for orbit_key, groups in (orbit_results or {}).items():
+        if not isinstance(groups, dict):
+            continue
+        orbit_out = {}
+        for group_name, result in groups.items():
+            if not isinstance(result, dict):
+                continue
+            group_out = {}
+            for key, value in result.items():
+                if key in {"orbit_samples", "shell_profile"}:
+                    continue
+                if key == "summary" and isinstance(value, dict):
+                    summary_out = {}
+                    for sk, sv in value.items():
+                        arr = np.asarray(sv)
+                        if arr.ndim == 0:
+                            try:
+                                summary_out[sk] = float(arr)
+                            except Exception:
+                                summary_out[sk] = str(sv)
+                        else:
+                            summary_out[sk] = np.asarray(sv, dtype=float).tolist()
+                    group_out[key] = summary_out
+                    continue
+                arr = np.asarray(value)
+                if arr.ndim == 0:
+                    try:
+                        group_out[key] = float(arr)
+                    except Exception:
+                        group_out[key] = str(value)
+                else:
+                    group_out[key] = _array_summary(arr)
+            orbit_out[group_name] = group_out
+        out[str(orbit_key)] = orbit_out
+    return out
+
+
+def flatten_orbit_results_arrays(orbit_results):
+    """
+    Flatten selected orbit result arrays for `np.savez`.
+    """
+    arrays = {}
+    for orbit_key, groups in (orbit_results or {}).items():
+        if not isinstance(groups, dict):
+            continue
+        for group_name, result in groups.items():
+            if not isinstance(result, dict):
+                continue
+            for key, value in result.items():
+                if key in {"orbit_samples", "shell_profile", "summary"}:
+                    continue
+                arr = np.asarray(value)
+                if arr.ndim == 0:
+                    continue
+                flat_key = f"{_slug_key(orbit_key)}__{_slug_key(group_name)}__{_slug_key(key)}"
+                arrays[flat_key] = arr
+    return arrays
+
+
 def save_shell_diagnostics_json(
     path,
     diagnostics,
@@ -506,11 +570,28 @@ def save_shell_diagnostics_npz(path, diagnostics):
     return path
 
 
+def save_orbit_results_json(path, orbit_results):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = summarize_orbit_results(orbit_results)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    return path
+
+
+def save_orbit_results_npz(path, orbit_results):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    arrays = flatten_orbit_results_arrays(orbit_results)
+    np.savez(path, **arrays)
+    return path
+
+
 def save_quicklook2d_bundle(
     output_dir,
     *,
     shell_fig=None,
     diagnostics=None,
+    orbit_results=None,
     slice_figures=None,
     radius_figures=None,
     orbit_figures=None,
@@ -549,6 +630,14 @@ def save_quicklook2d_bundle(
         )
         saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
             outdir / f"{prefix}.shells.npz", diagnostics
+        )
+
+    if orbit_results:
+        saved["files"]["orbits_json"] = save_orbit_results_json(
+            outdir / f"{prefix}.orbits.json", orbit_results
+        )
+        saved["files"]["orbits_npz"] = save_orbit_results_npz(
+            outdir / f"{prefix}.orbits.npz", orbit_results
         )
 
     return saved
@@ -700,6 +789,7 @@ def run_quicklook2d(
             output_dir,
             shell_fig=shell_fig,
             diagnostics=diagnostics,
+            orbit_results=orbit_results,
             slice_figures=slice_figs,
             radius_figures=radius_figs,
             orbit_figures=orbit_figs,
@@ -717,6 +807,7 @@ __all__ = [
     "SlicePreset",
     "compute_shell_diagnostics",
     "flatten_shell_diagnostics_arrays",
+    "flatten_orbit_results_arrays",
     "plot_shell_diagnostics",
     "plot_radius_quicklook",
     "plot_slice_quicklook",
@@ -727,7 +818,10 @@ __all__ = [
     "orbit_local_comparison_figure",
     "run_quicklook2d",
     "save_quicklook2d_bundle",
+    "save_orbit_results_json",
+    "save_orbit_results_npz",
     "save_shell_diagnostics_json",
     "save_shell_diagnostics_npz",
+    "summarize_orbit_results",
     "summarize_shell_diagnostics",
 ]
