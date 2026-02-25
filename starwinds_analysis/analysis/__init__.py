@@ -56,12 +56,6 @@ from .mass_loss import (
     plot_shell_mass_flux_lonlat,
     sample_shell_mass_flux_map,
 )
-from .native_slice import (
-    NativeSlice2DGeometry,
-    native_slice_geometry,
-    plot_alfven_mach_slice,
-    plot_native_slice_tripcolor,
-)
 from .shells import (
     SphericalShellSamples,
     infer_body_radius_m,
@@ -106,10 +100,6 @@ __all__ = [
     "integrate_shell_scalar",
     "sample_spherical_shells",
     "sample_spherical_shells_fibonacci",
-    "NativeSlice2DGeometry",
-    "native_slice_geometry",
-    "plot_native_slice_tripcolor",
-    "plot_alfven_mach_slice",
     "structured_quad_corners",
     "infer_range",
     "resample_structured_xz_slice",
