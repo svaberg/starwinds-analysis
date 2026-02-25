@@ -37,6 +37,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - a first `quicklook2d` wrapper (slice presets/overlays + shell summary figure)
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
+- shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -76,7 +77,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | --- | --- | --- |
 | 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper added on top of existing slice plotting helpers |
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
-| Scatter plots vs height/radius | Partial/Usable | `plot_vs_radius` and `plot_binned_vs_radius` exist; old plot bundles need wrappers |
+| Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
 | Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
 | Shell mass-loss integral (`add_integral_mass`) | Implemented (v1) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
 | Shell torque integral (`add_integral_momentum`) | Implemented (v1) | Spherical-shell magnetic/dynamic/total profile API added |
@@ -86,7 +87,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Weighted summary stats / quantiles | Not yet ported | Small pure-NumPy helpers; should be early utility work |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
-| Shell summary persistence (`.p` pickle aux outputs) | Not yet ported (and should be redesigned) | Prefer JSON/NPZ instead of Tecplot-centric pickle sidecar |
+| Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ |
 
 ## High-Priority Feature Plan
 

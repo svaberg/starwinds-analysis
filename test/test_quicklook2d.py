@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,7 +7,12 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.quicklook2d import plot_slice_quicklook, quicklook_shell_figure
+from starwinds_analysis.quicklook2d import (
+    plot_radius_quicklook,
+    plot_slice_quicklook,
+    quicklook_shell_figure,
+    save_quicklook2d_bundle,
+)
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -61,6 +67,22 @@ def test_plot_slice_quicklook_with_preset_and_overlays():
     plt.close(fig)
 
 
+def test_plot_radius_quicklook_modes():
+    sds = SmartDs(make_slice_dataset())
+    sds.add_batsrus_graph()
+
+    fields = ("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]")
+    figs = []
+    for mode in ("binned", "scatter", "cdf"):
+        fig, axes = plot_radius_quicklook(sds, fields=fields, mode=mode, ncols=2)
+        assert fig is not None
+        assert len(axes) == 4
+        figs.append(fig)
+
+    for fig in figs:
+        plt.close(fig)
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_quicklook_shell_figure_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
@@ -81,3 +103,53 @@ def test_quicklook_shell_figure_runs_on_example():
     assert "energy" in diagnostics
     plt.close(fig)
 
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+
+    shell_fig, _axs, diagnostics = quicklook_shell_figure(
+        sds,
+        [2.0, 4.0, 8.0],
+        body_radius_m=SUN_RADIUS_M,
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+    )
+    radius_fig, _axes = plot_radius_quicklook(
+        sds,
+        fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]"),
+        mode="binned",
+        ncols=2,
+    )
+
+    saved = save_quicklook2d_bundle(
+        tmp_path,
+        shell_fig=shell_fig,
+        diagnostics=diagnostics,
+        radius_figures={"binned": radius_fig},
+        prefix="demo",
+    )
+
+    shell_png = tmp_path / "demo.shells.png"
+    json_path = tmp_path / "demo.shells.json"
+    npz_path = tmp_path / "demo.shells.npz"
+    radius_png = tmp_path / "demo.radius.binned.png"
+
+    assert shell_png.exists()
+    assert json_path.exists()
+    assert npz_path.exists()
+    assert radius_png.exists()
+    assert "figures" in saved and "files" in saved
+
+    payload = json.loads(json_path.read_text())
+    assert "mass_loss" in payload
+    assert "torque" in payload
+
+    with np.load(npz_path) as data:
+        keys = set(data.files)
+    assert any(k.startswith("mass_loss__") for k in keys)
+    assert any(k.startswith("torque__") for k in keys)
+
+    plt.close(shell_fig)
+    plt.close(radius_fig)
