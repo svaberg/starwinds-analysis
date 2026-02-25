@@ -4,6 +4,10 @@ import math
 
 import numpy as np
 
+from starwinds_analysis.analysis._profile_plotting import (
+    plot_shell_height_series,
+    shell_profile_height,
+)
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
@@ -89,19 +93,21 @@ def torque_vs_radius(
 
 
 def plot_torque_profile(ax, profile, *, show_negative=True):
-    radii = np.asarray(profile["radius [R]"], dtype=float)
-    h = radii - 1.0
+    h = shell_profile_height(profile)
     mag = np.asarray(profile["magnetic_torque [Nm]"], dtype=float)
     dyn = np.asarray(profile["dynamic_torque [Nm]"], dtype=float)
-    tot = np.asarray(profile["total_torque [Nm]"], dtype=float)
 
-    ax.plot(h, tot, ".-", color="C0", label="total")
+    plot_shell_height_series(
+        ax,
+        profile,
+        "total_torque [Nm]",
+        label="total",
+        ylabel="Torque [Nm]",
+        color="C0",
+        show_negative=show_negative,
+    )
     ax.plot(h, mag, ".-", color="C1", label="magnetic")
     ax.plot(h, dyn, ".-", color="C2", label="dynamic")
-    if show_negative:
-        ax.plot(h, -tot, ".--", color="C0", fillstyle="none")
-    ax.set_xlabel("Height over surface [R]")
-    ax.set_ylabel("Torque [Nm]")
     return ax
 
 

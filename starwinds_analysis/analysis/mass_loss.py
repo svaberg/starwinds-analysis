@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from starwinds_analysis.analysis._profile_plotting import plot_shell_height_series
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
@@ -67,15 +68,15 @@ def mass_loss_vs_radius(
 
 
 def plot_mass_loss_profile(ax, profile, *, show_negative=True):
-    radii = np.asarray(profile["radius [R]"], dtype=float)
-    values = np.asarray(profile["mass_loss [kg/s]"], dtype=float)
-    x = radii - 1.0
-    ax.plot(x, values, ".-", color="C0", label="mass loss")
-    if show_negative:
-        ax.plot(x, -values, ".--", color="C0", fillstyle="none")
-    ax.set_xlabel("Height over surface [R]")
-    ax.set_ylabel("Mass flux [kg/s]")
-    return ax
+    return plot_shell_height_series(
+        ax,
+        profile,
+        "mass_loss [kg/s]",
+        label="mass loss",
+        ylabel="Mass flux [kg/s]",
+        color="C0",
+        show_negative=show_negative,
+    )
 
 
 __all__ = ["mass_loss_vs_radius", "plot_mass_loss_profile"]

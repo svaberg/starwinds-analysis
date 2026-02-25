@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from starwinds_analysis.analysis._profile_plotting import plot_shell_height_series
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
@@ -187,23 +188,27 @@ def energy_flux_vs_radius(
 
 
 def plot_open_flux_profile(ax, profile):
-    x = np.asarray(profile["height [R]"], dtype=float)
-    y = np.asarray(profile["open_flux [Wb]"], dtype=float)
-    ax.plot(x, y, ".-", color="C0", label="open flux")
-    ax.set_xlabel("Height over surface [R]")
-    ax.set_ylabel("Open magnetic flux [Wb]")
-    return ax
+    return plot_shell_height_series(
+        ax,
+        profile,
+        "open_flux [Wb]",
+        label="open flux",
+        ylabel="Open magnetic flux [Wb]",
+        color="C0",
+        show_negative=False,
+    )
 
 
 def plot_energy_flux_profile(ax, profile, *, show_negative=True):
-    x = np.asarray(profile["height [R]"], dtype=float)
-    y = np.asarray(profile["energy_flux [W]"], dtype=float)
-    ax.plot(x, y, ".-", color="C0", label="energy flux")
-    if show_negative:
-        ax.plot(x, -y, ".--", color="C0", fillstyle="none")
-    ax.set_xlabel("Height over surface [R]")
-    ax.set_ylabel("Energy flux [W]")
-    return ax
+    return plot_shell_height_series(
+        ax,
+        profile,
+        "energy_flux [W]",
+        label="energy flux",
+        ylabel="Energy flux [W]",
+        color="C0",
+        show_negative=show_negative,
+    )
 
 
 __all__ = [
