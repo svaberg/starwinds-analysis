@@ -36,6 +36,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - energy flux profile on spherical shells
 - a first `quicklook2d` wrapper (slice presets/overlays + shell summary figure)
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
+- circular-orbit sampling wrappers + local-vs-shell comparison helpers
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -83,8 +84,8 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell energy flux (`add_integral_energy`) | Implemented (v1) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1) | Azimuthal-mean `B_r` shell diagnostic added |
 | Weighted summary stats / quantiles | Not yet ported | Small pure-NumPy helpers; should be early utility work |
-| Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (core formula helper) | Pure array helper exists; orbit/path sampling wrapper still pending |
-| Local analytical torque estimate (`local_torque_estimate`) | Implemented (core formula helper) | Pure array helper exists; orbit/path sampling + shell comparison wrapper pending |
+| Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
+| Local analytical torque estimate (`local_torque_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
 | Shell summary persistence (`.p` pickle aux outputs) | Not yet ported (and should be redesigned) | Prefer JSON/NPZ instead of Tecplot-centric pickle sidecar |
 
 ## High-Priority Feature Plan
