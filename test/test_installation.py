@@ -3,21 +3,21 @@ import pyvista.examples
 import pyvista.demos
 import pytest
 
-@pytest.mark.skip(reason="Crash")
-def test_0():
-    pv.demos.plot_wave()
+
+# Valid options include: .svg, .eps, .ps, .pdf, .tex
+@pytest.mark.parametrize("extension", ["svg", "eps", "ps", "pdf", "tex"])
+def test_save_graphic(extension):
+    pv.OFF_SCREEN = True
+    pl = pv.Plotter()
+    _ = pl.add_mesh(pv.examples.load_airplane(), smooth_shading=True)
+    pl.render()
+    pl.save_graphic(f"test_save_graphic.{extension}")  
 
 
-@pytest.mark.skip(reason="Crash")
-def test_1():
-    mesh = pv.examples.download_dragon()
-    mesh['scalars'] = mesh.points[:, 1]
-    mesh.plot(cpos='xy', cmap='plasma', pbr=True, metallic=1.0, roughness=0.6,
-              zoom=1.7)
-
-
-@pytest.mark.skip(reason="Crash")
-def test2():
-    grid = pyvista.UnstructuredGrid(pv.examples.hexbeamfile)
-    grid.plot(show_edges=True)
+def test_show_screenshot():
+    filename = pv.examples.planefile
+    mesh = pv.read(filename) 
+    plotter = pv.Plotter(off_screen=True)
+    plotter.add_mesh(mesh, color="orange")
+    plotter.show(screenshot='airplane.png')
 
