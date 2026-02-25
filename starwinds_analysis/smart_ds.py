@@ -58,6 +58,23 @@ class SmartDs:
         for name, candidates in (aliases or {}).items():
             self.set_alias(name, candidates)
 
+    def __repr__(self) -> str:
+        return (
+            f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
+            f"points={len(self.points)}, variables={len(self.variables)})"
+        )
+
+    def __str__(self) -> str:
+        return "\n".join(
+            (
+                "SmartDs",
+                f"  Title: {self.title}",
+                f"  Zone : {self.zone}",
+                f"  Points: {len(self.points)}",
+                f"  Variables: {len(self.variables)}",
+            )
+        )
+
     @classmethod
     def from_file(cls, file: str | PathLike[str], **kwargs) -> "SmartDs":
         return cls(Dataset.from_file(str(file)), **kwargs)
