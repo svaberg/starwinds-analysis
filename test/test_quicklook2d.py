@@ -11,6 +11,7 @@ from starwinds_analysis.quicklook2d import (
     plot_radius_quicklook,
     plot_slice_quicklook,
     quicklook_shell_figure,
+    run_quicklook2d,
     save_quicklook2d_bundle,
 )
 from starwinds_analysis.smart_ds import SmartDs
@@ -153,3 +154,36 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
 
     plt.close(shell_fig)
     plt.close(radius_fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    out = run_quicklook2d(
+        sds,
+        body_radius_m=SUN_RADIUS_M,
+        radii=[2.0, 4.0, 8.0],
+        slice_presets=(),
+        radius_modes=("binned",),
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+        output_dir=tmp_path,
+        prefix="e2e",
+    )
+
+    assert "diagnostics" in out
+    assert "saved" in out
+    assert "slice_figures" in out and len(out["slice_figures"]) == 0
+    assert "radius_figures" in out and "binned" in out["radius_figures"]
+
+    assert (tmp_path / "e2e.shells.png").exists()
+    assert (tmp_path / "e2e.shells.json").exists()
+    assert (tmp_path / "e2e.shells.npz").exists()
+    assert (tmp_path / "e2e.radius.binned.png").exists()
+
+    for fig in out["slice_figures"].values():
+        plt.close(fig)
+    plt.close(out["shell_figure"])
+    for fig in out["radius_figures"].values():
+        plt.close(fig)

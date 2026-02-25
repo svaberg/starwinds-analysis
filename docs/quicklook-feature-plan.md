@@ -38,6 +38,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
+- one-shot `quicklook2d` runner for batch figure generation and bundle export
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -75,7 +76,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 
 | Old quicklook feature | Status in new repo | Notes |
 | --- | --- | --- |
-| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper added on top of existing slice plotting helpers |
+| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper + one-shot runner added |
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
 | Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
 | Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
@@ -271,6 +272,9 @@ This keeps physics, sampling, and plotting separate.
 - contour overlays
 - scatter/radial summaries
 - one command/function for batch quicklook figure generation (2D only)
+
+Status:
+- Implemented (v1): wrappers for slice presets/overlays, radius summaries, shell summary figure, and a one-shot `quicklook2d` runner with optional bundle export.
 
 ### Phase 5: Analytical Local Estimates
 
