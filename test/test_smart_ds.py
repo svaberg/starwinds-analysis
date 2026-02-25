@@ -173,6 +173,25 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     np.testing.assert_allclose(lon_deg, np.degrees(lon))
 
 
+def test_spherical_fields_are_available_by_default_for_xyz_vector_datasets():
+    sds = SmartDs(make_dataset_3d_vectors())
+
+    # No explicit `add_spherical_fields()` call.
+    r = np.asarray(sds("R [R]"))
+    theta = np.asarray(sds("theta [rad]"))
+    phi = np.asarray(sds("phi [rad]"))
+    b_r = np.asarray(sds("B_r [T]"))
+    lat_deg = np.asarray(sds("latitude [deg]"))
+    lon_deg = np.asarray(sds("longitude [deg]"))
+
+    assert r.shape == (3,)
+    assert theta.shape == (3,)
+    assert phi.shape == (3,)
+    assert b_r.shape == (3,)
+    np.testing.assert_allclose(lat_deg, np.degrees((np.pi / 2) - theta))
+    np.testing.assert_allclose(lon_deg, np.degrees(phi))
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_add_spherical_fields_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
