@@ -14,9 +14,19 @@ from starwinds_analysis.analysis.local_estimates import (
     summarize_samples,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
+from starwinds_analysis.analysis.shell_summary import (
+    boxcar_shell_weights,
+    summarize_shell_diagnostics_band,
+    summarize_shell_series,
+)
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 from starwinds_analysis.analysis.torque import torque_vs_radius
+from starwinds_analysis.analysis.wind_scaling import (
+    open_wind_magnetisation,
+    open_wind_magnetisation_from_profiles,
+    surface_escape_speed,
+)
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -201,3 +211,60 @@ def test_local_torque_estimate_formula_and_summary():
     assert np.isfinite(summary["mean"])
     assert np.isfinite(summary["std"])
     assert summary["values"].shape == (5,)
+
+
+def test_shell_band_summary_helpers():
+    radii = np.array([2.0, 4.0, 8.0, 16.0])
+    values = np.array([1.0, 3.0, 9.0, 27.0])
+    coverage = np.array([1.0, 0.5, 1.0, 1.0])
+    weights = boxcar_shell_weights(radii, rmin=3.0, rmax=9.0)
+    np.testing.assert_allclose(weights, [0, 1, 1, 0])
+
+    s = summarize_shell_series(radii, values, coverage=coverage, rmin=3.0, rmax=9.0)
+    assert s["rmin [R]"] == 4.0
+    assert s["rmax [R]"] == 8.0
+    assert s["n_active"] == 2
+    assert isinstance(s["quantiles"], list)
+    assert isinstance(s["values"], list)
+    assert s["mean"] > 0
+
+    diagnostics = {
+        "mass_loss": {
+            "radius [R]": radii,
+            "height [R]": radii - 1,
+            "mass_loss [kg/s]": values,
+            "coverage [none]": coverage,
+        }
+    }
+    band = summarize_shell_diagnostics_band(diagnostics, rmin=3.0, rmax=9.0)
+    assert "mass_loss" in band
+    assert "mass_loss [kg/s]" in band["mass_loss"]
+    assert band["mass_loss"]["mass_loss [kg/s]"]["n_active"] == 2
+
+
+def test_wind_scaling_helpers_formula():
+    m = 1.0e30
+    r = 1.0e9
+    vesc = surface_escape_speed(m, r)
+    assert np.isfinite(vesc) and vesc > 0
+
+    phi = np.array([1e14, 2e14])
+    dotm = np.array([1e9, 2e9])
+    ups = open_wind_magnetisation(phi, dotm, m, r)
+    assert ups.shape == (2,)
+    assert np.all(np.isfinite(ups))
+
+    diagnostics = {
+        "mass_loss": {
+            "radius [R]": np.array([2.0, 4.0]),
+            "height [R]": np.array([1.0, 3.0]),
+            "mass_loss [kg/s]": dotm,
+        },
+        "open_flux": {
+            "radius [R]": np.array([2.0, 4.0]),
+            "height [R]": np.array([1.0, 3.0]),
+            "open_flux [Wb]": phi,
+        },
+    }
+    prof = open_wind_magnetisation_from_profiles(diagnostics, star_mass_kg=m, star_radius_m=r)
+    np.testing.assert_allclose(prof["Upsilon_open [none]"], ups)

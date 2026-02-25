@@ -130,6 +130,9 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
         diagnostics=diagnostics,
         radius_figures={"binned": radius_fig},
         prefix="demo",
+        band_radius_range=(2.0, 8.0),
+        star_mass_kg=1.98847e30,
+        star_radius_m=SUN_RADIUS_M,
     )
 
     shell_png = tmp_path / "demo.shells.png"
@@ -146,6 +149,9 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     payload = json.loads(json_path.read_text())
     assert "mass_loss" in payload
     assert "torque" in payload
+    assert "_band_summary" in payload
+    assert "mass_loss" in payload["_band_summary"]
+    assert "_wind_scaling" in payload
 
     with np.load(npz_path) as data:
         keys = set(data.files)
