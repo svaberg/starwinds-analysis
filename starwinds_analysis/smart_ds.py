@@ -40,6 +40,8 @@ class SmartDs:
     - SmartDs does not yet track field centering metadata (point-centered vs cell-centered).
     - In current resampling/sample workflows, values are effectively treated as samples
       at the provided coordinates (often used as cell-centered values in notebooks/analysis).
+    - TODO geometry metrics: points/cells should be able to report finite geometric
+      measures (e.g. `length [..]`, `area [..^2]`, `volume [..^3]`) for regular grids.
     """
 
     def __init__(
