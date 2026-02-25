@@ -52,18 +52,12 @@ def parse_args():
         default="GM/IO2/y=0_var_1_n*.dat",
         help="Glob pattern relative to run_root for slice files.",
     )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=Path(__file__).resolve().parent,
-        help="Directory for generated plots/markers (default: this script folder).",
-    )
     return parser.parse_args()
 
 
 args = parse_args()
 run_root = args.run_root.expanduser().resolve()
-output_dir = args.output_dir.expanduser().resolve()
+output_dir = Path(__file__).resolve().parent
 output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
 
