@@ -57,6 +57,8 @@ def _resample_shell_points(
     )
 
 
+# TODO this is too permissive and hacky.
+# TODO if RBODY exists, which it often does, it is in solar units, same as X [R], etc.
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     if body_radius_m is not None:
         return float(body_radius_m)
@@ -68,6 +70,7 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
                 return float(aux[key])
             except Exception:
                 pass
+    
 
     # If a graph exposes RBODY [m], use it.
     try:
@@ -238,6 +241,49 @@ def sample_spherical_shells_fibonacci(
     )
 
 
+def sample_spherical_shells_by_strategy(
+    smart_ds,
+    radii,
+    *,
+    fields=(),
+    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    n_polar: int = 24,
+    n_azimuth: int = 48,
+    sampling: str = "fibonacci",
+    fibonacci_randomize: bool = False,
+    method: str = "nearest",
+    fill_value: float = np.nan,
+    length_unit_to_m: float | None = None,
+):
+    """
+    Sample spherical shells using either the structured grid or Fibonacci sampler.
+
+    This centralizes the sampling dispatch used by shell-based analysis helpers.
+    """
+    common_kwargs = dict(
+        smart_ds=smart_ds,
+        radii=radii,
+        fields=fields,
+        coordinate_fields=coordinate_fields,
+        method=method,
+        fill_value=fill_value,
+        length_unit_to_m=length_unit_to_m,
+    )
+    if sampling == "fibonacci":
+        return sample_spherical_shells_fibonacci(
+            **common_kwargs,
+            n_points=max(8, int(n_polar) * int(n_azimuth)),
+            randomize=fibonacci_randomize,
+        )
+    if sampling == "grid":
+        return sample_spherical_shells(
+            **common_kwargs,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
+        )
+    raise ValueError("sampling must be 'fibonacci' or 'grid'")
+
+
 def integrate_shell_scalar(values, area):
     """
     Integrate scalar values over shell surfaces with NaN-safe area weighting.
@@ -264,6 +310,14 @@ def integrate_shell_scalar(values, area):
         )
 
     return sum_val, coverage
+
+
+def shell_profile_radius_height(shells):
+    radii = np.asarray(shells.radii, dtype=float)
+    return {
+        "radius [R]": radii,
+        "height [R]": radii - 1.0,
+    }
 
 
 def resolve_field_with_scale(smart_ds, candidates):
@@ -316,6 +370,8 @@ __all__ = [
     "resolve_batsrus_density_si",
     "resolve_batsrus_vector_xyz_si",
     "resolve_field_with_scale",
+    "shell_profile_radius_height",
+    "sample_spherical_shells_by_strategy",
     "sample_spherical_shells",
     "sample_spherical_shells_fibonacci",
 ]

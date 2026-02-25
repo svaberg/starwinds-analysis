@@ -9,8 +9,8 @@ from starwinds_analysis.analysis.shells import (
     integrate_shell_scalar,
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,
-    sample_spherical_shells,
-    sample_spherical_shells_fibonacci,
+    sample_spherical_shells_by_strategy,
+    shell_profile_radius_height,
 )
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
@@ -43,29 +43,19 @@ def torque_vs_radius(
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
     (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
 
-    sampler_kwargs = dict(
-        smart_ds=smart_ds,
-        radii=radii,
+    shells = sample_spherical_shells_by_strategy(
+        smart_ds,
+        radii,
         fields=(rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name),
         coordinate_fields=coordinate_fields,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        sampling=sampling,
+        fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    if sampling == "fibonacci":
-        shells = sample_spherical_shells_fibonacci(
-            **sampler_kwargs,
-            n_points=max(8, int(n_polar) * int(n_azimuth)),
-            randomize=fibonacci_randomize,
-        )
-    elif sampling == "grid":
-        shells = sample_spherical_shells(
-            **sampler_kwargs,
-            n_polar=n_polar,
-            n_azimuth=n_azimuth,
-        )
-    else:
-        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     rho = rho_scale * shells.fields[rho_name]
     ux = u_scale * shells.fields[ux_name]
@@ -89,8 +79,7 @@ def torque_vs_radius(
     coverage = np.minimum(cov_mag, cov_dyn)
 
     return {
-        "radius [R]": np.asarray(shells.radii, dtype=float),
-        "height [R]": np.asarray(shells.radii, dtype=float) - 1.0,
+        **shell_profile_radius_height(shells),
         "magnetic_torque [Nm]": np.asarray(magnetic, dtype=float),
         "dynamic_torque [Nm]": np.asarray(dynamic, dtype=float),
         "total_torque [Nm]": np.asarray(total, dtype=float),

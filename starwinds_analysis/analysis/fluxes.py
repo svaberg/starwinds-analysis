@@ -7,8 +7,8 @@ from starwinds_analysis.analysis.shells import (
     integrate_shell_scalar,
     resolve_batsrus_vector_xyz_si,
     resolve_field_with_scale,
-    sample_spherical_shells,
-    sample_spherical_shells_fibonacci,
+    sample_spherical_shells_by_strategy,
+    shell_profile_radius_height,
 )
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
@@ -32,29 +32,19 @@ def open_magnetic_flux_vs_radius(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
 
-    sampler_kwargs = dict(
-        smart_ds=smart_ds,
-        radii=radii,
+    shells = sample_spherical_shells_by_strategy(
+        smart_ds,
+        radii,
         fields=(bx_name, by_name, bz_name),
         coordinate_fields=coordinate_fields,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        sampling=sampling,
+        fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    if sampling == "fibonacci":
-        shells = sample_spherical_shells_fibonacci(
-            **sampler_kwargs,
-            n_points=max(8, int(n_polar) * int(n_azimuth)),
-            randomize=fibonacci_randomize,
-        )
-    elif sampling == "grid":
-        shells = sample_spherical_shells(
-            **sampler_kwargs,
-            n_polar=n_polar,
-            n_azimuth=n_azimuth,
-        )
-    else:
-        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     bx = b_scale * shells.fields[bx_name]
     by = b_scale * shells.fields[by_name]
@@ -74,8 +64,7 @@ def open_magnetic_flux_vs_radius(
 
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     return {
-        "radius [R]": np.asarray(shells.radii, dtype=float),
-        "height [R]": np.asarray(shells.radii, dtype=float) - 1.0,
+        **shell_profile_radius_height(shells),
         "signed_flux [Wb]": np.asarray(signed_flux, dtype=float),
         "signed_flux_from_vector [Wb]": np.asarray(signed_flux_from_vector, dtype=float),
         "open_flux [Wb]": np.asarray(open_flux, dtype=float),
@@ -167,29 +156,19 @@ def energy_flux_vs_radius(
     e_name, e_scale = resolve_field_with_scale(smart_ds, energy_field_candidates)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
 
-    sampler_kwargs = dict(
-        smart_ds=smart_ds,
-        radii=radii,
+    shells = sample_spherical_shells_by_strategy(
+        smart_ds,
+        radii,
         fields=(e_name, ux_name, uy_name, uz_name),
         coordinate_fields=coordinate_fields,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        sampling=sampling,
+        fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    if sampling == "fibonacci":
-        shells = sample_spherical_shells_fibonacci(
-            **sampler_kwargs,
-            n_points=max(8, int(n_polar) * int(n_azimuth)),
-            randomize=fibonacci_randomize,
-        )
-    elif sampling == "grid":
-        shells = sample_spherical_shells(
-            **sampler_kwargs,
-            n_polar=n_polar,
-            n_azimuth=n_azimuth,
-        )
-    else:
-        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     e = e_scale * shells.fields[e_name]
     ux = u_scale * shells.fields[ux_name]
@@ -200,8 +179,7 @@ def energy_flux_vs_radius(
     energy_flux_density = e * u_r  # W / m^2
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, shells.area)
     return {
-        "radius [R]": np.asarray(shells.radii, dtype=float),
-        "height [R]": np.asarray(shells.radii, dtype=float) - 1.0,
+        **shell_profile_radius_height(shells),
         "energy_flux [W]": np.asarray(energy_flux, dtype=float),
         "coverage [none]": np.asarray(coverage, dtype=float),
         "shell_samples": shells,

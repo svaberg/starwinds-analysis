@@ -9,8 +9,8 @@ from starwinds_analysis.analysis.shells import (
     integrate_shell_scalar,
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,
-    sample_spherical_shells,
-    sample_spherical_shells_fibonacci,
+    sample_spherical_shells_by_strategy,
+    shell_profile_radius_height,
 )
 
 
@@ -259,29 +259,19 @@ def surface_torque_vs_radius(
                 fields.append(p_name)
                 break
 
-    sampler_kwargs = dict(
-        smart_ds=smart_ds,
-        radii=radii,
+    shells = sample_spherical_shells_by_strategy(
+        smart_ds,
+        radii,
         fields=tuple(fields),
         coordinate_fields=coordinate_fields,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        sampling=sampling,
+        fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    if sampling == "fibonacci":
-        shells = sample_spherical_shells_fibonacci(
-            **sampler_kwargs,
-            n_points=max(8, int(n_polar) * int(n_azimuth)),
-            randomize=fibonacci_randomize,
-        )
-    elif sampling == "grid":
-        shells = sample_spherical_shells(
-            **sampler_kwargs,
-            n_polar=n_polar,
-            n_azimuth=n_azimuth,
-        )
-    else:
-        raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
     rho = rho_scale * shells.fields[rho_name]
     u_xyz = u_scale * np.stack(
@@ -305,8 +295,7 @@ def surface_torque_vs_radius(
     ints = integrate_surface_torque_terms(terms)
 
     return {
-        "radius [R]": np.asarray(shells.radii, dtype=float),
-        "height [R]": np.asarray(shells.radii, dtype=float) - 1.0,
+        **shell_profile_radius_height(shells),
         "T1_magnetic [Nm]": np.asarray(ints["T1_magnetic [Nm]"], dtype=float),
         "T2_pressure [Nm]": np.asarray(ints["T2_pressure [Nm]"], dtype=float),
         "T3_corotation [Nm]": np.asarray(ints["T3_corotation [Nm]"], dtype=float),
