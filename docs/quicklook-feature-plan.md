@@ -32,6 +32,9 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - weighted statistics helpers
 - wind mass-loss profile on spherical shells (`dotM(r)`)
 - wind torque profile on spherical shells (magnetic + dynamic + total)
+- open magnetic flux and axisymmetric open-flux fraction profiles
+- energy flux profile on spherical shells
+- a first `quicklook2d` wrapper (slice presets/overlays + shell summary figure)
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -69,15 +72,15 @@ The table below maps high-use non-3D features from the old script to the new rep
 
 | Old quicklook feature | Status in new repo | Notes |
 | --- | --- | --- |
-| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Partial | Plot primitives exist; quicklook presets and field coverage need packaging |
-| 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Partial | Plotting support is easy; some overlay fields (`Ma`, `beta`) still need recipes |
+| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper added on top of existing slice plotting helpers |
+| 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
 | Scatter plots vs height/radius | Partial/Usable | `plot_vs_radius` and `plot_binned_vs_radius` exist; old plot bundles need wrappers |
 | Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
 | Shell mass-loss integral (`add_integral_mass`) | Implemented (v1) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
 | Shell torque integral (`add_integral_momentum`) | Implemented (v1) | Spherical-shell magnetic/dynamic/total profile API added |
-| Shell open magnetic flux (`add_integral_open_flux`) | Not yet ported (High-ish) | Pairs naturally with mass loss and torque |
-| Shell energy flux (`add_integral_energy`) | Not yet ported | Useful, lower priority than mass loss/torque |
-| Axisymmetric open flux + fraction | Not yet ported | Useful shell diagnostic; can be pure NumPy on spherical grids |
+| Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1) | Signed and unsigned/open flux shell profiles added |
+| Shell energy flux (`add_integral_energy`) | Implemented (v1) | Uses `E * U_r` shell integration |
+| Axisymmetric open flux + fraction | Implemented (v1) | Azimuthal-mean `B_r` shell diagnostic added |
 | Weighted summary stats / quantiles | Not yet ported | Small pure-NumPy helpers; should be early utility work |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Not yet ported | Depends on orbital sampling wrappers; analytical side is simple |
 | Local analytical torque estimate (`local_torque_estimate`) | Not yet ported | Valuable but depends on torque primitives and orbit sampling |
