@@ -79,3 +79,16 @@ def test_sample_spherical_shells_returns_structured_smartds_with_free_and_bound_
     unique_r = np.unique(np.round(r.reshape(len(radii), -1).mean(axis=1), decimals=12))
     np.testing.assert_allclose(unique_r, radii, rtol=0, atol=1e-10)
 
+    # If fields are not specified, the shell SmartDs should contain all parent raw fields
+    # (plus free spherical coordinates added by the shell sampler).
+    shell_ds_all = sample_spherical_shells(
+        sds,
+        radii,
+        n_polar=4,
+        n_azimuth=8,
+        method="nearest",
+    )
+    for name in sds.variables:
+        assert name in shell_ds_all.variables
+    for name in ("R [R]", "theta [rad]", "phi [rad]"):
+        assert name in shell_ds_all.variables
