@@ -76,7 +76,7 @@ def test_plot_radius_quicklook_modes():
 
     fields = ("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]")
     figs = []
-    for mode in ("binned", "scatter", "cdf"):
+    for mode in ("binned", "scatter", "cdf", "hist2d"):
         fig, axes = plot_radius_quicklook(sds, fields=fields, mode=mode, ncols=2)
         assert fig is not None
         assert len(axes) == 4
