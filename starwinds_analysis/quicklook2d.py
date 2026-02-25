@@ -15,6 +15,10 @@ from starwinds_analysis.analysis.fluxes import (
     plot_open_flux_profile,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from starwinds_analysis.analysis.orbits import (
+    local_mass_loss_on_circular_orbit,
+    local_torque_on_circular_orbit,
+)
 from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
 from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
@@ -318,6 +322,89 @@ def quicklook_shell_figure(
     return fig, axs, diagnostics
 
 
+def plot_orbit_mass_loss_comparison(ax, result):
+    y = np.asarray(result["local_mass_loss [kg/s]"], dtype=float)
+    phase = np.arange(y.size, dtype=float) / max(1, y.size)
+    shell = float(result["shell_mass_loss [kg/s]"])
+    mean = float(result["summary"]["mean"])
+
+    ax.plot(phase, y, ",", color="C0", alpha=0.6, label="local estimate")
+    ax.axhline(shell, color="C1", linestyle="-", label="shell")
+    ax.axhline(mean, color="C0", linestyle="--", label="local mean")
+    ax.axhline(-shell, color="C1", linestyle=":")
+    ax.set_xlabel("Orbit phase [turns]")
+    ax.set_ylabel("Mass loss [kg/s]")
+    ax.set_title(f"Mass Loss @ r={result['radius [R]']:.3g} R")
+    return ax
+
+
+def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
+    tot = np.asarray(result["local_total_torque [Nm]"], dtype=float)
+    phase = np.arange(tot.size, dtype=float) / max(1, tot.size)
+    shell = float(result["shell_total_torque [Nm]"])
+    mean = float(result["summary"]["mean"])
+
+    ax.plot(phase, tot, ",", color="C0", alpha=0.6, label="local total")
+    if show_components:
+        ax.plot(phase, np.asarray(result["local_magnetic_torque [Nm]"]), ",", color="C1", alpha=0.35, label="local mag")
+        ax.plot(phase, np.asarray(result["local_dynamic_torque [Nm]"]), ",", color="C2", alpha=0.35, label="local dyn")
+
+    ax.axhline(shell, color="k", linestyle="-", label="shell total")
+    ax.axhline(mean, color="C0", linestyle="--", label="local mean")
+    ax.axhline(-shell, color="k", linestyle=":")
+    ax.set_xlabel("Orbit phase [turns]")
+    ax.set_ylabel("Torque [Nm]")
+    ax.set_title(f"Torque @ r={result['radius [R]']:.3g} R")
+    return ax
+
+
+def orbit_local_comparison_figure(
+    smart_ds,
+    radius,
+    *,
+    body_radius_m: float,
+    n_points: int = 360,
+    plane: str = "xy",
+    method: str = "nearest",
+    shell_n_polar: int = 24,
+    shell_n_azimuth: int = 48,
+    figsize=(12, 4),
+):
+    """
+    Compute and plot local-vs-shell comparisons for mass loss and torque on one orbit.
+    """
+    mass = local_mass_loss_on_circular_orbit(
+        smart_ds,
+        radius,
+        body_radius_m=body_radius_m,
+        n_points=n_points,
+        plane=plane,
+        method=method,
+        shell_n_polar=shell_n_polar,
+        shell_n_azimuth=shell_n_azimuth,
+    )
+    torque = local_torque_on_circular_orbit(
+        smart_ds,
+        radius,
+        body_radius_m=body_radius_m,
+        n_points=n_points,
+        plane=plane,
+        method=method,
+        shell_n_polar=shell_n_polar,
+        shell_n_azimuth=shell_n_azimuth,
+    )
+
+    fig, axs = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
+    plot_orbit_mass_loss_comparison(axs[0], mass)
+    plot_orbit_torque_comparison(axs[1], torque)
+    for ax in np.ravel(axs):
+        ax.grid(True, alpha=0.3)
+        ax.grid(True, which="minor", alpha=0.1)
+        ax.set_yscale("symlog", linthresh=1e-3)
+    axs[1].legend(loc="best")
+    return fig, axs, {"mass_loss": mass, "torque": torque}
+
+
 def summarize_shell_diagnostics(
     diagnostics,
     *,
@@ -426,6 +513,7 @@ def save_quicklook2d_bundle(
     diagnostics=None,
     slice_figures=None,
     radius_figures=None,
+    orbit_figures=None,
     prefix: str = "quicklook2d",
     band_radius_range=None,
     star_mass_kg: float | None = None,
@@ -443,7 +531,7 @@ def save_quicklook2d_bundle(
         shell_fig.savefig(p)
         saved["figures"]["shells"] = p
 
-    for group_name, figs in (("slices", slice_figures), ("radius", radius_figures)):
+    for group_name, figs in (("slices", slice_figures), ("radius", radius_figures), ("orbits", orbit_figures)):
         if not figs:
             continue
         for key, fig in figs.items():
@@ -524,6 +612,9 @@ def run_quicklook2d(
     radius_preset: str = "wind_raw",
     slice_ds=None,
     slice_grid: dict | None = None,
+    orbit_radii=(),
+    orbit_plane: str = "xy",
+    orbit_n_points: int = 180,
     n_polar: int = 24,
     n_azimuth: int = 48,
     method: str = "nearest",
@@ -577,12 +668,31 @@ def run_quicklook2d(
         )
         radius_figs[mode] = fig
 
+    orbit_figs = {}
+    orbit_results = {}
+    for radius in orbit_radii:
+        fig, _axs, result = orbit_local_comparison_figure(
+            smart_ds,
+            radius,
+            body_radius_m=body_radius_m,
+            n_points=orbit_n_points,
+            plane=orbit_plane,
+            method=method,
+            shell_n_polar=n_polar,
+            shell_n_azimuth=n_azimuth,
+        )
+        key = f"r{float(radius):g}_{orbit_plane}"
+        orbit_figs[key] = fig
+        orbit_results[key] = result
+
     out = {
         "slice_figures": slice_figs,
         "shell_figure": shell_fig,
         "shell_axes": shell_axs,
         "diagnostics": diagnostics,
         "radius_figures": radius_figs,
+        "orbit_figures": orbit_figs,
+        "orbit_results": orbit_results,
     }
 
     if output_dir is not None:
@@ -592,6 +702,7 @@ def run_quicklook2d(
             diagnostics=diagnostics,
             slice_figures=slice_figs,
             radius_figures=radius_figs,
+            orbit_figures=orbit_figs,
             prefix=prefix,
             band_radius_range=band_radius_range,
             star_mass_kg=star_mass_kg,
@@ -609,8 +720,11 @@ __all__ = [
     "plot_shell_diagnostics",
     "plot_radius_quicklook",
     "plot_slice_quicklook",
+    "plot_orbit_mass_loss_comparison",
+    "plot_orbit_torque_comparison",
     "prepare_smartds_for_quicklook",
     "quicklook_shell_figure",
+    "orbit_local_comparison_figure",
     "run_quicklook2d",
     "save_quicklook2d_bundle",
     "save_shell_diagnostics_json",

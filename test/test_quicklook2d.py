@@ -8,6 +8,7 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.quicklook2d import (
+    orbit_local_comparison_figure,
     plot_radius_quicklook,
     plot_slice_quicklook,
     quicklook_shell_figure,
@@ -106,6 +107,24 @@ def test_quicklook_shell_figure_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_orbit_local_comparison_figure_runs_on_example():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    fig, axs, out = orbit_local_comparison_figure(
+        sds,
+        10.0,
+        body_radius_m=SUN_RADIUS_M,
+        n_points=96,
+        shell_n_polar=12,
+        shell_n_azimuth=24,
+        method="nearest",
+    )
+    assert fig is not None
+    assert np.asarray(axs).shape == (2,)
+    assert "mass_loss" in out and "torque" in out
+    plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
 
@@ -172,6 +191,8 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
         slice_presets=("rho", "b_r"),
         slice_grid={"nx": 32, "nz": 24, "method": "nearest", "symmetric_ranges": True},
         radius_modes=("binned",),
+        orbit_radii=(10.0,),
+        orbit_n_points=96,
         n_polar=12,
         n_azimuth=24,
         method="nearest",
@@ -183,6 +204,7 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     assert "saved" in out
     assert "slice_figures" in out and len(out["slice_figures"]) == 2
     assert "radius_figures" in out and "binned" in out["radius_figures"]
+    assert "orbit_figures" in out and len(out["orbit_figures"]) == 1
 
     assert (tmp_path / "e2e.shells.png").exists()
     assert (tmp_path / "e2e.shells.json").exists()
@@ -190,9 +212,12 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     assert (tmp_path / "e2e.slices.rho.png").exists()
     assert (tmp_path / "e2e.slices.b_r.png").exists()
     assert (tmp_path / "e2e.radius.binned.png").exists()
+    assert any(p.name.startswith("e2e.orbits.") and p.suffix == ".png" for p in tmp_path.iterdir())
 
     for fig in out["slice_figures"].values():
         plt.close(fig)
     plt.close(out["shell_figure"])
     for fig in out["radius_figures"].values():
+        plt.close(fig)
+    for fig in out["orbit_figures"].values():
         plt.close(fig)
