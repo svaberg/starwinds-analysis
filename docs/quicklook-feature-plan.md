@@ -41,7 +41,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
-- open-wind magnetisation (`Upsilon_open`) scaling helper (old quicklook-style analytical diagnostic)
+- open-wind magnetisation (`Upsilon_open`) scaling helper and quicklook plotting support (old quicklook-style analytical diagnostic)
 - local-vs-shell orbit comparison plots (mass loss and torque) in `quicklook2d`
 - orbit local-vs-shell comparison summary export (`JSON` + `NPZ`) in quicklook bundles
 
