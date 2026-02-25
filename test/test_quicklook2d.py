@@ -128,6 +128,26 @@ def test_orbit_local_comparison_figure_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_orbit_local_comparison_figure_accepts_kepler_spec():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    fig, axs, out = orbit_local_comparison_figure(
+        sds,
+        {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 96, "shell_n_radii": 8},
+        body_radius_m=SUN_RADIUS_M,
+        shell_n_polar=12,
+        shell_n_azimuth=24,
+        method="nearest",
+    )
+    assert fig is not None
+    assert np.asarray(axs).shape == (2,)
+    assert "mass_loss" in out and "torque" in out
+    assert "semi_major_axis [R]" in out["mass_loss"]
+    assert "shell_mass_loss_interp [kg/s]" in out["mass_loss"]
+    assert "shell_total_torque_interp [Nm]" in out["torque"]
+    plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
 
@@ -254,5 +274,31 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     plt.close(out["shell_figure"])
     for fig in out["radius_figures"].values():
         plt.close(fig)
+    for fig in out["orbit_figures"].values():
+        plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_run_quicklook2d_supports_kepler_orbit_specs(tmp_path):
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    out = run_quicklook2d(
+        sds,
+        body_radius_m=SUN_RADIUS_M,
+        radii=[4.0, 8.0],
+        slice_presets=(),
+        radius_modes=(),
+        orbit_specs=(
+            {"label": "ecc_orbit", "semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 96, "shell_n_radii": 8},
+        ),
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+        output_dir=tmp_path,
+        prefix="ecc",
+    )
+    assert "ecc_orbit" in out["orbit_figures"]
+    assert "ecc_orbit" in out["orbit_results"]
+    assert (tmp_path / "ecc.orbits.ecc_orbit.png").exists()
+    plt.close(out["shell_figure"])
     for fig in out["orbit_figures"].values():
         plt.close(fig)
