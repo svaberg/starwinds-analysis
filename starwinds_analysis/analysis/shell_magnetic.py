@@ -9,6 +9,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.shells import (
     SphericalShellSamples,
+    integrate_shell_scalar,
     resolve_batsrus_vector_xyz_si,
     sample_spherical_shells,
 )
@@ -60,7 +61,11 @@ class ShellMagneticFieldMap:
             raise KeyError(f"Unknown magnetic component '{name}'")
         return scale * np.asarray(arr, dtype=float)
 
+    def summary(self, *, unit: str = "G"):
+        return summarize_shell_magnetic_field_map(self, unit=unit)
 
+
+# TODO this function is retarded. WHY IS THIS EVEN A FILE
 def sample_shell_magnetic_field_map(
     smart_ds,
     radius: float,
@@ -140,7 +145,7 @@ def _positive_log_plot_values(values: np.ndarray):
     finite = np.isfinite(values)
     positive = finite & (values > 0.0)
     if not np.any(positive):
-        raise ValueError("No positive finite values available for positive-log scaling")
+        return np.ma.masked_invalid(values), None, int(np.count_nonzero(finite & (values <= 0.0)))
 
     norm = LogNorm()
     norm.autoscale_None(values[positive])
@@ -264,6 +269,10 @@ def plot_shell_tangential_vectors_lonlat(
     normalize_arrows: bool = True,
     arrow_length_deg: float = 8.0,
     arrow_color: str = "white",
+    overlay_radial_zero_contour: bool = False,
+    radial_zero_contour_color: str = "black",
+    radial_zero_contour_alpha: float = 0.7,
+    radial_zero_contour_linewidth: float = 0.8,
 ):
     """
     Plot a tangential magnetic field vector map on longitude/latitude axes.
@@ -346,7 +355,53 @@ def plot_shell_tangential_vectors_lonlat(
         pivot="mid",
     )
 
-    return fig, ax, {"quiver": q, **extra}
+    zero_contour = None
+    if overlay_radial_zero_contour:
+        b_r = shell_map.component("radial", unit=unit)
+        zero_contour = ax.contour(
+            shell_map.lon_deg,
+            shell_map.lat_deg,
+            b_r,
+            levels=[0.0],
+            colors=radial_zero_contour_color,
+            linewidths=float(radial_zero_contour_linewidth),
+            alpha=float(radial_zero_contour_alpha),
+        )
+    return fig, ax, {"quiver": q, "radial_zero_contour": zero_contour, **extra}
+
+
+def _finite_rms(values):
+    arr = np.asarray(values, dtype=float)
+    finite = arr[np.isfinite(arr)]
+    if finite.size == 0:
+        return np.nan
+    return float(np.sqrt(np.mean(finite * finite)))
+
+
+def summarize_shell_magnetic_field_map(shell_map: ShellMagneticFieldMap, *, unit: str = "G"):
+    """
+    Compact summary for notebook/examples: fluxes, coverage, finite count, RMS components.
+    """
+    signed_flux, signed_cov = integrate_shell_scalar(
+        shell_map.b_r_T[None, ...],
+        shell_map.shell_samples.area[:1],
+    )
+    unsigned_flux, unsigned_cov = integrate_shell_scalar(
+        np.abs(shell_map.b_r_T)[None, ...],
+        shell_map.shell_samples.area[:1],
+    )
+    return {
+        "finite_B_r_cells": int(np.count_nonzero(np.isfinite(shell_map.b_r_T))),
+        "total_cells": int(shell_map.b_r_T.size),
+        "signed_radial_flux [Wb]": float(signed_flux[0]),
+        "signed_flux_coverage [none]": float(signed_cov[0]),
+        "unsigned_radial_flux [Wb]": float(unsigned_flux[0]),
+        "unsigned_flux_coverage [none]": float(unsigned_cov[0]),
+        f"rms_B_r [{unit}]": _finite_rms(shell_map.component("radial", unit=unit)),
+        f"rms_B_azimuthal [{unit}]": _finite_rms(shell_map.component("azimuthal", unit=unit)),
+        f"rms_B_meridional [{unit}]": _finite_rms(shell_map.component("meridional", unit=unit)),
+        f"rms_|B_tan| [{unit}]": _finite_rms(shell_map.component("tangential", unit=unit)),
+    }
 
 
 __all__ = [
@@ -355,5 +410,6 @@ __all__ = [
     "plot_shell_scalar_lonlat",
     "plot_shell_tangential_vectors_lonlat",
     "sample_shell_magnetic_field_map",
+    "summarize_shell_magnetic_field_map",
     "style_shell_lonlat_axes",
 ]

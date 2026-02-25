@@ -51,6 +51,17 @@ from .pressure import (
     ram_pressure,
 )
 from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from .mass_loss import (
+    ShellMassFluxMap,
+    plot_shell_mass_flux_lonlat,
+    sample_shell_mass_flux_map,
+)
+from .native_slice import (
+    NativeSlice2DGeometry,
+    native_slice_geometry,
+    plot_alfven_mach_slice,
+    plot_native_slice_tripcolor,
+)
 from .shells import (
     SphericalShellSamples,
     infer_body_radius_m,
@@ -69,6 +80,7 @@ from .shell_magnetic import (
     plot_shell_scalar_lonlat,
     plot_shell_tangential_vectors_lonlat,
     sample_shell_magnetic_field_map,
+    summarize_shell_magnetic_field_map,
     style_shell_lonlat_axes,
 )
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
@@ -94,6 +106,10 @@ __all__ = [
     "integrate_shell_scalar",
     "sample_spherical_shells",
     "sample_spherical_shells_fibonacci",
+    "NativeSlice2DGeometry",
+    "native_slice_geometry",
+    "plot_native_slice_tripcolor",
+    "plot_alfven_mach_slice",
     "structured_quad_corners",
     "infer_range",
     "resample_structured_xz_slice",
@@ -101,11 +117,15 @@ __all__ = [
     "summarize_shell_series",
     "summarize_shell_diagnostics_band",
     "ShellMagneticFieldMap",
+    "ShellMassFluxMap",
     "sample_shell_magnetic_field_map",
+    "sample_shell_mass_flux_map",
     "style_shell_lonlat_axes",
     "plot_shell_scalar_lonlat",
+    "plot_shell_mass_flux_lonlat",
     "plot_magnetic_zdi_triplet",
     "plot_shell_tangential_vectors_lonlat",
+    "summarize_shell_magnetic_field_map",
     "weighted_mean_std",
     "weighted_quantile",
     "open_magnetic_flux_vs_radius",
