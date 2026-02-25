@@ -1,3 +1,9 @@
+"""THIS FILE contains orbit-surface (surface-of-revolution) sampling and diagnostics.
+
+It builds explicit surfaces from orbital paths and evaluates pressure/torque components on them.
+It should reuse pressure/torque core functions rather than redefining those quantities.
+"""
+
 from __future__ import annotations
 
 import math

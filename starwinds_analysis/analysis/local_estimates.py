@@ -1,3 +1,9 @@
+"""THIS FILE contains local analytic estimators for mass loss and torque.
+
+These are pointwise formulas and sample summaries, not shell/surface integrators.
+It should stay free of resampling and plotting orchestration.
+"""
+
 from __future__ import annotations
 
 import math

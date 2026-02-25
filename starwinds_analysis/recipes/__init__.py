@@ -1,3 +1,8 @@
+"""THIS FILE contains the public re-export surface for recipe builders and spherical recipe helpers.
+
+It should only re-export recipe functions, not implement recipe logic.
+"""
+
 from .batsrus import (
     build_griblet_batsrus_graph,
     build_griblet_common_derived_graph,

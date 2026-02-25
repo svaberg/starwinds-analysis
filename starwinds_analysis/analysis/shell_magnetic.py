@@ -1,3 +1,9 @@
+"""THIS FILE contains magnetic-field shell sampling products and convenience shell map plotting.
+
+It builds reusable shell magnetic component maps/summaries for examples and diagnostics.
+It should reuse shell sampling and spherical transforms, and avoid redefining magnetic quantities elsewhere.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,3 +1,9 @@
+"""THIS FILE contains weighted shell-band summary helpers.
+
+It aggregates already-computed shell series (means, quantiles, weighted summaries).
+It should not sample datasets or define new physical quantities.
+"""
+
 from __future__ import annotations
 
 import numpy as np

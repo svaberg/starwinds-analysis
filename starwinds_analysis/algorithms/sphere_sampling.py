@@ -1,3 +1,9 @@
+"""THIS FILE contains low-level spherical sampling algorithms and angular grids.
+
+It provides geometry/sampling primitives (for example Fibonacci sphere and polar-azimuth grids).
+It should stay independent of SmartDs, BATSRUS field names, and plotting.
+"""
+
 import logging
 log = logging.getLogger(__name__)
 import math

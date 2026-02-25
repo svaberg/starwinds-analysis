@@ -1,3 +1,9 @@
+"""THIS FILE contains orbit geometry, orbit sampling, and orbit comparison workflows.
+
+It provides circular/elliptic paths and SmartDs resampling along those paths.
+It should not own low-level pressure or torque formulas.
+"""
+
 from __future__ import annotations
 
 import math

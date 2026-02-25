@@ -1,3 +1,9 @@
+"""THIS FILE contains wind mass-loss diagnostics and shell mass-flux products.
+
+It defines the mass-flux quantity (rho * U_r) and shell-integrated mass-loss profile logic.
+It should reuse shell primitives and avoid duplicating generic plotting APIs.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

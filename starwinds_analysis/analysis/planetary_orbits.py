@@ -1,3 +1,9 @@
+"""THIS FILE contains named planetary orbital constants and convenience orbit specs.
+
+It is a data/constants layer plus lightweight helpers.
+It should not contain SmartDs access, resampling, or plotting.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,3 +1,9 @@
+"""THIS FILE contains pressure diagnostics evaluated on orbit samples.
+
+It orchestrates orbit sampling with pressure formulas and includes temporary BATSRUS field-resolution glue.
+Pressure formulas themselves belong in pressure.py.
+"""
+
 from __future__ import annotations
 
 import numpy as np

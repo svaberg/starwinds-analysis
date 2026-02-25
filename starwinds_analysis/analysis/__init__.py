@@ -1,3 +1,9 @@
+"""THIS FILE contains the public re-export surface for analysis helpers.
+
+It groups stable analysis functions in one import location.
+It should not implement analysis logic itself.
+"""
+
 from .fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,

@@ -1,3 +1,9 @@
+"""THIS FILE contains shared plotting primitives for 1D shell/radius profiles.
+
+It centralizes repeated Matplotlib line-profile styling/labeling behavior.
+It should not define physical quantities or perform sampling.
+"""
+
 from __future__ import annotations
 
 import numpy as np

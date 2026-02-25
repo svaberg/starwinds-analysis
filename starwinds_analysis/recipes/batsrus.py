@@ -1,3 +1,9 @@
+"""THIS FILE contains BATSRUS-specific normalization and derived-field recipes.
+
+It defines SI conversion recipes and BATSRUS derived quantities for SmartDs/griblet usage.
+It should keep BATSRUS naming/unit conventions localized here.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence

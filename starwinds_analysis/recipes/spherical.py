@@ -1,3 +1,9 @@
+"""THIS FILE contains spherical coordinate/vector transforms and related recipes.
+
+It provides geometry transforms plus optional recipe-graph builders for on-demand spherical fields.
+It should remain backend-agnostic and avoid plotting concerns.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence

@@ -1,3 +1,9 @@
+"""THIS FILE contains high-level non-VTK quicklook orchestration and convenience wrappers.
+
+It assembles analysis results, plots, and exports for quicklook-style workflows.
+Core quantity definitions and sampling primitives should live in analysis modules instead.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

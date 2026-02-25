@@ -1,3 +1,9 @@
+"""THIS FILE contains wind-scaling helper formulas.
+
+It computes derived scaling quantities (for example escape speed and open-wind magnetisation) from inputs/profiles.
+It should stay formula-focused and not perform dataset sampling.
+"""
+
 from __future__ import annotations
 
 import math

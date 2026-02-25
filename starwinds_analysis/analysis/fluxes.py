@@ -1,3 +1,9 @@
+"""THIS FILE contains shell-integrated flux diagnostics (magnetic and energy).
+
+It computes flux profiles from shell samples and provides profile plotting wrappers.
+It should rely on shell sampling/integration primitives instead of reimplementing them.
+"""
+
 from __future__ import annotations
 
 import numpy as np

@@ -1,3 +1,9 @@
+"""THIS FILE contains spherical-shell torque diagnostics and profile plotting wrappers.
+
+It builds shell torque profiles from shell/surface primitives and returns SI outputs.
+It should not duplicate the core explicit-surface torque definitions.
+"""
+
 from __future__ import annotations
 
 import math

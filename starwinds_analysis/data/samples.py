@@ -1,3 +1,9 @@
+"""THIS FILE contains helpers for locating repo sample_data fixtures.
+
+It is convenience glue for examples/tests only.
+It should not contain analysis logic.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

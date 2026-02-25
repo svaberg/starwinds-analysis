@@ -1,3 +1,9 @@
+"""THIS FILE contains explicit-surface torque density terms and surface torque integration.
+
+It is the core torque machinery for arbitrary explicit surfaces (points/normals/areas).
+Higher-level shell/orbit workflows should call into this file rather than reimplementing torque terms.
+"""
+
 from __future__ import annotations
 
 import math
