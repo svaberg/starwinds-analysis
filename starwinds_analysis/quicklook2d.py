@@ -19,6 +19,7 @@ from starwinds_analysis.analysis.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )
+from starwinds_analysis.analysis.orbit_surface import pressure_components_on_orbit_surface
 from starwinds_analysis.analysis.orbits import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
@@ -520,6 +521,78 @@ def orbit_pressure_figure(
         ax.grid(True, alpha=0.3)
         ax.grid(True, which="minor", alpha=0.1)
     axs[0].legend(loc="best")
+    return fig, axs, result
+
+
+def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_med=0.5, q_high=0.75):
+    phase = np.asarray(phase_profile["phase [turns]"], dtype=float)
+    qs = np.asarray(phase_profile["quantiles [none]"], dtype=float)
+    vals = np.asarray(phase_profile["values"], dtype=float)
+    if vals.ndim != 2 or vals.shape[0] != phase.size:
+        return ax
+
+    def _pick(qtarget):
+        idx = int(np.argmin(np.abs(qs - qtarget)))
+        return vals[:, idx]
+
+    y_lo = _pick(q_low)
+    y_md = _pick(q_med)
+    y_hi = _pick(q_high)
+    ax.fill_between(phase, y_lo, y_hi, color=color, alpha=0.15)
+    ax.plot(phase, y_md, "-", color=color, label=label)
+    return ax
+
+
+def orbit_surface_pressure_figure(
+    smart_ds,
+    orbit,
+    *,
+    body_radius_m: float,
+    n_longitudes: int = 199,
+    method: str = "nearest",
+    star_mass_kg: float | None = None,
+    figsize=(12, 6),
+):
+    """
+    Surface-of-revolution orbit pressure quicklook (pure NumPy/SciPy resampling).
+    """
+    result = pressure_components_on_orbit_surface(
+        smart_ds,
+        orbit,
+        body_radius_m=body_radius_m,
+        n_longitudes=n_longitudes,
+        method=method,
+        star_mass_kg=star_mass_kg,
+    )
+    pq = result["phase_quantiles"]
+
+    fig, axs = plt.subplots(2, 1, figsize=figsize, constrained_layout=True, sharex=True)
+    axs = np.asarray(axs)
+
+    for key, label, color in (
+        ("thermal_pressure [Pa]", "thermal", "C0"),
+        ("magnetic_pressure [Pa]", "magnetic", "C1"),
+        ("ram_pressure [Pa]", "ram", "C2"),
+    ):
+        if key in pq:
+            _plot_phase_quantile_band(axs[0], pq[key], label=label, color=color)
+    if "relative_ram_pressure [Pa]" in pq:
+        _plot_phase_quantile_band(axs[0], pq["relative_ram_pressure [Pa]"], label="relative ram", color="C3")
+    axs[0].set_ylabel("Pressure [Pa]")
+    axs[0].set_yscale("log")
+    axs[0].set_title(_orbit_result_title("Orbit-Surface Pressures", result))
+    axs[0].legend(loc="best")
+
+    if "standoff_distance [m]" in pq:
+        _plot_phase_quantile_band(axs[1], pq["standoff_distance [m]"], label="stand-off proxy", color="C4")
+    axs[1].set_xlabel("Orbit phase [turns]")
+    axs[1].set_ylabel("Stand-off Proxy [m]")
+    axs[1].set_yscale("log")
+    axs[1].set_title(_orbit_result_title("Orbit-Surface Stand-off", result))
+
+    for ax in axs:
+        ax.grid(True, alpha=0.3)
+        ax.grid(True, which="minor", alpha=0.1)
     return fig, axs, result
 
 
@@ -1058,6 +1131,7 @@ __all__ = [
     "quicklook_shell_figure",
     "orbit_local_comparison_figure",
     "orbit_pressure_figure",
+    "orbit_surface_pressure_figure",
     "run_quicklook2d",
     "save_quicklook2d_bundle",
     "save_orbit_results_json",
