@@ -371,6 +371,14 @@ def shell_profile_radius_height(shells):
     }
 
 
+#
+# TODO smartds-resolve:
+# These resolve_* helpers are a code smell and should move into SmartDs.
+# SmartDs can assume units are encoded in square brackets, e.g. "Rho [kg/m^3]".
+# The preferred API direction is a SmartDs resolver that returns (data, unit_str)
+# (and possibly the canonical field name), so analysis code does not reimplement
+# field-name/unit fallback logic.
+#
 def resolve_field_with_scale(smart_ds, candidates):
     """
     Pick the first available field among `(name, scale_to_target)`.
@@ -385,6 +393,10 @@ def resolve_field_with_scale(smart_ds, candidates):
     raise KeyError(f"None of the candidate fields are available: {names}")
 
 
+#
+# TODO smartds-resolve:
+# Move BATSRUS density resolution into SmartDs (SI-first data + unit string).
+#
 def resolve_batsrus_density_si(smart_ds):
     amu_kg = 1.66053906660e-27
     return resolve_field_with_scale(
@@ -397,6 +409,11 @@ def resolve_batsrus_density_si(smart_ds):
     )
 
 
+#
+# TODO smartds-resolve:
+# Move BATSRUS vector component resolution into SmartDs (SI-first data + unit
+# string, with bracketed-unit parsing handled centrally).
+#
 def resolve_batsrus_vector_xyz_si(smart_ds, prefix: str):
     if prefix == "U":
         unit_candidates = [("m/s", 1.0), ("km/s", 1e3)]

@@ -294,6 +294,11 @@ class SmartDs:
         return value
 
     def resolve(self, name: str):
+        # TODO smartds-resolve:
+        # This currently means "resolve computation path via griblet". The user-facing
+        # field/unit resolution API should likely live on SmartDs too (returning data
+        # + parsed unit string from bracketed field names), which may require renaming
+        # this graph-planning method to avoid semantic collision.
         return _resolve_field(self, name)
 
     def explain(self, name: str, *, return_tree: bool = False):

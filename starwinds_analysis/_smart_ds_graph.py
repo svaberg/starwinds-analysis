@@ -16,6 +16,9 @@ def resolve_field(smart_ds, name: str):
 
     Returns ``(cost, tree)`` from ``griblet.DependencySolver.resolve_field``.
     """
+    # TODO smartds-resolve:
+    # This is graph-path resolution, not field/unit resolution. Keep the distinction
+    # explicit if SmartDs grows a user-facing resolve() API that returns data + unit.
     graph = build_runtime_graph(smart_ds)
     griblet = import_griblet()
     solver = griblet.DependencySolver(graph)

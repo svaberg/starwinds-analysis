@@ -20,6 +20,12 @@ from starwinds_analysis.analysis.shells import (
 )
 
 
+#
+# TODO smartds-resolve:
+# This BATSRUS pressure resolver should move into SmartDs so analysis code can ask
+# SmartDs for SI-ready pressure data (with units parsed from bracketed field names)
+# instead of maintaining local fallback logic.
+#
 def resolve_batsrus_pressure_si(smart_ds):
     return resolve_field_with_scale(
         smart_ds,
@@ -212,4 +218,3 @@ __all__ = [
     "pressure_components_on_circular_orbit",
     "pressure_components_on_elliptic_orbit",
 ]
-
