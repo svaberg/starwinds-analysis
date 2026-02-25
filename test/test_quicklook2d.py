@@ -10,6 +10,7 @@ from starwinds_readplt.dataset import Dataset
 from starwinds_analysis.quicklook2d import (
     orbit_local_comparison_figure,
     orbit_pressure_figure,
+    orbit_surface_pressure_figure,
     plot_radius_quicklook,
     plot_slice_quicklook,
     quicklook_shell_figure,
@@ -180,6 +181,25 @@ def test_orbit_pressure_figure_accepts_kepler_spec():
     assert np.asarray(axs).shape == (2,)
     assert "relative_ram_pressure [Pa]" in out
     assert "semi_major_axis [R]" in out
+    plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_orbit_surface_pressure_figure_runs_on_example():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    fig, axs, out = orbit_surface_pressure_figure(
+        sds,
+        {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
+        body_radius_m=SUN_RADIUS_M,
+        n_longitudes=48,
+        method="nearest",
+        star_mass_kg=1.98847e30,
+    )
+    assert fig is not None
+    assert np.asarray(axs).shape == (2,)
+    assert "phase_quantiles" in out
+    assert "ram_pressure [Pa]" in out["phase_quantiles"]
+    assert "standoff_distance [m]" in out
     plt.close(fig)
 
 

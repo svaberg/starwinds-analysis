@@ -29,6 +29,11 @@ from .orbit_pressure import (
     pressure_components_on_elliptic_orbit,
     resolve_batsrus_pressure_si,
 )
+from .orbit_surface import (
+    pressure_components_on_orbit_surface,
+    sample_orbit_surface_revolution,
+    surface_of_revolution_from_path,
+)
 from .pressure import (
     magnetic_pressure,
     magnetospheric_standoff_distance,
@@ -83,6 +88,9 @@ __all__ = [
     "pressure_components_from_orbit_sample",
     "pressure_components_on_circular_orbit",
     "pressure_components_on_elliptic_orbit",
+    "surface_of_revolution_from_path",
+    "sample_orbit_surface_revolution",
+    "pressure_components_on_orbit_surface",
     "local_mass_loss_on_circular_orbit",
     "local_mass_loss_on_elliptic_orbit",
     "local_torque_on_circular_orbit",
