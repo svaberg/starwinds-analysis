@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import importlib.util
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,12 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.quicklook2d import (
+    RADIAL_SUMMARY_PRESETS,
+    RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
+    RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,
+    SLICE_PRESETS,
+    SLICE_PRESETS_RAW_DISPLAY,
+    SLICE_PRESETS_SI_DIAGNOSTIC,
     orbit_local_comparison_figure,
     orbit_pressure_figure,
     orbit_surface_pressure_figure,
@@ -23,6 +30,7 @@ from starwinds_analysis.smart_ds import SmartDs
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
 SUN_RADIUS_M = 6.957e8
+SLICE_PLOTTING_AVAILABLE = importlib.util.find_spec("starwinds_analysis.visualisation.slice") is not None
 
 
 def make_slice_dataset():
@@ -60,6 +68,29 @@ def make_slice_dataset():
     )
 
 
+def test_quicklook_presets_separate_si_diagnostics_from_raw_display():
+    assert "b_r" in SLICE_PRESETS_SI_DIAGNOSTIC
+    assert "b_r_raw" in SLICE_PRESETS_RAW_DISPLAY
+    assert SLICE_PRESETS["b_r"].intent == "si_diagnostic"
+    assert SLICE_PRESETS["b_r_raw"].intent == "raw_display"
+
+    banned = ("Gauss", " [G]", "km/s", "g/cm^3", "amu/cm^3", "dyne/cm^2")
+    for name, preset in SLICE_PRESETS_SI_DIAGNOSTIC.items():
+        text = " | ".join(
+            [*preset.field_candidates, *(ov[0] for ov in preset.overlays)]
+        )
+        assert not any(token in text for token in banned), f"{name} contains raw-unit fallback: {text}"
+
+    raw_joined = " | ".join(SLICE_PRESETS_RAW_DISPLAY["b_r_raw"].field_candidates)
+    assert "Gauss" in raw_joined or " [G]" in raw_joined
+
+    assert set(RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC) == {"wind_basic"}
+    assert set(RADIAL_SUMMARY_PRESETS_RAW_DISPLAY) == {"wind_raw"}
+    assert "wind_basic" in RADIAL_SUMMARY_PRESETS
+    assert "wind_raw" in RADIAL_SUMMARY_PRESETS
+
+
+@pytest.mark.skipif(not SLICE_PLOTTING_AVAILABLE, reason="slice plotting module not available on this branch")
 def test_plot_slice_quicklook_with_preset_and_overlays():
     sds = SmartDs(make_slice_dataset())
     sds.add_spherical_fields(vectors=("B", "U"))
@@ -309,6 +340,7 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+@pytest.mark.skipif(not SLICE_PLOTTING_AVAILABLE, reason="slice plotting module not available on this branch")
 def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     out = run_quicklook2d(
