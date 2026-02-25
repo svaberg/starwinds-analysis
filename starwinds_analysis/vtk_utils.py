@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 from starwinds_readplt.dataset import Dataset
 
 
-def read(file='examples/3d__var_1_n00000000.plt', convert_to_si_base=True):
+def read(file='sample_data/3d__var_1_n00000000.plt', convert_to_si_base=True):
 
     dataset = Dataset.from_file(file)
     grid = convert(dataset)

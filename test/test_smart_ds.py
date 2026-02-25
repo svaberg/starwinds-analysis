@@ -9,7 +9,7 @@ from starwinds_readplt.dataset import Dataset
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
 
 
 def make_dataset_2d():

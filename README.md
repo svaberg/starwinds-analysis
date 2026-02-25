@@ -26,7 +26,7 @@ derived fields on demand.
 ```python
 from starwinds_analysis.smart_ds import SmartDs
 
-sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
+sds = SmartDs.from_file("sample_data/3d__var_1_n00000000.plt")
 
 # Register on-demand spherical geometry + vector components from Cartesian fields
 sds.add_spherical_fields(vectors=("B", "U"))

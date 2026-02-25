@@ -270,7 +270,7 @@ This keeps physics, sampling, and plotting separate.
 - add shell sampler + area-weighted integration
 - implement `mass_loss_vs_radius(...)`
 - implement shell mass-loss plot helper
-- tests on example `.plt` data in `/examples`
+- tests on example `.plt` data in `/sample_data`
 
 ### Phase 2 (Immediate Next): Shell Torque
 
