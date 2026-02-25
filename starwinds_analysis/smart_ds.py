@@ -138,7 +138,9 @@ class SmartDs:
         return self.variable(index_or_name)
 
     def __getitem__(self, index_or_name):
-        return self.variable(index_or_name)
+        # `[]` is a raw-dataset passthrough (base fields only). Use `()` / `.variable()`
+        # for SmartDs field resolution (aliases, lazy fields, griblet recipes).
+        return self._dataset.variable(index_or_name)
 
     def has_raw_field(self, name: str) -> bool:
         return self._resolve_raw_name(name) is not None
