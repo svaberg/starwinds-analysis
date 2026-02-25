@@ -58,6 +58,8 @@ class SmartDs:
         for name, candidates in (aliases or {}).items():
             self.set_alias(name, candidates)
 
+        self._auto_register_builtin_fields()
+
     def __repr__(self) -> str:
         return (
             f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
@@ -78,6 +80,25 @@ class SmartDs:
     @classmethod
     def from_file(cls, file: str | PathLike[str], **kwargs) -> "SmartDs":
         return cls(Dataset.from_file(str(file)), **kwargs)
+
+    def _auto_register_builtin_fields(self) -> None:
+        """
+        Register lightweight built-in derived fields that should be available by default.
+
+        For now this auto-registers spherical geometry/vector-component fields when
+        standard Cartesian BATSRUS-style coordinates are present.
+        """
+        coord_fields = ("X [R]", "Y [R]", "Z [R]")
+        if not all(name in self._dataset.variables for name in coord_fields):
+            return
+
+        from starwinds_analysis.recipes.spherical import (
+            auto_register_vector_spherical_components,
+            register_spherical_geometry_fields,
+        )
+
+        register_spherical_geometry_fields(self, coord_fields=coord_fields)
+        auto_register_vector_spherical_components(self, coord_fields=coord_fields)
 
     @property
     def raw(self) -> Dataset:
@@ -204,6 +225,7 @@ class SmartDs:
             self._computation_graph = graph
         return self
 
+    # TODO this should at last be for EVERY type of vector field so J is mising.
     def add_spherical_fields(
         self,
         *,
