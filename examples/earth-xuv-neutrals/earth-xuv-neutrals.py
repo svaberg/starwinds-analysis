@@ -55,9 +55,18 @@ def parse_args():
     return parser.parse_args()
 
 
+def output_label_from_io2_path(path):
+    parts = path.parts
+    for i in range(len(parts) - 1):
+        if i > 0 and parts[i] == "GM" and parts[i + 1] == "IO2":
+            return parts[i - 1]
+    return path.name or "run"
+
+
 args = parse_args()
 run_root = args.run_root.expanduser().resolve()
-output_dir = Path(__file__).resolve().parent
+pattern = run_root / args.pattern
+output_dir = Path(__file__).resolve().parent / output_label_from_io2_path(pattern.parent)
 output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
 
@@ -66,7 +75,6 @@ from starwinds_analysis.utils import auto_coords, triangles, extract_index, sort
 from starwinds_analysis.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
 
-pattern = run_root / args.pattern
 files = list(pattern.parent.glob(pattern.name))
 
 if not files:
