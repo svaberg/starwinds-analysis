@@ -378,3 +378,52 @@ def test_run_quicklook2d_supports_kepler_orbit_specs(tmp_path):
     plt.close(out["shell_figure"])
     for fig in out["orbit_figures"].values():
         plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_run_quicklook2d_supports_orbit_surface_specs_and_exports(tmp_path):
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    out = run_quicklook2d(
+        sds,
+        body_radius_m=SUN_RADIUS_M,
+        radii=[4.0, 8.0],
+        slice_presets=(),
+        radius_modes=(),
+        orbit_surface_specs=(
+            {"label": "orbittube", "semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 48},
+        ),
+        orbit_surface_modes=("pressure", "torque"),
+        orbit_surface_n_longitudes=32,
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+        output_dir=tmp_path,
+        prefix="surface",
+        star_mass_kg=1.98847e30,
+    )
+
+    assert any(k.endswith("_surface_pressure") for k in out["orbit_figures"])
+    assert any(k.endswith("_surface_torque") for k in out["orbit_figures"])
+    assert "orbittube" in out["orbit_results"]
+    assert "surface_pressure" in out["orbit_results"]["orbittube"]
+    assert "surface_torque" in out["orbit_results"]["orbittube"]
+
+    assert (tmp_path / "surface.orbits.json").exists()
+    assert (tmp_path / "surface.orbits.npz").exists()
+    assert any(p.name.startswith("surface.orbits.orbittube_surface_pressure") for p in tmp_path.iterdir())
+    assert any(p.name.startswith("surface.orbits.orbittube_surface_torque") for p in tmp_path.iterdir())
+
+    orbit_payload = json.loads((tmp_path / "surface.orbits.json").read_text())
+    assert "orbittube" in orbit_payload
+    assert "surface_pressure" in orbit_payload["orbittube"]
+    assert "surface_torque" in orbit_payload["orbittube"]
+    assert "phase_quantiles" in orbit_payload["orbittube"]["surface_torque"]
+
+    with np.load(tmp_path / "surface.orbits.npz") as data:
+        keys = set(data.files)
+    assert any("surface_pressure" in k for k in keys)
+    assert any("surface_torque" in k for k in keys)
+
+    plt.close(out["shell_figure"])
+    for fig in out["orbit_figures"].values():
+        plt.close(fig)

@@ -863,6 +863,15 @@ def summarize_orbit_results(orbit_results):
     """
     JSON-friendly summary of orbit local-vs-shell comparison results.
     """
+    skip_keys = {
+        "orbit_samples",
+        "shell_profile",
+        "orbit_surface",
+        "surface_terms",
+        "surface_points [m]",
+        "surface_normals [none]",
+        "surface_area [m^2]",
+    }
     out = {}
     for orbit_key, groups in (orbit_results or {}).items():
         if not isinstance(groups, dict):
@@ -871,31 +880,7 @@ def summarize_orbit_results(orbit_results):
         for group_name, result in groups.items():
             if not isinstance(result, dict):
                 continue
-            group_out = {}
-            for key, value in result.items():
-                if key in {"orbit_samples", "shell_profile"}:
-                    continue
-                if key == "summary" and isinstance(value, dict):
-                    summary_out = {}
-                    for sk, sv in value.items():
-                        arr = np.asarray(sv)
-                        if arr.ndim == 0:
-                            try:
-                                summary_out[sk] = float(arr)
-                            except Exception:
-                                summary_out[sk] = str(sv)
-                        else:
-                            summary_out[sk] = np.asarray(sv, dtype=float).tolist()
-                    group_out[key] = summary_out
-                    continue
-                arr = np.asarray(value)
-                if arr.ndim == 0:
-                    try:
-                        group_out[key] = float(arr)
-                    except Exception:
-                        group_out[key] = str(value)
-                else:
-                    group_out[key] = _array_summary(arr)
+            group_out = _summarize_result_object(result, skip_keys=skip_keys)
             orbit_out[group_name] = group_out
         out[str(orbit_key)] = orbit_out
     return out
@@ -905,6 +890,15 @@ def flatten_orbit_results_arrays(orbit_results):
     """
     Flatten selected orbit result arrays for `np.savez`.
     """
+    skip_keys = {
+        "orbit_samples",
+        "shell_profile",
+        "orbit_surface",
+        "surface_terms",
+        "surface_points [m]",
+        "surface_normals [none]",
+        "surface_area [m^2]",
+    }
     arrays = {}
     for orbit_key, groups in (orbit_results or {}).items():
         if not isinstance(groups, dict):
@@ -912,14 +906,12 @@ def flatten_orbit_results_arrays(orbit_results):
         for group_name, result in groups.items():
             if not isinstance(result, dict):
                 continue
-            for key, value in result.items():
-                if key in {"orbit_samples", "shell_profile", "summary"}:
-                    continue
-                arr = np.asarray(value)
-                if arr.ndim == 0:
-                    continue
-                flat_key = f"{_slug_key(orbit_key)}__{_slug_key(group_name)}__{_slug_key(key)}"
-                arrays[flat_key] = arr
+            _flatten_result_arrays(
+                result,
+                arrays,
+                prefix=f"{_slug_key(orbit_key)}__{_slug_key(group_name)}",
+                skip_keys=skip_keys,
+            )
     return arrays
 
 
@@ -1050,6 +1042,51 @@ def _array_summary(values):
     }
 
 
+def _summarize_result_object(value, *, skip_keys):
+    if isinstance(value, dict):
+        out = {}
+        for key, sub in value.items():
+            if key in skip_keys:
+                continue
+            out[str(key)] = _summarize_result_object(sub, skip_keys=skip_keys)
+        return out
+    try:
+        arr = np.asarray(value)
+    except Exception:
+        return str(value)
+    if arr.ndim == 0:
+        try:
+            return float(arr)
+        except Exception:
+            return str(value)
+    if np.issubdtype(arr.dtype, np.number):
+        return _array_summary(np.asarray(arr, dtype=float))
+    return str(value)
+
+
+def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
+    if isinstance(value, dict):
+        for key, sub in value.items():
+            if key in skip_keys:
+                continue
+            _flatten_result_arrays(
+                sub,
+                arrays,
+                prefix=f"{prefix}__{_slug_key(key)}",
+                skip_keys=skip_keys,
+            )
+        return
+    try:
+        arr = np.asarray(value)
+    except Exception:
+        return
+    if arr.ndim == 0:
+        return
+    if not np.issubdtype(arr.dtype, np.number):
+        return
+    arrays[prefix] = np.asarray(arr, dtype=float)
+
+
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
     """
     Best-effort setup of common BATSRUS + spherical derived fields.
@@ -1084,6 +1121,9 @@ def run_quicklook2d(
     slice_grid: dict | None = None,
     orbit_radii=(),
     orbit_specs=(),
+    orbit_surface_specs=(),
+    orbit_surface_modes=("pressure", "torque"),
+    orbit_surface_n_longitudes: int = 199,
     orbit_plane: str = "xy",
     orbit_n_points: int = 180,
     n_polar: int = 24,
@@ -1180,6 +1220,42 @@ def run_quicklook2d(
             key = f"orbit_{len(orbit_figs)}"
         orbit_figs[key] = fig
         orbit_results[key] = result
+    for spec in orbit_surface_specs:
+        if isinstance(spec, dict):
+            spec_dict = dict(spec)
+            label = spec_dict.pop("label", None)
+        else:
+            spec_dict = spec
+            label = None
+        if label is None:
+            if isinstance(spec, dict):
+                a = float(spec.get("semi_major_axis", spec.get("a", np.nan)))
+                e = float(spec.get("eccentricity", 0.0))
+                label = f"a{a:g}_e{e:g}_surface"
+            else:
+                label = f"r{float(spec):g}_surface"
+        groups = orbit_results.setdefault(str(label), {})
+        if "pressure" in orbit_surface_modes:
+            fig, _axs, result = orbit_surface_pressure_figure(
+                smart_ds,
+                spec_dict,
+                body_radius_m=body_radius_m,
+                n_longitudes=orbit_surface_n_longitudes,
+                method=method,
+                star_mass_kg=star_mass_kg,
+            )
+            orbit_figs[f"{label}_surface_pressure"] = fig
+            groups["surface_pressure"] = result
+        if "torque" in orbit_surface_modes:
+            fig, _axs, result = orbit_surface_torque_figure(
+                smart_ds,
+                spec_dict,
+                body_radius_m=body_radius_m,
+                n_longitudes=orbit_surface_n_longitudes,
+                method=method,
+            )
+            orbit_figs[f"{label}_surface_torque"] = fig
+            groups["surface_torque"] = result
 
     out = {
         "slice_figures": slice_figs,
