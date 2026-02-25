@@ -435,6 +435,93 @@ def _slug_key(s: str) -> str:
     return slug.strip("_") or "item"
 
 
+def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
+    """
+    Best-effort setup of common BATSRUS + spherical derived fields.
+    """
+    if hasattr(smart_ds, "add_batsrus_graph"):
+        try:
+            smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+        except Exception:
+            pass
+    if hasattr(smart_ds, "add_spherical_graph"):
+        try:
+            smart_ds.add_spherical_graph(vectors=("B", "U"))
+            return smart_ds
+        except Exception:
+            pass
+    if hasattr(smart_ds, "add_spherical_fields"):
+        smart_ds.add_spherical_fields(vectors=("B", "U"))
+    return smart_ds
+
+
+def run_quicklook2d(
+    smart_ds,
+    *,
+    body_radius_m: float,
+    radii,
+    slice_presets=("rho", "b_r", "u_r"),
+    slice_style: str = "cross_quantiles",
+    radius_modes=("binned",),
+    radius_fields=None,
+    radius_preset: str = "wind_raw",
+    n_polar: int = 24,
+    n_azimuth: int = 48,
+    method: str = "nearest",
+    output_dir=None,
+    prefix: str = "quicklook2d",
+):
+    """
+    End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
+    """
+    prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
+
+    slice_figs = {}
+    for preset in slice_presets:
+        fig, _axes, _cbar = plot_slice_quicklook(
+            smart_ds, preset=preset, style=slice_style
+        )
+        slice_figs[preset] = fig
+
+    shell_fig, shell_axs, diagnostics = quicklook_shell_figure(
+        smart_ds,
+        radii,
+        body_radius_m=body_radius_m,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        method=method,
+    )
+
+    radius_figs = {}
+    for mode in radius_modes:
+        fig, _axs = plot_radius_quicklook(
+            smart_ds,
+            fields=radius_fields,
+            preset=None if radius_fields is not None else radius_preset,
+            mode=mode,
+        )
+        radius_figs[mode] = fig
+
+    out = {
+        "slice_figures": slice_figs,
+        "shell_figure": shell_fig,
+        "shell_axes": shell_axs,
+        "diagnostics": diagnostics,
+        "radius_figures": radius_figs,
+    }
+
+    if output_dir is not None:
+        out["saved"] = save_quicklook2d_bundle(
+            output_dir,
+            shell_fig=shell_fig,
+            diagnostics=diagnostics,
+            slice_figures=slice_figs,
+            radius_figures=radius_figs,
+            prefix=prefix,
+        )
+    return out
+
+
 __all__ = [
     "RADIAL_SUMMARY_PRESETS",
     "SLICE_PRESETS",
@@ -444,7 +531,9 @@ __all__ = [
     "plot_shell_diagnostics",
     "plot_radius_quicklook",
     "plot_slice_quicklook",
+    "prepare_smartds_for_quicklook",
     "quicklook_shell_figure",
+    "run_quicklook2d",
     "save_quicklook2d_bundle",
     "save_shell_diagnostics_json",
     "save_shell_diagnostics_npz",
