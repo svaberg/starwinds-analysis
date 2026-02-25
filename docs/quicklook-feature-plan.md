@@ -42,6 +42,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy) with quicklook plotting wrappers
 - orbit-surface (surface-of-revolution) pressure/standoff analytics on 3D files without VTK/PyVista
 - orbit-surface (surface-of-revolution) torque diagnostics (`T1..T4` + total) on 3D files without VTK/PyVista
+- `run_quicklook2d` support for orbit-surface pressure/torque figures and bundle export (JSON/NPZ summaries + PNGs)
 - generic explicit-surface torque integrator core (points/normals/areas; non-VTK), validated against spherical-shell torque
 - modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
