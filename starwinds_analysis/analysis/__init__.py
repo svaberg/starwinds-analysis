@@ -56,6 +56,14 @@ from .shell_summary import (
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
 from .torque import plot_torque_profile, torque_vs_radius
+from .surface_torque import (
+    integrate_surface_torque_terms,
+    radial_surface_normals,
+    rotational_frame_velocity,
+    surface_torque_density_terms,
+    surface_torque_terms_on_shell_samples,
+    surface_torque_vs_radius,
+)
 from .wind_scaling import (
     open_wind_magnetisation,
     open_wind_magnetisation_from_profiles,
@@ -113,4 +121,10 @@ __all__ = [
     "plot_mass_loss_profile",
     "torque_vs_radius",
     "plot_torque_profile",
+    "rotational_frame_velocity",
+    "radial_surface_normals",
+    "surface_torque_density_terms",
+    "integrate_surface_torque_terms",
+    "surface_torque_terms_on_shell_samples",
+    "surface_torque_vs_radius",
 ]
