@@ -231,3 +231,57 @@ def test_griblet_add_spherical_graph_on_real_example_data():
     expl = sds.explain("B_r [Gauss]")
     assert "B_r [Gauss]" in expl
     assert "B_x [Gauss]" in expl
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("griblet") is None,
+    reason="griblet not installed in this environment",
+)
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_griblet_batsrus_si_normalization_and_derived_fields():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.add_batsrus_graph()
+
+    # Unit normalization examples
+    bx_g = np.asarray(sds.variable("B_x [Gauss]"))
+    bx_t = np.asarray(sds.variable("B_x [T]"))
+    rho_cgs = np.asarray(sds.variable("Rho [g/cm^3]"))
+    rho_si = np.asarray(sds.variable("Rho [kg/m^3]"))
+    p_cgs = np.asarray(sds.variable("P [dyne/cm^2]"))
+    p_si = np.asarray(sds.variable("P [Pa]"))
+
+    np.testing.assert_allclose(bx_t, bx_g * 1e-4, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(rho_si, rho_cgs * 1e3, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(p_si, p_cgs * 1e-1, rtol=1e-12, atol=0.0)
+
+    # Canonicalize unbracketed units
+    qrad_raw = np.asarray(sds.variable("qrad J/m^3/s"))
+    qrad_canonical = np.asarray(sds.variable("qrad [J/m^3/s]"))
+    np.testing.assert_allclose(qrad_canonical, qrad_raw)
+
+    # Derived examples
+    gamma = float(sds.variable("GAMMA [none]"))
+    c_s = np.asarray(sds.variable("c_s [m/s]"))
+    c_s_direct = np.sqrt(gamma * p_si / rho_si)
+    np.testing.assert_allclose(c_s, c_s_direct, rtol=1e-10, atol=1e-10)
+
+    u = np.asarray(sds.variable("U [m/s]"))
+    u_direct = np.sqrt(
+        np.asarray(sds.variable("U_x [m/s]")) ** 2
+        + np.asarray(sds.variable("U_y [m/s]")) ** 2
+        + np.asarray(sds.variable("U_z [m/s]")) ** 2
+    )
+    np.testing.assert_allclose(u, u_direct, rtol=1e-12, atol=1e-12)
+
+    b = np.asarray(sds.variable("B [T]"))
+    c_a = np.asarray(sds.variable("c_A [m/s]"))
+    c_a_direct = b / np.sqrt((4e-7 * np.pi) * rho_si)
+    np.testing.assert_allclose(c_a, c_a_direct, rtol=1e-10, atol=1e-10)
+
+    m_a = np.asarray(sds.variable("M_A [none]"))
+    np.testing.assert_allclose(m_a, u / c_a, rtol=1e-10, atol=1e-10)
+
+    expl = sds.explain("M_A [none]")
+    assert "M_A [none]" in expl
+    assert "c_A [m/s]" in expl
+    assert "U [m/s]" in expl
