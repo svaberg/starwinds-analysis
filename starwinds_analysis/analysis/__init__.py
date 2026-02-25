@@ -12,9 +12,15 @@ from .local_estimates import (
 )
 from .orbits import (
     circular_orbit_points,
+    elliptic_orbit_points,
     local_mass_loss_on_circular_orbit,
+    local_mass_loss_on_elliptic_orbit,
     local_torque_on_circular_orbit,
+    local_torque_on_elliptic_orbit,
+    orbital_period,
+    orbital_velocity,
     sample_circular_orbit,
+    sample_elliptic_orbit,
     sample_points,
 )
 from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
@@ -57,10 +63,16 @@ __all__ = [
     "plot_open_flux_profile",
     "plot_energy_flux_profile",
     "circular_orbit_points",
+    "elliptic_orbit_points",
     "sample_points",
     "sample_circular_orbit",
+    "sample_elliptic_orbit",
     "local_mass_loss_on_circular_orbit",
+    "local_mass_loss_on_elliptic_orbit",
     "local_torque_on_circular_orbit",
+    "local_torque_on_elliptic_orbit",
+    "orbital_period",
+    "orbital_velocity",
     "local_mass_loss_estimates",
     "local_torque_estimates",
     "summarize_samples",

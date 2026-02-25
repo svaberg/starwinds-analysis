@@ -37,6 +37,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - a first `quicklook2d` wrapper (slice presets/overlays + shell summary figure)
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
+- pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
@@ -91,8 +92,8 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell energy flux (`add_integral_energy`) | Implemented (v1) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1) | Azimuthal-mean `B_r` shell diagnostic added |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
-| Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
-| Local analytical torque estimate (`local_torque_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
+| Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
+| Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ |
 
 ## High-Priority Feature Plan
@@ -222,6 +223,7 @@ These were useful in old quicklook and can be ported cleanly as pure analysis ut
 ### Dependencies
 
 - orbital/path sampling helper (separate from 3D visualization)
+  - Implemented (v2): circular + pure-NumPy Kepler/elliptic orbit samplers
 - shell mass-loss and shell torque implementations (for comparison diagnostics)
 - weighted quantile/statistics utilities
 
@@ -288,7 +290,7 @@ Status:
 - shell-vs-local comparison plots/summary stats
 
 Status:
-- Implemented (v1): pure local formula helpers, circular-orbit sampling wrappers, shell comparison summaries, local-vs-shell comparison plots, and orbit comparison summary export in `quicklook2d`.
+- Implemented (v2): pure local formula helpers, circular + Kepler/elliptic orbit sampling wrappers, shell comparison summaries, local-vs-shell comparison plots, and orbit comparison summary export in `quicklook2d`.
 
 ## Definition of Success for the New "Quicklook" (Non-3D)
 
