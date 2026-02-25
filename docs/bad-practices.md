@@ -211,6 +211,25 @@ Preferred pattern:
 - make helpers only when they reduce duplication, complexity, or bug risk
 - examples should remain readable and instructional
 
+## 8. Per-Function Custom Data Containers
+
+Bad:
+
+- every analysis function invents its own return container/class
+- specialized containers tied to one workflow instead of shared data abstractions
+
+Why this is bad:
+
+- creates parallel mini data models
+- makes APIs inconsistent and harder to compose
+- encourages analysis code to be built around one-off return types
+
+Preferred pattern:
+
+- reuse existing shared data abstractions (`SmartDs`, arrays + explicit metadata, shared structs)
+- add small shared metadata objects only when genuinely needed (and reused)
+- do not invent a new container just because one function needs a convenient shape
+
 ## Review Checklist (Use Before Adding New Code)
 
 - Is this function general/parameterized, or is it hard-coded to one quantity?
@@ -221,6 +240,7 @@ Preferred pattern:
 - Would a user understand this example as "easy"?
 - Am I creating a helper because it is needed, or just to move code around?
 - Am I sprinkling `rcParams` changes or using unnecessary ALL_CAPS names in a notebook?
+- Am I inventing a one-off data container instead of reusing a shared abstraction?
 
 ## Current Priority Enforcement
 
@@ -230,3 +250,4 @@ Highest priority to avoid:
 2. Notebook business logic/slop
 3. Duplicated physical quantity definitions
 4. New duplicated `resolve_*` helpers
+5. Per-function custom data containers
