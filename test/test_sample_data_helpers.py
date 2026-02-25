@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from starwinds_analysis.data.samples import get_sample, sample_data_dir
+from starwinds_analysis.smart_ds import SmartDs
 
 
 def test_sample_data_dir_exists():
@@ -12,9 +13,15 @@ def test_sample_data_dir_exists():
 
 
 def test_get_sample_returns_existing_tracked_fixture():
-    path = Path(get_sample("3d__var_1_n00000000.plt"))
+    path = get_sample("3d__var_1_n00000000.plt")
+    assert isinstance(path, Path)
     assert path.exists()
     assert path.name == "3d__var_1_n00000000.plt"
+
+
+def test_smartds_from_file_accepts_pathlike():
+    sds = SmartDs.from_file(get_sample("3d__var_1_n00000000.plt"))
+    assert sds.title
 
 
 def test_get_sample_missing_lists_available_fixtures():

@@ -12,9 +12,9 @@ def sample_data_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "sample_data"
 
 
-def get_sample(name: str) -> str:
+def get_sample(name: str) -> Path:
     """
-    Return an absolute path string to a file in `sample_data`.
+    Return an absolute `Path` to a file in `sample_data`.
 
     Parameters
     ----------
@@ -23,7 +23,7 @@ def get_sample(name: str) -> str:
     """
     path = sample_data_dir() / str(name)
     if path.exists():
-        return str(path)
+        return path
 
     available = sorted(p.name for p in sample_data_dir().glob("*.plt"))
     raise FileNotFoundError(

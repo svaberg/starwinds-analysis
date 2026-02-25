@@ -20,6 +20,7 @@ from starwinds_analysis.analysis.shell_summary import (
     summarize_shell_series,
 )
 from starwinds_analysis.analysis.shells import (
+    infer_cartesian_axis_radii,
     integrate_shell_scalar,
     sample_spherical_shells,
     sample_spherical_shells_fibonacci,
@@ -56,6 +57,17 @@ def test_sample_spherical_shells_area_matches_sphere():
     area_total = np.sum(shells.area, axis=(-2, -1))
     expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=2e-2, atol=0.0)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_infer_cartesian_axis_radii_returns_sorted_positive_values():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    radii = infer_cartesian_axis_radii(sds, axis="x", r_min=1.0)
+    assert radii.ndim == 1
+    assert radii.size > 10
+    assert np.all(np.isfinite(radii))
+    assert np.all(radii > 0)
+    assert np.all(np.diff(radii) >= 0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

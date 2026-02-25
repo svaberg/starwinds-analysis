@@ -83,6 +83,57 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     )
 
 
+def infer_cartesian_axis_radii(
+    smart_ds,
+    *,
+    axis: str = "x",
+    coord_fields=("X [R]", "Y [R]", "Z [R]"),
+    atol: float = 1e-12,
+    positive_only: bool = True,
+    r_min: float | None = None,
+    r_max: float | None = None,
+):
+    """
+    Infer available shell radii from points lying on a Cartesian axis.
+
+    This is useful for choosing shell radii that align with native BATSRUS radial
+    sampling (e.g. points with `y=z=0` on the positive `x` axis).
+    """
+    axis_key = str(axis).lower()
+    axis_idx = {"x": 0, "y": 1, "z": 2}.get(axis_key)
+    if axis_idx is None:
+        raise ValueError("axis must be 'x', 'y', or 'z'")
+
+    coords = [np.asarray(smart_ds.variable(name), dtype=float).ravel() for name in coord_fields]
+    if len(coords) != 3:
+        raise ValueError("coord_fields must have length 3")
+    x, y, z = coords
+    arrays = (x, y, z)
+    values = arrays[axis_idx]
+
+    mask = np.isfinite(x) & np.isfinite(y) & np.isfinite(z)
+    for i, arr in enumerate(arrays):
+        if i == axis_idx:
+            continue
+        mask &= np.isclose(arr, 0.0, atol=float(atol), rtol=0.0)
+
+    vals = np.asarray(values[mask], dtype=float)
+    if positive_only:
+        vals = vals[vals > 0.0]
+    else:
+        vals = np.abs(vals)
+    vals = vals[np.isfinite(vals)]
+    radii = np.unique(np.sort(vals))
+
+    if r_min is not None:
+        radii = radii[radii >= float(r_min)]
+    if r_max is not None:
+        radii = radii[radii <= float(r_max)]
+    if radii.size == 0:
+        raise ValueError("Could not infer any axis-aligned radii from the dataset points")
+    return radii
+
+
 def sample_spherical_shells(
     smart_ds,
     radii,
@@ -366,6 +417,7 @@ def resolve_batsrus_vector_xyz_si(smart_ds, prefix: str):
 __all__ = [
     "SphericalShellSamples",
     "infer_body_radius_m",
+    "infer_cartesian_axis_radii",
     "integrate_shell_scalar",
     "resolve_batsrus_density_si",
     "resolve_batsrus_vector_xyz_si",

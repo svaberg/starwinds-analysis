@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from os import PathLike
 
 import numpy as np
 
@@ -52,8 +53,8 @@ class SmartDs:
             self.set_alias(name, candidates)
 
     @classmethod
-    def from_file(cls, file: str, **kwargs) -> "SmartDs":
-        return cls(Dataset.from_file(file), **kwargs)
+    def from_file(cls, file: str | PathLike[str], **kwargs) -> "SmartDs":
+        return cls(Dataset.from_file(str(file)), **kwargs)
 
     @property
     def raw(self) -> Dataset:
