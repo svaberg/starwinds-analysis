@@ -39,6 +39,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
 - orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy) with quicklook plotting wrappers
+- modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
@@ -86,7 +87,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper + one-shot runner + structured XZ resampling from 3D datasets |
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
 | Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
-| Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
+| Radial “monster” histogram plots | Implemented (modernized v1) | `hist2d` radius-vs-value histogram quicklook mode added; not a byte-for-byte port of the old volume-weighted style |
 | Shell mass-loss integral (`add_integral_mass`) | Implemented (v1) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
 | Shell torque integral (`add_integral_momentum`) | Implemented (v1) | Spherical-shell magnetic/dynamic/total profile API added |
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1) | Signed and unsigned/open flux shell profiles added |

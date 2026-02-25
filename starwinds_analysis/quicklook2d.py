@@ -33,6 +33,7 @@ from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
+    plot_radial_hist2d,
     plot_vs_radius,
 )
 from starwinds_analysis.visualisation.slice import (
@@ -190,7 +191,7 @@ def plot_radius_quicklook(
     **plot_kwargs,
 ):
     """
-    Radius/scatter/cumulative quicklook wrapper over `visualisation.histograms`.
+    Radius/scatter/cumulative/hist2d quicklook wrapper over `visualisation.histograms`.
     """
     if fields is None:
         if preset is None:
@@ -217,10 +218,12 @@ def plot_radius_quicklook(
         plot_binned_vs_radius(ds, axs, fields=fields, **plot_kwargs)
     elif mode == "scatter":
         plot_vs_radius(ds, axs, fields=fields, **plot_kwargs)
+    elif mode in ("hist2d", "monster"):
+        plot_radial_hist2d(ds, axs, fields=fields, **plot_kwargs)
     elif mode in ("cdf", "cumulative"):
         plot_cumulative_hists(ds, axs, fields=fields, **plot_kwargs)
     else:
-        raise KeyError("mode must be 'binned', 'scatter', or 'cdf'")
+        raise KeyError("mode must be 'binned', 'scatter', 'hist2d', or 'cdf'")
 
     for ax in axs[n:]:
         ax.set_visible(False)
