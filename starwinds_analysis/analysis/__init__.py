@@ -5,6 +5,11 @@ from .fluxes import (
     plot_energy_flux_profile,
     plot_open_flux_profile,
 )
+from .local_estimates import (
+    local_mass_loss_estimates,
+    local_torque_estimates,
+    summarize_samples,
+)
 from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
 from .shells import (
     SphericalShellSamples,
@@ -27,6 +32,9 @@ __all__ = [
     "energy_flux_vs_radius",
     "plot_open_flux_profile",
     "plot_energy_flux_profile",
+    "local_mass_loss_estimates",
+    "local_torque_estimates",
+    "summarize_samples",
     "mass_loss_vs_radius",
     "plot_mass_loss_profile",
     "torque_vs_radius",
