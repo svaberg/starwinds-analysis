@@ -15,6 +15,10 @@ from starwinds_analysis.analysis.fluxes import (
     plot_open_flux_profile,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from starwinds_analysis.analysis.orbit_pressure import (
+    pressure_components_on_circular_orbit,
+    pressure_components_on_elliptic_orbit,
+)
 from starwinds_analysis.analysis.orbits import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
@@ -421,6 +425,99 @@ def _orbit_result_title(prefix, result):
             f"e={float(result['eccentricity [none]']):.3g}"
         )
     return f"{prefix} @ r={float(result['radius [R]']):.3g} R"
+
+
+def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
+    phase = _orbit_phase(result, len(np.asarray(result["ram_pressure [Pa]"])))
+    for key, label, color in (
+        ("thermal_pressure [Pa]", "thermal", "C0"),
+        ("magnetic_pressure [Pa]", "magnetic", "C1"),
+        ("ram_pressure [Pa]", "ram", "C2"),
+    ):
+        if key in result:
+            ax.plot(phase, np.asarray(result[key], dtype=float), ",", color=color, alpha=0.65, label=label)
+    if include_relative and "relative_ram_pressure [Pa]" in result:
+        ax.plot(
+            phase,
+            np.asarray(result["relative_ram_pressure [Pa]"], dtype=float),
+            ",",
+            color="C3",
+            alpha=0.65,
+            label="relative ram",
+        )
+    ax.set_xlabel("Orbit phase [turns]")
+    ax.set_ylabel("Pressure [Pa]")
+    ax.set_yscale("log")
+    ax.set_title(_orbit_result_title("Orbit Pressures", result))
+    return ax
+
+
+def orbit_pressure_figure(
+    smart_ds,
+    radius,
+    *,
+    body_radius_m: float,
+    n_points: int = 360,
+    plane: str = "xy",
+    method: str = "nearest",
+    star_mass_kg: float | None = None,
+    figsize=(12, 4),
+):
+    """
+    Orbit pressure quicklook (thermal/magnetic/ram and stand-off proxy).
+    """
+    if isinstance(radius, dict):
+        spec = dict(radius)
+        kind = str(spec.pop("kind", "kepler")).lower()
+        if kind not in {"kepler", "elliptic", "ellipse"}:
+            raise ValueError(f"Unsupported orbit kind: {kind}")
+        a = float(spec.pop("semi_major_axis", spec.pop("a", np.nan)))
+        if not np.isfinite(a):
+            raise ValueError("orbit spec requires 'semi_major_axis' (or 'a')")
+        e = float(spec.pop("eccentricity", 0.0))
+        this_plane = str(spec.pop("plane", plane))
+        this_n_points = int(spec.pop("n_points", n_points))
+        angle0 = float(spec.pop("angle0", 0.0))
+        sample = str(spec.pop("sample", "eccentric_anomaly"))
+        spec.pop("label", None)
+        if spec:
+            raise ValueError(f"Unknown orbit spec keys: {sorted(spec)}")
+        result = pressure_components_on_elliptic_orbit(
+            smart_ds,
+            a,
+            eccentricity=e,
+            body_radius_m=body_radius_m,
+            n_points=this_n_points,
+            plane=this_plane,
+            angle0=angle0,
+            sample=sample,
+            method=method,
+            star_mass_kg=star_mass_kg,
+        )
+    else:
+        result = pressure_components_on_circular_orbit(
+            smart_ds,
+            radius,
+            body_radius_m=body_radius_m,
+            n_points=n_points,
+            plane=plane,
+            method=method,
+            star_mass_kg=star_mass_kg,
+        )
+
+    fig, axs = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
+    plot_orbit_pressure_components(axs[0], result)
+    phase = _orbit_phase(result, len(np.asarray(result["standoff_distance [m]"])))
+    axs[1].plot(phase, np.asarray(result["standoff_distance [m]"], dtype=float), ",", color="C4", alpha=0.7)
+    axs[1].set_xlabel("Orbit phase [turns]")
+    axs[1].set_ylabel("Stand-off Proxy [m]")
+    axs[1].set_yscale("log")
+    axs[1].set_title(_orbit_result_title("Stand-off Proxy", result))
+    for ax in np.ravel(axs):
+        ax.grid(True, alpha=0.3)
+        ax.grid(True, which="minor", alpha=0.1)
+    axs[0].legend(loc="best")
+    return fig, axs, result
 
 
 def orbit_local_comparison_figure(
@@ -952,10 +1049,12 @@ __all__ = [
     "plot_radius_quicklook",
     "plot_slice_quicklook",
     "plot_orbit_mass_loss_comparison",
+    "plot_orbit_pressure_components",
     "plot_orbit_torque_comparison",
     "prepare_smartds_for_quicklook",
     "quicklook_shell_figure",
     "orbit_local_comparison_figure",
+    "orbit_pressure_figure",
     "run_quicklook2d",
     "save_quicklook2d_bundle",
     "save_orbit_results_json",

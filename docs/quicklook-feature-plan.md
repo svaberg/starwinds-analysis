@@ -38,6 +38,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
+- orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy) with quicklook plotting wrappers
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
@@ -94,6 +95,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
+| Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Implemented (v1, local-path form) | Thermal/magnetic/ram (+relative ram) and stand-off proxy on circular/Kepler orbits, no Tecplot surface-of-revolution |
 | Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ |
 
 ## High-Priority Feature Plan
