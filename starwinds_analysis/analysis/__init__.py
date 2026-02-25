@@ -24,6 +24,7 @@ from .shells import (
     integrate_shell_scalar,
     sample_spherical_shells,
 )
+from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
 from .torque import plot_torque_profile, torque_vs_radius
 
@@ -32,6 +33,9 @@ __all__ = [
     "infer_body_radius_m",
     "integrate_shell_scalar",
     "sample_spherical_shells",
+    "structured_quad_corners",
+    "infer_range",
+    "resample_structured_xz_slice",
     "weighted_mean_std",
     "weighted_quantile",
     "open_magnetic_flux_vs_radius",

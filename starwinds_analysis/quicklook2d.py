@@ -15,6 +15,7 @@ from starwinds_analysis.analysis.fluxes import (
     plot_open_flux_profile,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
 from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
@@ -465,6 +466,8 @@ def run_quicklook2d(
     radius_modes=("binned",),
     radius_fields=None,
     radius_preset: str = "wind_raw",
+    slice_ds=None,
+    slice_grid: dict | None = None,
     n_polar: int = 24,
     n_azimuth: int = 48,
     method: str = "nearest",
@@ -476,10 +479,24 @@ def run_quicklook2d(
     """
     prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
 
+    if slice_ds is None and slice_presets:
+        slice_input = smart_ds
+        try:
+            corners = getattr(smart_ds.raw, "corners", None)
+            if corners is None or corners.ndim != 2 or corners.shape[1] != 4:
+                slice_input = resample_structured_xz_slice(
+                    smart_ds,
+                    **dict(slice_grid or {}),
+                )
+        except Exception:
+            slice_input = smart_ds
+    else:
+        slice_input = slice_ds if slice_ds is not None else smart_ds
+
     slice_figs = {}
     for preset in slice_presets:
         fig, _axes, _cbar = plot_slice_quicklook(
-            smart_ds, preset=preset, style=slice_style
+            slice_input, preset=preset, style=slice_style
         )
         slice_figs[preset] = fig
 
