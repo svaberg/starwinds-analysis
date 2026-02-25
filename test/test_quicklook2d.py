@@ -163,7 +163,8 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
         sds,
         body_radius_m=SUN_RADIUS_M,
         radii=[2.0, 4.0, 8.0],
-        slice_presets=(),
+        slice_presets=("rho", "b_r"),
+        slice_grid={"nx": 32, "nz": 24, "method": "nearest", "symmetric_ranges": True},
         radius_modes=("binned",),
         n_polar=12,
         n_azimuth=24,
@@ -174,12 +175,14 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
 
     assert "diagnostics" in out
     assert "saved" in out
-    assert "slice_figures" in out and len(out["slice_figures"]) == 0
+    assert "slice_figures" in out and len(out["slice_figures"]) == 2
     assert "radius_figures" in out and "binned" in out["radius_figures"]
 
     assert (tmp_path / "e2e.shells.png").exists()
     assert (tmp_path / "e2e.shells.json").exists()
     assert (tmp_path / "e2e.shells.npz").exists()
+    assert (tmp_path / "e2e.slices.rho.png").exists()
+    assert (tmp_path / "e2e.slices.b_r.png").exists()
     assert (tmp_path / "e2e.radius.binned.png").exists()
 
     for fig in out["slice_figures"].values():

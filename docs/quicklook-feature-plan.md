@@ -39,6 +39,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
+- structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -76,7 +77,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 
 | Old quicklook feature | Status in new repo | Notes |
 | --- | --- | --- |
-| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper + one-shot runner added |
+| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper + one-shot runner + structured XZ resampling from 3D datasets |
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
 | Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
 | Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
