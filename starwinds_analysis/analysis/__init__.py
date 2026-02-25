@@ -29,6 +29,14 @@ from .orbit_pressure import (
     pressure_components_on_elliptic_orbit,
     resolve_batsrus_pressure_si,
 )
+from .planetary_orbits import (
+    AU_M,
+    PlanetOrbitElements,
+    SOLAR_SYSTEM_PLANETS,
+    get_planet_orbit_elements,
+    planet_orbit_period,
+    planet_orbit_spec,
+)
 from .orbit_surface import (
     pressure_components_on_orbit_surface,
     sample_orbit_surface_revolution,
@@ -121,6 +129,12 @@ __all__ = [
     "surface_escape_speed",
     "open_wind_magnetisation",
     "open_wind_magnetisation_from_profiles",
+    "AU_M",
+    "PlanetOrbitElements",
+    "SOLAR_SYSTEM_PLANETS",
+    "get_planet_orbit_elements",
+    "planet_orbit_spec",
+    "planet_orbit_period",
     "mass_loss_vs_radius",
     "plot_mass_loss_profile",
     "torque_vs_radius",

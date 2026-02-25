@@ -15,6 +15,7 @@ from starwinds_analysis.analysis.fluxes import (
     plot_open_flux_profile,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from starwinds_analysis.analysis.planetary_orbits import planet_orbit_spec
 from starwinds_analysis.analysis.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
@@ -1121,7 +1122,9 @@ def run_quicklook2d(
     slice_grid: dict | None = None,
     orbit_radii=(),
     orbit_specs=(),
+    orbit_planets=(),
     orbit_surface_specs=(),
+    orbit_surface_planets=(),
     orbit_surface_modes=("pressure", "torque"),
     orbit_surface_n_longitudes: int = 199,
     orbit_plane: str = "xy",
@@ -1138,6 +1141,29 @@ def run_quicklook2d(
     End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
     """
     prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
+
+    if orbit_planets:
+        planet_specs = [
+            planet_orbit_spec(
+                name,
+                star_radius_m=body_radius_m,
+                n_points=orbit_n_points,
+                plane=orbit_plane,
+            )
+            for name in orbit_planets
+        ]
+        orbit_specs = tuple(orbit_specs) + tuple(planet_specs)
+    if orbit_surface_planets:
+        planet_surface_specs = [
+            planet_orbit_spec(
+                name,
+                star_radius_m=body_radius_m,
+                n_points=orbit_n_points,
+                plane=orbit_plane,
+            )
+            for name in orbit_surface_planets
+        ]
+        orbit_surface_specs = tuple(orbit_surface_specs) + tuple(planet_surface_specs)
 
     if slice_ds is None and slice_presets:
         slice_input = smart_ds
