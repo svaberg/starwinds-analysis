@@ -23,6 +23,18 @@ from .orbits import (
     sample_elliptic_orbit,
     sample_points,
 )
+from .orbit_pressure import (
+    pressure_components_from_orbit_sample,
+    pressure_components_on_circular_orbit,
+    pressure_components_on_elliptic_orbit,
+    resolve_batsrus_pressure_si,
+)
+from .pressure import (
+    magnetic_pressure,
+    magnetospheric_standoff_distance,
+    pressure_components,
+    ram_pressure,
+)
 from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
 from .shells import (
     SphericalShellSamples,
@@ -67,6 +79,10 @@ __all__ = [
     "sample_points",
     "sample_circular_orbit",
     "sample_elliptic_orbit",
+    "resolve_batsrus_pressure_si",
+    "pressure_components_from_orbit_sample",
+    "pressure_components_on_circular_orbit",
+    "pressure_components_on_elliptic_orbit",
     "local_mass_loss_on_circular_orbit",
     "local_mass_loss_on_elliptic_orbit",
     "local_torque_on_circular_orbit",
@@ -76,6 +92,10 @@ __all__ = [
     "local_mass_loss_estimates",
     "local_torque_estimates",
     "summarize_samples",
+    "magnetic_pressure",
+    "ram_pressure",
+    "pressure_components",
+    "magnetospheric_standoff_distance",
     "surface_escape_speed",
     "open_wind_magnetisation",
     "open_wind_magnetisation_from_profiles",
