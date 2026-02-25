@@ -5,10 +5,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis.native_slice import (
-    native_slice_geometry,
-    plot_alfven_mach_slice,
-    plot_native_slice_tripcolor,
+from starwinds_analysis.visualisation.slice2d import (
+    add_slice_contours,
+    plot_slice_tripcolor,
+    triangulated_slice_geometry,
 )
 
 
@@ -49,17 +49,17 @@ class DummySliceDs:
         return self
 
 
-def test_native_slice_geometry_autodetects_xy():
+def test_triangulated_slice_geometry_autodetects_xy():
     ds = DummySliceDs()
-    geom = native_slice_geometry(ds)
+    geom = triangulated_slice_geometry(ds)
     assert geom.x_field == "X [R]"
     assert geom.y_field == "Y [R]"
     assert geom.triangulation.triangles.shape[0] == 2 * ds.corners.shape[0]
 
 
-def test_plot_native_slice_tripcolor_smoke():
+def test_plot_slice_tripcolor_smoke():
     ds = DummySliceDs()
-    fig, ax, extra = plot_native_slice_tripcolor(ds, "Rho [g/cm^3]")
+    fig, ax, extra = plot_slice_tripcolor(ds, "Rho [g/cm^3]")
     try:
         assert ax.get_xlabel() == "X [R]"
         assert ax.get_ylabel() == "Y [R]"
@@ -68,12 +68,29 @@ def test_plot_native_slice_tripcolor_smoke():
         plt.close(fig)
 
 
-def test_plot_alfven_mach_slice_smoke():
+def test_plot_slice_contours_smoke():
     ds = DummySliceDs()
-    fig, ax, extra = plot_alfven_mach_slice(ds, ensure_batsrus_graph=False, vmin=1e-2, vmax=1e2)
+    fig, ax, extra = plot_slice_tripcolor(
+        ds,
+        "M_A [none]",
+        cmap="cividis",
+        scale="positive_log",
+        vmin=1e-2,
+        vmax=1e2,
+        outside_colors=True,
+    )
     try:
-        assert ax.get_title() == "Alfvén Mach number"
-        assert "contour_drawn" in extra
-        assert extra["contour_drawn"] is True
+        cs, drawn = add_slice_contours(
+            ds,
+            "M_A [none]",
+            ax=ax,
+            geometry=extra["geometry"],
+            levels=[1.0],
+            colors="crimson",
+            linewidths=1.5,
+        )
+        assert extra["scale"] == "positive_log"
+        assert drawn is True
+        assert cs is not None
     finally:
         plt.close(fig)

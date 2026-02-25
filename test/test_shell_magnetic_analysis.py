@@ -21,7 +21,16 @@ from starwinds_analysis.analysis.shell_magnetic import (
 )
 
 
-EXAMPLE_3D = Path(get_sample("3d__var_1_n00000000.plt"))
+def _example_3d():
+    for name in ("3d__var_1_n00000000.plt", "3d__var_1_n00060000.plt"):
+        try:
+            return Path(get_sample(name))
+        except FileNotFoundError:
+            pass
+    raise FileNotFoundError("No suitable 3d__var_1 sample found in sample_data")
+
+
+EXAMPLE_3D = _example_3d()
 SUN_RADIUS_M = 6.957e8
 
 
