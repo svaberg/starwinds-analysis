@@ -91,7 +91,37 @@ Note:
 
 - Existing `resolve_*` functions remain for now, but are marked with TODOs for migration.
 
-## 5. Silent Fallbacks That Hide Important Behavior
+## 5. Duplicated Physical Quantity Definitions
+
+Bad:
+
+- defining the same physical quantity/formula in multiple modules
+- one version in analysis code and another slightly different version in a notebook
+- multiple names/normalizations for the same quantity without a single source of truth
+
+Examples:
+
+- mass flux (`rho * U_r`) reimplemented in several places
+- magnetic pressure / ram pressure / Mach numbers computed ad hoc in plotting code
+
+Why this is bad:
+
+- easy to introduce subtle physics inconsistencies
+- bug fixes do not propagate everywhere
+- units and sign conventions drift between implementations
+
+Preferred pattern:
+
+- one authoritative implementation per physical quantity (or quantity family)
+- plotting functions consume the computed quantity, they do not redefine it
+- notebooks call the library and avoid re-deriving physics
+
+Rule:
+
+- If a quantity already exists in the library, reuse it.
+- If it does not exist, add it once in the library (in the right module), then reuse it.
+
+## 6. Silent Fallbacks That Hide Important Behavior
 
 Bad:
 
@@ -103,7 +133,7 @@ Preferred pattern:
 - obvious parameter names (`scale='log'|'linear'`, `sampling='grid'|'fibonacci'`)
 - return metadata/summary where helpful
 
-## 6. Over-Fragmentation Into Tiny Helpers
+## 7. Over-Fragmentation Into Tiny Helpers
 
 Bad:
 
@@ -121,6 +151,7 @@ Preferred pattern:
 - Is notebook code doing library work?
 - Is unit logic centralized or scattered?
 - Am I duplicating field-resolution logic?
+- Am I redefining a physical quantity/formula that already exists somewhere else?
 - Would a user understand this example as "easy"?
 - Am I creating a helper because it is needed, or just to move code around?
 
@@ -130,5 +161,5 @@ Highest priority to avoid:
 
 1. Hard-coded quantity-specific plotting functions
 2. Notebook business logic/slop
-3. New duplicated `resolve_*` helpers
-
+3. Duplicated physical quantity definitions
+4. New duplicated `resolve_*` helpers
