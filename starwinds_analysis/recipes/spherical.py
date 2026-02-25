@@ -112,6 +112,10 @@ def register_spherical_geometry_fields(
     r_name: str | None = None,
     theta_name: str = "theta [rad]",
     phi_name: str = "phi [rad]",
+    latitude_name: str = "latitude [rad]",
+    longitude_name: str = "longitude [rad]",
+    latitude_deg_name: str = "latitude [deg]",
+    longitude_deg_name: str = "longitude [deg]",
 ):
     x_name, y_name, z_name = coord_fields
     if r_name is None:
@@ -141,7 +145,36 @@ def register_spherical_geometry_fields(
     smart_ds.register_field(r_name, _r, overwrite=True)
     smart_ds.register_field(theta_name, _theta, overwrite=True)
     smart_ds.register_field(phi_name, _phi, overwrite=True)
-    return {"r": r_name, "theta": theta_name, "phi": phi_name}
+
+    smart_ds.register_field(
+        latitude_name,
+        lambda ds: (0.5 * np.pi) - np.asarray(ds.variable(theta_name), dtype=float),
+        overwrite=True,
+    )
+    smart_ds.register_field(
+        longitude_name,
+        lambda ds: np.asarray(ds.variable(phi_name), dtype=float),
+        overwrite=True,
+    )
+    smart_ds.register_field(
+        latitude_deg_name,
+        lambda ds: np.degrees(np.asarray(ds.variable(latitude_name), dtype=float)),
+        overwrite=True,
+    )
+    smart_ds.register_field(
+        longitude_deg_name,
+        lambda ds: np.degrees(np.asarray(ds.variable(longitude_name), dtype=float)),
+        overwrite=True,
+    )
+    return {
+        "r": r_name,
+        "theta": theta_name,
+        "phi": phi_name,
+        "latitude": latitude_name,
+        "longitude": longitude_name,
+        "latitude_deg": latitude_deg_name,
+        "longitude_deg": longitude_deg_name,
+    }
 
 
 def register_vector_spherical_components(
@@ -236,6 +269,10 @@ def build_griblet_spherical_geometry_graph(
     r_name: str | None = None,
     theta_name: str = "theta [rad]",
     phi_name: str = "phi [rad]",
+    latitude_name: str = "latitude [rad]",
+    longitude_name: str = "longitude [rad]",
+    latitude_deg_name: str = "latitude [deg]",
+    longitude_deg_name: str = "longitude [deg]",
 ):
     """
     Build a griblet graph for spherical geometry fields.
@@ -265,6 +302,35 @@ def build_griblet_spherical_geometry_graph(
     graph.add_recipe(r_name, _r, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical radius"})
     graph.add_recipe(theta_name, _theta, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical colatitude"})
     graph.add_recipe(phi_name, _phi, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical azimuth"})
+
+    graph.add_recipe(
+        latitude_name,
+        lambda theta: (0.5 * np.pi) - np.asarray(theta, dtype=float),
+        deps=[theta_name],
+        cost=0.05,
+        metadata={"description": "colatitude -> latitude (radians)"},
+    )
+    graph.add_recipe(
+        longitude_name,
+        lambda phi: np.asarray(phi, dtype=float),
+        deps=[phi_name],
+        cost=0.01,
+        metadata={"description": "azimuth -> longitude (radians)"},
+    )
+    graph.add_recipe(
+        latitude_deg_name,
+        lambda lat: np.degrees(np.asarray(lat, dtype=float)),
+        deps=[latitude_name],
+        cost=0.05,
+        metadata={"description": "latitude radians -> degrees"},
+    )
+    graph.add_recipe(
+        longitude_deg_name,
+        lambda lon: np.degrees(np.asarray(lon, dtype=float)),
+        deps=[longitude_name],
+        cost=0.05,
+        metadata={"description": "longitude radians -> degrees"},
+    )
 
     return graph
 
