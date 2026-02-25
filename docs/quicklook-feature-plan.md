@@ -24,6 +24,17 @@ Out of scope for this plan:
 - Base SI should be the internal target as early as practical.
 - Core quicklook/analysis features should use `numpy` / `scipy` / `matplotlib`, not VTK.
 
+## Progress (Current)
+
+Implemented from this plan so far (non-3D, NumPy/SciPy only):
+
+- spherical shell sampling + area-weighted integration primitives
+- weighted statistics helpers
+- wind mass-loss profile on spherical shells (`dotM(r)`)
+- wind torque profile on spherical shells (magnetic + dynamic + total)
+
+These are first-pass shell implementations intended to be short/readable and easy to extend.
+
 ## What Is Already Usable in the New Codebase
 
 The following pieces already exist and can be used as building blocks for a new quicklook module.
@@ -62,8 +73,8 @@ The table below maps high-use non-3D features from the old script to the new rep
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Partial | Plotting support is easy; some overlay fields (`Ma`, `beta`) still need recipes |
 | Scatter plots vs height/radius | Partial/Usable | `plot_vs_radius` and `plot_binned_vs_radius` exist; old plot bundles need wrappers |
 | Radial “monster” histogram plots | Partial | Histogram/radial plotting exists, but old volume-weighted shell-style plot is not yet ported |
-| Shell mass-loss integral (`add_integral_mass`) | Not yet ported (High) | Top priority; should be implemented without Tecplot/VTK |
-| Shell torque integral (`add_integral_momentum`) | Not yet ported (High) | Top priority; start with spherical-shell torque profile |
+| Shell mass-loss integral (`add_integral_mass`) | Implemented (v1) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
+| Shell torque integral (`add_integral_momentum`) | Implemented (v1) | Spherical-shell magnetic/dynamic/total profile API added |
 | Shell open magnetic flux (`add_integral_open_flux`) | Not yet ported (High-ish) | Pairs naturally with mass loss and torque |
 | Shell energy flux (`add_integral_energy`) | Not yet ported | Useful, lower priority than mass loss/torque |
 | Axisymmetric open flux + fraction | Not yet ported | Useful shell diagnostic; can be pure NumPy on spherical grids |
@@ -270,4 +281,3 @@ The migration is successful when the new quicklook can, without Tecplot and with
 - compute and plot wind torque vs radius (magnetic + dynamic + total)
 - compute open flux and key shell diagnostics
 - produce reproducible numerical outputs in SI units for scripting and tests
-
