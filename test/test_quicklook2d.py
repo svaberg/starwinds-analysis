@@ -427,3 +427,32 @@ def test_run_quicklook2d_supports_orbit_surface_specs_and_exports(tmp_path):
     plt.close(out["shell_figure"])
     for fig in out["orbit_figures"].values():
         plt.close(fig)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_run_quicklook2d_supports_named_planet_orbit_surface(tmp_path):
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    out = run_quicklook2d(
+        sds,
+        body_radius_m=SUN_RADIUS_M,
+        radii=[4.0, 8.0],
+        slice_presets=(),
+        radius_modes=(),
+        orbit_surface_planets=("Earth",),
+        orbit_surface_modes=("pressure",),
+        orbit_surface_n_longitudes=24,
+        orbit_n_points=48,
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+        output_dir=tmp_path,
+        prefix="planet",
+        star_mass_kg=1.98847e30,
+    )
+    assert "Earth" in out["orbit_results"]
+    assert "surface_pressure" in out["orbit_results"]["Earth"]
+    assert any("Earth_surface_pressure" in k for k in out["orbit_figures"])
+    assert (tmp_path / "planet.orbits.json").exists()
+    plt.close(out["shell_figure"])
+    for fig in out["orbit_figures"].values():
+        plt.close(fig)
