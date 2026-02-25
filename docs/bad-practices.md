@@ -57,6 +57,65 @@ Important nuance:
 - Do **not** move code into helpers unless needed.
 - One or two clear lines that teach usage can stay in a notebook.
 
+## Notebook Code (Special Section)
+
+This project treats notebooks as a real part of the workflow, not as disposable output.
+
+Notebook code should optimize for:
+
+- showing how to use the library
+- directness
+- readability in one screen
+- preserving user intent/comments/TODOs
+
+### Notebook Rules (Do)
+
+- Use direct Matplotlib primitives:
+  - `ax.pcolormesh(...)`
+  - `ax.contour(...)`
+  - `ax.tripcolor(...)`
+  - `ax.tricontour(...)`
+- Reuse the library for what the library is for:
+  - data access (`SmartDs`)
+  - derived quantities / physics
+  - geometry/topology helpers (for example `auto_coords(...)`, `triangles(...)`)
+  - sampling/integration primitives
+- Prefer one clear plotting call over local mini-configuration patterns.
+- Keep TODO comments unless they are actually implemented.
+- When a TODO is implemented, prefer changing `TODO` -> `DONE` rather than silently deleting it.
+
+### Notebook Rules (Do Not)
+
+- Do not build a mini plotting framework in a notebook (switches, config systems, wrappers).
+- Do not add defensive-programming clutter in notebooks (`np.isfinite` checks, masking pipelines, fallback branches) unless the notebook is specifically demonstrating that behavior.
+- Do not replace whole cells and drop user comments/TODOs.
+- Do not move simple plotting code into helper files just to "clean up" the notebook.
+
+### Practical Split (Library vs Notebook)
+
+Library:
+
+- compute quantities
+- sample/interpolate data
+- provide reusable geometry/topology
+
+Notebook:
+
+- choose fields
+- call plotting primitives
+- arrange figures and labels
+- explain what the plot means
+
+### Canonical Example Style
+
+Good notebook style looks like:
+
+- get coordinates/topology from library helpers
+- pass arrays directly into Matplotlib
+- avoid extra wrappers unless there is repeated complexity
+
+This is preferred over "generalized" notebook code with mode switches and helper indirection.
+
 ## 3. String-Hardcoded Units Scattered Through Analysis/Plot Code
 
 Bad:
