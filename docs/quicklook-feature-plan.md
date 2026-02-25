@@ -41,6 +41,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
 - orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy) with quicklook plotting wrappers
 - orbit-surface (surface-of-revolution) pressure/standoff analytics on 3D files without VTK/PyVista
+- generic explicit-surface torque integrator core (points/normals/areas; non-VTK), validated against spherical-shell torque
 - modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
@@ -95,6 +96,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
+| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Partial (core implemented) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas; higher-level surface extraction workflows still pending |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
@@ -166,6 +168,7 @@ Notes:
 - The old quicklook also computed a four-component generic surface torque (`surface_torque` / `integrate_surface_torque`).
 - For this plan, implement spherical-shell torque first.
 - Generic-surface torque can be a later extension after the shell path is stable.
+  - Core explicit-surface torque integrator is now implemented (non-VTK); remaining work is higher-level surface extraction/workflows.
 
 Validation:
 
