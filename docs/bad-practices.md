@@ -230,6 +230,26 @@ Preferred pattern:
 - add small shared metadata objects only when genuinely needed (and reused)
 - do not invent a new container just because one function needs a convenient shape
 
+## 9. Bypassing `SmartDs` For Resampling Without A Specific Reason
+
+Bad:
+
+- ad hoc resampling/interpolation code inside analysis functions
+- custom sampling paths that do not use `SmartDs.resample(...)`
+- multiple resampling implementations with slightly different behavior
+
+Why this is bad:
+
+- duplicates interpolation behavior and edge handling
+- makes structured-vs-flat output behavior inconsistent
+- increases the chance of silent differences between workflows
+
+Preferred pattern:
+
+- use `SmartDs.resample(...)` as the default resampling path
+- preserve output shape (flat point list or structured grid) through `SmartDs`
+- only bypass `SmartDs` resampling for a very specific reason, and document that reason in code
+
 ## Review Checklist (Use Before Adding New Code)
 
 - Is this function general/parameterized, or is it hard-coded to one quantity?
@@ -241,6 +261,7 @@ Preferred pattern:
 - Am I creating a helper because it is needed, or just to move code around?
 - Am I sprinkling `rcParams` changes or using unnecessary ALL_CAPS names in a notebook?
 - Am I inventing a one-off data container instead of reusing a shared abstraction?
+- Am I bypassing `SmartDs.resample(...)` without a specific documented reason?
 
 ## Current Priority Enforcement
 
@@ -251,3 +272,4 @@ Highest priority to avoid:
 3. Duplicated physical quantity definitions
 4. New duplicated `resolve_*` helpers
 5. Per-function custom data containers
+6. Bypassing `SmartDs` for resampling without a specific reason
