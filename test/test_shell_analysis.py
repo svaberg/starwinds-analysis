@@ -14,6 +14,7 @@ from starwinds_analysis.analysis.local_estimates import (
     summarize_samples,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
+from starwinds_analysis.analysis.mass_loss import sample_shell_mass_flux_map
 from starwinds_analysis.analysis.shell_summary import (
     boxcar_shell_weights,
     summarize_shell_diagnostics_band,
@@ -112,6 +113,26 @@ def test_mass_loss_profile_runs_on_example():
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
     assert profile["shell_samples"].x.shape[-1] == 1  # Fibonacci default
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_sample_shell_mass_flux_map_matches_shell_integral():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    shell_map = sample_shell_mass_flux_map(
+        sds,
+        5.0,
+        body_radius_m=SUN_RADIUS_M,
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+    )
+
+    integral, coverage = shell_map.integrate()
+    assert np.isfinite(integral)
+    assert 0.95 < coverage <= 1.0 + 1e-12
+    summary = shell_map.summary()
+    assert summary["finite_cells"] > 0
+    assert summary["total_cells"] == 12 * 24
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
