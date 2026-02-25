@@ -46,6 +46,7 @@ from .shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     sample_spherical_shells,
+    sample_spherical_shells_fibonacci,
 )
 from .shell_summary import (
     boxcar_shell_weights,
@@ -66,6 +67,7 @@ __all__ = [
     "infer_body_radius_m",
     "integrate_shell_scalar",
     "sample_spherical_shells",
+    "sample_spherical_shells_fibonacci",
     "structured_quad_corners",
     "infer_range",
     "resample_structured_xz_slice",
