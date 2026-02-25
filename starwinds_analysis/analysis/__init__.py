@@ -1,3 +1,10 @@
+from .fluxes import (
+    axisymmetric_open_flux_vs_radius,
+    energy_flux_vs_radius,
+    open_magnetic_flux_vs_radius,
+    plot_energy_flux_profile,
+    plot_open_flux_profile,
+)
 from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
 from .shells import (
     SphericalShellSamples,
@@ -15,9 +22,13 @@ __all__ = [
     "sample_spherical_shells",
     "weighted_mean_std",
     "weighted_quantile",
+    "open_magnetic_flux_vs_radius",
+    "axisymmetric_open_flux_vs_radius",
+    "energy_flux_vs_radius",
+    "plot_open_flux_profile",
+    "plot_energy_flux_profile",
     "mass_loss_vs_radius",
     "plot_mass_loss_profile",
     "torque_vs_radius",
     "plot_torque_profile",
 ]
-
