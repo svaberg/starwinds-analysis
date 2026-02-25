@@ -41,71 +41,110 @@ from starwinds_analysis.visualisation.histograms import (
     plot_radial_hist2d,
     plot_vs_radius,
 )
-from starwinds_analysis.visualisation.slice import (
-    plot_xz_slice_tripcolor_with_cross_quantiles,
-    plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-    plot_xz_slice_tripcolor_with_marginals,
-    plot_xz_slice_with_marginal_points,
-)
 
 
 @dataclass(frozen=True)
 class SlicePreset:
     field_candidates: tuple[str, ...]
     overlays: tuple[tuple[str, float, str], ...] = ()
+    intent: str = "si_diagnostic"
 
 
-SLICE_PRESETS: dict[str, SlicePreset] = {
-    "rho": SlicePreset(("Rho [kg/m^3]", "Rho [g/cm^3]", "Rho [amu/cm^3]")),
+SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
+    "rho": SlicePreset(("Rho [kg/m^3]",), intent="si_diagnostic"),
     "b_r": SlicePreset(
-        ("B_r [T]", "B_r [Gauss]", "B_r [G]"),
+        ("B_r [T]",),
         overlays=(
             ("B_r [T]", 0.0, "k"),
-            ("B_r [Gauss]", 0.0, "k"),
             ("Ma [none]", 1.0, "C0"),
             ("M_A [none]", 1.0, "C2"),
             ("beta [none]", 1.0, "C3"),
         ),
+        intent="si_diagnostic",
     ),
     "u_r": SlicePreset(
-        ("U_r [m/s]", "U_r [km/s]"),
+        ("U_r [m/s]",),
         overlays=(
             ("U_r [m/s]", 0.0, "C3"),
-            ("U_r [km/s]", 0.0, "C3"),
             ("B_r [T]", 0.0, "C2"),
-            ("B_r [Gauss]", 0.0, "C2"),
             ("M_A [none]", 1.0, "C0"),
             ("beta [none]", 1.0, "C4"),
         ),
+        intent="si_diagnostic",
     ),
-    "ti": SlicePreset(("ti [K]",)),
-    "te": SlicePreset(("te [K]",)),
-    "ma": SlicePreset(("Ma [none]",), overlays=(("Ma [none]", 1.0, "k"),)),
-    "m_a": SlicePreset(("M_A [none]",), overlays=(("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3"))),
-    "beta": SlicePreset(("beta [none]",), overlays=(("beta [none]", 1.0, "k"),)),
+    "ti": SlicePreset(("ti [K]",), intent="si_diagnostic"),
+    "te": SlicePreset(("te [K]",), intent="si_diagnostic"),
+    "ma": SlicePreset(("Ma [none]",), overlays=(("Ma [none]", 1.0, "k"),), intent="si_diagnostic"),
+    "m_a": SlicePreset(
+        ("M_A [none]",),
+        overlays=(("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3")),
+        intent="si_diagnostic",
+    ),
+    "beta": SlicePreset(("beta [none]",), overlays=(("beta [none]", 1.0, "k"),), intent="si_diagnostic"),
+}
+
+SLICE_PRESETS_RAW_DISPLAY: dict[str, SlicePreset] = {
+    "rho_raw": SlicePreset(("Rho [g/cm^3]", "Rho [amu/cm^3]"), intent="raw_display"),
+    "b_r_raw": SlicePreset(
+        ("B_r [Gauss]", "B_r [G]"),
+        overlays=(("B_r [Gauss]", 0.0, "k"), ("B_r [G]", 0.0, "k")),
+        intent="raw_display",
+    ),
+    "u_r_raw": SlicePreset(
+        ("U_r [km/s]",),
+        overlays=(("U_r [km/s]", 0.0, "C3"), ("B_r [Gauss]", 0.0, "C2"), ("B_r [G]", 0.0, "C2")),
+        intent="raw_display",
+    ),
+}
+
+SLICE_PRESETS: dict[str, SlicePreset] = {
+    **SLICE_PRESETS_SI_DIAGNOSTIC,
+    **SLICE_PRESETS_RAW_DISPLAY,
 }
 
 
-_SLICE_STYLES = {
-    "marginals": plot_xz_slice_tripcolor_with_marginals,
-    "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
-    "marginal_points": plot_xz_slice_with_marginal_points,
-    "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-}
+def _load_slice_styles():
+    try:
+        from starwinds_analysis.visualisation.slice import (
+            plot_xz_slice_tripcolor_with_cross_quantiles,
+            plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+            plot_xz_slice_tripcolor_with_marginals,
+            plot_xz_slice_with_marginal_points,
+        )
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "Slice quicklook plotting requires starwinds_analysis.visualisation.slice "
+            "(missing on this branch/environment)."
+        ) from exc
 
-RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
+    return {
+        "marginals": plot_xz_slice_tripcolor_with_marginals,
+        "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
+        "marginal_points": plot_xz_slice_with_marginal_points,
+        "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+    }
+
+RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC: dict[str, tuple[str, ...]] = {
     "wind_basic": (
         "Rho [kg/m^3]",
         "U [m/s]",
         "B [T]",
         "P [Pa]",
     ),
+}
+
+RADIAL_SUMMARY_PRESETS_RAW_DISPLAY: dict[str, tuple[str, ...]] = {
     "wind_raw": (
         "Rho [g/cm^3]",
         "U_x [km/s]",
         "B_x [Gauss]",
         "P [dyne/cm^2]",
     ),
+}
+
+RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
+    **RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,
+    **RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
 }
 
 
@@ -155,6 +194,8 @@ def plot_slice_quicklook(
     """
     Thin 2D quicklook wrapper over existing slice plotting helpers.
     """
+    slice_styles = _load_slice_styles()
+
     if field is None:
         if preset is None:
             raise ValueError("Provide either field=... or preset=...")
@@ -168,10 +209,10 @@ def plot_slice_quicklook(
         if overlays is None:
             overlays = preset_cfg.overlays
 
-    if style not in _SLICE_STYLES:
-        raise KeyError(f"Unknown style '{style}'. Valid styles: {sorted(_SLICE_STYLES)}")
+    if style not in slice_styles:
+        raise KeyError(f"Unknown style '{style}'. Valid styles: {sorted(slice_styles)}")
 
-    fig, axes, cbar = _SLICE_STYLES[style](ds, var=field, **slice_kwargs)
+    fig, axes, cbar = slice_styles[style](ds, var=field, **slice_kwargs)
     ax_main = axes[0]
 
     contour_kwargs = dict(contour_kwargs or {})
@@ -1312,7 +1353,11 @@ def run_quicklook2d(
 
 __all__ = [
     "RADIAL_SUMMARY_PRESETS",
+    "RADIAL_SUMMARY_PRESETS_RAW_DISPLAY",
+    "RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC",
     "SLICE_PRESETS",
+    "SLICE_PRESETS_RAW_DISPLAY",
+    "SLICE_PRESETS_SI_DIAGNOSTIC",
     "SlicePreset",
     "compute_shell_diagnostics",
     "flatten_shell_diagnostics_arrays",
