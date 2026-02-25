@@ -24,9 +24,19 @@ from .shells import (
     integrate_shell_scalar,
     sample_spherical_shells,
 )
+from .shell_summary import (
+    boxcar_shell_weights,
+    summarize_shell_diagnostics_band,
+    summarize_shell_series,
+)
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
 from .torque import plot_torque_profile, torque_vs_radius
+from .wind_scaling import (
+    open_wind_magnetisation,
+    open_wind_magnetisation_from_profiles,
+    surface_escape_speed,
+)
 
 __all__ = [
     "SphericalShellSamples",
@@ -36,6 +46,9 @@ __all__ = [
     "structured_quad_corners",
     "infer_range",
     "resample_structured_xz_slice",
+    "boxcar_shell_weights",
+    "summarize_shell_series",
+    "summarize_shell_diagnostics_band",
     "weighted_mean_std",
     "weighted_quantile",
     "open_magnetic_flux_vs_radius",
@@ -51,6 +64,9 @@ __all__ = [
     "local_mass_loss_estimates",
     "local_torque_estimates",
     "summarize_samples",
+    "surface_escape_speed",
+    "open_wind_magnetisation",
+    "open_wind_magnetisation_from_profiles",
     "mass_loss_vs_radius",
     "plot_mass_loss_profile",
     "torque_vs_radius",

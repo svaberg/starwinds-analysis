@@ -40,6 +40,8 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
+- weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
+- open-wind magnetisation (`Upsilon_open`) scaling helper (old quicklook-style analytical diagnostic)
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -86,7 +88,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1) | Azimuthal-mean `B_r` shell diagnostic added |
-| Weighted summary stats / quantiles | Not yet ported | Small pure-NumPy helpers; should be early utility work |
+| Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v1) | Core formula + circular-orbit sampling wrapper + shell comparison helper |
 | Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ |

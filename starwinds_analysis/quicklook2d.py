@@ -15,8 +15,10 @@ from starwinds_analysis.analysis.fluxes import (
     plot_open_flux_profile,
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
 from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
+from starwinds_analysis.analysis.wind_scaling import open_wind_magnetisation_from_profiles
 from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
@@ -316,7 +318,14 @@ def quicklook_shell_figure(
     return fig, axs, diagnostics
 
 
-def summarize_shell_diagnostics(diagnostics):
+def summarize_shell_diagnostics(
+    diagnostics,
+    *,
+    band_radius_range=None,
+    include_band_summary: bool = True,
+    star_mass_kg: float | None = None,
+    star_radius_m: float | None = None,
+):
     """
     JSON-friendly summary (stats only) of shell diagnostics.
     """
@@ -335,16 +344,31 @@ def summarize_shell_diagnostics(diagnostics):
                 except Exception:
                     pdata[key] = str(value)
                 continue
-            finite = np.isfinite(arr)
-            pdata[key] = {
-                "shape": list(arr.shape),
-                "n": int(arr.size),
-                "n_finite": int(np.count_nonzero(finite)),
-                "min": float(np.nanmin(arr)) if np.any(finite) else np.nan,
-                "max": float(np.nanmax(arr)) if np.any(finite) else np.nan,
-                "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
-            }
+            pdata[key] = _array_summary(arr)
         out[name] = pdata
+
+    if include_band_summary:
+        rmin = rmax = None
+        if band_radius_range is not None:
+            rmin, rmax = band_radius_range
+        out["_band_summary"] = summarize_shell_diagnostics_band(
+            diagnostics,
+            rmin=rmin,
+            rmax=rmax,
+        )
+
+    if star_mass_kg is not None and star_radius_m is not None:
+        try:
+            y = open_wind_magnetisation_from_profiles(
+                diagnostics,
+                star_mass_kg=star_mass_kg,
+                star_radius_m=star_radius_m,
+            )
+            out["_wind_scaling"] = {
+                "Upsilon_open [none]": _array_summary(y["Upsilon_open [none]"])
+            }
+        except Exception:
+            pass
     return out
 
 
@@ -367,10 +391,22 @@ def flatten_shell_diagnostics_arrays(diagnostics):
     return arrays
 
 
-def save_shell_diagnostics_json(path, diagnostics):
+def save_shell_diagnostics_json(
+    path,
+    diagnostics,
+    *,
+    band_radius_range=None,
+    star_mass_kg: float | None = None,
+    star_radius_m: float | None = None,
+):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = summarize_shell_diagnostics(diagnostics)
+    payload = summarize_shell_diagnostics(
+        diagnostics,
+        band_radius_range=band_radius_range,
+        star_mass_kg=star_mass_kg,
+        star_radius_m=star_radius_m,
+    )
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
     return path
 
@@ -391,6 +427,9 @@ def save_quicklook2d_bundle(
     slice_figures=None,
     radius_figures=None,
     prefix: str = "quicklook2d",
+    band_radius_range=None,
+    star_mass_kg: float | None = None,
+    star_radius_m: float | None = None,
 ):
     """
     Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle.
@@ -414,7 +453,11 @@ def save_quicklook2d_bundle(
 
     if diagnostics is not None:
         saved["files"]["shells_json"] = save_shell_diagnostics_json(
-            outdir / f"{prefix}.shells.json", diagnostics
+            outdir / f"{prefix}.shells.json",
+            diagnostics,
+            band_radius_range=band_radius_range,
+            star_mass_kg=star_mass_kg,
+            star_radius_m=star_radius_m,
         )
         saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
             outdir / f"{prefix}.shells.npz", diagnostics
@@ -434,6 +477,19 @@ def _slug_key(s: str) -> str:
     while "__" in slug:
         slug = slug.replace("__", "_")
     return slug.strip("_") or "item"
+
+
+def _array_summary(values):
+    arr = np.asarray(values, dtype=float)
+    finite = np.isfinite(arr)
+    return {
+        "shape": list(arr.shape),
+        "n": int(arr.size),
+        "n_finite": int(np.count_nonzero(finite)),
+        "min": float(np.nanmin(arr)) if np.any(finite) else np.nan,
+        "max": float(np.nanmax(arr)) if np.any(finite) else np.nan,
+        "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
+    }
 
 
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
@@ -473,6 +529,8 @@ def run_quicklook2d(
     method: str = "nearest",
     output_dir=None,
     prefix: str = "quicklook2d",
+    band_radius_range=None,
+    star_mass_kg: float | None = None,
 ):
     """
     End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
@@ -535,6 +593,9 @@ def run_quicklook2d(
             slice_figures=slice_figs,
             radius_figures=radius_figs,
             prefix=prefix,
+            band_radius_range=band_radius_range,
+            star_mass_kg=star_mass_kg,
+            star_radius_m=body_radius_m,
         )
     return out
 
