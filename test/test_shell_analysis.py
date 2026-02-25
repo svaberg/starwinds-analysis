@@ -8,6 +8,11 @@ from starwinds_analysis.analysis.fluxes import (
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
 )
+from starwinds_analysis.analysis.local_estimates import (
+    local_mass_loss_estimates,
+    local_torque_estimates,
+    summarize_samples,
+)
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
@@ -170,3 +175,29 @@ def test_weighted_stats_helpers():
 
     qs = weighted_quantile([1, 2, 3, 4], [0.0, 0.5, 1.0], [1, 1, 1, 1])
     np.testing.assert_allclose(qs, [1, 2, 4])
+
+
+def test_local_mass_loss_estimate_formula():
+    r = np.array([2.0, 3.0])
+    rho = np.array([1.0, 2.0])
+    u_r = np.array([10.0, -5.0])
+    got = local_mass_loss_estimates(r, rho, u_r)
+    expected = 4 * np.pi * r**2 * rho * u_r
+    np.testing.assert_allclose(got, expected)
+
+
+def test_local_torque_estimate_formula_and_summary():
+    r = np.array([2.0, 3.0, 4.0])
+    rho = np.array([1.0, 2.0, 3.0])
+    u_r = np.array([10.0, 20.0, 30.0])
+    u_phi = np.array([1.0, 2.0, 3.0])
+    b_r = np.array([1e-3, 2e-3, 3e-3])
+    b_phi = np.array([2e-3, 1e-3, -1e-3])
+
+    out = local_torque_estimates(r, rho, u_r, u_phi, b_r, b_phi)
+    np.testing.assert_allclose(out["total [Nm]"], out["magnetic [Nm]"] + out["dynamic [Nm]"])
+
+    summary = summarize_samples(out["total [Nm]"])
+    assert np.isfinite(summary["mean"])
+    assert np.isfinite(summary["std"])
+    assert summary["values"].shape == (5,)
