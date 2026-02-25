@@ -276,6 +276,7 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     if "open_flux" in diagnostics:
         plot_open_flux_profile(axs[1, 0], diagnostics["open_flux"])
         axs[1, 0].set_title("Open Magnetic Flux")
+        ax2 = None
         if "axisymmetric_open_flux" in diagnostics:
             p = diagnostics["axisymmetric_open_flux"]
             h = np.asarray(p["height [R]"])
@@ -284,6 +285,17 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
             ax2.plot(h, frac, ".-", color="C3", label="axisymmetric fraction")
             ax2.set_ylabel("Axisymmetric fraction [none]")
             ax2.set_ylim(0, 1.05)
+        if "wind_scaling" in diagnostics:
+            p = diagnostics["wind_scaling"]
+            h = np.asarray(p["height [R]"])
+            y = np.asarray(p["Upsilon_open [none]"])
+            if ax2 is None:
+                ax2 = axs[1, 0].twinx()
+            ax2.plot(h, y, ".-", color="C4", label="Upsilon_open")
+            ax2.set_ylabel("Axisymmetric fraction / Upsilon_open")
+            finite = np.isfinite(y) & (y > 0)
+            if np.any(finite):
+                ax2.set_yscale("log")
 
     if "energy" in diagnostics:
         plot_energy_flux_profile(axs[1, 1], diagnostics["energy"])
@@ -307,6 +319,7 @@ def quicklook_shell_figure(
     n_azimuth: int = 48,
     method: str = "nearest",
     include=("mass_loss", "torque", "open_flux", "energy", "axisymmetric_open_flux"),
+    star_mass_kg: float | None = None,
     figsize=(12, 8),
 ):
     diagnostics = compute_shell_diagnostics(
@@ -318,6 +331,15 @@ def quicklook_shell_figure(
         method=method,
         include=include,
     )
+    if star_mass_kg is not None:
+        try:
+            diagnostics["wind_scaling"] = open_wind_magnetisation_from_profiles(
+                diagnostics,
+                star_mass_kg=star_mass_kg,
+                star_radius_m=body_radius_m,
+            )
+        except Exception:
+            pass
     fig, axs = plot_shell_diagnostics(diagnostics, figsize=figsize)
     return fig, axs, diagnostics
 
@@ -745,6 +767,7 @@ def run_quicklook2d(
         n_polar=n_polar,
         n_azimuth=n_azimuth,
         method=method,
+        star_mass_kg=star_mass_kg,
     )
 
     radius_figs = {}

@@ -95,6 +95,7 @@ def test_quicklook_shell_figure_runs_on_example():
         n_polar=12,
         n_azimuth=24,
         method="nearest",
+        star_mass_kg=1.98847e30,
     )
 
     assert fig is not None
@@ -103,6 +104,8 @@ def test_quicklook_shell_figure_runs_on_example():
     assert "torque" in diagnostics
     assert "open_flux" in diagnostics
     assert "energy" in diagnostics
+    assert "wind_scaling" in diagnostics
+    assert "Upsilon_open [none]" in diagnostics["wind_scaling"]
     plt.close(fig)
 
 
@@ -226,6 +229,7 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
         method="nearest",
         output_dir=tmp_path,
         prefix="e2e",
+        star_mass_kg=1.98847e30,
     )
 
     assert "diagnostics" in out
@@ -233,6 +237,7 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     assert "slice_figures" in out and len(out["slice_figures"]) == 2
     assert "radius_figures" in out and "binned" in out["radius_figures"]
     assert "orbit_figures" in out and len(out["orbit_figures"]) == 1
+    assert "wind_scaling" in out["diagnostics"]
 
     assert (tmp_path / "e2e.shells.png").exists()
     assert (tmp_path / "e2e.shells.json").exists()
