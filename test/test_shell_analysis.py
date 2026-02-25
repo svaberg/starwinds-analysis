@@ -3,6 +3,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.analysis.fluxes import (
+    axisymmetric_open_flux_vs_radius,
+    energy_flux_vs_radius,
+    open_magnetic_flux_vs_radius,
+)
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
@@ -81,6 +86,73 @@ def test_torque_profile_runs_on_example():
     assert np.any(np.isfinite(tot))
 
 
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_unsigned_magnetic_flux_profile_runs_on_example():
+    # Adapted from batplotlib's test_unsigned_magnetic_flux: compare signed flux from
+    # B_r with signed flux from B·n, and compute unsigned/open flux.
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    profile = open_magnetic_flux_vs_radius(
+        sds,
+        [2.0, 4.0, 8.0, 16.0],
+        body_radius_m=SUN_RADIUS_M,
+        n_polar=16,
+        n_azimuth=32,
+        method="nearest",
+    )
+
+    signed_scalar = np.asarray(profile["signed_flux [Wb]"])
+    signed_vector = np.asarray(profile["signed_flux_from_vector [Wb]"])
+    open_flux = np.asarray(profile["open_flux [Wb]"])
+    cov = np.asarray(profile["coverage [none]"])
+
+    np.testing.assert_allclose(signed_scalar, signed_vector, rtol=1e-10, atol=1e-10)
+    assert np.all(open_flux >= np.abs(signed_scalar) - 1e-12)
+    assert np.all((cov > 0.95) & (cov <= 1.0 + 1e-12))
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_axisymmetric_open_flux_fraction_is_bounded():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    profile = axisymmetric_open_flux_vs_radius(
+        sds,
+        [2.0, 4.0, 8.0, 16.0],
+        body_radius_m=SUN_RADIUS_M,
+        n_polar=16,
+        n_azimuth=32,
+        method="nearest",
+    )
+
+    axi = np.asarray(profile["axisymmetric_open_flux [Wb]"])
+    total = np.asarray(profile["open_flux [Wb]"])
+    frac = np.asarray(profile["axisymmetric_open_flux_fraction [none]"])
+    finite = np.isfinite(frac)
+
+    assert np.any(finite)
+    assert np.all(axi[finite] >= 0)
+    assert np.all(total[finite] >= 0)
+    assert np.all(frac[finite] >= -1e-12)
+    assert np.all(frac[finite] <= 1.0 + 1e-12)
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_energy_flux_profile_runs_on_example():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    profile = energy_flux_vs_radius(
+        sds,
+        [2.0, 4.0, 8.0, 16.0],
+        body_radius_m=SUN_RADIUS_M,
+        n_polar=12,
+        n_azimuth=24,
+        method="nearest",
+    )
+
+    y = np.asarray(profile["energy_flux [W]"])
+    c = np.asarray(profile["coverage [none]"])
+    assert y.shape == (4,)
+    assert np.count_nonzero(np.isfinite(y)) == 4
+    assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))
+
+
 def test_integrate_shell_scalar_reports_coverage():
     area = np.ones((2, 3, 4))
     values = np.ones_like(area)
@@ -98,4 +170,3 @@ def test_weighted_stats_helpers():
 
     qs = weighted_quantile([1, 2, 3, 4], [0.0, 0.5, 1.0], [1, 1, 1, 1])
     np.testing.assert_allclose(qs, [1, 2, 4])
-
