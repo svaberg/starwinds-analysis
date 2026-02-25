@@ -18,6 +18,10 @@ from starwinds_analysis.analysis.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )
+from starwinds_analysis.analysis.surface_torque import (
+    integrate_surface_torque_terms,
+    surface_torque_density_terms,
+)
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     resolve_batsrus_density_si,
@@ -111,6 +115,55 @@ def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
         if np.any(m):
             out[i] = np.quantile(row[m], q)
     return q, out
+
+
+def surface_point_normals_and_areas(surface_points_xyz_m):
+    """
+    Estimate point normals and point-associated areas on a periodic structured surface.
+
+    Uses centered differences in both directions with periodic wrapping. The resulting
+    area weights are suitable for integrating sampled fields over the orbit surface.
+    """
+    pts = np.asarray(surface_points_xyz_m, dtype=float)
+    if pts.ndim != 3 or pts.shape[-1] != 3:
+        raise ValueError("surface_points_xyz_m must have shape (n_phase, n_lon, 3)")
+    if pts.shape[0] < 3 or pts.shape[1] < 4:
+        raise ValueError("surface grid is too small for centered-difference geometry")
+
+    d_phase = 0.5 * (np.roll(pts, -1, axis=0) - np.roll(pts, 1, axis=0))
+    d_lon = 0.5 * (np.roll(pts, -1, axis=1) - np.roll(pts, 1, axis=1))
+    cross = np.cross(d_phase, d_lon, axis=-1)
+    area = np.sqrt(np.sum(cross * cross, axis=-1))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        normals = np.divide(
+            cross,
+            area[..., None],
+            out=np.full_like(cross, np.nan),
+            where=area[..., None] > 0,
+        )
+    return normals, area
+
+
+def _phase_line_integrals(values_2d, area_2d):
+    """
+    Integrate sampled surface density values over longitude for each orbit phase.
+    """
+    v = np.asarray(values_2d, dtype=float)
+    a = np.asarray(area_2d, dtype=float)
+    if v.shape != a.shape:
+        a = np.broadcast_to(a, v.shape)
+    mask = np.isfinite(v) & np.isfinite(a)
+    integ = np.sum(np.where(mask, v * a, 0.0), axis=1)
+    covered = np.sum(np.where(mask, a, 0.0), axis=1)
+    total = np.sum(np.where(np.isfinite(a), a, 0.0), axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        cov = np.divide(
+            covered,
+            total,
+            out=np.full_like(integ, np.nan, dtype=float),
+            where=total > 0,
+        )
+    return integ, cov
 
 
 def sample_orbit_surface_revolution(
@@ -319,9 +372,133 @@ def pressure_components_on_orbit_surface(
     return out
 
 
+def torque_components_on_orbit_surface(
+    smart_ds,
+    orbit,
+    *,
+    body_radius_m: float | None = None,
+    n_longitudes: int = 199,
+    method: str = "nearest",
+    include_pressure_term: bool = True,
+    angvel_rad_s: float = 0.0,
+    quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
+):
+    """
+    Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
+    """
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
+    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
+    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+
+    fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
+    p_name = p_scale = None
+    if include_pressure_term:
+        try:
+            p_name, p_scale = resolve_batsrus_pressure_si(smart_ds)
+            fields.append(p_name)
+        except Exception:
+            p_name = p_scale = None
+
+    sampled = sample_orbit_surface_revolution(
+        smart_ds,
+        fields=tuple(fields),
+        orbit=orbit,
+        method=method,
+        n_longitudes=n_longitudes,
+    )
+
+    rho = rho_scale * np.asarray(sampled[rho_name], dtype=float)
+    u_xyz = u_scale * np.stack(
+        [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
+    )
+    b_xyz = b_scale * np.stack(
+        [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
+    )
+    p = None if p_name is None else p_scale * np.asarray(sampled[p_name], dtype=float)
+
+    points_m = np.asarray(sampled["surface_points"], dtype=float) * float(body_radius_m)
+    normals, area = surface_point_normals_and_areas(points_m)
+
+    terms = surface_torque_density_terms(
+        xyz_m=points_m,
+        normals_xyz=normals,
+        area_m2=area,
+        rho_kg_m3=rho,
+        u_xyz_m_s=u_xyz,
+        b_xyz_t=b_xyz,
+        pressure_pa=p,
+        angvel_rad_s=angvel_rad_s,
+        use_rotating_frame=True,
+    )
+    totals = integrate_surface_torque_terms(terms)
+
+    q = np.asarray(quantiles, dtype=float)
+    phase_quantiles = {}
+    phase_integrals = {}
+    phase = np.asarray(sampled["phase [turns]"], dtype=float)
+    for src_key, out_key in (
+        ("T1_magnetic [N/m]", "T1_magnetic"),
+        ("T2_pressure [N/m]", "T2_pressure"),
+        ("T3_corotation [N/m]", "T3_corotation"),
+        ("T4_dynamic [N/m]", "T4_dynamic"),
+        ("total [N/m]", "total"),
+    ):
+        arr = np.asarray(terms[src_key], dtype=float)
+        qq, qarr = _phase_quantiles(arr, q=q)
+        integ, cov = _phase_line_integrals(arr, area)
+        phase_quantiles[out_key] = {
+            "phase [turns]": phase,
+            "quantiles [none]": qq,
+            "values [N/m]": qarr,
+        }
+        phase_integrals[out_key] = {
+            "phase [turns]": phase,
+            "integral [Nm]": integ,
+            "coverage [none]": cov,
+        }
+
+    weights = area.reshape(-1)
+    summary = {}
+    for src_key, out_key in (
+        ("T1_magnetic [N/m]", "T1_magnetic [N/m]"),
+        ("T2_pressure [N/m]", "T2_pressure [N/m]"),
+        ("T3_corotation [N/m]", "T3_corotation [N/m]"),
+        ("T4_dynamic [N/m]", "T4_dynamic [N/m]"),
+        ("total [N/m]", "total [N/m]"),
+    ):
+        summary[out_key] = summarize_samples(np.asarray(terms[src_key], dtype=float).reshape(-1), weights=weights)
+
+    out = {
+        "orbit_surface": sampled,
+        "surface_points [m]": points_m,
+        "surface_normals [none]": normals,
+        "surface_area [m^2]": area,
+        "rho [kg/m^3]": rho,
+        "phase_quantiles": phase_quantiles,
+        "phase_integrals": phase_integrals,
+        "summary": summary,
+        "T1_magnetic [Nm]": np.asarray(totals["T1_magnetic [Nm]"], dtype=float),
+        "T2_pressure [Nm]": np.asarray(totals["T2_pressure [Nm]"], dtype=float),
+        "T3_corotation [Nm]": np.asarray(totals["T3_corotation [Nm]"], dtype=float),
+        "T4_dynamic [Nm]": np.asarray(totals["T4_dynamic [Nm]"], dtype=float),
+        "total [Nm]": np.asarray(totals["total [Nm]"], dtype=float),
+        "coverage [none]": np.asarray(totals["coverage [none]"], dtype=float),
+        "surface_terms": terms,
+    }
+    orbit_meta = sampled["orbit_meta"]
+    if "semi_major_axis [R]" in orbit_meta:
+        out["semi_major_axis [R]"] = float(orbit_meta["semi_major_axis [R]"])
+        out["eccentricity [none]"] = float(orbit_meta.get("eccentricity [none]", np.nan))
+    if "radius [R]" in orbit_meta:
+        out["radius [R]"] = float(orbit_meta["radius [R]"])
+    return out
+
+
 __all__ = [
     "surface_of_revolution_from_path",
+    "surface_point_normals_and_areas",
     "sample_orbit_surface_revolution",
     "pressure_components_on_orbit_surface",
+    "torque_components_on_orbit_surface",
 ]
-

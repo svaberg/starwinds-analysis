@@ -32,7 +32,9 @@ from .orbit_pressure import (
 from .orbit_surface import (
     pressure_components_on_orbit_surface,
     sample_orbit_surface_revolution,
+    surface_point_normals_and_areas,
     surface_of_revolution_from_path,
+    torque_components_on_orbit_surface,
 )
 from .pressure import (
     magnetic_pressure,
@@ -99,8 +101,10 @@ __all__ = [
     "pressure_components_on_circular_orbit",
     "pressure_components_on_elliptic_orbit",
     "surface_of_revolution_from_path",
+    "surface_point_normals_and_areas",
     "sample_orbit_surface_revolution",
     "pressure_components_on_orbit_surface",
+    "torque_components_on_orbit_surface",
     "local_mass_loss_on_circular_orbit",
     "local_mass_loss_on_elliptic_orbit",
     "local_torque_on_circular_orbit",
