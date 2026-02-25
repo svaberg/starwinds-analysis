@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import math
 
 import numpy as np
+from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 
@@ -52,15 +53,93 @@ def _resample_shell_points(
     fill_value,
     title_suffix="shell samples",
 ):
+    if fields is None:
+        fields_arg = None
+    else:
+        fields_arg = tuple(dict.fromkeys(fields))
     return smart_ds.resample(
         sample_points,
         coordinate_fields=coordinate_fields,
-        fields=tuple(dict.fromkeys(fields)),
+        fields=fields_arg,
         method=method,
         fill_value=fill_value,
         title=f"{getattr(smart_ds, 'title', 'dataset')} ({title_suffix})",
         zone="shell-samples",
     )
+
+
+def _field_unit_from_brackets(name: str) -> str | None:
+    text = str(name)
+    i = text.rfind("[")
+    j = text.rfind("]")
+    if i == -1 or j == -1 or j <= i:
+        return None
+    return text[i + 1 : j].strip() or None
+
+
+def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *, zone_suffix: str):
+    if not extra_fields:
+        return smart_ds
+
+    base_points = np.asarray(smart_ds.raw.points)
+    if base_points.ndim < 2:
+        raise ValueError("Expected SmartDs raw points to have shape (..., nvars)")
+    base_shape = base_points.shape[:-1]
+
+    arrays = []
+    names = []
+    for name, values in extra_fields.items():
+        arr = np.asarray(values, dtype=float)
+        if arr.shape != base_shape:
+            raise ValueError(
+                f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
+            )
+        arrays.append(arr[..., None])
+        names.append(name)
+
+    new_points = np.concatenate([base_points, *arrays], axis=-1)
+    new_dataset = Dataset(
+        new_points,
+        smart_ds.raw.corners,
+        smart_ds.raw.aux,
+        smart_ds.raw.title,
+        list(smart_ds.raw.variables) + names,
+        f"{smart_ds.raw.zone} ({zone_suffix})",
+    )
+    return type(smart_ds)(
+        new_dataset,
+        field_functions=smart_ds._field_functions,
+        aliases=smart_ds._aliases,
+        cache_enabled=smart_ds._cache_enabled,
+        computation_graph=smart_ds._computation_graph,
+        include_aux_in_loader=smart_ds._include_aux_in_loader,
+    )
+
+
+def _attach_shell_compat_view(
+    shell_ds,
+    *,
+    radii,
+    theta,
+    phi,
+    x_name,
+    y_name,
+    z_name,
+    sampled_field_names,
+    area,
+):
+    # Compatibility shim for existing shell-analysis code while APIs are migrated.
+    shell_ds.radii = np.asarray(radii, dtype=float)
+    shell_ds.theta = np.asarray(theta, dtype=float)
+    shell_ds.phi = np.asarray(phi, dtype=float)
+    shell_ds.x = np.asarray(shell_ds.variable(x_name), dtype=float)
+    shell_ds.y = np.asarray(shell_ds.variable(y_name), dtype=float)
+    shell_ds.z = np.asarray(shell_ds.variable(z_name), dtype=float)
+    shell_ds.area = np.asarray(area, dtype=float)
+    shell_ds.fields = {
+        name: np.asarray(shell_ds.variable(name), dtype=float) for name in tuple(sampled_field_names)
+    }
+    return shell_ds
 
 
 # TODO this is too permissive and hacky.
@@ -144,7 +223,7 @@ def sample_spherical_shells(
     smart_ds,
     radii,
     *,
-    fields=(),
+    fields=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
@@ -158,8 +237,16 @@ def sample_spherical_shells(
     Resample fields onto spherical shell cell centers.
 
     `radii` and `coordinate_fields` are assumed to use the same length unit.
-    If `length_unit_to_m` is provided, returned areas are in `m^2`; otherwise they
-    are in the square of the shell coordinate unit.
+    If `length_unit_to_m` is provided, shell areas are computed in `m^2`; otherwise in
+    the square of the shell coordinate unit.
+
+    Returns a NEW structured `SmartDs` whose variables include:
+    - sampled bound coordinates (e.g. `X [R]`, `Y [R]`, `Z [R]`)
+    - requested sampled fields (or all parent raw fields if `fields is None`)
+    - free spherical coordinates (`R [unit]`, `theta [rad]`, `phi [rad]`)
+
+    A temporary compatibility view (`.radii`, `.theta`, `.phi`, `.x`, `.y`, `.z`,
+    `.area`, `.fields`) is attached for existing shell-analysis code.
     """
     radii = np.atleast_1d(np.asarray(radii, dtype=float))
     if radii.ndim != 1:
@@ -193,7 +280,7 @@ def sample_spherical_shells(
     ntheta, nphi = theta.shape
     xyz_unit = np.stack((xhat, yhat, zhat), axis=-1)  # (ntheta, nphi, 3)
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]
-    sample_points = xyz.reshape(-1, 3)
+    sample_points = xyz
 
     resampled = _resample_shell_points(
         smart_ds,
@@ -205,25 +292,52 @@ def sample_spherical_shells(
         title_suffix="shell samples (grid)",
     )
 
-    field_arrays = {}
-    for name in tuple(dict.fromkeys(fields)):
-        field_arrays[name] = np.asarray(resampled.variable(name), dtype=float).reshape(
-            radii.size, ntheta, nphi
+    if fields is None:
+        sampled_field_names = tuple(
+            name for name in resampled.variables if name not in tuple(coordinate_fields)
         )
+    else:
+        sampled_field_names = tuple(dict.fromkeys(fields))
 
     area = (radii[:, None, None] ** 2) * area_unit_sphere[None, :, :]
     if length_unit_to_m is not None:
         area = area * float(length_unit_to_m) ** 2
 
-    return SphericalShellSamples(
+    x_name, y_name, z_name = coordinate_fields
+    length_unit = _field_unit_from_brackets(x_name) or "R"
+    r_name = f"R [{length_unit}]"
+    theta_name = "theta [rad]"
+    phi_name = "phi [rad]"
+    area_unit = "m^2" if length_unit_to_m is not None else f"{length_unit}^2"
+    area_name = f"dA [{area_unit}]"
+
+    r_field = np.broadcast_to(radii[:, None, None], (radii.size, ntheta, nphi)).copy()
+    theta_field = np.broadcast_to(theta[None, :, :], (radii.size, ntheta, nphi)).copy()
+    phi_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
+    area_field = np.asarray(area, dtype=float)
+
+    shell_ds = _append_fields_to_smart_ds(
+        resampled,
+        {
+            r_name: r_field,
+            theta_name: theta_field,
+            phi_name: phi_field,
+            area_name: area_field,
+        },
+        zone_suffix="shell-grid-structured",
+    )
+
+    # Attach compatibility attributes expected by existing shell-analysis code.
+    return _attach_shell_compat_view(
+        shell_ds,
         radii=radii,
         theta=theta,
         phi=phi,
-        x=xyz[..., 0],
-        y=xyz[..., 1],
-        z=xyz[..., 2],
+        x_name=x_name,
+        y_name=y_name,
+        z_name=z_name,
+        sampled_field_names=sampled_field_names,
         area=area,
-        fields=field_arrays,
     )
 
 

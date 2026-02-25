@@ -1,3 +1,9 @@
+"""THIS FILE contains SmartDs resampling internals.
+
+It owns interpolation/resample implementation details and construction of new wrapped datasets.
+It should not contain domain-specific shell/orbit/slice analysis logic.
+"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -26,10 +32,13 @@ def resample_smart_ds(
     sample_points = np.asarray(sample_points, dtype=float)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
-    if sample_points.ndim != 2:
-        raise ValueError("sample_points must have shape (n_points, ndim)")
+    if sample_points.ndim < 2:
+        raise ValueError("sample_points must have shape (..., ndim)")
 
-    ndim = sample_points.shape[1]
+    grid_shape = tuple(sample_points.shape[:-1])
+    flat_sample_points = sample_points.reshape(-1, sample_points.shape[-1])
+
+    ndim = flat_sample_points.shape[1]
     if coordinate_fields is None:
         coordinate_fields = smart_ds._infer_coordinate_fields(ndim)
     coordinate_fields = tuple(coordinate_fields)
@@ -58,12 +67,12 @@ def resample_smart_ds(
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
 
-    out_points = np.full((sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
+    out_points = np.full((flat_sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
     out_index = {name: i for i, name in enumerate(output_variables)}
 
     for dim, coord_name in enumerate(coordinate_fields):
         if coord_name in out_index:
-            out_points[:, out_index[coord_name]] = sample_points[:, dim]
+            out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
     for name in output_variables:
         if name in coordinate_fields:
@@ -82,10 +91,12 @@ def resample_smart_ds(
         out_points[:, out_index[name]] = interpolate_nd(
             source_coords[valid],
             values[valid],
-            sample_points,
+            flat_sample_points,
             method=method,
             fill_value=fill_value,
         )
+
+    out_points = out_points.reshape(*grid_shape, len(output_variables))
 
     if corners is None:
         corners_arr = np.empty((0, 0), dtype=int)
