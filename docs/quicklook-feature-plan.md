@@ -99,7 +99,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
-| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Partial (core implemented) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas; higher-level surface extraction workflows still pending |
+| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; automatic surface extraction remains deferred |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
@@ -171,8 +171,8 @@ Notes:
 
 - The old quicklook also computed a four-component generic surface torque (`surface_torque` / `integrate_surface_torque`).
 - For this plan, implement spherical-shell torque first.
-- Generic-surface torque can be a later extension after the shell path is stable.
-  - Core explicit-surface torque integrator is now implemented (non-VTK); remaining work is higher-level surface extraction/workflows.
+- Generic-surface torque surface-extraction workflows can be a later extension after the shell path is stable.
+  - The non-VTK explicit-surface torque integrator is implemented; remaining work is automatic surface extraction (a VTK/Tecplot-adjacent concern).
 
 Validation:
 
