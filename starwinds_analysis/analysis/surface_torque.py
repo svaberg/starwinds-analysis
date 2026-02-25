@@ -170,16 +170,25 @@ def integrate_surface_torque_terms(terms):
     area = np.asarray(terms["area [m^2]"], dtype=float)
     out = {}
     coverages = []
-    for key in (
+    component_keys = (
         "T1_magnetic [N/m]",
         "T2_pressure [N/m]",
         "T3_corotation [N/m]",
         "T4_dynamic [N/m]",
-        "total [N/m]",
-    ):
+    )
+    component_integrals = []
+    for key in component_keys:
         integral, cov = integrate_shell_scalar(np.asarray(terms[key], dtype=float), area)
         out[key.replace("[N/m]", "[Nm]")] = np.asarray(integral, dtype=float)
+        component_integrals.append(np.asarray(integral, dtype=float))
         coverages.append(np.asarray(cov, dtype=float))
+    # Define the total as the sum of integrated terms, so bookkeeping is exact even
+    # when individual terms have different finite masks.
+    out["total [Nm]"] = np.sum(np.stack(component_integrals, axis=0), axis=0)
+    if "total [N/m]" in terms:
+        _direct_total, cov_total = integrate_shell_scalar(np.asarray(terms["total [N/m]"], dtype=float), area)
+        out["total_direct [Nm]"] = np.asarray(_direct_total, dtype=float)
+        coverages.append(np.asarray(cov_total, dtype=float))
     if coverages:
         out["coverage [none]"] = np.min(np.stack(coverages, axis=0), axis=0)
     return out
@@ -320,4 +329,3 @@ __all__ = [
     "surface_torque_terms_on_shell_samples",
     "surface_torque_vs_radius",
 ]
-

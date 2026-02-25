@@ -19,7 +19,10 @@ from starwinds_analysis.analysis.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.orbit_surface import pressure_components_on_orbit_surface
+from starwinds_analysis.analysis.orbit_surface import (
+    pressure_components_on_orbit_surface,
+    torque_components_on_orbit_surface,
+)
 from starwinds_analysis.analysis.orbits import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
@@ -596,6 +599,97 @@ def orbit_surface_pressure_figure(
     return fig, axs, result
 
 
+def orbit_surface_torque_figure(
+    smart_ds,
+    orbit,
+    *,
+    body_radius_m: float,
+    n_longitudes: int = 199,
+    method: str = "nearest",
+    angvel_rad_s: float = 0.0,
+    figsize=(12, 6),
+):
+    """
+    Surface-of-revolution torque quicklook (`T1..T4` + total), non-VTK.
+    """
+    result = torque_components_on_orbit_surface(
+        smart_ds,
+        orbit,
+        body_radius_m=body_radius_m,
+        n_longitudes=n_longitudes,
+        method=method,
+        angvel_rad_s=angvel_rad_s,
+    )
+
+    fig, axs = plt.subplots(2, 1, figsize=figsize, constrained_layout=True, sharex=True)
+    axs = np.asarray(axs)
+
+    for key, label, color in (
+        ("T1_magnetic", "T1 magnetic", "C1"),
+        ("T2_pressure", "T2 pressure", "C3"),
+        ("T3_corotation", "T3 corotation", "C4"),
+        ("T4_dynamic", "T4 dynamic", "C2"),
+        ("total", "total", "C0"),
+    ):
+        p = result["phase_integrals"][key]
+        axs[0].plot(
+            np.asarray(p["phase [turns]"], dtype=float),
+            np.asarray(p["integral [Nm]"], dtype=float),
+            ".-",
+            color=color,
+            alpha=0.8,
+            label=label,
+        )
+    axs[0].set_ylabel("Phase Ring Integral [Nm]")
+    axs[0].set_yscale("symlog", linthresh=1e-3)
+    axs[0].set_title(_orbit_result_title("Orbit-Surface Torque Terms", result))
+    axs[0].legend(loc="best", ncol=2)
+
+    if "total" in result["phase_quantiles"]:
+        _plot_phase_quantile_band(
+            axs[1],
+            {
+                "phase [turns]": result["phase_quantiles"]["total"]["phase [turns]"],
+                "quantiles [none]": result["phase_quantiles"]["total"]["quantiles [none]"],
+                "values": result["phase_quantiles"]["total"]["values [N/m]"],
+            },
+            label="total density (median/IQR)",
+            color="C0",
+        )
+    if "T1_magnetic" in result["phase_quantiles"]:
+        _plot_phase_quantile_band(
+            axs[1],
+            {
+                "phase [turns]": result["phase_quantiles"]["T1_magnetic"]["phase [turns]"],
+                "quantiles [none]": result["phase_quantiles"]["T1_magnetic"]["quantiles [none]"],
+                "values": result["phase_quantiles"]["T1_magnetic"]["values [N/m]"],
+            },
+            label="T1 density",
+            color="C1",
+        )
+    if "T4_dynamic" in result["phase_quantiles"]:
+        _plot_phase_quantile_band(
+            axs[1],
+            {
+                "phase [turns]": result["phase_quantiles"]["T4_dynamic"]["phase [turns]"],
+                "quantiles [none]": result["phase_quantiles"]["T4_dynamic"]["quantiles [none]"],
+                "values": result["phase_quantiles"]["T4_dynamic"]["values [N/m]"],
+            },
+            label="T4 density",
+            color="C2",
+        )
+    axs[1].set_xlabel("Orbit phase [turns]")
+    axs[1].set_ylabel("Torque Density [N/m]")
+    axs[1].set_yscale("symlog", linthresh=1e-6)
+    axs[1].set_title(_orbit_result_title("Orbit-Surface Torque Density Quantiles", result))
+    axs[1].legend(loc="best")
+
+    for ax in axs:
+        ax.grid(True, alpha=0.3)
+        ax.grid(True, which="minor", alpha=0.1)
+    return fig, axs, result
+
+
 def orbit_local_comparison_figure(
     smart_ds,
     radius,
@@ -1132,6 +1226,7 @@ __all__ = [
     "orbit_local_comparison_figure",
     "orbit_pressure_figure",
     "orbit_surface_pressure_figure",
+    "orbit_surface_torque_figure",
     "run_quicklook2d",
     "save_quicklook2d_bundle",
     "save_orbit_results_json",
