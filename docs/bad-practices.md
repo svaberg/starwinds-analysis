@@ -81,6 +81,7 @@ Notebook code should optimize for:
   - geometry/topology helpers (for example `auto_coords(...)`, `triangles(...)`)
   - sampling/integration primitives
 - Prefer one clear plotting call over local mini-configuration patterns.
+- Prefer normal local variable names in notebooks (`x_field`, `color_field`, `n_polar`) unless there is a clear reason to mirror Matplotlib examples/standards.
 - Keep TODO comments unless they are actually implemented.
 - When a TODO is implemented, prefer changing `TODO` -> `DONE` rather than silently deleting it.
 
@@ -88,8 +89,14 @@ Notebook code should optimize for:
 
 - Do not build a mini plotting framework in a notebook (switches, config systems, wrappers).
 - Do not add defensive-programming clutter in notebooks (`np.isfinite` checks, masking pipelines, fallback branches) unless the notebook is specifically demonstrating that behavior.
+- Do not sprinkle `matplotlib.rcParams[...]` tweaks around notebook cells.
 - Do not replace whole cells and drop user comments/TODOs.
 - Do not move simple plotting code into helper files just to "clean up" the notebook.
+
+Preferred `rcParams` usage in notebooks:
+
+- avoid it entirely unless it is genuinely useful for readability/reproducibility
+- if needed, set it once near the top of the notebook (one small setup cell), not scattered across plotting cells
 
 ### Practical Split (Library vs Notebook)
 
@@ -213,6 +220,7 @@ Preferred pattern:
 - Am I redefining a physical quantity/formula that already exists somewhere else?
 - Would a user understand this example as "easy"?
 - Am I creating a helper because it is needed, or just to move code around?
+- Am I sprinkling `rcParams` changes or using unnecessary ALL_CAPS names in a notebook?
 
 ## Current Priority Enforcement
 
