@@ -16,8 +16,7 @@ def magnetic_pressure(b_t_or_mag):
     """
     # TODO(griblet): `magnetic_pressure [Pa]` should be a SmartDs/griblet quantity
     # so callers can request it directly in SI units.
-    b = np.array(b_t_or_mag, dtype=float)
-    return (b * b) / (2.0 * MU0)
+    return np.square(b_t_or_mag) / (2.0 * MU0)
 
 def ram_pressure(rho_kg_m3, speed_m_s):
     """
@@ -25,9 +24,7 @@ def ram_pressure(rho_kg_m3, speed_m_s):
     """
     # TODO(griblet): `ram_pressure [Pa]` should be a SmartDs/griblet quantity so
     # callers do not recompute it outside the field graph.
-    rho = np.array(rho_kg_m3, dtype=float)
-    u = np.array(speed_m_s, dtype=float)
-    return rho * u * u
+    return rho_kg_m3 * np.square(speed_m_s)
 
 def pressure_components(
     rho_kg_m3,
@@ -43,33 +40,34 @@ def pressure_components(
     # TODO(griblet): The derived quantities assembled here (`|U|`, `|B|`,
     # magnetic/ram/relative pressures) should come from SmartDs/griblet requests in
     # SI units instead of being bundled/computed here.
-    rho = np.array(rho_kg_m3, dtype=float)
-    u = np.array(u_xyz_m_s, dtype=float)
-    b = np.array(b_xyz_t, dtype=float)
-    if u.shape[-1] != 3 or b.shape[-1] != 3:
+    u = u_xyz_m_s
+    b = b_xyz_t
+    u_shape = np.shape(u)
+    b_shape = np.shape(b)
+    if not u_shape or not b_shape or u_shape[-1] != 3 or b_shape[-1] != 3:
         raise ValueError("u_xyz_m_s and b_xyz_t must have shape (..., 3)")
 
-    speed = np.sqrt(np.sum(u * u, axis=-1))
-    bmag = np.sqrt(np.sum(b * b, axis=-1))
+    speed = np.sqrt(np.sum(np.square(u), axis=-1))
+    bmag = np.sqrt(np.sum(np.square(b), axis=-1))
     out = {
         "U [m/s]": speed,
         "B [T]": bmag,
         "magnetic_pressure [Pa]": magnetic_pressure(bmag),
-        "ram_pressure [Pa]": ram_pressure(rho, speed),
+        "ram_pressure [Pa]": ram_pressure(rho_kg_m3, speed),
     }
 
     if thermal_pressure_pa is not None:
-        out["thermal_pressure [Pa]"] = np.array(thermal_pressure_pa, dtype=float)
+        out["thermal_pressure [Pa]"] = thermal_pressure_pa
 
     if object_velocity_xyz_m_s is not None:
-        v_obj = np.array(object_velocity_xyz_m_s, dtype=float)
-        if v_obj.shape != u.shape:
+        v_obj = object_velocity_xyz_m_s
+        if np.shape(v_obj) != u_shape:
             raise ValueError("object_velocity_xyz_m_s must match u_xyz_m_s shape")
-        rel = u - v_obj
-        rel_speed = np.sqrt(np.sum(rel * rel, axis=-1))
-        out["object_speed [m/s]"] = np.sqrt(np.sum(v_obj * v_obj, axis=-1))
+        rel = np.subtract(u, v_obj)
+        rel_speed = np.sqrt(np.sum(np.square(rel), axis=-1))
+        out["object_speed [m/s]"] = np.sqrt(np.sum(np.square(v_obj), axis=-1))
         out["relative_speed [m/s]"] = rel_speed
-        out["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
+        out["relative_ram_pressure [Pa]"] = ram_pressure(rho_kg_m3, rel_speed)
     return out
 
 def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e-4):
@@ -84,4 +82,3 @@ def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e
     numer = (float(b0_t) ** 2) / (2.0 * MU0)
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.power(numer / p_ram, 1.0 / 6.0)
-
