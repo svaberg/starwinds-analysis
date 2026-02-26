@@ -24,10 +24,8 @@ from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )
-from starwinds_analysis.analysis.surface_torque import (
-    integrate_surface_torque_terms,
-    surface_torque_density_terms,
-)
+from starwinds_analysis.analysis.surface_torque import integrate_surface_torque_terms
+from starwinds_analysis.physics.surface_torque import surface_torque_density_terms
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     resolve_batsrus_density_si,

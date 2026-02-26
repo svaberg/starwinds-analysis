@@ -65,11 +65,14 @@ from .slices import infer_range, resample_structured_xz_slice, structured_quad_c
 from .stats import weighted_mean_std, weighted_quantile
 from .torque import plot_torque_profile
 from ..physics.shell_torque import torque_vs_radius
-from .surface_torque import (
-    integrate_surface_torque_terms,
+from ..physics.surface_torque import (
+    normalize_surface_normals,
     radial_surface_normals,
     rotational_frame_velocity,
     surface_torque_density_terms,
+)
+from .surface_torque import (
+    integrate_surface_torque_terms,
     surface_torque_terms_on_shell_samples,
     surface_torque_vs_radius,
 )
