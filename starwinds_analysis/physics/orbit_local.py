@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.sampling.orbits import sample_circular_orbit, sample_elliptic_orbit
+from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.local_estimates import (

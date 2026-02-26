@@ -18,7 +18,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.sampling.orbits import (
+from starwinds_analysis.analysis.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
     sample_points,

@@ -16,7 +16,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.sampling.orbits import sample_circular_orbit, sample_elliptic_orbit
+from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
     ram_pressure,

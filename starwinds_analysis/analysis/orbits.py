@@ -1,7 +1,7 @@
-"""THIS FILE contains orbit geometry and orbit sampling primitives.
+"""THIS FILE contains orbit geometry and 1D-curve sampling primitives.
 
-It provides circular/elliptic paths and SmartDs resampling along those paths.
-It is a neutral sampling layer (not `analysis`, not `physics`).
+It provides circular/elliptic orbit paths and SmartDs resampling along those
+paths. This is analysis/sampling code (not local physics formulas).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ def circular_orbit_points(
 ):
     """
     Cartesian points on a circular orbit (same coordinate unit as `radius`).
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/sampling/orbits.py`,
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`,
       `starwinds_analysis/physics/orbit_surface.py`
     """
     r = float(radius)
@@ -54,7 +54,7 @@ def circular_orbit_points(
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
     Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
-    Used by: `starwinds_analysis/sampling/orbits.py`
+    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     e = float(eccentricity)
     if not (0.0 <= e < 1.0):
@@ -75,7 +75,7 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
 def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
     """
     Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates.
-    Used by: `starwinds_analysis/sampling/orbits.py`
+    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     cx, cy, cz = map(float, center)
     pts = np.empty((x.size, 3), dtype=float)
@@ -98,7 +98,7 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
 def _phase_from_weights(weights):
     """
     Convert periodic sample weights into cumulative phase turns.
-    Used by: `starwinds_analysis/sampling/orbits.py`
+    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     w = np.array(weights)
     if w.ndim != 1 or w.size == 0:
@@ -128,7 +128,7 @@ def elliptic_orbit_points(
 ):
     """
     Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`).
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/sampling/orbits.py`,
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`,
       `starwinds_analysis/physics/orbit_surface.py`
     """
     a = float(semi_major_axis)
@@ -206,7 +206,7 @@ def sample_points(
 ):
     """
     Resample `fields` onto explicit Cartesian points.
-    Used by: `starwinds_analysis/sampling/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`
+    Used by: `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
     out = smart_ds.resample(
@@ -310,4 +310,3 @@ def sample_elliptic_orbit(
     sampled["eccentricity [sample]"] = float(eccentricity)
     sampled["sample_parameter"] = sample
     return sampled
-
