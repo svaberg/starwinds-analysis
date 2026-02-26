@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.orbit_pressure import (
+from starwinds_analysis.pipelines.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )

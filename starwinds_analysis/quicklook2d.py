@@ -22,11 +22,11 @@ from starwinds_analysis.analysis.fluxes import (
 )
 from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
 from starwinds_analysis.analysis.planetary_orbits import planet_orbit_spec
-from starwinds_analysis.analysis.orbit_pressure import (
+from starwinds_analysis.pipelines.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.orbit_surface import (
+from starwinds_analysis.pipelines.orbit_surface import (
     pressure_components_on_orbit_surface,
     torque_components_on_orbit_surface,
 )
@@ -39,7 +39,7 @@ from starwinds_analysis.analysis.orbits import (
 from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
 from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
-from starwinds_analysis.analysis.wind_scaling import open_wind_magnetisation_from_profiles
+from starwinds_analysis.pipelines.wind_scaling import open_wind_magnetisation_from_profiles
 from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,

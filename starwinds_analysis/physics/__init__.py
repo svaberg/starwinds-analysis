@@ -11,6 +11,7 @@ from .pressure import (
     pressure_components,
     ram_pressure,
 )
+from .wind_scaling import open_wind_magnetisation, surface_escape_speed
 
 __all__ = [
     "MU0",
@@ -18,4 +19,6 @@ __all__ = [
     "magnetospheric_standoff_distance",
     "pressure_components",
     "ram_pressure",
+    "surface_escape_speed",
+    "open_wind_magnetisation",
 ]

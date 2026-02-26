@@ -11,7 +11,7 @@ import math
 import numpy as np
 
 from starwinds_analysis.analysis.local_estimates import summarize_samples
-from starwinds_analysis.analysis.orbit_pressure import (
+from starwinds_analysis.pipelines.orbit_pressure import (
     resolve_batsrus_pressure_si,
 )
 from starwinds_analysis.analysis.orbits import (

@@ -29,12 +29,6 @@ from .orbits import (
     sample_elliptic_orbit,
     sample_points,
 )
-from .orbit_pressure import (
-    pressure_components_from_orbit_sample,
-    pressure_components_on_circular_orbit,
-    pressure_components_on_elliptic_orbit,
-    resolve_batsrus_pressure_si,
-)
 from .planetary_orbits import (
     AU_M,
     PlanetOrbitElements,
@@ -42,13 +36,6 @@ from .planetary_orbits import (
     get_planet_orbit_elements,
     planet_orbit_period,
     planet_orbit_spec,
-)
-from .orbit_surface import (
-    pressure_components_on_orbit_surface,
-    sample_orbit_surface_revolution,
-    surface_point_normals_and_areas,
-    surface_of_revolution_from_path,
-    torque_components_on_orbit_surface,
 )
 from ..physics.pressure import (
     magnetic_pressure,
@@ -94,9 +81,8 @@ from .surface_torque import (
     surface_torque_terms_on_shell_samples,
     surface_torque_vs_radius,
 )
-from .wind_scaling import (
+from ..physics.wind_scaling import (
     open_wind_magnetisation,
-    open_wind_magnetisation_from_profiles,
     surface_escape_speed,
 )
 
@@ -134,15 +120,6 @@ __all__ = [
     "sample_points",
     "sample_circular_orbit",
     "sample_elliptic_orbit",
-    "resolve_batsrus_pressure_si",
-    "pressure_components_from_orbit_sample",
-    "pressure_components_on_circular_orbit",
-    "pressure_components_on_elliptic_orbit",
-    "surface_of_revolution_from_path",
-    "surface_point_normals_and_areas",
-    "sample_orbit_surface_revolution",
-    "pressure_components_on_orbit_surface",
-    "torque_components_on_orbit_surface",
     "local_mass_loss_on_circular_orbit",
     "local_mass_loss_on_elliptic_orbit",
     "local_torque_on_circular_orbit",
@@ -158,7 +135,6 @@ __all__ = [
     "magnetospheric_standoff_distance",
     "surface_escape_speed",
     "open_wind_magnetisation",
-    "open_wind_magnetisation_from_profiles",
     "AU_M",
     "PlanetOrbitElements",
     "SOLAR_SYSTEM_PLANETS",

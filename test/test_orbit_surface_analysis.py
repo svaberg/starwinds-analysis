@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.orbit_surface import (
+from starwinds_analysis.pipelines.orbit_surface import (
     pressure_components_on_orbit_surface,
     sample_orbit_surface_revolution,
     surface_of_revolution_from_path,
@@ -13,7 +13,7 @@ from starwinds_analysis.analysis.orbit_surface import (
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 SUN_RADIUS_M = 6.957e8
 SUN_MASS_KG = 1.98847e30
 
