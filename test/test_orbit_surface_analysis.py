@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.pipelines.orbit_surface import (
+from starwinds_analysis.physics.orbit_surface import (
     pressure_components_on_orbit_surface,
     sample_orbit_surface_revolution,
     surface_of_revolution_from_path,

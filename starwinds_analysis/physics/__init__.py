@@ -11,7 +11,11 @@ from .pressure import (
     pressure_components,
     ram_pressure,
 )
-from .wind_scaling import open_wind_magnetisation, surface_escape_speed
+from .wind_scaling import (
+    open_wind_magnetisation,
+    open_wind_magnetisation_from_profiles,
+    surface_escape_speed,
+)
 
 __all__ = [
     "MU0",
@@ -21,4 +25,5 @@ __all__ = [
     "ram_pressure",
     "surface_escape_speed",
     "open_wind_magnetisation",
+    "open_wind_magnetisation_from_profiles",
 ]

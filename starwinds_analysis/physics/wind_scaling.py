@@ -37,8 +37,33 @@ def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_rad
         return (4.0 * math.pi / MU0) * phi * phi / (r * r * dotm * vesc)
 
 
+def open_wind_magnetisation_from_profiles(
+    diagnostics,
+    *,
+    star_mass_kg,
+    star_radius_m,
+):
+    """
+    Compute `Upsilon_open` from shell-profile bundle entries.
+
+    This is a thin adapter from profile arrays to the local formula.
+    """
+    if "open_flux" not in diagnostics or "mass_loss" not in diagnostics:
+        raise KeyError("diagnostics must include 'open_flux' and 'mass_loss'")
+
+    phi = np.asarray(diagnostics["open_flux"]["open_flux [Wb]"], dtype=float)
+    dotm = np.asarray(diagnostics["mass_loss"]["mass_loss [kg/s]"], dtype=float)
+    y = open_wind_magnetisation(phi, dotm, star_mass_kg, star_radius_m)
+    return {
+        "radius [R]": np.asarray(diagnostics["mass_loss"]["radius [R]"], dtype=float),
+        "height [R]": np.asarray(diagnostics["mass_loss"]["height [R]"], dtype=float),
+        "Upsilon_open [none]": np.asarray(y, dtype=float),
+    }
+
+
 __all__ = [
     "MU0",
     "open_wind_magnetisation",
+    "open_wind_magnetisation_from_profiles",
     "surface_escape_speed",
 ]

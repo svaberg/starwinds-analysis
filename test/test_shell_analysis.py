@@ -30,9 +30,9 @@ from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quanti
 from starwinds_analysis.analysis.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import (
     open_wind_magnetisation,
+    open_wind_magnetisation_from_profiles,
     surface_escape_speed,
 )
-from starwinds_analysis.pipelines.wind_scaling import open_wind_magnetisation_from_profiles
 from starwinds_analysis.smart_ds import SmartDs
 
 
