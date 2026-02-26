@@ -39,7 +39,7 @@ Legend:
 - `starwinds_analysis/physics/orbit_surface.py` — **Debt**. Large orbit-surface workflow/pipeline in `physics`, imports `analysis`, and couples geometry/sampling with quantity assembly. Code TODO: added TODO.
 - `starwinds_analysis/physics/orbits.py` — **Reviewed**. Kepler orbit kinematics primitives moved into `physics` (deeper/shared layer).
 - `starwinds_analysis/physics/planetary_orbits.py` — **Reviewed**. Named orbit presets/helpers now depend on deep `physics.orbits` primitives instead of `analysis.orbits`.
-- `starwinds_analysis/physics/plotting.py` — **Debt**. Quantity-specific plotting wrappers in deep `physics` layer; plotting API surface is larger than desired and not purely generic. Code TODO: added TODO.
+- `starwinds_analysis/physics/plotting.py` — **Debt**. Deep-layer plotting still includes quantity-specific shell-map plotting (`plot_shell_mass_flux_lonlat`). The profile-specific wrappers were removed in this pass, but plotting API surface is still larger than desired. Code TODO: added TODO.
 - `starwinds_analysis/physics/pressure.py` — **Debt**. Pressure and standoff quantities (`magnetic_pressure`, `ram_pressure`, component bundle) still computed outside SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/shell_torque.py` — **Debt**. Quantity-specific shell torque profile wrapper (`torque_vs_radius`) depends on `analysis.shells` + `resolve_*`. Code TODO: added TODO.
 - `starwinds_analysis/physics/surface_torque.py` — **Debt**. Local torque terms (`T1..T4`) still computed outside SmartDs/griblet; heavy finite-mask/NaN handling should remain intentional/documented. Code TODO: existing TODO(griblet) added.
