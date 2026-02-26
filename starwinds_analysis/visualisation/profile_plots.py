@@ -15,9 +15,9 @@ SHELL_HEIGHT_XLABEL = "Height over surface [R]"
 
 def shell_profile_height(profile) -> np.ndarray:
     if "height [R]" in profile:
-        return np.array(profile["height [R]"], dtype=float)
+        return np.array(profile["height [R]"])
     if "radius [R]" in profile:
-        return np.array(profile["radius [R]"], dtype=float) - 1.0
+        return np.array(profile["radius [R]"]) - 1.0
     raise KeyError("Profile must contain 'height [R]' or 'radius [R]'")
 
 def plot_shell_height_series(
@@ -31,7 +31,7 @@ def plot_shell_height_series(
     show_negative: bool = False,
 ):
     x = shell_profile_height(profile)
-    y = np.array(profile[y_key], dtype=float)
+    y = np.array(profile[y_key])
     ax.plot(x, y, ".-", color=color, label=label)
     if show_negative:
         ax.plot(x, -y, ".--", color=color, fillstyle="none")

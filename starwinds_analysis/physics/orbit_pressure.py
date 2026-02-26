@@ -31,8 +31,8 @@ def _pressure_field_name_and_scale(smart_ds):
     raise KeyError("Could not find pressure field in SI or cgs form")
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
-    points = np.array(points_r, dtype=float) * float(body_radius_m)
-    phase = np.array(phase_turns, dtype=float)
+    points = np.array(points_r) * float(body_radius_m)
+    phase = np.array(phase_turns)
     n = points.shape[0]
     if n < 3:
         return np.full_like(points, np.nan, dtype=float)
@@ -57,7 +57,7 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
 def _summaries_from_arrays(data, *, weights=None):
     out = {}
     for key, value in data.items():
-        arr = np.array(value, dtype=float)
+        arr = np.array(value)
         if arr.ndim != 1:
             continue
         out[key] = summarize_samples(arr, weights=weights)
@@ -77,9 +77,9 @@ def pressure_components_from_orbit_sample(
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
 
-    rho = np.array(orbit[rho_name], dtype=float)
+    rho = np.array(orbit[rho_name])
     u_xyz = np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
-    p_therm = p_scale * np.array(orbit[p_name], dtype=float)
+    p_therm = p_scale * np.array(orbit[p_name])
 
     object_velocity = None
     if (
@@ -88,7 +88,7 @@ def pressure_components_from_orbit_sample(
         and semi_major_axis_r is not None
         and np.isfinite(semi_major_axis_r)
     ):
-        phase = np.array(orbit.get("phase [turns]"), dtype=float)
+        phase = np.array(orbit.get("phase [turns]"))
         if phase.shape == (len(rho),):
             period_s = orbital_period(float(semi_major_axis_r) * body_radius_m, star_mass_kg)
             points_r = np.column_stack(
@@ -97,10 +97,10 @@ def pressure_components_from_orbit_sample(
             object_velocity = _periodic_orbit_velocity(points_r, phase, period_s, body_radius_m)
 
     comps = {
-        "U [m/s]": np.array(orbit["U [m/s]"], dtype=float),
-        "B [T]": np.array(orbit["B [T]"], dtype=float),
-        "magnetic_pressure [Pa]": np.array(orbit["magnetic_pressure [Pa]"], dtype=float),
-        "ram_pressure [Pa]": np.array(orbit["ram_pressure [Pa]"], dtype=float),
+        "U [m/s]": np.array(orbit["U [m/s]"]),
+        "B [T]": np.array(orbit["B [T]"]),
+        "magnetic_pressure [Pa]": np.array(orbit["magnetic_pressure [Pa]"]),
+        "ram_pressure [Pa]": np.array(orbit["ram_pressure [Pa]"]),
         "thermal_pressure [Pa]": p_therm,
     }
 
@@ -209,6 +209,6 @@ def pressure_components_on_elliptic_orbit(
     )
     out["semi_major_axis [R]"] = float(semi_major_axis)
     out["eccentricity [none]"] = float(eccentricity)
-    out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"], dtype=float)))
+    out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"])))
     out["radius [m]"] = out["radius [R]"] * body_radius_m
     return out

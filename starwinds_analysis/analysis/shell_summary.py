@@ -14,7 +14,7 @@ def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | No
     """
     Boxcar weights over shell radii in units of body radii.
     """
-    r = np.array(radii_r, dtype=float)
+    r = np.array(radii_r)
     w = np.ones_like(r, dtype=float)
     if rmin is not None:
         w = np.where(r >= float(rmin), w, 0.0)
@@ -36,20 +36,20 @@ def summarize_shell_series(
     """
     Weighted summary (mean/std/quantiles) for a 1D shell profile series.
     """
-    r = np.array(radii_r, dtype=float).ravel()
-    v = np.array(values, dtype=float).ravel()
+    r = np.array(radii_r).ravel()
+    v = np.array(values).ravel()
     if r.shape != v.shape:
         raise ValueError("radii and values must have the same shape")
 
     if weights is None:
         w = boxcar_shell_weights(r, rmin=rmin, rmax=rmax)
     else:
-        w = np.array(weights, dtype=float).ravel()
+        w = np.array(weights).ravel()
         if w.shape != v.shape:
             raise ValueError("weights must have the same shape as values")
 
     if coverage is not None:
-        c = np.array(coverage, dtype=float).ravel()
+        c = np.array(coverage).ravel()
         if c.shape != v.shape:
             raise ValueError("coverage must have the same shape as values")
         w = w * np.clip(c, 0.0, np.inf)
@@ -77,8 +77,8 @@ def summarize_shell_series(
         "weight_sum": weight_sum,
         "mean": float(mean),
         "std": float(std),
-        "quantiles": np.array(quantiles, dtype=float).tolist(),
-        "values": np.array(qvals, dtype=float).tolist(),
+        "quantiles": np.array(quantiles).tolist(),
+        "values": np.array(qvals).tolist(),
     }
 
 def summarize_shell_diagnostics_band(

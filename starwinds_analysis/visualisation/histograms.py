@@ -221,7 +221,7 @@ def plot_radial_hist2d(
     elif isinstance(weights, str):
         w_all = np.array(ds(weights)).ravel()[rmask]
     else:
-        w_all = np.array(weights, dtype=float).ravel()[rmask]
+        w_all = np.array(weights).ravel()[rmask]
 
     if isinstance(bins, int):
         bins = (int(bins), int(bins))
@@ -256,7 +256,7 @@ def plot_radial_hist2d(
             range=(r_range, f_range),
             weights=w,
         )
-        H = np.array(H, dtype=float)
+        H = np.array(H)
 
         if normalize == "per_radius":
             colsum = H.sum(axis=1, keepdims=True)

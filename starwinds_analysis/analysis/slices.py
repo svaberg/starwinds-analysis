@@ -26,7 +26,7 @@ def structured_quad_corners(nx: int, nz: int):
     return corners
 
 def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
-    v = np.array(values, dtype=float)
+    v = np.array(values)
     v = v[np.isfinite(v)]
     if v.size == 0:
         raise ValueError("No finite values to infer range from")
@@ -64,8 +64,8 @@ def resample_structured_xz_slice(
     if nx < 2 or nz < 2:
         raise ValueError("nx and nz must be >= 2")
 
-    x = np.array(smart_ds.variable("X [R]"), dtype=float)
-    z = np.array(smart_ds.variable("Z [R]"), dtype=float)
+    x = np.array(smart_ds.variable("X [R]"))
+    z = np.array(smart_ds.variable("Z [R]"))
 
     if x_range is None:
         x_range = infer_range(x, symmetric=symmetric_ranges, padding_frac=padding_frac)

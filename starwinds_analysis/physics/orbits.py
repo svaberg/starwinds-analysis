@@ -27,7 +27,7 @@ def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     """
     Vis-viva orbital speed.
     """
-    r = np.array(radial_distance_m, dtype=float)
+    r = np.array(radial_distance_m)
     m = float(star_mass_kg)
     a = float(semi_major_axis_m)
     if m <= 0:

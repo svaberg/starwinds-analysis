@@ -28,7 +28,7 @@ def resample_smart_ds(
     """
     Resample scalar fields onto new point locations and return a new wrapped dataset.
     """
-    sample_points = np.array(sample_points, dtype=float)
+    sample_points = np.array(sample_points)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
     if sample_points.ndim < 2:
@@ -148,7 +148,7 @@ def interpolate_nd(source_points, values, sample_points, *, method: str, fill_va
     else:
         raise ValueError("method must be 'nearest' or 'linear'")
 
-    out = np.array(out, dtype=float)
+    out = np.array(out)
     if out.ndim == 0:
         out = out[np.newaxis]
     return out

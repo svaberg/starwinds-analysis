@@ -56,7 +56,7 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
     arrays = []
     names = []
     for name, values in extra_fields.items():
-        arr = np.array(values, dtype=float)
+        arr = np.array(values)
         if arr.shape != base_shape:
             raise ValueError(
                 f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
@@ -128,7 +128,7 @@ def infer_cartesian_axis_radii(
     if axis_idx is None:
         raise ValueError("axis must be 'x', 'y', or 'z'")
 
-    coords = [np.array(smart_ds.variable(name), dtype=float).ravel() for name in coord_fields]
+    coords = [np.array(smart_ds.variable(name)).ravel() for name in coord_fields]
     if len(coords) != 3:
         raise ValueError("coord_fields must have length 3")
     x, y, z = coords
@@ -141,7 +141,7 @@ def infer_cartesian_axis_radii(
             continue
         mask &= np.isclose(arr, 0.0, atol=float(atol), rtol=0.0)
 
-    vals = np.array(values[mask], dtype=float)
+    vals = np.array(values[mask])
     if positive_only:
         vals = vals[vals > 0.0]
     else:
@@ -186,7 +186,7 @@ def sample_spherical_shells(
     No shell-specific custom container is created; callers should request fields
     directly from the returned structured `SmartDs`.
     """
-    radii = np.atleast_1d(np.array(radii, dtype=float))
+    radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
@@ -198,9 +198,9 @@ def sample_spherical_shells(
         azimuthal_edges = np.linspace(-math.pi, math.pi, n_azimuth + 1)
 
     ang_grid = PolarAzimuthalGrid(polar_edges, azimuthal_edges)
-    theta = np.array(ang_grid.polar_centres, dtype=float)
-    phi = np.array(ang_grid.azimuthal_centres, dtype=float)
-    area_unit_sphere = np.array(ang_grid.cell_solid_angle, dtype=float)
+    theta = np.array(ang_grid.polar_centres)
+    phi = np.array(ang_grid.azimuthal_centres)
+    area_unit_sphere = np.array(ang_grid.cell_solid_angle)
     if theta.shape != area_unit_sphere.shape:
         if theta.T.shape != area_unit_sphere.shape or phi.T.shape != area_unit_sphere.shape:
             raise ValueError(
@@ -245,7 +245,7 @@ def sample_spherical_shells(
     r_field = np.broadcast_to(radii[:, None, None], (radii.size, ntheta, nphi)).copy()
     theta_field = np.broadcast_to(theta[None, :, :], (radii.size, ntheta, nphi)).copy()
     phi_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
-    area_field = np.array(area, dtype=float)
+    area_field = np.array(area)
 
     shell_ds = _append_fields_to_smart_ds(
         resampled,
@@ -279,7 +279,7 @@ def sample_spherical_shells_fibonacci(
     As with the grid sampler, no shell-specific custom container is created; callers
     should request fields directly from the returned structured `SmartDs`.
     """
-    radii = np.atleast_1d(np.array(radii, dtype=float))
+    radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
@@ -288,7 +288,7 @@ def sample_spherical_shells_fibonacci(
     if n_points < 8:
         raise ValueError("n_points must be >= 8")
 
-    unit = np.array(fibonacci_sphere(n_points, randomize=randomize), dtype=float)
+    unit = np.array(fibonacci_sphere(n_points, randomize=randomize))
     xhat = unit[:, 0][:, None]
     yhat = unit[:, 1][:, None]
     zhat = unit[:, 2][:, None]
@@ -388,8 +388,8 @@ def integrate_shell_scalar(values, area):
     Returns `(integral, coverage)` for each shell radius, where `coverage` is the
     finite-area fraction represented by finite values.
     """
-    v = np.array(values, dtype=float)
-    a = np.array(area, dtype=float)
+    v = np.array(values)
+    a = np.array(area)
     if v.shape != a.shape:
         a = np.broadcast_to(a, v.shape)
 
@@ -410,11 +410,11 @@ def integrate_shell_scalar(values, area):
 
 def shell_profile_radius_height(shells):
     if hasattr(shells, "has_field") and shells.has_field("R [R]"):
-        r_field = np.array(shells("R [R]"), dtype=float)
+        r_field = np.array(shells("R [R]"))
         if r_field.ndim >= 2:
             radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
         else:
-            radii = np.array(r_field, dtype=float)
+            radii = np.array(r_field)
     else:
         raise ValueError("shell_profile_radius_height expects a shell SmartDs with 'R [R]'")
     return {

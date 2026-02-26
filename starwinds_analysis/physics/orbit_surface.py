@@ -50,7 +50,7 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     The path is represented only by cylindrical radius and z-coordinate, matching the
     old `elliptic_orbit.surface_from_orbit(...)` behavior.
     """
-    pts = np.array(points, dtype=float)
+    pts = np.array(points)
     if pts.ndim != 2 or pts.shape[1] != 3:
         raise ValueError("points must have shape (n, 3)")
     n = pts.shape[0]
@@ -78,8 +78,8 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     }
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
-    points = np.array(points_r, dtype=float) * float(body_radius_m)
-    phase = np.array(phase_turns, dtype=float)
+    points = np.array(points_r) * float(body_radius_m)
+    phase = np.array(phase_turns)
     n = points.shape[0]
     if n < 3:
         return np.full_like(points, np.nan, dtype=float)
@@ -105,7 +105,7 @@ def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     if time_weight is None:
         t_w = np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
     else:
-        t_w = np.array(time_weight, dtype=float)
+        t_w = np.array(time_weight)
         if t_w.shape != (int(n_phase),):
             raise ValueError("time_weight shape mismatch")
         t_w = np.where(np.isfinite(t_w) & (t_w >= 0), t_w, 0.0)
@@ -114,10 +114,10 @@ def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     return np.outer(t_w, az_w)
 
 def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
-    arr = np.array(values_2d, dtype=float)
+    arr = np.array(values_2d)
     if arr.ndim != 2:
         raise ValueError("values_2d must be 2D")
-    q = np.array(q, dtype=float)
+    q = np.array(q)
     out = np.full((arr.shape[0], q.size), np.nan, dtype=float)
     for i in range(arr.shape[0]):
         row = arr[i]
@@ -133,7 +133,7 @@ def surface_point_normals_and_areas(surface_points_xyz_m):
     Uses centered differences in both directions with periodic wrapping. The resulting
     area weights are suitable for integrating sampled fields over the orbit surface.
     """
-    pts = np.array(surface_points_xyz_m, dtype=float)
+    pts = np.array(surface_points_xyz_m)
     if pts.ndim != 3 or pts.shape[-1] != 3:
         raise ValueError("surface_points_xyz_m must have shape (n_phase, n_lon, 3)")
     if pts.shape[0] < 3 or pts.shape[1] < 4:
@@ -156,8 +156,8 @@ def _phase_line_integrals(values_2d, area_2d):
     """
     Integrate sampled surface density values over longitude for each orbit phase.
     """
-    v = np.array(values_2d, dtype=float)
-    a = np.array(area_2d, dtype=float)
+    v = np.array(values_2d)
+    a = np.array(area_2d)
     if v.shape != a.shape:
         a = np.broadcast_to(a, v.shape)
     mask = np.isfinite(v) & np.isfinite(a)
@@ -263,15 +263,15 @@ def sample_orbit_surface_revolution(
         "R [surface]": surf["radius [surface]"],
         "C [surface]": surf["cyl_radius [surface]"],
         "azimuth [rad]": surf["azimuth [rad]"],
-        "phase [turns]": np.array(path_meta["phase [turns]"], dtype=float),
-        "time_weight [none]": np.array(path_meta["time_weight [none]"], dtype=float),
+        "phase [turns]": np.array(path_meta["phase [turns]"]),
+        "time_weight [none]": np.array(path_meta["time_weight [none]"]),
         "orbit_meta": path_meta,
         "zone": zone,
     }
     for key, val in sampled_flat.items():
         if key in {"X [sample]", "Y [sample]", "Z [sample]", "R [sample]"}:
             continue
-        arr = np.array(val, dtype=float)
+        arr = np.array(val)
         if arr.shape == (n_phase * n_lon,):
             sampled[key] = arr.reshape(n_phase, n_lon)
     return sampled
@@ -306,14 +306,14 @@ def pressure_components_on_orbit_surface(
         n_longitudes=n_longitudes,
     )
 
-    rho = np.array(sampled[rho_name], dtype=float)
+    rho = np.array(sampled[rho_name])
     u_xyz = np.stack(
         [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
     )
     b_xyz = np.stack(
         [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
     )
-    p_therm = p_scale * np.array(sampled[p_name], dtype=float)
+    p_therm = p_scale * np.array(sampled[p_name])
 
     object_velocity = None
     orbit_meta = sampled["orbit_meta"]
@@ -327,7 +327,7 @@ def pressure_components_on_orbit_surface(
         path_points = np.column_stack(
             [sampled["X [surface]"][:, 0], sampled["Y [surface]"][:, 0], sampled["Z [surface]"][:, 0]]
         )
-        phase = np.array(sampled["phase [turns]"], dtype=float)
+        phase = np.array(sampled["phase [turns]"])
         if phase.shape == (path_points.shape[0],):
             period_s = orbital_period(float(a_r) * body_radius_m, star_mass_kg)
             v_path = _periodic_orbit_velocity(path_points, phase, period_s, body_radius_m)
@@ -340,7 +340,7 @@ def pressure_components_on_orbit_surface(
         thermal_pressure_pa=p_therm.reshape(-1),
         object_velocity_xyz_m_s=None if object_velocity is None else object_velocity.reshape(-1, 3),
     )
-    comps = {k: np.array(v, dtype=float).reshape(rho.shape) for k, v in comps.items()}
+    comps = {k: np.array(v).reshape(rho.shape) for k, v in comps.items()}
     speed_for_standoff = comps.get("relative_speed [m/s]", comps["U [m/s]"])
     comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
         rho,
@@ -353,13 +353,13 @@ def pressure_components_on_orbit_surface(
     )
     summaries = {}
     phase_profiles = {}
-    q = np.array(quantiles, dtype=float)
+    q = np.array(quantiles)
     for key, arr in comps.items():
-        flat = np.array(arr, dtype=float).reshape(-1)
+        flat = np.array(arr).reshape(-1)
         summaries[key] = summarize_samples(flat, weights=weights.reshape(-1))
         qq, qarr = _phase_quantiles(arr, q=q)
         phase_profiles[key] = {
-            "phase [turns]": np.array(sampled["phase [turns]"], dtype=float),
+            "phase [turns]": np.array(sampled["phase [turns]"]),
             "quantiles [none]": qq,
             "values": qarr,
         }
@@ -415,16 +415,16 @@ def torque_components_on_orbit_surface(
         n_longitudes=n_longitudes,
     )
 
-    rho = np.array(sampled[rho_name], dtype=float)
+    rho = np.array(sampled[rho_name])
     u_xyz = np.stack(
         [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
     )
     b_xyz = np.stack(
         [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
     )
-    p = None if p_name is None else p_scale * np.array(sampled[p_name], dtype=float)
+    p = None if p_name is None else p_scale * np.array(sampled[p_name])
 
-    points_m = np.array(sampled["surface_points"], dtype=float) * float(body_radius_m)
+    points_m = np.array(sampled["surface_points"]) * float(body_radius_m)
     normals, area = surface_point_normals_and_areas(points_m)
 
     terms = surface_torque_density_terms(
@@ -440,10 +440,10 @@ def torque_components_on_orbit_surface(
     )
     totals = integrate_surface_torque_terms(terms)
 
-    q = np.array(quantiles, dtype=float)
+    q = np.array(quantiles)
     phase_quantiles = {}
     phase_integrals = {}
-    phase = np.array(sampled["phase [turns]"], dtype=float)
+    phase = np.array(sampled["phase [turns]"])
     for src_key, out_key in (
         ("T1_magnetic [N/m]", "T1_magnetic"),
         ("T2_pressure [N/m]", "T2_pressure"),
@@ -451,7 +451,7 @@ def torque_components_on_orbit_surface(
         ("T4_dynamic [N/m]", "T4_dynamic"),
         ("total [N/m]", "total"),
     ):
-        arr = np.array(terms[src_key], dtype=float)
+        arr = np.array(terms[src_key])
         qq, qarr = _phase_quantiles(arr, q=q)
         integ, cov = _phase_line_integrals(arr, area)
         phase_quantiles[out_key] = {
@@ -474,7 +474,7 @@ def torque_components_on_orbit_surface(
         ("T4_dynamic [N/m]", "T4_dynamic [N/m]"),
         ("total [N/m]", "total [N/m]"),
     ):
-        summary[out_key] = summarize_samples(np.array(terms[src_key], dtype=float).reshape(-1), weights=weights)
+        summary[out_key] = summarize_samples(np.array(terms[src_key]).reshape(-1), weights=weights)
 
     out = {
         "orbit_surface": sampled,
@@ -485,12 +485,12 @@ def torque_components_on_orbit_surface(
         "phase_quantiles": phase_quantiles,
         "phase_integrals": phase_integrals,
         "summary": summary,
-        "T1_magnetic [Nm]": np.array(totals["T1_magnetic [Nm]"], dtype=float),
-        "T2_pressure [Nm]": np.array(totals["T2_pressure [Nm]"], dtype=float),
-        "T3_corotation [Nm]": np.array(totals["T3_corotation [Nm]"], dtype=float),
-        "T4_dynamic [Nm]": np.array(totals["T4_dynamic [Nm]"], dtype=float),
-        "total [Nm]": np.array(totals["total [Nm]"], dtype=float),
-        "coverage [none]": np.array(totals["coverage [none]"], dtype=float),
+        "T1_magnetic [Nm]": np.array(totals["T1_magnetic [Nm]"]),
+        "T2_pressure [Nm]": np.array(totals["T2_pressure [Nm]"]),
+        "T3_corotation [Nm]": np.array(totals["T3_corotation [Nm]"]),
+        "T4_dynamic [Nm]": np.array(totals["T4_dynamic [Nm]"]),
+        "total [Nm]": np.array(totals["total [Nm]"]),
+        "coverage [none]": np.array(totals["coverage [none]"]),
         "surface_terms": terms,
     }
     orbit_meta = sampled["orbit_meta"]

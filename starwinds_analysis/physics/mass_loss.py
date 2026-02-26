@@ -58,14 +58,14 @@ def mass_loss_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    area = np.array(shells(area_name), dtype=float)
+    area = np.array(shells(area_name))
 
-    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"), dtype=float)
+    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
     return {
         **shell_profile_radius_height(shells),
-        "mass_loss [kg/s]": np.array(mass_loss, dtype=float),
-        "coverage [none]": np.array(coverage, dtype=float),
+        "mass_loss [kg/s]": np.array(mass_loss),
+        "coverage [none]": np.array(coverage),
         "shell_samples": shells,
     }

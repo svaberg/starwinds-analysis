@@ -66,13 +66,13 @@ def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star
     """
     if "open_flux" not in diagnostics or "mass_loss" not in diagnostics:
         raise KeyError("diagnostics must include 'open_flux' and 'mass_loss'")
-    phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"], dtype=float)
-    dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"], dtype=float)
+    phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"])
+    dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"])
     y = open_wind_magnetisation(phi, dotm, star_mass_kg, star_radius_m)
     return {
-        "radius [R]": np.array(diagnostics["mass_loss"]["radius [R]"], dtype=float),
-        "height [R]": np.array(diagnostics["mass_loss"]["height [R]"], dtype=float),
-        "Upsilon_open [none]": np.array(y, dtype=float),
+        "radius [R]": np.array(diagnostics["mass_loss"]["radius [R]"]),
+        "height [R]": np.array(diagnostics["mass_loss"]["height [R]"]),
+        "Upsilon_open [none]": np.array(y),
     }
 
 SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
@@ -450,7 +450,7 @@ def quicklook_shell_figure(
     return fig, axs, diagnostics
 
 def plot_orbit_mass_loss_comparison(ax, result):
-    y = np.array(result["local_mass_loss [kg/s]"], dtype=float)
+    y = np.array(result["local_mass_loss [kg/s]"])
     phase = _orbit_phase(result, y.size)
     shell_interp = result.get("shell_mass_loss_interp [kg/s]")
     shell = float(result["shell_mass_loss [kg/s]"])
@@ -460,7 +460,7 @@ def plot_orbit_mass_loss_comparison(ax, result):
     if shell_interp is not None:
         ax.plot(
             phase,
-            np.array(shell_interp, dtype=float),
+            np.array(shell_interp),
             "-",
             color="C1",
             alpha=0.9,
@@ -476,7 +476,7 @@ def plot_orbit_mass_loss_comparison(ax, result):
     return ax
 
 def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
-    tot = np.array(result["local_total_torque [Nm]"], dtype=float)
+    tot = np.array(result["local_total_torque [Nm]"])
     phase = _orbit_phase(result, tot.size)
     shell_interp = result.get("shell_total_torque_interp [Nm]")
     shell = float(result["shell_total_torque [Nm]"])
@@ -490,7 +490,7 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     if shell_interp is not None:
         ax.plot(
             phase,
-            np.array(shell_interp, dtype=float),
+            np.array(shell_interp),
             "-",
             color="k",
             alpha=0.9,
@@ -507,9 +507,9 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
 
 def _orbit_phase(result, n):
     try:
-        phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"), dtype=float)
+        phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"))
     except Exception:
-        phase = np.array([], dtype=float)
+        phase = np.array([])
     if phase.shape == (n,):
         return phase
     return np.arange(n, dtype=float) / max(1, n)
@@ -530,11 +530,11 @@ def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True)
         ("ram_pressure [Pa]", "ram", "C2"),
     ):
         if key in result:
-            ax.plot(phase, np.array(result[key], dtype=float), ",", color=color, alpha=0.65, label=label)
+            ax.plot(phase, np.array(result[key]), ",", color=color, alpha=0.65, label=label)
     if include_relative and "relative_ram_pressure [Pa]" in result:
         ax.plot(
             phase,
-            np.array(result["relative_ram_pressure [Pa]"], dtype=float),
+            np.array(result["relative_ram_pressure [Pa]"]),
             ",",
             color="C3",
             alpha=0.65,
@@ -602,7 +602,7 @@ def orbit_pressure_figure(
     fig, axs = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
     plot_orbit_pressure_components(axs[0], result)
     phase = _orbit_phase(result, len(np.array(result["standoff_distance [m]"])))
-    axs[1].plot(phase, np.array(result["standoff_distance [m]"], dtype=float), ",", color="C4", alpha=0.7)
+    axs[1].plot(phase, np.array(result["standoff_distance [m]"]), ",", color="C4", alpha=0.7)
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Stand-off Proxy [m]")
     axs[1].set_yscale("log")
@@ -614,9 +614,9 @@ def orbit_pressure_figure(
     return fig, axs, result
 
 def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_med=0.5, q_high=0.75):
-    phase = np.array(phase_profile["phase [turns]"], dtype=float)
-    qs = np.array(phase_profile["quantiles [none]"], dtype=float)
-    vals = np.array(phase_profile["values"], dtype=float)
+    phase = np.array(phase_profile["phase [turns]"])
+    qs = np.array(phase_profile["quantiles [none]"])
+    vals = np.array(phase_profile["values"])
     if vals.ndim != 2 or vals.shape[0] != phase.size:
         return ax
 
@@ -717,8 +717,8 @@ def orbit_surface_torque_figure(
     ):
         p = result["phase_integrals"][key]
         axs[0].plot(
-            np.array(p["phase [turns]"], dtype=float),
-            np.array(p["integral [Nm]"], dtype=float),
+            np.array(p["phase [turns]"]),
+            np.array(p["integral [Nm]"]),
             ".-",
             color=color,
             alpha=0.8,
@@ -1102,7 +1102,7 @@ def _slug_key(s: str) -> str:
     return slug.strip("_") or "item"
 
 def _array_summary(values):
-    arr = np.array(values, dtype=float)
+    arr = np.array(values)
     finite = np.isfinite(arr)
     return {
         "shape": list(arr.shape),
@@ -1131,7 +1131,7 @@ def _summarize_result_object(value, *, skip_keys):
         except Exception:
             return str(value)
     if np.issubdtype(arr.dtype, np.number):
-        return _array_summary(np.array(arr, dtype=float))
+        return _array_summary(np.array(arr))
     return str(value)
 
 def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
@@ -1154,7 +1154,7 @@ def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
         return
     if not np.issubdtype(arr.dtype, np.number):
         return
-    arrays[prefix] = np.array(arr, dtype=float)
+    arrays[prefix] = np.array(arr)
 
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
     """

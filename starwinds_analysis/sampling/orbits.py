@@ -56,7 +56,7 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
     e = float(eccentricity)
     if not (0.0 <= e < 1.0):
         raise ValueError("eccentricity must satisfy 0 <= e < 1")
-    m = np.array(mean_anomaly_rad, dtype=float)
+    m = np.array(mean_anomaly_rad)
     e_anom = np.mod(m, 2.0 * math.pi)
     if e == 0.0:
         return e_anom
@@ -89,9 +89,9 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
     return pts
 
 def _phase_from_weights(weights):
-    w = np.array(weights, dtype=float)
+    w = np.array(weights)
     if w.ndim != 1 or w.size == 0:
-        return np.array([], dtype=float)
+        return np.array([])
     w = np.where(np.isfinite(w) & (w >= 0), w, 0.0)
     sw = float(np.sum(w))
     if sw <= 0:
@@ -163,7 +163,7 @@ def elliptic_orbit_points(
         math.sqrt(1.0 + e) * np.sin(e_anom / 2.0),
         math.sqrt(1.0 - e) * np.cos(e_anom / 2.0),
     )
-    time_weight = np.array(weights, dtype=float)
+    time_weight = np.array(weights)
     sw = np.sum(time_weight)
     if sw > 0:
         time_weight = time_weight / sw
@@ -198,7 +198,7 @@ def sample_points(
     """
     Resample `fields` onto explicit Cartesian points.
     """
-    points = np.array(points, dtype=float)
+    points = np.array(points)
     out = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
@@ -207,7 +207,7 @@ def sample_points(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    data = {name: np.array(out.variable(name), dtype=float) for name in fields}
+    data = {name: np.array(out.variable(name)) for name in fields}
     data["X [sample]"] = points[:, 0]
     data["Y [sample]"] = points[:, 1]
     data["Z [sample]"] = points[:, 2]

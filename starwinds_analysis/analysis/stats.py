@@ -12,11 +12,11 @@ def weighted_mean_std(values, weights=None):
     """
     Weighted mean and standard deviation over finite values.
     """
-    v = np.array(values, dtype=float)
+    v = np.array(values)
     if weights is None:
         w = np.ones_like(v, dtype=float)
     else:
-        w = np.array(weights, dtype=float)
+        w = np.array(weights)
         if w.shape != v.shape:
             w = np.broadcast_to(w, v.shape)
 
@@ -38,13 +38,13 @@ def weighted_quantile(values, quantiles, weights=None):
     """
     Weighted quantiles for 1D data.
     """
-    v = np.array(values, dtype=float).ravel()
-    q = np.array(quantiles, dtype=float)
+    v = np.array(values).ravel()
+    q = np.array(quantiles)
 
     if weights is None:
         w = np.ones_like(v, dtype=float)
     else:
-        w = np.array(weights, dtype=float).ravel()
+        w = np.array(weights).ravel()
         if w.shape != v.shape:
             raise ValueError("weights must have the same shape as values")
 
@@ -59,7 +59,7 @@ def weighted_quantile(values, quantiles, weights=None):
     v = v[order]
     w = w[order]
 
-    cdf = np.cumsum(w)
+    cdf = np.cumsum(w, dtype=float)
     cdf /= cdf[-1]
     q = np.clip(q, 0.0, 1.0)
 
@@ -70,13 +70,12 @@ def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=
     """
     Weighted quantiles + mean/std summary for 1D samples.
     """
-    v = np.array(values, dtype=float)
+    v = np.array(values)
     qv = weighted_quantile(v, quantiles, weights=weights)
     mean, std = weighted_mean_std(v, weights=weights)
     return {
-        "quantiles": np.array(quantiles, dtype=float),
-        "values": np.array(qv, dtype=float),
+        "quantiles": np.array(quantiles),
+        "values": np.array(qv),
         "mean": float(mean),
         "std": float(std),
     }
-

@@ -25,8 +25,8 @@ def surface_escape_speed(star_mass_kg, star_radius_m):
     """
     # TODO(griblet): If stellar mass/radius are carried as SmartDs/aux quantities,
     # this should be requestable as a derived SI quantity instead of recomputed.
-    m = np.array(star_mass_kg, dtype=float)
-    r = np.array(star_radius_m, dtype=float)
+    m = np.array(star_mass_kg)
+    r = np.array(star_radius_m)
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.sqrt(2.0 * c.G * m / r)
 
@@ -36,9 +36,9 @@ def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_rad
     """
     # TODO(griblet): `Upsilon_open` is a derived physical quantity and should be
     # requestable via SmartDs/griblet when its SI inputs are present.
-    phi = np.array(open_flux_wb, dtype=float)
-    dotm = np.array(mass_loss_kg_s, dtype=float)
-    r = np.array(star_radius_m, dtype=float)
+    phi = np.array(open_flux_wb)
+    dotm = np.array(mass_loss_kg_s)
+    r = np.array(star_radius_m)
     vesc = surface_escape_speed(star_mass_kg, star_radius_m)
     with np.errstate(invalid="ignore", divide="ignore"):
         return (4.0 * math.pi / MU0) * phi * phi / (r * r * dotm * vesc)

@@ -24,9 +24,9 @@ from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
 
 def _interp_profile(radii, values, x):
-    r = np.array(radii, dtype=float)
-    y = np.array(values, dtype=float)
-    x = np.array(x, dtype=float)
+    r = np.array(radii)
+    y = np.array(values)
+    x = np.array(x)
     good = np.isfinite(r) & np.isfinite(y)
     if np.count_nonzero(good) < 2:
         return np.full_like(x, np.nan, dtype=float)
@@ -52,7 +52,7 @@ def _local_mass_loss_from_orbit_sample(
     rho_name = "Rho [kg/m^3]"
     rho = orbit[rho_name]
     u_r = orbit["U_r [m/s]"]
-    r_sample_r = np.array(orbit["R [sample]"], dtype=float)
+    r_sample_r = np.array(orbit["R [sample]"])
     r_m = r_sample_r * body_radius_m
     estimates = local_mass_loss_estimates(r_m, rho, u_r)
     weights = orbit.get("time_weight [none]")
@@ -70,7 +70,7 @@ def _local_mass_loss_from_orbit_sample(
         shell_value = float(shell["mass_loss [kg/s]"][0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_radii = np.array(shell_radii, dtype=float)
+        shell_radii = np.array(shell_radii)
         shell = mass_loss_vs_radius(
             smart_ds,
             shell_radii,
@@ -114,7 +114,7 @@ def _local_torque_from_orbit_sample(
     shell_radii=None,
 ):
     rho_name = "Rho [kg/m^3]"
-    r_sample_r = np.array(orbit["R [sample]"], dtype=float)
+    r_sample_r = np.array(orbit["R [sample]"])
     r_m = r_sample_r * body_radius_m
     rho = orbit[rho_name]
     u_r = orbit["U_r [m/s]"]
@@ -136,7 +136,7 @@ def _local_torque_from_orbit_sample(
         shell_total = float(shell["total_torque [Nm]"][0])
         shell_interp = np.full_like(local["total [Nm]"], shell_total, dtype=float)
     else:
-        shell_radii = np.array(shell_radii, dtype=float)
+        shell_radii = np.array(shell_radii)
         shell = torque_vs_radius(
             smart_ds,
             shell_radii,

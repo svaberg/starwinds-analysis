@@ -57,14 +57,14 @@ def open_magnetic_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    bx = np.array(shells(bx_name), dtype=float)
-    by = np.array(shells(by_name), dtype=float)
-    bz = np.array(shells(bz_name), dtype=float)
-    x = np.array(shells(x_name), dtype=float)
-    y = np.array(shells(y_name), dtype=float)
-    z = np.array(shells(z_name), dtype=float)
-    area = np.array(shells(area_name), dtype=float)
-    b_r = np.array(shells("B_r [T]"), dtype=float)
+    bx = np.array(shells(bx_name))
+    by = np.array(shells(by_name))
+    bz = np.array(shells(bz_name))
+    x = np.array(shells(x_name))
+    y = np.array(shells(y_name))
+    z = np.array(shells(z_name))
+    area = np.array(shells(area_name))
+    b_r = np.array(shells("B_r [T]"))
 
     signed_flux, cov_signed = integrate_shell_scalar(b_r, area)
     open_flux, cov_open = integrate_shell_scalar(np.abs(b_r), area)
@@ -80,10 +80,10 @@ def open_magnetic_flux_vs_radius(
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     return {
         **shell_profile_radius_height(shells),
-        "signed_flux [Wb]": np.array(signed_flux, dtype=float),
-        "signed_flux_from_vector [Wb]": np.array(signed_flux_from_vector, dtype=float),
-        "open_flux [Wb]": np.array(open_flux, dtype=float),
-        "coverage [none]": np.array(coverage, dtype=float),
+        "signed_flux [Wb]": np.array(signed_flux),
+        "signed_flux_from_vector [Wb]": np.array(signed_flux_from_vector),
+        "open_flux [Wb]": np.array(open_flux),
+        "coverage [none]": np.array(coverage),
         "shell_samples": shells,
     }
 
@@ -119,15 +119,15 @@ def axisymmetric_open_flux_vs_radius(
     )
     shells = prof["shell_samples"]
     # Reconstruct B_r from the cached shell samples in SI.
-    area = np.array(shells("dA [m^2]"), dtype=float)
-    b_r = np.array(shells("B_r [T]"), dtype=float)
+    area = np.array(shells("dA [m^2]"))
+    b_r = np.array(shells("B_r [T]"))
 
     with np.errstate(invalid="ignore"):
         b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
     b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
     axi_open_flux, cov_axi = integrate_shell_scalar(np.abs(b_r_axi), area)
 
-    open_flux = np.array(prof["open_flux [Wb]"], dtype=float)
+    open_flux = np.array(prof["open_flux [Wb]"])
     with np.errstate(invalid="ignore", divide="ignore"):
         fraction = np.divide(
             axi_open_flux,
@@ -137,8 +137,8 @@ def axisymmetric_open_flux_vs_radius(
         )
 
     prof = dict(prof)
-    prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux, dtype=float)
-    prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction, dtype=float)
+    prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux)
+    prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction)
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
     return prof
 
@@ -195,13 +195,13 @@ def energy_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    area = np.array(shells(area_name), dtype=float)
+    area = np.array(shells(area_name))
 
-    energy_flux_density = np.array(shells("energy_flux [W/m^2]"), dtype=float)
+    energy_flux_density = np.array(shells("energy_flux [W/m^2]"))
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     return {
         **shell_profile_radius_height(shells),
-        "energy_flux [W]": np.array(energy_flux, dtype=float),
-        "coverage [none]": np.array(coverage, dtype=float),
+        "energy_flux [W]": np.array(energy_flux),
+        "coverage [none]": np.array(coverage),
         "shell_samples": shells,
     }

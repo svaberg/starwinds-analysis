@@ -23,9 +23,9 @@ def cartesian_to_spherical_angles(x, y, z):
     - ``phi`` is azimuth from ``atan2(y, x)`` in ``[-pi, pi]``
       (NaN where ``x == y == 0``)
     """
-    x = np.array(x, dtype=float)
-    y = np.array(y, dtype=float)
-    z = np.array(z, dtype=float)
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
 
     r = np.sqrt(x * x + y * y + z * z)
     rho_xy = np.sqrt(x * x + y * y)
@@ -47,12 +47,12 @@ def cartesian_to_spherical_angles(x, y, z):
 
 
 def radial_component(vx, vy, vz, x, y, z):
-    x = np.array(x, dtype=float)
-    y = np.array(y, dtype=float)
-    z = np.array(z, dtype=float)
-    vx = np.array(vx, dtype=float)
-    vy = np.array(vy, dtype=float)
-    vz = np.array(vz, dtype=float)
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+    vx = np.array(vx)
+    vy = np.array(vy)
+    vz = np.array(vz)
 
     r = np.sqrt(x * x + y * y + z * z)
     out = np.full_like(r, np.nan, dtype=float)
@@ -68,12 +68,12 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     ``v_theta`` and ``v_phi`` are undefined on the polar axis (``x=y=0``) and are
     returned as NaN there. All components are NaN at ``r=0``.
     """
-    x = np.array(x, dtype=float)
-    y = np.array(y, dtype=float)
-    z = np.array(z, dtype=float)
-    vx = np.array(vx, dtype=float)
-    vy = np.array(vy, dtype=float)
-    vz = np.array(vz, dtype=float)
+    x = np.array(x)
+    y = np.array(y)
+    z = np.array(z)
+    vx = np.array(vx)
+    vy = np.array(vy)
+    vz = np.array(vz)
 
     r = np.sqrt(x * x + y * y + z * z)
     rho_xy = np.sqrt(x * x + y * y)
@@ -148,22 +148,22 @@ def register_spherical_geometry_fields(
 
     smart_ds.register_field(
         latitude_name,
-        lambda ds: (0.5 * np.pi) - np.array(ds.variable(theta_name), dtype=float),
+        lambda ds: (0.5 * np.pi) - np.array(ds.variable(theta_name)),
         overwrite=True,
     )
     smart_ds.register_field(
         longitude_name,
-        lambda ds: np.array(ds.variable(phi_name), dtype=float),
+        lambda ds: np.array(ds.variable(phi_name)),
         overwrite=True,
     )
     smart_ds.register_field(
         latitude_deg_name,
-        lambda ds: np.degrees(np.array(ds.variable(latitude_name), dtype=float)),
+        lambda ds: np.degrees(np.array(ds.variable(latitude_name))),
         overwrite=True,
     )
     smart_ds.register_field(
         longitude_deg_name,
-        lambda ds: np.degrees(np.array(ds.variable(longitude_name), dtype=float)),
+        lambda ds: np.degrees(np.array(ds.variable(longitude_name))),
         overwrite=True,
     )
     return {
@@ -305,28 +305,28 @@ def build_griblet_spherical_geometry_graph(
 
     graph.add_recipe(
         latitude_name,
-        lambda theta: (0.5 * np.pi) - np.array(theta, dtype=float),
+        lambda theta: (0.5 * np.pi) - np.array(theta),
         deps=[theta_name],
         cost=0.05,
         metadata={"description": "colatitude -> latitude (radians)"},
     )
     graph.add_recipe(
         longitude_name,
-        lambda phi: np.array(phi, dtype=float),
+        lambda phi: np.array(phi),
         deps=[phi_name],
         cost=0.01,
         metadata={"description": "azimuth -> longitude (radians)"},
     )
     graph.add_recipe(
         latitude_deg_name,
-        lambda lat: np.degrees(np.array(lat, dtype=float)),
+        lambda lat: np.degrees(np.array(lat)),
         deps=[latitude_name],
         cost=0.05,
         metadata={"description": "latitude radians -> degrees"},
     )
     graph.add_recipe(
         longitude_deg_name,
-        lambda lon: np.degrees(np.array(lon, dtype=float)),
+        lambda lon: np.degrees(np.array(lon)),
         deps=[longitude_name],
         cost=0.05,
         metadata={"description": "longitude radians -> degrees"},
