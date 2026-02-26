@@ -343,6 +343,33 @@ Preferred pattern:
 - make helpers only when they reduce duplication, complexity, or bug risk
 - examples should remain readable and instructional
 
+## 7a. Fat `__init__.py` Facade Modules (Too Early)
+
+Bad:
+
+- large `__init__.py` files that re-export many symbols from submodules
+- treating package `__init__.py` as a convenience facade before the architecture is stable
+- using re-exports to preserve old import paths during refactors
+
+Why this is bad:
+
+- hides ownership of code (where a symbol really lives)
+- creates reversed layer dependencies and circular-import pressure
+- makes refactors harder because imports appear to work from everywhere
+- grows API surface too early, before boundaries are settled
+
+Preferred pattern:
+
+- keep `__init__.py` files empty or nearly empty by default
+- import from the owning module directly
+- only expose a small curated public surface later, when the design is stable
+
+Rule:
+
+- Early in this project, `__init__.py` should be empty/minimal.
+- Do not build convenience facades in `__init__.py`.
+- If a re-export is added, it must be justified as a deliberate stable API decision (not refactor glue).
+
 ## 7b. `np.asarray(...)` Casting Everywhere
 
 Bad:
