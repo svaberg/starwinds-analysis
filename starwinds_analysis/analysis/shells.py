@@ -267,7 +267,7 @@ def sample_spherical_shells(
     ang_grid = PolarAzimuthalGrid(polar_edges, azimuthal_edges)
     theta = np.array(ang_grid.polar_centres, dtype=float)
     phi = np.array(ang_grid.azimuthal_centres, dtype=float)
-    area_unit_sphere = np.array(ang_grid.cell_area, dtype=float)
+    area_unit_sphere = np.array(ang_grid.cell_solid_angle, dtype=float)
     if theta.shape != area_unit_sphere.shape:
         if theta.T.shape != area_unit_sphere.shape or phi.T.shape != area_unit_sphere.shape:
             raise ValueError(
@@ -495,75 +495,11 @@ def shell_profile_radius_height(shells):
         "height [R]": radii - 1.0,
     }
 
-
-#
-# TODO smartds-resolve:
-# These resolve_* helpers are a code smell and should move into SmartDs.
-# SmartDs can assume units are encoded in square brackets, e.g. "Rho [kg/m^3]".
-# The preferred API direction is a SmartDs resolver that returns (data, unit_str)
-# (and possibly the canonical field name), so analysis code does not reimplement
-# field-name/unit fallback logic.
-#
-def resolve_field_with_scale(smart_ds, candidates):
-    """
-    Pick the first available field among `(name, scale_to_target)`.
-    """
-    for name, scale in candidates:
-        try:
-            if smart_ds.has_field(name):
-                return name, float(scale)
-        except Exception:
-            continue
-    names = ", ".join(name for name, _ in candidates)
-    raise KeyError(f"None of the candidate fields are available: {names}")
-
-
-#
-# TODO smartds-resolve:
-# Move BATSRUS density resolution into SmartDs (SI-first data + unit string).
-#
-def resolve_batsrus_density_si(smart_ds):
-    amu_kg = 1.66053906660e-27
-    return resolve_field_with_scale(
-        smart_ds,
-        [
-            ("Rho [kg/m^3]", 1.0),
-            ("Rho [g/cm^3]", 1e3),
-            ("Rho [amu/cm^3]", amu_kg * 1e6),
-        ],
-    )
-
-
-#
-# TODO smartds-resolve:
-# Move BATSRUS vector component resolution into SmartDs (SI-first data + unit
-# string, with bracketed-unit parsing handled centrally).
-#
-def resolve_batsrus_vector_xyz_si(smart_ds, prefix: str):
-    if prefix == "U":
-        unit_candidates = [("m/s", 1.0), ("km/s", 1e3)]
-    elif prefix == "B":
-        unit_candidates = [("T", 1.0), ("Gauss", 1e-4), ("G", 1e-4), ("nT", 1e-9)]
-    else:
-        raise ValueError(f"Unsupported vector prefix '{prefix}'")
-
-    for unit, scale in unit_candidates:
-        names = [f"{prefix}_{c} [{unit}]" for c in "xyz"]
-        if all(smart_ds.has_field(name) for name in names):
-            return tuple(names), float(scale)
-
-    tried = ", ".join(f"{prefix}_x [{u}]/..." for u, _ in unit_candidates)
-    raise KeyError(f"Could not resolve SI-compatible vector '{prefix}' components. Tried: {tried}")
-
-
 __all__ = [
     "SphericalShellSamples",
     "infer_body_radius_m",
     "infer_cartesian_axis_radii",
     "integrate_shell_scalar",
-    "resolve_batsrus_density_si",
-    "resolve_batsrus_vector_xyz_si",
-    "resolve_field_with_scale",
     "shell_profile_radius_height",
     "sample_spherical_shells_by_strategy",
     "sample_spherical_shells",

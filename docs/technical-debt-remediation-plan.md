@@ -35,7 +35,7 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - DONE (partial): `analysis/orbits.py` now contains geometry/sampling primitives only; local mass-loss/torque orbit workflows were moved out.
-- NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific and `resolve_*`-based).
+- NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific and imports `analysis` sampling).
 
 ## Phase 2 (SmartDs / griblet Migration)
 
@@ -47,12 +47,12 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
 - `mass_flux [kg/m^2/s]`, `energy_flux [W/m^2]`
 - torque-density terms where feasible (with explicit geometry inputs)
 
-2. Replace `resolve_*` usage in callers with direct SmartDs requests.
-- Start with `analysis/fluxes.py`
-- Then `physics/mass_loss.py`, `physics/shell_torque.py`
-- Then orbit workflows (`physics/orbit_pressure.py`, `physics/orbit_surface.py`)
+2. DONE (current pass): Replace `resolve_*` usage in callers with direct SmartDs requests.
+- Shell profile workflows (`physics/fluxes.py`, `physics/mass_loss.py`, `physics/shell_torque.py`)
+- Orbit workflows (`physics/orbit_pressure.py`, `physics/orbit_surface.py`, `physics/orbit_local.py`)
+- Dead `resolve_*` helper definitions removed from `analysis/shells.py`
 
-3. Rename/clarify internal SmartDs graph resolve naming if needed.
+3. NEXT: Rename/clarify internal SmartDs graph resolve naming if needed.
 - Keep graph-path resolution distinct from user quantity requests.
 
 ## Phase 3 (Shell / Surface Primitive Consolidation)
