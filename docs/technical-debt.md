@@ -2,7 +2,7 @@
 
 This file tracks a full file-by-file pass against `/Users/dagfev/Documents/starwinds/starwinds-analysis/docs/bad-practices.md`.
 
-- Files reviewed: **55** (`*.py`, entire repo)
+- Files reviewed: **57** (`*.py`, entire repo)
 - Scope of this pass: identify debt and mark code with `TODO` comments where bad practices are present
 - Note: tests/examples were reviewed too, but production architecture rules are applied primarily to library code
 
@@ -29,20 +29,22 @@ Legend:
 - `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; no clear rule violation found in this pass.
 - `starwinds_analysis/analysis/surface_torque.py` — **Debt**. Quantity-specific `surface_torque` analysis wrappers (`*_vs_radius`) and `resolve_*` usage; imports from `physics`. Code TODO: added TODO.
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.
-- `starwinds_analysis/physics/__init__.py` — **Debt**. Deep-layer re-export surface includes non-local/profile-derived helper exports, widening API surface. Code TODO: added TODO.
+- `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer re-export surface was trimmed to local formulas/constants in this pass.
+- `starwinds_analysis/physics/constants.py` — **Reviewed**. Shared constants module (good deep-layer home for physical constants like `MU0`).
 - `starwinds_analysis/physics/flux_density.py` — **Debt**. Local physical quantity (`q * U_r`) is computed outside SmartDs/griblet instead of requested as an SI quantity. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/local_estimates.py` — **Debt**. Mixes local physics formulas with summary/reporting helper and imports `analysis.stats` (reversed layer direction). Code TODO: added TODO + existing TODO(griblet).
 - `starwinds_analysis/physics/magnetic.py` — **Debt**. Magnetic spherical components (`B_r`, `B_theta`, `B_phi`) are recomputed locally instead of requested via SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/mass_loss.py` — **Debt**. Quantity-specific shell pipeline wrappers (`sample_shell_mass_flux_map`, `mass_loss_vs_radius`), custom container (`ShellMassFluxMap`), `resolve_*`, and `analysis.shells` dependency. Code TODO: added TODO + existing TODO(griblet).
 - `starwinds_analysis/physics/orbit_pressure.py` — **Debt**. Orbit workflow/pipeline in `physics` (sampling + field resolution + summaries), imports `analysis`, and uses `resolve_*`. Code TODO: added TODO + existing TODO(griblet).
 - `starwinds_analysis/physics/orbit_surface.py` — **Debt**. Large orbit-surface workflow/pipeline in `physics`, imports `analysis`, and couples geometry/sampling with quantity assembly. Code TODO: added TODO.
-- `starwinds_analysis/physics/planetary_orbits.py` — **Debt**. Constants/helper module still imports Kepler primitive (`orbital_period`) from `analysis.orbits` (reversed layer direction). Code TODO: added TODO.
+- `starwinds_analysis/physics/orbits.py` — **Reviewed**. Kepler orbit kinematics primitives moved into `physics` (deeper/shared layer).
+- `starwinds_analysis/physics/planetary_orbits.py` — **Reviewed**. Named orbit presets/helpers now depend on deep `physics.orbits` primitives instead of `analysis.orbits`.
 - `starwinds_analysis/physics/plotting.py` — **Debt**. Quantity-specific plotting wrappers in deep `physics` layer; plotting API surface is larger than desired and not purely generic. Code TODO: added TODO.
 - `starwinds_analysis/physics/pressure.py` — **Debt**. Pressure and standoff quantities (`magnetic_pressure`, `ram_pressure`, component bundle) still computed outside SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/shell_torque.py` — **Debt**. Quantity-specific shell torque profile wrapper (`torque_vs_radius`) depends on `analysis.shells` + `resolve_*`. Code TODO: added TODO.
 - `starwinds_analysis/physics/surface_torque.py` — **Debt**. Local torque terms (`T1..T4`) still computed outside SmartDs/griblet; heavy finite-mask/NaN handling should remain intentional/documented. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/torque.py` — **Debt**. Local spherical torque-density terms are physical quantities computed outside SmartDs/griblet. Code TODO: existing TODO(griblet) added.
-- `starwinds_analysis/physics/wind_scaling.py` — **Debt**. Mixes local formulas with profile-bundle helper (`open_wind_magnetisation_from_profiles`) and redefines `MU0` locally. Code TODO: added TODO.
+- `starwinds_analysis/physics/wind_scaling.py` — **Reviewed**. Local wind-scaling formulas only; profile-bundle helper removed and `MU0` now comes from `physics.constants`.
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.
 - `starwinds_analysis/quicklook2d.py` — **Debt**. High-level orchestration/convenience wrappers in library (large API surface, quantity-specific presets/workflows) vs library-purity guideline. Code TODO: added TODO.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
@@ -73,4 +75,3 @@ Legend:
 - `test/test_smart_ds.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_surface_torque_analysis.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_volumetric.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
-
