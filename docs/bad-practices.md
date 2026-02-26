@@ -461,6 +461,32 @@ Preferred pattern:
 - preserve output shape (flat point list or structured grid) through `SmartDs`
 - only bypass `SmartDs` resampling for a very specific reason, and document that reason in code
 
+## 11. Internal Shims / Compatibility Re-Export Modules
+
+Bad:
+
+- creating shim modules inside this repo just to preserve old import paths during refactors
+- files whose only purpose is `from ... import ...` re-exports for internal callers
+- "compatibility" modules for code we control in the same library
+
+Why this is bad:
+
+- adds indirection and confusion about ownership
+- hides real dependencies and layer direction
+- preserves bad structure instead of fixing imports at the call sites
+- creates dead modules that linger after refactors
+
+Preferred pattern:
+
+- update internal imports to the owning module directly
+- delete moved modules instead of leaving shim files behind
+- only add compatibility shims for external/public API migrations (and document them clearly)
+
+Rule:
+
+- Do not add compatibility shim modules for internal library code.
+- When refactoring internal module structure, update imports and delete the old module.
+
 ## Review Checklist (Use Before Adding New Code)
 
 - Is this function general/parameterized, or is it hard-coded to one quantity?
@@ -474,6 +500,7 @@ Preferred pattern:
 - Am I inventing a one-off data container instead of reusing a shared abstraction?
 - Am I bypassing `SmartDs.resample(...)` without a specific documented reason?
 - Is this function mostly boilerplate around 1-3 lines of actual computation?
+- Am I adding a shim/re-export module instead of fixing internal imports?
 
 ## Current Priority Enforcement
 
@@ -486,3 +513,4 @@ Highest priority to avoid:
 5. Per-function custom data containers
 6. Wrapper bloat / low-signal functions
 7. Bypassing `SmartDs` for resampling without a specific reason
+8. Internal compatibility shims / re-export modules
