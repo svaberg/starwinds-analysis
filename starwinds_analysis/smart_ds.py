@@ -232,12 +232,11 @@ class SmartDs:
             self._computation_graph = graph
         return self
 
-    # TODO this should at last be for EVERY type of vector field so J is mising.
     def add_spherical_fields(
         self,
         *,
         coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-        vectors: Sequence[str] = ("B", "U"),
+        vectors: Sequence[str] | None = None,
         components: Sequence[str] = ("r", "theta", "phi"),
     ):
         """
@@ -256,7 +255,7 @@ class SmartDs:
         auto_register_vector_spherical_components(
             self,
             coord_fields=coord_fields,
-            prefixes=tuple(vectors),
+            prefixes=None if vectors is None else tuple(vectors),
             components=tuple(components),
         )
         return self
@@ -265,7 +264,7 @@ class SmartDs:
         self,
         *,
         coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-        vectors: Sequence[str] = ("B", "U"),
+        vectors: Sequence[str] | None = None,
         components: Sequence[str] = ("r", "theta", "phi"),
         merge: bool = True,
     ):
@@ -285,7 +284,7 @@ class SmartDs:
             build_griblet_auto_vector_spherical_components_graph(
                 self.variables,
                 coord_fields=coord_fields,
-                prefixes=tuple(vectors),
+                prefixes=None if vectors is None else tuple(vectors),
                 components=tuple(components),
             )
         )

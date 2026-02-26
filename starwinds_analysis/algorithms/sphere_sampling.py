@@ -4,11 +4,13 @@ It provides geometry/sampling primitives (for example Fibonacci sphere and polar
 It should stay independent of SmartDs, BATSRUS field names, and plotting.
 """
 
-import logging
-log = logging.getLogger(__name__)
 import math
 import random
+
+import logging
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 
 def fibonacci_sphere(num_points, randomize=False):
@@ -104,23 +106,21 @@ class PolarAzimuthalGrid:
         radius = float(radius)
         return (radius**2) * self.cell_solid_angle
 
-    # TODO the conversion back and from to cartisian coordinates should be centralised. 
-    def corners_cartesian(self, radius=1.0):
+    @staticmethod
+    def _angles_to_cartesian(theta, phi, *, radius=1.0):
         radius = float(radius)
-        theta_edges = self.polar_edges
-        phi_edges = self.azimuthal_edges
-        sin_theta = np.sin(theta_edges)
-        x = radius * sin_theta * np.cos(phi_edges)
-        y = radius * sin_theta * np.sin(phi_edges)
-        z = radius * np.cos(theta_edges)
+        sin_theta = np.sin(theta)
+        x = radius * sin_theta * np.cos(phi)
+        y = radius * sin_theta * np.sin(phi)
+        z = radius * np.cos(theta)
         return np.stack((x, y, z), axis=-1)
+
+    def corners_cartesian(self, radius=1.0):
+        return self._angles_to_cartesian(self.polar_edges, self.azimuthal_edges, radius=radius)
     
     def centres_cartesian(self, radius=1.0):
-        radius = float(radius)
-        theta_centres = self.polar_centres
-        phi_centres = self.azimuthal_centres
-        sin_theta = np.sin(theta_centres)
-        x = radius * sin_theta * np.cos(phi_centres)
-        y = radius * sin_theta * np.sin(phi_centres)
-        z = radius * np.cos(theta_centres)
-        return np.stack((x, y, z), axis=-1)
+        return self._angles_to_cartesian(
+            self.polar_centres,
+            self.azimuthal_centres,
+            radius=radius,
+        )
