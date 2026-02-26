@@ -11,8 +11,6 @@ import numpy as np
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
@@ -21,6 +19,28 @@ from starwinds_analysis.physics.constants import MU0
 # TODO(debt): This deep-layer module still carries quantity-specific shell/radius
 # wrappers (`surface_torque_vs_radius`, etc.). Keep the local torque terms here, but
 # move wrapper orchestration toward generic shell/surface reduction primitives.
+
+
+def _ensure_batsrus_surface_torque_fields(
+    smart_ds,
+    *,
+    body_radius_m: float,
+    include_pressure: bool,
+) -> None:
+    needed = {
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
+    }
+    if include_pressure:
+        needed.add("P [Pa]")
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
 
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
@@ -240,9 +260,14 @@ def surface_torque_vs_radius(
     Explicit-surface torque profile on spherical shells using general T1..T4 terms.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+    _ensure_batsrus_surface_torque_fields(
+        smart_ds,
+        body_radius_m=body_radius_m,
+        include_pressure=include_pressure_term,
+    )
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
     p_name = p_scale = None
@@ -267,9 +292,9 @@ def surface_torque_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = rho_scale * shells.fields[rho_name]
-    u_xyz = u_scale * np.stack([shells.fields[ux_name], shells.fields[uy_name], shells.fields[uz_name]], axis=-1)
-    b_xyz = b_scale * np.stack([shells.fields[bx_name], shells.fields[by_name], shells.fields[bz_name]], axis=-1)
+    rho = shells.fields[rho_name]
+    u_xyz = np.stack([shells.fields[ux_name], shells.fields[uy_name], shells.fields[uz_name]], axis=-1)
+    b_xyz = np.stack([shells.fields[bx_name], shells.fields[by_name], shells.fields[bz_name]], axis=-1)
     p = None if p_name is None else p_scale * shells.fields[p_name]
 
     terms = surface_torque_terms_on_shell_samples(

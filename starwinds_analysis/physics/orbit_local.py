@@ -14,11 +14,7 @@ from __future__ import annotations
 import numpy as np
 
 from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
-from starwinds_analysis.analysis.shells import (
-    infer_body_radius_m,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
-)
+from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.local_estimates import (
     local_mass_loss_estimates,
@@ -27,6 +23,20 @@ from starwinds_analysis.physics.local_estimates import (
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
+
+
+def _ensure_batsrus_orbit_fields(smart_ds, *, body_radius_m: float, need_b: bool) -> None:
+    needed = {
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+    }
+    if need_b:
+        needed.update({"B_x [T]", "B_y [T]", "B_z [T]"})
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
 
 def _interp_profile(radii, values, x):
@@ -56,16 +66,16 @@ def _local_mass_loss_from_orbit_sample(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
 
     x = orbit["X [sample]"]
     y = orbit["Y [sample]"]
     z = orbit["Z [sample]"]
-    rho = rho_scale * orbit[rho_name]
-    ux = u_scale * orbit[ux_name]
-    uy = u_scale * orbit[uy_name]
-    uz = u_scale * orbit[uz_name]
+    rho = orbit[rho_name]
+    ux = orbit[ux_name]
+    uy = orbit[uy_name]
+    uz = orbit[uz_name]
     u_r = radial_component(ux, uy, uz, x, y, z)
     r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
@@ -129,22 +139,22 @@ def _local_torque_from_orbit_sample(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     x = orbit["X [sample]"]
     y = orbit["Y [sample]"]
     z = orbit["Z [sample]"]
     r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
-    rho = rho_scale * orbit[rho_name]
-    ux = u_scale * orbit[ux_name]
-    uy = u_scale * orbit[uy_name]
-    uz = u_scale * orbit[uz_name]
-    bx = b_scale * orbit[bx_name]
-    by = b_scale * orbit[by_name]
-    bz = b_scale * orbit[bz_name]
+    rho = orbit[rho_name]
+    ux = orbit[ux_name]
+    uy = orbit[uy_name]
+    uz = orbit[uz_name]
+    bx = orbit[bx_name]
+    by = orbit[by_name]
+    bz = orbit[bz_name]
 
     u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
     b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
@@ -215,12 +225,15 @@ def local_mass_loss_on_circular_orbit(
     shell_n_azimuth: int = 48,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=False)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
         fields=(
-            resolve_batsrus_density_si(smart_ds)[0],
-            *resolve_batsrus_vector_xyz_si(smart_ds, "U")[0],
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
         ),
         n_points=n_points,
         plane=plane,
@@ -249,13 +262,18 @@ def local_torque_on_circular_orbit(
     shell_n_azimuth: int = 48,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=True)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
         fields=(
-            resolve_batsrus_density_si(smart_ds)[0],
-            *resolve_batsrus_vector_xyz_si(smart_ds, "U")[0],
-            *resolve_batsrus_vector_xyz_si(smart_ds, "B")[0],
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
         ),
         n_points=n_points,
         plane=plane,
@@ -288,9 +306,12 @@ def local_mass_loss_on_elliptic_orbit(
     shell_n_radii: int = 12,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=False)
     fields = (
-        resolve_batsrus_density_si(smart_ds)[0],
-        *resolve_batsrus_vector_xyz_si(smart_ds, "U")[0],
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,
@@ -336,10 +357,15 @@ def local_torque_on_elliptic_orbit(
     shell_n_radii: int = 12,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=True)
     fields = (
-        resolve_batsrus_density_si(smart_ds)[0],
-        *resolve_batsrus_vector_xyz_si(smart_ds, "U")[0],
-        *resolve_batsrus_vector_xyz_si(smart_ds, "B")[0],
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,
