@@ -13,8 +13,8 @@ from starwinds_analysis.analysis.local_estimates import (
     local_torque_estimates,
     summarize_samples,
 )
-from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.analysis.mass_loss import sample_shell_mass_flux_map
+from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
+from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
 from starwinds_analysis.analysis.shell_summary import (
     boxcar_shell_weights,
     summarize_shell_diagnostics_band,
@@ -27,7 +27,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_fibonacci,
 )
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
-from starwinds_analysis.analysis.torque import torque_vs_radius
+from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import (
     open_wind_magnetisation,
     open_wind_magnetisation_from_profiles,

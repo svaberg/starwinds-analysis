@@ -9,10 +9,8 @@ import numpy as np
 
 from starwinds_analysis.data.samples import get_sample
 from starwinds_analysis.smart_ds import SmartDs
-from starwinds_analysis.analysis.mass_loss import (
-    plot_shell_mass_flux_lonlat,
-    sample_shell_mass_flux_map,
-)
+from starwinds_analysis.analysis.mass_loss import plot_shell_mass_flux_lonlat
+from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
 from starwinds_analysis.analysis.shell_magnetic import (
     plot_magnetic_zdi_triplet,
     plot_shell_tangential_vectors_lonlat,
@@ -22,7 +20,7 @@ from starwinds_analysis.analysis.shell_magnetic import (
 
 
 def _example_3d():
-    for name in ("3d__var_1_n00000000.plt", "3d__var_1_n00060000.plt"):
+    for name in ("3d__var_1_n00060000.plt", "3d__var_1_n00060000.plt"):
         try:
             return Path(get_sample(name))
         except FileNotFoundError:

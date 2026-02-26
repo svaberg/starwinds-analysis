@@ -43,10 +43,10 @@ from ..physics.pressure import (
     pressure_components,
     ram_pressure,
 )
-from .mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
-from .mass_loss import (
+from .mass_loss import plot_mass_loss_profile, plot_shell_mass_flux_lonlat
+from ..physics.mass_loss import (
     ShellMassFluxMap,
-    plot_shell_mass_flux_lonlat,
+    mass_loss_vs_radius,
     sample_shell_mass_flux_map,
 )
 from .shells import (
@@ -72,7 +72,8 @@ from .shell_magnetic import (
 )
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
-from .torque import plot_torque_profile, torque_vs_radius
+from .torque import plot_torque_profile
+from ..physics.shell_torque import torque_vs_radius
 from .surface_torque import (
     integrate_surface_torque_terms,
     radial_surface_normals,
