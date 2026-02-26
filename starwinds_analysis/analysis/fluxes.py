@@ -1,14 +1,13 @@
 """THIS FILE contains shell-integrated flux diagnostics (magnetic and energy).
 
-It computes flux profiles from shell samples and provides profile plotting wrappers.
-It should rely on shell sampling/integration primitives instead of reimplementing them.
+It computes flux profiles from shell samples.
+Flux plotting helpers are implemented in `starwinds_analysis.physics.plotting`.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis._profile_plotting import plot_shell_height_series
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
@@ -18,6 +17,7 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
+from starwinds_analysis.physics.plotting import plot_energy_flux_profile, plot_open_flux_profile
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
@@ -192,31 +192,6 @@ def energy_flux_vs_radius(
         "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
-
-
-def plot_open_flux_profile(ax, profile):
-    return plot_shell_height_series(
-        ax,
-        profile,
-        "open_flux [Wb]",
-        label="open flux",
-        ylabel="Open magnetic flux [Wb]",
-        color="C0",
-        show_negative=False,
-    )
-
-
-def plot_energy_flux_profile(ax, profile, *, show_negative=True):
-    return plot_shell_height_series(
-        ax,
-        profile,
-        "energy_flux [W]",
-        label="energy flux",
-        ylabel="Energy flux [W]",
-        color="C0",
-        show_negative=show_negative,
-    )
-
 
 __all__ = [
     "axisymmetric_open_flux_vs_radius",
