@@ -13,7 +13,6 @@ from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     sample_spherical_shells_by_strategy,
-    shell_profile_radius_height,
 )
 from starwinds_analysis.physics.constants import MU0
 
@@ -89,9 +88,12 @@ def torque_vs_radius(
     dynamic, cov_dyn = integrate_shell_scalar(dynamic_density, area)
     total = magnetic + dynamic
     coverage = np.minimum(cov_mag, cov_dyn)
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
 
     return {
-        **shell_profile_radius_height(shells),
+        "radius [R]": radii_profile,
+        "height [R]": radii_profile - 1.0,
         "magnetic_torque [Nm]": np.array(magnetic),
         "dynamic_torque [Nm]": np.array(dynamic),
         "total_torque [Nm]": np.array(total),
@@ -390,9 +392,12 @@ def surface_torque_vs_radius(
         coordinate_fields=coordinate_fields,
     )
     ints = integrate_surface_torque_terms(terms)
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
 
     return {
-        **shell_profile_radius_height(shells),
+        "radius [R]": radii_profile,
+        "height [R]": radii_profile - 1.0,
         "T1_magnetic [Nm]": np.array(ints["T1_magnetic [Nm]"]),
         "T2_pressure [Nm]": np.array(ints["T2_pressure [Nm]"]),
         "T3_corotation [Nm]": np.array(ints["T3_corotation [Nm]"]),

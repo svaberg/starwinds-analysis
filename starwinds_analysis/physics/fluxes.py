@@ -18,7 +18,6 @@ from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     sample_spherical_shells_by_strategy,
-    shell_profile_radius_height,
 )
 
 def open_magnetic_flux_vs_radius(
@@ -80,8 +79,11 @@ def open_magnetic_flux_vs_radius(
     signed_flux_from_vector, cov_vec = integrate_shell_scalar(bdotn, area)
 
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     return {
-        **shell_profile_radius_height(shells),
+        "radius [R]": radii_profile,
+        "height [R]": radii_profile - 1.0,
         "signed_flux [Wb]": np.array(signed_flux),
         "signed_flux_from_vector [Wb]": np.array(signed_flux_from_vector),
         "open_flux [Wb]": np.array(open_flux),
@@ -201,8 +203,11 @@ def energy_flux_vs_radius(
 
     energy_flux_density = np.array(shells("energy_flux [W/m^2]"))
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     return {
-        **shell_profile_radius_height(shells),
+        "radius [R]": radii_profile,
+        "height [R]": radii_profile - 1.0,
         "energy_flux [W]": np.array(energy_flux),
         "coverage [none]": np.array(coverage),
         "shell_samples": shells,

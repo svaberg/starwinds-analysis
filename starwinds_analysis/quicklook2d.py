@@ -60,22 +60,6 @@ class SlicePreset:
     overlays: tuple[tuple[str, float, str], ...] = ()
     intent: str = "si_diagnostic"
 
-def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star_radius_m):
-    """
-    Local quicklook adapter from shell-profile dicts to the `Upsilon_open` formula.
-    Used by: `starwinds_analysis/quicklook2d.py`
-    """
-    if "open_flux" not in diagnostics or "mass_loss" not in diagnostics:
-        raise KeyError("diagnostics must include 'open_flux' and 'mass_loss'")
-    phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"])
-    dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"])
-    y = open_wind_magnetisation(phi, dotm, star_mass_kg, star_radius_m)
-    return {
-        "radius [R]": np.array(diagnostics["mass_loss"]["radius [R]"]),
-        "height [R]": np.array(diagnostics["mass_loss"]["height [R]"]),
-        "Upsilon_open [none]": np.array(y),
-    }
-
 SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
     "rho": SlicePreset(("Rho [kg/m^3]",), intent="si_diagnostic"),
     "b_r": SlicePreset(
@@ -454,11 +438,14 @@ def quicklook_shell_figure(
     )
     if star_mass_kg is not None:
         try:
-            diagnostics["wind_scaling"] = _open_wind_magnetisation_from_diagnostics(
-                diagnostics,
-                star_mass_kg=star_mass_kg,
-                star_radius_m=body_radius_m,
-            )
+            phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"])
+            dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"])
+            y = open_wind_magnetisation(phi, dotm, star_mass_kg, body_radius_m)
+            diagnostics["wind_scaling"] = {
+                "radius [R]": np.array(diagnostics["mass_loss"]["radius [R]"]),
+                "height [R]": np.array(diagnostics["mass_loss"]["height [R]"]),
+                "Upsilon_open [none]": np.array(y),
+            }
         except Exception:
             pass
     fig, axs = plot_shell_diagnostics(diagnostics, figsize=figsize)
@@ -990,13 +977,11 @@ def summarize_shell_diagnostics(
 
     if star_mass_kg is not None and star_radius_m is not None:
         try:
-            y = _open_wind_magnetisation_from_diagnostics(
-                diagnostics,
-                star_mass_kg=star_mass_kg,
-                star_radius_m=star_radius_m,
-            )
+            phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"])
+            dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"])
+            y = open_wind_magnetisation(phi, dotm, star_mass_kg, star_radius_m)
             out["_wind_scaling"] = {
-                "Upsilon_open [none]": _array_summary(y["Upsilon_open [none]"])
+                "Upsilon_open [none]": _array_summary(y)
             }
         except Exception:
             pass

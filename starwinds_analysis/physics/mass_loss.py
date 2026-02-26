@@ -35,7 +35,6 @@ def mass_loss_vs_radius(
         infer_body_radius_m,
         integrate_shell_scalar,
         sample_spherical_shells_by_strategy,
-        shell_profile_radius_height,
     )
 
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
@@ -63,8 +62,11 @@ def mass_loss_vs_radius(
     mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     return {
-        **shell_profile_radius_height(shells),
+        "radius [R]": radii_profile,
+        "height [R]": radii_profile - 1.0,
         "mass_loss [kg/s]": np.array(mass_loss),
         "coverage [none]": np.array(coverage),
         "shell_samples": shells,

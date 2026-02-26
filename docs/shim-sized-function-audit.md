@@ -47,7 +47,9 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 - `starwinds_analysis/_smart_ds_resample.py:interpolate_nd` (inlined into `resample_smart_ds(...)`)
 - `starwinds_analysis/quicklook2d.py:_resolve_first_field` (inlined at the only call site)
 - `starwinds_analysis/quicklook2d.py:_orbit_result_title` (inlined at orbit quicklook title call sites)
+- `starwinds_analysis/quicklook2d.py:_open_wind_magnetisation_from_diagnostics` (inlined at the two quicklook call sites)
 - `starwinds_analysis/recipes/batsrus.py:_parse_float` (inlined at the two call sites)
+- `starwinds_analysis/analysis/shells.py:shell_profile_radius_height` (inlined at shell profile return sites)
 ## Full Heuristic List (shim-like)
 | File | Line | Function | Stmts | Span | Notes |
 |---|---:|---|---:|---:|---|
@@ -58,7 +60,6 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 | `starwinds_analysis/algorithms/sphere_sampling.py` | 137 | `PolarAzimuthalGrid.corners_cartesian` | 1 | 6 | likely-acceptable, delegates |
 | `starwinds_analysis/algorithms/sphere_sampling.py` | 144 | `PolarAzimuthalGrid.centres_cartesian` | 1 | 10 | likely-acceptable, delegates |
 | `starwinds_analysis/analysis/shells.py` | 15 | `_resample_shell_points` | 2 | 27 |  |
-| `starwinds_analysis/analysis/shells.py` | 421 | `shell_profile_radius_height` | 2 | 18 |  |
 | `starwinds_analysis/data/samples.py` | 11 | `sample_data_dir` | 1 | 6 | strong-smell |
 | `starwinds_analysis/physics/local_estimates.py` | 14 | `local_mass_loss_estimates` | 1 | 8 |  |
 | `starwinds_analysis/physics/planetary_orbits.py` | 33 | `get_planet_orbit_elements` | 1 | 9 |  |

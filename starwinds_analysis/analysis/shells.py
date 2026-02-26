@@ -413,22 +413,3 @@ def integrate_shell_scalar(values, area):
 
     return sum_val, coverage
 
-def shell_profile_radius_height(shells):
-    """
-    Build standard radius/height profile arrays from a shell SmartDs.
-    Used by: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
-      `starwinds_analysis/physics/torque.py`
-    """
-    if hasattr(shells, "has_field") and shells.has_field("R [R]"):
-        r_field = np.array(shells("R [R]"))
-        if r_field.ndim >= 2:
-            radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-        else:
-            radii = np.array(r_field)
-    else:
-        raise ValueError("shell_profile_radius_height expects a shell SmartDs with 'R [R]'")
-    return {
-        "radius [R]": radii,
-        "height [R]": radii - 1.0,
-    }
-
