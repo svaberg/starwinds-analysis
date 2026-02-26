@@ -15,6 +15,8 @@ def magnetic_pressure(b_t_or_mag):
     """
     Magnetic pressure `B^2 / (2 mu0)` in Pa.
     """
+    # TODO(griblet): `magnetic_pressure [Pa]` should be a SmartDs/griblet quantity
+    # so callers can request it directly in SI units.
     b = np.array(b_t_or_mag, dtype=float)
     return (b * b) / (2.0 * MU0)
 
@@ -23,6 +25,8 @@ def ram_pressure(rho_kg_m3, speed_m_s):
     """
     Ram pressure `rho * u^2` in Pa.
     """
+    # TODO(griblet): `ram_pressure [Pa]` should be a SmartDs/griblet quantity so
+    # callers do not recompute it outside the field graph.
     rho = np.array(rho_kg_m3, dtype=float)
     u = np.array(speed_m_s, dtype=float)
     return rho * u * u
@@ -39,6 +43,9 @@ def pressure_components(
     """
     Compute thermal/magnetic/ram pressure components from local samples.
     """
+    # TODO(griblet): The derived quantities assembled here (`|U|`, `|B|`,
+    # magnetic/ram/relative pressures) should come from SmartDs/griblet requests in
+    # SI units instead of being bundled/computed here.
     rho = np.array(rho_kg_m3, dtype=float)
     u = np.array(u_xyz_m_s, dtype=float)
     b = np.array(b_xyz_t, dtype=float)
@@ -75,6 +82,8 @@ def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e
 
     The default `b0_t` matches the old batplotlib helper.
     """
+    # TODO(griblet): If this proxy is kept as a reusable quantity, expose it through
+    # SmartDs/griblet so orbit/surface diagnostics can request it directly in SI.
     p_ram = ram_pressure(rho_kg_m3, speed_m_s)
     numer = (float(b0_t) ** 2) / (2.0 * MU0)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -88,4 +97,3 @@ __all__ = [
     "pressure_components",
     "magnetospheric_standoff_distance",
 ]
-

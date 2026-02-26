@@ -95,7 +95,11 @@ def sample_shell_mass_flux_map(
     ux = u_scale * np.array(shells.fields[ux_name], dtype=float)
     uy = u_scale * np.array(shells.fields[uy_name], dtype=float)
     uz = u_scale * np.array(shells.fields[uz_name], dtype=float)
+    # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
+    # instead of recomputing spherical components here.
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
+    # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
     mass_flux = np.array(radial_advective_flux_density(rho, u_r), dtype=float)
 
     return ShellMassFluxMap(
@@ -155,7 +159,11 @@ def mass_loss_vs_radius(
     uy = u_scale * shells.fields[uy_name]
     uz = u_scale * shells.fields[uz_name]
 
+    # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
+    # instead of recomputing spherical components here.
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
+    # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
     mass_flux = radial_advective_flux_density(rho, u_r)  # kg / m^2 / s
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, shells.area)

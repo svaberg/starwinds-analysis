@@ -62,6 +62,9 @@ def surface_torque_density_terms(
 
     Returns per-area torque-density terms (`T1..T4`, `total`) with units `N/m`.
     """
+    # TODO(griblet): The local explicit-surface torque terms (`T1..T4`, `total`) are
+    # physical quantities and should eventually be requestable via SmartDs/griblet in
+    # SI units, with geometry inputs supplied explicitly.
     xyz = np.array(xyz_m, dtype=float)
     n = normalize_surface_normals(normals_xyz)
     area = np.array(area_m2, dtype=float)

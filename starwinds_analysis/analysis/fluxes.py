@@ -1,4 +1,4 @@
-"""THIS FILE contains shell-integrated flux diagnostics (magnetic and energy).
+"""THIS FILE contains shell-integrated flux diagnostics 
 
 It computes flux profiles from shell samples.
 Flux plotting helpers are implemented in `starwinds_analysis.physics.plotting`.
@@ -56,6 +56,8 @@ def open_magnetic_flux_vs_radius(
     bx = b_scale * shells.fields[bx_name]
     by = b_scale * shells.fields[by_name]
     bz = b_scale * shells.fields[bz_name]
+    # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
+    # of recomputing spherical components in the analysis layer.
     b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
 
     signed_flux, cov_signed = integrate_shell_scalar(b_r, shells.area)
@@ -116,6 +118,8 @@ def axisymmetric_open_flux_vs_radius(
     bx = b_scale * shells.fields[bx_raw]
     by = b_scale * shells.fields[by_raw]
     bz = b_scale * shells.fields[bz_raw]
+    # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
+    # of recomputing spherical components in the analysis layer.
     b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
 
     with np.errstate(invalid="ignore"):
@@ -181,8 +185,12 @@ def energy_flux_vs_radius(
     ux = u_scale * shells.fields[ux_name]
     uy = u_scale * shells.fields[uy_name]
     uz = u_scale * shells.fields[uz_name]
+    # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on shell samples
+    # instead of recomputing spherical components in the analysis layer.
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
 
+    # TODO(griblet): Request energy-flux density directly from SmartDs/griblet in SI
+    # (e.g. `energy_flux [W/m^2]`) instead of recomputing `E * U_r` here.
     energy_flux_density = radial_advective_flux_density(e, u_r)  # W / m^2
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, shells.area)
     return {

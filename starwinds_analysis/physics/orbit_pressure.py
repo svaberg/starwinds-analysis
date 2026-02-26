@@ -87,6 +87,9 @@ def pressure_components_from_orbit_sample(
     include_relative_ram: bool = True,
     standoff_b0_t: float = 0.7e-4,
 ):
+    # TODO(griblet): These pressure/standoff derived quantities should be requested
+    # through SmartDs/griblet in SI units where possible, instead of being assembled
+    # ad hoc in the orbit workflow.
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
     (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")

@@ -28,6 +28,9 @@ def spherical_wind_torque_density_terms(
 
     Returns `(magnetic_density, dynamic_density)` with units `N/m`.
     """
+    # TODO(griblet): These local spherical torque-density terms should be available
+    # via SmartDs/griblet for SI fields, instead of being recomputed in shell/orbit
+    # diagnostics.
     rho = np.array(rho_kg_m3, dtype=float)
     u_r = np.array(u_radial_m_s, dtype=float)
     u_phi = np.array(u_azimuthal_m_s, dtype=float)

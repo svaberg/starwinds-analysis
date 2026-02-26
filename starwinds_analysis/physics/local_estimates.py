@@ -18,6 +18,8 @@ def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):
     """
     Pointwise local mass-loss estimates using `4*pi*r^2*rho*u_r`.
     """
+    # TODO(griblet): This local estimate should be a griblet/SmartDs quantity when
+    # the required SI inputs (`R`, `rho`, `U_r`) are available on samples.
     r = np.array(radius_m, dtype=float)
     rho = np.array(rho_kg_m3, dtype=float)
     u_r = np.array(u_radial_m_s, dtype=float)
@@ -33,6 +35,9 @@ def local_torque_estimates(radius_m, rho_kg_m3, u_radial_m_s, u_phi_m_s, b_r_t, 
     - dynamic torque density term without the cylindrical factor
     - multiply by `∫ C dS = pi^2 r^3` for a sphere of radius `r`
     """
+    # TODO(griblet): This local torque estimate bundle should move behind SmartDs/
+    # griblet field requests once the required SI inputs (`R`, `U_r`, `U_phi`,
+    # `B_r`, `B_phi`) are available as derived quantities.
     r = np.array(radius_m, dtype=float)
     rho = np.array(rho_kg_m3, dtype=float)
     u_r = np.array(u_radial_m_s, dtype=float)

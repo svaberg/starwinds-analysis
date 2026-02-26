@@ -32,6 +32,9 @@ def magnetic_shell_components_from_cartesian(bx_t, by_t, bz_t, x, y, z):
     Returns a dict containing radial/colatitudinal/azimuthal components and common
     latitude-map combinations (`meridional`, `tangential`) in Tesla.
     """
+    # TODO(griblet): These magnetic spherical-component quantities should be asked
+    # from SmartDs/griblet (`B_r`, `B_theta`, `B_phi`, etc.) instead of recomputed
+    # ad hoc in consumers.
     bx = np.array(bx_t, dtype=float)
     by = np.array(by_t, dtype=float)
     bz = np.array(bz_t, dtype=float)
