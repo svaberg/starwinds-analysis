@@ -20,8 +20,7 @@ Legend:
 - `starwinds_analysis/_smart_ds_graph.py` — **Debt**. Internal `resolve_field(...)` naming still collides conceptually with forbidden `resolve_*` pattern; keep graph-path resolution distinct from user field/unit requests. Code TODO: existing TODO.
 - `starwinds_analysis/_smart_ds_resample.py` — **Reviewed**. Core resampling internals; no new bad-practice hit beyond existing documented NaN handling for interpolation edge cases.
 - `starwinds_analysis/algorithms/sphere_sampling.py` — **Reviewed**. Geometry/sampling primitive module (good layer fit).
-- `starwinds_analysis/analysis/__init__.py` — **Debt**. `analysis` re-exports many `physics` symbols (reversed layer inclusion path) and exposes a very broad API surface. Code TODO: added TODO.
-- `starwinds_analysis/analysis/fluxes.py` — **Debt**. Quantity-specific `analysis` module (`fluxes`) with `*_vs_radius` wrappers, `resolve_*` usage, and local quantity recomputation (`B_r`, `U_r`, `E*U_r`). Code TODO: added TODO + existing TODO(griblet).
+- `starwinds_analysis/analysis/__init__.py` — **Reviewed**. Re-export facade removed; package boundary is now minimal (`__all__ = []`).
 - `starwinds_analysis/analysis/orbits.py` — **Debt**. Mixed generic orbit geometry/sampling with quantity-specific comparison workflows (`local_mass_loss_*`, `local_torque_*`); imports from `physics`. Code TODO: added TODO.
 - `starwinds_analysis/analysis/shell_summary.py` — **Reviewed**. Reducer/summary helpers; finite filtering appears intentional for shell-band summaries.
 - `starwinds_analysis/analysis/shells.py` — **Debt**. Contains `resolve_*` helpers and compatibility custom container (`SphericalShellSamples`) alongside core shell primitives. Code TODO: added TODO + existing TODOs.
@@ -29,7 +28,8 @@ Legend:
 - `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; no clear rule violation found in this pass.
 - `starwinds_analysis/analysis/surface_torque.py` — **Debt**. Quantity-specific `surface_torque` analysis wrappers (`*_vs_radius`) and `resolve_*` usage; imports from `physics`. Code TODO: added TODO.
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.
-- `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer re-export surface was trimmed to local formulas/constants in this pass.
+- `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer package boundary is now minimal (`__all__ = []`).
+- `starwinds_analysis/physics/fluxes.py` — **Debt**. Quantity-specific shell flux profile wrappers remain (`*_vs_radius`) and still use `resolve_*` + local quantity recomputation (`B_r`, `U_r`, `E*U_r`). Code TODO: existing TODO(debt) + TODO(griblet).
 - `starwinds_analysis/physics/constants.py` — **Reviewed**. Shared constants module (good deep-layer home for physical constants like `MU0`).
 - `starwinds_analysis/physics/flux_density.py` — **Debt**. Local physical quantity (`q * U_r`) is computed outside SmartDs/griblet instead of requested as an SI quantity. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/local_estimates.py` — **Debt**. Mixes local physics formulas with summary/reporting helper and imports `analysis.stats` (reversed layer direction). Code TODO: added TODO + existing TODO(griblet).

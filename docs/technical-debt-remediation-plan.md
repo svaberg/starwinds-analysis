@@ -23,13 +23,14 @@ Completed in this pass:
 
 Goal: remove clear layer violations and obvious API-surface bloat without changing behavior.
 
-1. Shrink `physics.__init__` and `analysis.__init__` re-export surfaces.
-- Prefer direct imports from owning modules.
-- Remove broad re-export convenience where tests/callers can import directly.
+1. DONE: Shrink `physics.__init__` and `analysis.__init__` re-export surfaces.
+- Both package `__init__.py` files are now minimal (`__all__ = []`).
+- Callers import from owning modules directly.
 
-2. Remove stale compatibility debt markers by fixing or deleting the underlying patterns.
-- `analysis/__init__.py` (`analysis` re-exporting `physics`)
-- `analysis/fluxes.py` / `analysis/surface_torque.py` top-level debt comments should drive actual refactors, not remain permanent comments.
+2. Continue removing stale debt markers by fixing or deleting the underlying patterns.
+- DONE: `analysis/__init__.py` (`analysis` re-exporting `physics`) removed.
+- PARTIAL: `analysis/fluxes.py` moved to `physics/fluxes.py`; quantity-specific wrapper debt remains and top-level TODOs still apply there.
+- NEXT: `analysis/surface_torque.py` top-level debt comments should drive actual refactors, not remain permanent comments.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - Example target: extract reusable non-quantity helpers from `analysis/orbits.py` if cleanly separable.
@@ -118,7 +119,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 
 Recommended next implementation batches:
 
-1. `analysis/fluxes.py` + `physics/mass_loss.py` + `physics/shell_torque.py`
+1. `physics/fluxes.py` + `physics/mass_loss.py` + `physics/shell_torque.py`
 - Introduce shared shell reduction primitive usage
 - Replace manual `B_r`/`U_r`/flux-density recomputation with SmartDs/griblet requests where available
 

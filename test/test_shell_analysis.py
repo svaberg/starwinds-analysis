@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.fluxes import (
+from starwinds_analysis.physics.fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
