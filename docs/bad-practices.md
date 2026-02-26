@@ -65,6 +65,8 @@ Rule:
 - If the only difference is the field name/label/unit/cmap/scale, do not create a new function.
 - Plotting functions (functions that take or create `fig`/`ax`) should not live in `analysis/`.
 - `analysis/` is for data/sampling/reduction/orchestration; plotting belongs in notebooks/examples or a clearly separate visualisation layer when truly reusable.
+- Physical-quantity names in `analysis` function names are a smell (for example `*_energy_*`, `*_mass_*`, `*_torque_*`) unless the function is truly algorithmically distinct.
+- In `analysis`, prefer names that describe the operation/topology/reduction, not the specific physical quantity.
 
 ## 2. Notebook Business Logic ("Slop")
 
