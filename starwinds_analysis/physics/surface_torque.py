@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.physics.torque import MU0
+from starwinds_analysis.physics.constants import MU0
 
 
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):

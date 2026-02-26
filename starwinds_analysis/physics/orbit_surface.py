@@ -20,10 +20,10 @@ from starwinds_analysis.physics.local_estimates import summarize_samples
 from starwinds_analysis.physics.orbit_pressure import (
     resolve_batsrus_pressure_si,
 )
+from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
-    orbital_period,
     sample_points,
 )
 from starwinds_analysis.physics.pressure import (

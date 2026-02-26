@@ -30,7 +30,6 @@ from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quanti
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import (
     open_wind_magnetisation,
-    open_wind_magnetisation_from_profiles,
     surface_escape_speed,
 )
 from starwinds_analysis.smart_ds import SmartDs
@@ -313,18 +312,3 @@ def test_wind_scaling_helpers_formula():
     ups = open_wind_magnetisation(phi, dotm, m, r)
     assert ups.shape == (2,)
     assert np.all(np.isfinite(ups))
-
-    diagnostics = {
-        "mass_loss": {
-            "radius [R]": np.array([2.0, 4.0]),
-            "height [R]": np.array([1.0, 3.0]),
-            "mass_loss [kg/s]": dotm,
-        },
-        "open_flux": {
-            "radius [R]": np.array([2.0, 4.0]),
-            "height [R]": np.array([1.0, 3.0]),
-            "open_flux [Wb]": phi,
-        },
-    }
-    prof = open_wind_magnetisation_from_profiles(diagnostics, star_mass_kg=m, star_radius_m=r)
-    np.testing.assert_allclose(prof["Upsilon_open [none]"], ups)

@@ -8,7 +8,8 @@ TODO why whould you say this? THis is retarded.
 from __future__ import annotations
 
 import numpy as np
-from scipy.constants import mu_0 as MU0
+
+from starwinds_analysis.physics.constants import MU0
 
 
 def magnetic_pressure(b_t_or_mag):

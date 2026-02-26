@@ -4,8 +4,8 @@ It is a data/constants layer plus lightweight helpers.
 It should not contain SmartDs access, resampling, or plotting.
 """
 
-# TODO(debt): This file still imports `orbital_period` from `analysis.orbits`
-# (reversed layer direction). Kepler primitives should live in a deeper/shared module.
+# DONE(debt): Kepler primitives used here (`orbital_period`) now come from the deep
+# shared `physics.orbits` module instead of `analysis.orbits`.
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from scipy.constants import au as AU_M
 
-from starwinds_analysis.analysis.orbits import orbital_period
+from starwinds_analysis.physics.orbits import orbital_period
 
 
 @dataclass(frozen=True)

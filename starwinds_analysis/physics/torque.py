@@ -6,12 +6,9 @@ or integration orchestration.
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
-
-MU0 = 4.0e-7 * math.pi
+from starwinds_analysis.physics.constants import MU0
 
 
 def spherical_wind_torque_density_terms(

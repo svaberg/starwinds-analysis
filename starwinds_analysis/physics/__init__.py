@@ -4,12 +4,11 @@ It groups pointwise/domain formulas (no sampling, no plotting, no notebook orche
 It should not depend on SmartDs or analysis pipelines.
 """
 
-# TODO(debt): This re-export surface currently includes non-local helpers (for example
-# profile-derived wind-scaling helpers). Keep the `physics` API small and limited to
-# local formulas/quantities.
+# DONE(debt): Keep the `physics` re-export surface limited to local formulas and
+# constants; profile-derived helper exports were removed.
 
+from .constants import MU0
 from .pressure import (
-    MU0,
     magnetic_pressure,
     magnetospheric_standoff_distance,
     pressure_components,
@@ -17,7 +16,6 @@ from .pressure import (
 )
 from .wind_scaling import (
     open_wind_magnetisation,
-    open_wind_magnetisation_from_profiles,
     surface_escape_speed,
 )
 
@@ -29,5 +27,4 @@ __all__ = [
     "ram_pressure",
     "surface_escape_speed",
     "open_wind_magnetisation",
-    "open_wind_magnetisation_from_profiles",
 ]

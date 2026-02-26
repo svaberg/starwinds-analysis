@@ -15,7 +15,7 @@ import math
 import numpy as np
 
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
-from starwinds_analysis.physics.torque import MU0
+from starwinds_analysis.physics.constants import MU0
 
 
 def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):

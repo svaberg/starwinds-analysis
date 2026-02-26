@@ -47,7 +47,7 @@ from starwinds_analysis.physics.plotting import (
     plot_torque_profile,
 )
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
-from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation_from_profiles
+from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
@@ -62,6 +62,22 @@ class SlicePreset:
     field_candidates: tuple[str, ...]
     overlays: tuple[tuple[str, float, str], ...] = ()
     intent: str = "si_diagnostic"
+
+
+def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star_radius_m):
+    """
+    Local quicklook adapter from shell-profile dicts to the `Upsilon_open` formula.
+    """
+    if "open_flux" not in diagnostics or "mass_loss" not in diagnostics:
+        raise KeyError("diagnostics must include 'open_flux' and 'mass_loss'")
+    phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"], dtype=float)
+    dotm = np.array(diagnostics["mass_loss"]["mass_loss [kg/s]"], dtype=float)
+    y = open_wind_magnetisation(phi, dotm, star_mass_kg, star_radius_m)
+    return {
+        "radius [R]": np.array(diagnostics["mass_loss"]["radius [R]"], dtype=float),
+        "height [R]": np.array(diagnostics["mass_loss"]["height [R]"], dtype=float),
+        "Upsilon_open [none]": np.array(y, dtype=float),
+    }
 
 
 SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
@@ -402,7 +418,7 @@ def quicklook_shell_figure(
     )
     if star_mass_kg is not None:
         try:
-            diagnostics["wind_scaling"] = open_wind_magnetisation_from_profiles(
+            diagnostics["wind_scaling"] = _open_wind_magnetisation_from_diagnostics(
                 diagnostics,
                 star_mass_kg=star_mass_kg,
                 star_radius_m=body_radius_m,
@@ -883,7 +899,7 @@ def summarize_shell_diagnostics(
 
     if star_mass_kg is not None and star_radius_m is not None:
         try:
-            y = open_wind_magnetisation_from_profiles(
+            y = _open_wind_magnetisation_from_diagnostics(
                 diagnostics,
                 star_mass_kg=star_mass_kg,
                 star_radius_m=star_radius_m,
