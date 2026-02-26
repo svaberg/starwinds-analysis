@@ -4,8 +4,8 @@ It computes shell torque profiles (magnetic/dynamic/total) without plotting wrap
 """
 
 # TODO(debt): This is a quantity-specific shell profile wrapper (`torque_vs_radius`)
-# in a deep layer and depends on `analysis.shells` + `resolve_*` helpers. Keep local
-# torque-density formulas in `physics` and push orchestration upward.
+# in a deep layer and depends on `analysis.shells`. Keep local torque-density
+# formulas in `physics` and push orchestration upward.
 
 from __future__ import annotations
 
@@ -14,13 +14,26 @@ import numpy as np
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.torque import MU0, spherical_wind_torque_density_terms
 from starwinds_analysis.recipes.spherical import spherical_vector_components
+
+
+def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
+    needed = (
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
+    )
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
 
 def torque_vs_radius(
@@ -44,9 +57,10 @@ def torque_vs_radius(
     - dynamic:  ` varpi * rho * U_phi * U_r`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -62,13 +76,13 @@ def torque_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = rho_scale * shells.fields[rho_name]
-    ux = u_scale * shells.fields[ux_name]
-    uy = u_scale * shells.fields[uy_name]
-    uz = u_scale * shells.fields[uz_name]
-    bx = b_scale * shells.fields[bx_name]
-    by = b_scale * shells.fields[by_name]
-    bz = b_scale * shells.fields[bz_name]
+    rho = shells.fields[rho_name]
+    ux = shells.fields[ux_name]
+    uy = shells.fields[uy_name]
+    uz = shells.fields[uz_name]
+    bx = shells.fields[bx_name]
+    by = shells.fields[by_name]
+    bz = shells.fields[bz_name]
 
     u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
     b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)

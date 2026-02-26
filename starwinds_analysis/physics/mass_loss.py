@@ -25,6 +25,16 @@ if TYPE_CHECKING:
     from starwinds_analysis.analysis.shells import SphericalShellSamples
 
 
+def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
+    """
+    Ensure common BATSRUS SI fields are requestable from `SmartDs`.
+    """
+    needed = ("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
+
+
 @dataclass
 class ShellMassFluxMap:
     radius: float
@@ -76,14 +86,13 @@ def sample_shell_mass_flux_map(
     """
     from starwinds_analysis.analysis.shells import (
         infer_body_radius_m,
-        resolve_batsrus_density_si,
-        resolve_batsrus_vector_xyz_si,
         sample_spherical_shells_by_strategy,
     )
 
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
+    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -98,10 +107,10 @@ def sample_shell_mass_flux_map(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = rho_scale * np.array(shells.fields[rho_name], dtype=float)
-    ux = u_scale * np.array(shells.fields[ux_name], dtype=float)
-    uy = u_scale * np.array(shells.fields[uy_name], dtype=float)
-    uz = u_scale * np.array(shells.fields[uz_name], dtype=float)
+    rho = np.array(shells.fields[rho_name], dtype=float)
+    ux = np.array(shells.fields[ux_name], dtype=float)
+    uy = np.array(shells.fields[uy_name], dtype=float)
+    uz = np.array(shells.fields[uz_name], dtype=float)
     # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
     # instead of recomputing spherical components here.
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
@@ -137,15 +146,14 @@ def mass_loss_vs_radius(
     from starwinds_analysis.analysis.shells import (
         infer_body_radius_m,
         integrate_shell_scalar,
-        resolve_batsrus_density_si,
-        resolve_batsrus_vector_xyz_si,
         sample_spherical_shells_by_strategy,
         shell_profile_radius_height,
     )
 
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
+    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -161,10 +169,10 @@ def mass_loss_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = rho_scale * shells.fields[rho_name]
-    ux = u_scale * shells.fields[ux_name]
-    uy = u_scale * shells.fields[uy_name]
-    uz = u_scale * shells.fields[uz_name]
+    rho = shells.fields[rho_name]
+    ux = shells.fields[ux_name]
+    uy = shells.fields[uy_name]
+    uz = shells.fields[uz_name]
 
     # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
     # instead of recomputing spherical components here.

@@ -6,8 +6,8 @@ Flux plotting helpers are implemented in `starwinds_analysis.physics.plotting`.
 
 # TODO(debt): This file is quantity-specific (`fluxes`) and should eventually be
 # expressed as local quantity definitions + generic shell reduction primitives.
-# TODO(debt): This module still depends on `resolve_*` helpers and recomputes local
-# quantities (`B_r`, `U_r`, `E*U_r`) outside SmartDs/griblet.
+# TODO(debt): This module now requests SI fields through SmartDs/griblet, but still
+# recomputes local quantities (`B_r`, `U_r`, `E*U_r`) outside SmartDs/griblet.
 
 from __future__ import annotations
 
@@ -16,13 +16,20 @@ import numpy as np
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
-    resolve_batsrus_vector_xyz_si,
-    resolve_field_with_scale,
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.recipes.spherical import spherical_vector_components
+
+
+def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy: bool = False) -> None:
+    needed = {"B_x [T]", "B_y [T]", "B_z [T]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"}
+    if include_energy:
+        needed.add("E [J/m^3]")
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
 
 def open_magnetic_flux_vs_radius(
@@ -42,7 +49,8 @@ def open_magnetic_flux_vs_radius(
     Signed/unsigned magnetic flux on spherical shells.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -58,9 +66,9 @@ def open_magnetic_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    bx = b_scale * shells.fields[bx_name]
-    by = b_scale * shells.fields[by_name]
-    bz = b_scale * shells.fields[bz_name]
+    bx = shells.fields[bx_name]
+    by = shells.fields[by_name]
+    bz = shells.fields[bz_name]
     # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
     # of recomputing spherical components in the analysis layer.
     b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
@@ -119,10 +127,9 @@ def axisymmetric_open_flux_vs_radius(
     )
     shells = prof["shell_samples"]
     # Reconstruct B_r from the cached shell samples in SI.
-    (bx_raw, by_raw, bz_raw), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
-    bx = b_scale * shells.fields[bx_raw]
-    by = b_scale * shells.fields[by_raw]
-    bz = b_scale * shells.fields[bz_raw]
+    bx = shells.fields["B_x [T]"]
+    by = shells.fields["B_y [T]"]
+    bz = shells.fields["B_z [T]"]
     # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
     # of recomputing spherical components in the analysis layer.
     b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
@@ -169,8 +176,22 @@ def energy_flux_vs_radius(
     Radial energy flux profile using `E * U_r`.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    e_name, e_scale = resolve_field_with_scale(smart_ds, energy_field_candidates)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
+    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m, include_energy=False)
+    if smart_ds.has_field("E [J/m^3]"):
+        e_name, e_scale = "E [J/m^3]", 1.0
+    elif smart_ds.has_field("E [erg/cm^3]"):
+        e_name, e_scale = "E [erg/cm^3]", 1e-1
+    else:
+        # Fall back to the historical candidate list without using `resolve_*`.
+        e_name = e_scale = None
+        for cand_name, cand_scale in energy_field_candidates:
+            if smart_ds.has_field(cand_name):
+                e_name, e_scale = cand_name, float(cand_scale)
+                break
+        if e_name is None:
+            names = ", ".join(name for name, _ in energy_field_candidates)
+            raise KeyError(f"Could not find any energy field candidate: {names}")
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -187,9 +208,9 @@ def energy_flux_vs_radius(
     )
 
     e = e_scale * shells.fields[e_name]
-    ux = u_scale * shells.fields[ux_name]
-    uy = u_scale * shells.fields[uy_name]
-    uz = u_scale * shells.fields[uz_name]
+    ux = shells.fields[ux_name]
+    uy = shells.fields[uy_name]
+    uz = shells.fields[uz_name]
     # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on shell samples
     # instead of recomputing spherical components in the analysis layer.
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)

@@ -122,8 +122,8 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 Recommended next implementation batches:
 
 1. `physics/fluxes.py` + `physics/mass_loss.py` + `physics/shell_torque.py`
-- Introduce shared shell reduction primitive usage
-- Replace manual `B_r`/`U_r`/flux-density recomputation with SmartDs/griblet requests where available
+- DONE (partial): `resolve_*` field-resolution helpers removed from these files; SI fields are now requested through SmartDs/griblet.
+- NEXT: Introduce shared shell reduction primitive usage and remove local `B_r`/`U_r`/flux-density recomputation where possible.
 
 2. `physics/orbit_pressure.py` + `physics/orbit_surface.py`
 - Separate orbit geometry/sampling from quantity assembly
