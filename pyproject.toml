@@ -26,10 +26,14 @@ tests = [
   "pytest",
   "pytest-console-scripts",
   "pytest-cov",
+  "nbmake",
   "nbstripout",
+  "ipykernel",
 ]
 dev = [
+  "nbmake",
   "nbstripout",
+  "ipykernel",
 ]
 
 [project.urls]
