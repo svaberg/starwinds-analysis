@@ -17,7 +17,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
-from starwinds_analysis.physics.plotting import plot_energy_flux_profile, plot_open_flux_profile
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
@@ -197,6 +196,4 @@ __all__ = [
     "axisymmetric_open_flux_vs_radius",
     "energy_flux_vs_radius",
     "open_magnetic_flux_vs_radius",
-    "plot_energy_flux_profile",
-    "plot_open_flux_profile",
 ]

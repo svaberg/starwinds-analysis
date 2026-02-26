@@ -8,8 +8,6 @@ from .fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
-    plot_energy_flux_profile,
-    plot_open_flux_profile,
 )
 from ..physics.local_estimates import (
     local_mass_loss_estimates,
@@ -43,7 +41,6 @@ from ..physics.pressure import (
     pressure_components,
     ram_pressure,
 )
-from .mass_loss import plot_mass_loss_profile, plot_shell_mass_flux_lonlat
 from ..physics.mass_loss import (
     ShellMassFluxMap,
     mass_loss_vs_radius,
@@ -63,7 +60,6 @@ from .shell_summary import (
 )
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
-from .torque import plot_torque_profile
 from ..physics.shell_torque import torque_vs_radius
 from ..physics.surface_torque import (
     normalize_surface_normals,
@@ -95,14 +91,11 @@ __all__ = [
     "summarize_shell_diagnostics_band",
     "ShellMassFluxMap",
     "sample_shell_mass_flux_map",
-    "plot_shell_mass_flux_lonlat",
     "weighted_mean_std",
     "weighted_quantile",
     "open_magnetic_flux_vs_radius",
     "axisymmetric_open_flux_vs_radius",
     "energy_flux_vs_radius",
-    "plot_open_flux_profile",
-    "plot_energy_flux_profile",
     "circular_orbit_points",
     "elliptic_orbit_points",
     "sample_points",
@@ -130,9 +123,7 @@ __all__ = [
     "planet_orbit_spec",
     "planet_orbit_period",
     "mass_loss_vs_radius",
-    "plot_mass_loss_profile",
     "torque_vs_radius",
-    "plot_torque_profile",
     "rotational_frame_velocity",
     "radial_surface_normals",
     "surface_torque_density_terms",

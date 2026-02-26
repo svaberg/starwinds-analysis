@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis._profile_plotting import (
+from starwinds_analysis.physics.plotting import (
     plot_shell_height_series,
     shell_profile_height,
 )

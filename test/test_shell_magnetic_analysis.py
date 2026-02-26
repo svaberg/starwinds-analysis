@@ -7,7 +7,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis.mass_loss import plot_shell_mass_flux_lonlat
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.data.samples import get_sample
 from starwinds_analysis.physics.magnetic import (
@@ -15,6 +14,7 @@ from starwinds_analysis.physics.magnetic import (
     magnetic_shell_components_from_cartesian,
 )
 from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
+from starwinds_analysis.physics.plotting import plot_shell_mass_flux_lonlat
 from starwinds_analysis.smart_ds import SmartDs
 
 
