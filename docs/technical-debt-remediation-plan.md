@@ -155,6 +155,9 @@ Recommended next implementation batches:
 ## Testing Strategy (Required For Each Batch)
 
 - Run targeted tests for touched areas first.
+- Run the code-rules contract test when touching style/debt-sensitive code:
+  - `conda run -n starwinds-analysis python -m pytest -q test/test_code_rules.py`
+- `test/test_code_rules.py` uses a baseline to block new violations of selected bad-practice patterns.
 - Then run the full suite in `starwinds-analysis` before finishing a batch:
 
 ```bash
