@@ -86,7 +86,8 @@ Goal: stop inventing per-function containers and use shared abstractions.
   by migrating remaining callers to direct SmartDs field requests.
 
 2. Remove `ShellMassFluxMap` (custom workflow container).
-- Use structured resampled `SmartDs` + explicit arrays/metadata instead.
+- DONE: `ShellMassFluxMap` and `sample_shell_mass_flux_map(...)` were removed.
+- Tests/examples now use structured shell `SmartDs` + explicit arrays/metadata directly.
 
 3. Add geometry-measure support (`area`, `volume`) only where geometry basis is explicit.
 - Structured grids/shell grids first.

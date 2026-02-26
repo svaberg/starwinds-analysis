@@ -14,7 +14,7 @@ from starwinds_analysis.physics.local_estimates import (
 )
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
+from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.analysis.shell_summary import (
     boxcar_shell_weights,
     summarize_shell_diagnostics_band,
@@ -28,6 +28,7 @@ from starwinds_analysis.analysis.shells import (
 )
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
+from starwinds_analysis.recipes.spherical import spherical_vector_components
 from starwinds_analysis.physics.wind_scaling import (
     open_wind_magnetisation,
     surface_escape_speed,
@@ -115,23 +116,33 @@ def test_mass_loss_profile_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_sample_shell_mass_flux_map_matches_shell_integral():
+def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    shell_map = sample_shell_mass_flux_map(
+    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    shells = sample_spherical_shells(
         sds,
-        5.0,
-        body_radius_m=SUN_RADIUS_M,
+        [5.0],
+        fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         n_polar=12,
         n_azimuth=24,
         method="nearest",
+        length_unit_to_m=SUN_RADIUS_M,
     )
-
-    integral, coverage = shell_map.integrate()
+    rho = np.array(shells("Rho [kg/m^3]"), dtype=float)
+    ux = np.array(shells("U_x [m/s]"), dtype=float)
+    uy = np.array(shells("U_y [m/s]"), dtype=float)
+    uz = np.array(shells("U_z [m/s]"), dtype=float)
+    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    mass_flux = radial_advective_flux_density(rho, u_r)
+    integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, shells.area)
+    integral = float(integral_arr[0])
+    coverage = float(coverage_arr[0])
     assert np.isfinite(integral)
     assert 0.95 < coverage <= 1.0 + 1e-12
-    summary = shell_map.summary()
-    assert summary["finite_cells"] > 0
-    assert summary["total_cells"] == 12 * 24
+    arr = np.array(mass_flux[0], dtype=float)
+    finite = arr[np.isfinite(arr)]
+    assert finite.size > 0
+    assert arr.size == 12 * 24
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

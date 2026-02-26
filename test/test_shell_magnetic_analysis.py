@@ -9,11 +9,12 @@ import numpy as np
 
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.data.samples import get_sample
+from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.physics.magnetic import (
     magnetic_field_unit_scale,
     magnetic_shell_components_from_cartesian,
 )
-from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
+from starwinds_analysis.recipes.spherical import spherical_vector_components
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -126,19 +127,29 @@ def test_shell_magnetic_flux_summary_primitives_smoke():
 
 def test_direct_shell_mass_flux_lonlat_plot_smoke():
     sds = SmartDs.from_file(str(EXAMPLE_3D))
-    shell_map = sample_shell_mass_flux_map(
+    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    shell = sample_spherical_shells(
         sds,
-        2.0,
-        body_radius_m=SUN_RADIUS_M,
+        [2.0],
+        fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         n_polar=10,
         n_azimuth=20,
+        length_unit_to_m=SUN_RADIUS_M,
     )
+    rho = np.array(shell("Rho [kg/m^3]"), dtype=float)
+    ux = np.array(shell("U_x [m/s]"), dtype=float)
+    uy = np.array(shell("U_y [m/s]"), dtype=float)
+    uz = np.array(shell("U_z [m/s]"), dtype=float)
+    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shell.x, shell.y, shell.z)
+    mass_flux = radial_advective_flux_density(rho, u_r)
+    lon_deg = np.degrees(np.array(shell.phi, dtype=float))
+    lat_deg = 90.0 - np.degrees(np.array(shell.theta, dtype=float))
     fig, ax = plt.subplots(figsize=(6, 3))
     try:
         img = ax.pcolormesh(
-            shell_map.lon_deg,
-            shell_map.lat_deg,
-            shell_map.mass_flux_kg_m2_s,
+            lon_deg,
+            lat_deg,
+            np.array(mass_flux[0], dtype=float),
             shading="nearest",
             cmap="viridis",
         )
