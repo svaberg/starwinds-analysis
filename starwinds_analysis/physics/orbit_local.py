@@ -6,14 +6,14 @@ library is being split into stricter primitives.
 """
 
 # TODO(debt): This file is workflow-heavy and quantity-specific (`local_mass_loss_*`,
-# `local_torque_*`) in a deep layer. Keep moving shared pieces into primitives and
-# request SI quantities directly from SmartDs/griblet where feasible.
+# `local_torque_*`) in a deep layer. Keep moving shared pieces into neutral
+# primitives and request SI quantities directly from SmartDs/griblet where feasible.
 
 from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
+from starwinds_analysis.sampling.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.local_estimates import (

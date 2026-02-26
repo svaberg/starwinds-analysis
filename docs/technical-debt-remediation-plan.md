@@ -34,8 +34,10 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 - NEXT: split `physics/surface_torque.py` back down so only local torque terms remain in the deep layer.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
-- DONE (partial): `analysis/orbits.py` now contains geometry/sampling primitives only; local mass-loss/torque orbit workflows were moved out.
-- NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific and imports `analysis` sampling).
+- DONE (updated): orbit geometry/sampling primitives moved to a neutral `sampling.orbits`
+  module; `physics/orbit_*` no longer imports `analysis.orbits`.
+- NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific, but now
+  depends on the neutral `sampling` layer instead of `analysis`).
 
 ## Phase 2 (SmartDs / griblet Migration)
 
@@ -125,6 +127,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 2. Remove `physics -> analysis` imports in workflow-heavy modules by either:
 - moving workflows out of `physics`, or
 - extracting the needed primitive out of `analysis`.
+ - DONE (partial): orbit workflows now use `sampling.orbits` instead of `analysis.orbits`.
 
 3. Only after boundaries are correct, remove lazy-import cycle workarounds.
 

@@ -6,8 +6,9 @@ Pressure formulas themselves belong in pressure.py.
 
 # TODO(debt): This file is an orbit workflow/pipeline (sampling + field resolution +
 # summaries) but currently lives in `physics`.
-# TODO(debt): It imports from `analysis`; keep moving shared orbit/sampling pieces
-# into primitives and use SmartDs/griblet SI requests internally.
+# TODO(debt): It is a workflow-heavy module in `physics`; keep moving shared
+# orbit/sampling pieces into neutral primitives and use SmartDs/griblet SI requests
+# internally.
 
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
+from starwinds_analysis.sampling.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,

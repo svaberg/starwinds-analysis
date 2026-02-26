@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from starwinds_analysis.analysis.orbits import (
+from starwinds_analysis.sampling.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
     sample_circular_orbit,

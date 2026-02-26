@@ -7,8 +7,8 @@ It should reuse pressure/torque core functions rather than redefining those quan
 # TODO(debt): This file combines geometry generation, resampling, pressure/torque
 # quantity assembly, and summaries. It behaves like a workflow/pipeline but currently
 # lives in `physics`.
-# TODO(debt): It imports from `analysis` (reversed layer direction). Keep moving
-# shared orbit/surface sampling pieces into primitives.
+# TODO(debt): This remains a workflow-heavy module in `physics`; keep moving shared
+# orbit/surface sampling pieces into neutral primitives.
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.analysis.orbits import (
+from starwinds_analysis.sampling.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
     sample_points,

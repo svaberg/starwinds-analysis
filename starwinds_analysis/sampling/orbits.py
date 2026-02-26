@@ -1,7 +1,7 @@
 """THIS FILE contains orbit geometry and orbit sampling primitives.
 
 It provides circular/elliptic paths and SmartDs resampling along those paths.
-Quantity-specific local orbit diagnostics were moved out of this module.
+It is a neutral sampling layer (not `analysis`, not `physics`).
 """
 
 from __future__ import annotations
