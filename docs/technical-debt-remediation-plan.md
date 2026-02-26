@@ -50,8 +50,12 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
 - torque-density terms where feasible (with explicit geometry inputs)
  - DONE (partial): core shell profile workflows now request spherical components
    (`B_r`, `U_r`, `U_phi`, `B_phi`) from shell `SmartDs` instead of recomputing them.
- - NEXT: add/request SI flux-density quantities (`mass_flux`, `energy_flux`) and
-   explicit-surface torque terms through griblet where appropriate.
+ - DONE (partial): `batsrus.py` now provides pointwise SI recipes for
+   `magnetic_pressure [Pa]`, `ram_pressure [Pa]`, `mass_flux [kg/m^2/s]`,
+   `energy_flux [W/m^2]`, and shell-style torque densities, and shell workflows
+   request these via SmartDs/griblet.
+ - NEXT: migrate more pointwise quantities (e.g. pressure-component bundle pieces,
+   explicit-surface torque terms where geometry inputs are explicit fields).
 
 2. DONE (current pass): Replace `resolve_*` usage in callers with direct SmartDs requests.
 - Shell profile workflows (`physics/fluxes.py`, `physics/mass_loss.py`, torque wrappers in `physics/torque.py`)
