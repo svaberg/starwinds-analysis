@@ -60,6 +60,8 @@ def _local_mass_loss_from_orbit_sample(
     ux = orbit[ux_name]
     uy = orbit[uy_name]
     uz = orbit[uz_name]
+    # TODO(griblet): Request `U_r [m/s]` directly on sampled orbit points instead of
+    # recomputing the radial component here.
     u_r = radial_component(ux, uy, uz, x, y, z)
     r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
@@ -139,6 +141,8 @@ def _local_torque_from_orbit_sample(
     by = orbit[by_name]
     bz = orbit[bz_name]
 
+    # TODO(griblet): Request `U_r/U_phi` and `B_r/B_phi` directly on sampled orbit
+    # points instead of recomputing spherical components here.
     u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
     b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
     local = local_torque_estimates(r_m, rho, u_r, u_phi, b_r, b_phi)
