@@ -9,6 +9,21 @@ The goal is not "purity". The goal is:
 - notebooks/examples that demonstrate easy usage
 - SI-first analysis (with explicit exceptions like `R` and Gauss-for-plotting)
 
+## Core Style Rule: Prefer Short Code
+
+Rule:
+
+- Prefer short code when the meaning stays clear.
+- Do not add ceremony (casts, wrappers, helper layers, dict bundles, re-boxing) around
+  one or two real lines of computation.
+- If a function is mostly boilerplate and only contains a tiny amount of real work,
+  that is a code smell.
+
+Implication:
+
+- Write the math/operation directly when it is simple.
+- Split code only for real reuse, real boundaries, or real complexity.
+
 ## 0. Library Purity (Hard Boundary)
 
 Rule:
