@@ -17,6 +17,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
+from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
@@ -183,7 +184,7 @@ def energy_flux_vs_radius(
     uz = u_scale * shells.fields[uz_name]
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
 
-    energy_flux_density = e * u_r  # W / m^2
+    energy_flux_density = radial_advective_flux_density(e, u_r)  # W / m^2
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, shells.area)
     return {
         **shell_profile_radius_height(shells),

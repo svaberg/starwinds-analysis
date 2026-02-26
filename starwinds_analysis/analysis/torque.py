@@ -6,8 +6,6 @@ It should not duplicate the core explicit-surface torque definitions.
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from starwinds_analysis.analysis._profile_plotting import (
@@ -22,10 +20,8 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
+from starwinds_analysis.physics.torque import MU0, spherical_wind_torque_density_terms
 from starwinds_analysis.recipes.spherical import spherical_vector_components
-
-
-MU0 = 4.0e-7 * math.pi
 
 
 def torque_vs_radius(
@@ -80,8 +76,14 @@ def torque_vs_radius(
 
     varpi = np.sqrt(shells.x * shells.x + shells.y * shells.y) * body_radius_m
 
-    magnetic_density = -varpi * b_phi * b_r / MU0
-    dynamic_density = varpi * rho * u_phi * u_r
+    magnetic_density, dynamic_density = spherical_wind_torque_density_terms(
+        rho_kg_m3=rho,
+        u_radial_m_s=u_r,
+        u_azimuthal_m_s=u_phi,
+        b_radial_t=b_r,
+        b_azimuthal_t=b_phi,
+        cylindrical_radius_m=varpi,
+    )
 
     magnetic, cov_mag = integrate_shell_scalar(magnetic_density, shells.area)
     dynamic, cov_dyn = integrate_shell_scalar(dynamic_density, shells.area)

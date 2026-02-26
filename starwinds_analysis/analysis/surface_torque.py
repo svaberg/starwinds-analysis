@@ -6,8 +6,6 @@ Higher-level shell/orbit workflows should call into this file rather than reimpl
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from starwinds_analysis.analysis.shells import (
@@ -19,8 +17,7 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 
-
-MU0 = 4.0e-7 * math.pi
+from starwinds_analysis.physics.torque import MU0
 
 
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):

@@ -22,6 +22,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
+from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
@@ -94,7 +95,7 @@ def sample_shell_mass_flux_map(
     uy = u_scale * np.asarray(shells.fields[uy_name], dtype=float)
     uz = u_scale * np.asarray(shells.fields[uz_name], dtype=float)
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
-    mass_flux = np.asarray(rho * u_r, dtype=float)
+    mass_flux = np.asarray(radial_advective_flux_density(rho, u_r), dtype=float)
 
     return ShellMassFluxMap(
         radius=float(radius),
@@ -178,7 +179,7 @@ def mass_loss_vs_radius(
     uz = u_scale * shells.fields[uz_name]
 
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
-    mass_flux = rho * u_r  # kg / m^2 / s
+    mass_flux = radial_advective_flux_density(rho, u_r)  # kg / m^2 / s
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, shells.area)
     return {
