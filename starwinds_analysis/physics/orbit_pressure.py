@@ -19,7 +19,7 @@ from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.sampling.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
-    pressure_components,
+    ram_pressure,
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
@@ -73,17 +73,12 @@ def pressure_components_from_orbit_sample(
     include_relative_ram: bool = True,
     standoff_b0_t: float = 0.7e-4,
 ):
-    # TODO(griblet): These pressure/standoff derived quantities should be requested
-    # through SmartDs/griblet in SI units where possible, instead of being assembled
-    # ad hoc in the orbit workflow.
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
     p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
 
     rho = np.array(orbit[rho_name], dtype=float)
     u_xyz = np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
-    b_xyz = np.column_stack([orbit[bx_name], orbit[by_name], orbit[bz_name]])
     p_therm = p_scale * np.array(orbit[p_name], dtype=float)
 
     object_velocity = None
@@ -101,13 +96,23 @@ def pressure_components_from_orbit_sample(
             )
             object_velocity = _periodic_orbit_velocity(points_r, phase, period_s, body_radius_m)
 
-    comps = pressure_components(
-        rho,
-        u_xyz,
-        b_xyz,
-        thermal_pressure_pa=p_therm,
-        object_velocity_xyz_m_s=object_velocity,
-    )
+    comps = {
+        "U [m/s]": np.array(orbit["U [m/s]"], dtype=float),
+        "B [T]": np.array(orbit["B [T]"], dtype=float),
+        "magnetic_pressure [Pa]": np.array(orbit["magnetic_pressure [Pa]"], dtype=float),
+        "ram_pressure [Pa]": np.array(orbit["ram_pressure [Pa]"], dtype=float),
+        "thermal_pressure [Pa]": p_therm,
+    }
+
+    # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
+    # local workflow logic because they depend on the orbit-derived object velocity.
+    if object_velocity is not None:
+        v_obj = object_velocity
+        rel = u_xyz - v_obj
+        rel_speed = np.sqrt(np.sum(rel * rel, axis=-1))
+        comps["object_speed [m/s]"] = np.sqrt(np.sum(v_obj * v_obj, axis=-1))
+        comps["relative_speed [m/s]"] = rel_speed
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
 
     speed_for_standoff = comps.get("relative_speed [m/s]", comps["U [m/s]"])
     comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
@@ -141,10 +146,11 @@ def pressure_components_on_circular_orbit(
     p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
+    derived = ("U [m/s]", "B [T]", "magnetic_pressure [Pa]", "ram_pressure [Pa]")
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
-        fields=(rho_name, *u_xyz, *b_xyz, p_name),
+        fields=(rho_name, *u_xyz, *b_xyz, *derived, p_name),
         n_points=n_points,
         plane=plane,
         method=method,
@@ -181,11 +187,12 @@ def pressure_components_on_elliptic_orbit(
     p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
+    derived = ("U [m/s]", "B [T]", "magnetic_pressure [Pa]", "ram_pressure [Pa]")
     orbit = sample_elliptic_orbit(
         smart_ds,
         semi_major_axis,
         eccentricity=eccentricity,
-        fields=(rho_name, *u_xyz, *b_xyz, p_name),
+        fields=(rho_name, *u_xyz, *b_xyz, *derived, p_name),
         n_points=n_points,
         plane=plane,
         angle0=angle0,
