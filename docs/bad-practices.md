@@ -487,6 +487,36 @@ Rule:
 - Do not add compatibility shim modules for internal library code.
 - When refactoring internal module structure, update imports and delete the old module.
 
+## 12. Dictionary Return Bundles (Usually A Smell)
+
+Bad:
+
+- functions returning large ad hoc dictionaries of mixed values
+- string-key API bundles used instead of clear return values / shared structures
+- returning dicts just to avoid defining a real abstraction or to bundle one workflow step
+
+Why this is bad:
+
+- weakens the API contract (keys drift, typos become runtime bugs)
+- encourages wrapper/orchestration style code and string-key plumbing
+- makes refactors noisy because call sites depend on many magic keys
+
+Preferred pattern:
+
+- return explicit values / tuples for small local formulas
+- return shared abstractions (`SmartDs`, arrays + explicit metadata) for reusable workflows
+- keep dicts for truly map-like data (metadata, summaries, serialization/export payloads)
+
+Exception (current project-specific):
+
+- computed quantities that are intentionally stored in BATSRUS-style `aux` metadata may
+  reasonably be represented as dictionaries/maps (though this is still an open design choice).
+
+Rule:
+
+- Default to not returning dictionaries from library functions.
+- If returning a dict, document why a map-shaped result is the right abstraction.
+
 ## Review Checklist (Use Before Adding New Code)
 
 - Is this function general/parameterized, or is it hard-coded to one quantity?
@@ -501,6 +531,7 @@ Rule:
 - Am I bypassing `SmartDs.resample(...)` without a specific documented reason?
 - Is this function mostly boilerplate around 1-3 lines of actual computation?
 - Am I adding a shim/re-export module instead of fixing internal imports?
+- Am I returning a dict where a clearer return shape should exist?
 
 ## Current Priority Enforcement
 
@@ -514,3 +545,4 @@ Highest priority to avoid:
 6. Wrapper bloat / low-signal functions
 7. Bypassing `SmartDs` for resampling without a specific reason
 8. Internal compatibility shims / re-export modules
+9. Ad hoc dictionary return bundles
