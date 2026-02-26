@@ -21,14 +21,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 
-def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy: bool = False) -> None:
-    needed = {"B_x [T]", "B_y [T]", "B_z [T]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"}
-    if include_energy:
-        needed.add("E [J/m^3]")
-    if all(smart_ds.has_field(name) for name in needed):
-        return
-    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 def open_magnetic_flux_vs_radius(
     smart_ds,
     radii,
@@ -46,7 +38,7 @@ def open_magnetic_flux_vs_radius(
     Signed/unsigned magnetic flux on spherical shells.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
     x_name, y_name, z_name = coordinate_fields
     area_name = "dA [m^2]"
@@ -171,7 +163,7 @@ def energy_flux_vs_radius(
     Radial energy flux profile using `E * U_r`.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m, include_energy=False)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     if smart_ds.has_field("E [J/m^3]"):
         e_name, e_scale = "E [J/m^3]", 1.0
     elif smart_ds.has_field("E [erg/cm^3]"):
@@ -217,4 +209,3 @@ def energy_flux_vs_radius(
         "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
-

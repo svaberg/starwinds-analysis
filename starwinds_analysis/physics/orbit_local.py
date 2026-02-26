@@ -24,19 +24,6 @@ from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
 
-def _ensure_batsrus_orbit_fields(smart_ds, *, body_radius_m: float, need_b: bool) -> None:
-    needed = {
-        "Rho [kg/m^3]",
-        "U_x [m/s]",
-        "U_y [m/s]",
-        "U_z [m/s]",
-    }
-    if need_b:
-        needed.update({"B_x [T]", "B_y [T]", "B_z [T]"})
-    if all(smart_ds.has_field(name) for name in needed):
-        return
-    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 def _interp_profile(radii, values, x):
     r = np.array(radii, dtype=float)
     y = np.array(values, dtype=float)
@@ -220,7 +207,7 @@ def local_mass_loss_on_circular_orbit(
     shell_n_azimuth: int = 48,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=False)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
@@ -256,7 +243,7 @@ def local_torque_on_circular_orbit(
     shell_n_azimuth: int = 48,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=True)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
@@ -299,7 +286,7 @@ def local_mass_loss_on_elliptic_orbit(
     shell_n_radii: int = 12,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=False)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     fields = (
         "Rho [kg/m^3]",
         "U_x [m/s]",
@@ -349,7 +336,7 @@ def local_torque_on_elliptic_orbit(
     shell_n_radii: int = 12,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_fields(smart_ds, body_radius_m=body_radius_m, need_b=True)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     fields = (
         "Rho [kg/m^3]",
         "U_x [m/s]",
@@ -385,4 +372,3 @@ def local_torque_on_elliptic_orbit(
     out["semi_major_axis [R]"] = float(semi_major_axis)
     out["eccentricity [none]"] = float(eccentricity)
     return out
-

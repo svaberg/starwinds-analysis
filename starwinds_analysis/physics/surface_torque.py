@@ -20,27 +20,6 @@ from starwinds_analysis.physics.constants import MU0
 # wrappers (`surface_torque_vs_radius`, etc.). Keep the local torque terms here, but
 # move wrapper orchestration toward generic shell/surface reduction primitives.
 
-def _ensure_batsrus_surface_torque_fields(
-    smart_ds,
-    *,
-    body_radius_m: float,
-    include_pressure: bool,
-) -> None:
-    needed = {
-        "Rho [kg/m^3]",
-        "U_x [m/s]",
-        "U_y [m/s]",
-        "U_z [m/s]",
-        "B_x [T]",
-        "B_y [T]",
-        "B_z [T]",
-    }
-    if include_pressure:
-        needed.add("P [Pa]")
-    if all(smart_ds.has_field(name) for name in needed):
-        return
-    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     """
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
@@ -262,11 +241,7 @@ def surface_torque_vs_radius(
     Explicit-surface torque profile on spherical shells using general T1..T4 terms.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_surface_torque_fields(
-        smart_ds,
-        body_radius_m=body_radius_m,
-        include_pressure=include_pressure_term,
-    )
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -330,4 +305,3 @@ def surface_torque_vs_radius(
         "surface_terms": terms,
         "sampling": sampling,
     }
-

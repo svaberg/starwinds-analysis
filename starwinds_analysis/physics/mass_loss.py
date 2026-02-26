@@ -13,15 +13,6 @@ from __future__ import annotations
 
 import numpy as np
 
-def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
-    """
-    Ensure common BATSRUS SI fields are requestable from `SmartDs`.
-    """
-    needed = ("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
-    if all(smart_ds.has_field(name) for name in needed):
-        return
-    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 def mass_loss_vs_radius(
     smart_ds,
     radii,
@@ -48,7 +39,7 @@ def mass_loss_vs_radius(
     )
 
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     area_name = "dA [m^2]"
