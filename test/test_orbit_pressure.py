@@ -69,7 +69,7 @@ def test_pressure_components_on_circular_orbit_runs_on_example():
         "thermal_pressure [Pa]",
         "standoff_distance [m]",
     ):
-        arr = np.asarray(out[key], dtype=float)
+        arr = np.array(out[key], dtype=float)
         assert arr.shape == (96,)
         assert np.count_nonzero(np.isfinite(arr)) > 0
 

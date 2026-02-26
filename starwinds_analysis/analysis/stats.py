@@ -13,11 +13,11 @@ def weighted_mean_std(values, weights=None):
     """
     Weighted mean and standard deviation over finite values.
     """
-    v = np.asarray(values, dtype=float)
+    v = np.array(values, dtype=float)
     if weights is None:
         w = np.ones_like(v, dtype=float)
     else:
-        w = np.asarray(weights, dtype=float)
+        w = np.array(weights, dtype=float)
         if w.shape != v.shape:
             w = np.broadcast_to(w, v.shape)
 
@@ -40,13 +40,13 @@ def weighted_quantile(values, quantiles, weights=None):
     """
     Weighted quantiles for 1D data.
     """
-    v = np.asarray(values, dtype=float).ravel()
-    q = np.asarray(quantiles, dtype=float)
+    v = np.array(values, dtype=float).ravel()
+    q = np.array(quantiles, dtype=float)
 
     if weights is None:
         w = np.ones_like(v, dtype=float)
     else:
-        w = np.asarray(weights, dtype=float).ravel()
+        w = np.array(weights, dtype=float).ravel()
         if w.shape != v.shape:
             raise ValueError("weights must have the same shape as values")
 

@@ -73,10 +73,10 @@ def open_magnetic_flux_vs_radius(
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     return {
         **shell_profile_radius_height(shells),
-        "signed_flux [Wb]": np.asarray(signed_flux, dtype=float),
-        "signed_flux_from_vector [Wb]": np.asarray(signed_flux_from_vector, dtype=float),
-        "open_flux [Wb]": np.asarray(open_flux, dtype=float),
-        "coverage [none]": np.asarray(coverage, dtype=float),
+        "signed_flux [Wb]": np.array(signed_flux, dtype=float),
+        "signed_flux_from_vector [Wb]": np.array(signed_flux_from_vector, dtype=float),
+        "open_flux [Wb]": np.array(open_flux, dtype=float),
+        "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
 
@@ -124,7 +124,7 @@ def axisymmetric_open_flux_vs_radius(
     b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
     axi_open_flux, cov_axi = integrate_shell_scalar(np.abs(b_r_axi), shells.area)
 
-    open_flux = np.asarray(prof["open_flux [Wb]"], dtype=float)
+    open_flux = np.array(prof["open_flux [Wb]"], dtype=float)
     with np.errstate(invalid="ignore", divide="ignore"):
         fraction = np.divide(
             axi_open_flux,
@@ -134,9 +134,9 @@ def axisymmetric_open_flux_vs_radius(
         )
 
     prof = dict(prof)
-    prof["axisymmetric_open_flux [Wb]"] = np.asarray(axi_open_flux, dtype=float)
-    prof["axisymmetric_open_flux_fraction [none]"] = np.asarray(fraction, dtype=float)
-    prof["coverage [none]"] = np.minimum(np.asarray(prof["coverage [none]"]), cov_axi)
+    prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux, dtype=float)
+    prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction, dtype=float)
+    prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
     return prof
 
 
@@ -188,8 +188,8 @@ def energy_flux_vs_radius(
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, shells.area)
     return {
         **shell_profile_radius_height(shells),
-        "energy_flux [W]": np.asarray(energy_flux, dtype=float),
-        "coverage [none]": np.asarray(coverage, dtype=float),
+        "energy_flux [W]": np.array(energy_flux, dtype=float),
+        "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
 

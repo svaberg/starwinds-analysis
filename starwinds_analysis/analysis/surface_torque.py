@@ -25,8 +25,8 @@ def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
     for rotation about +z with scalar angular speed `angvel_rad_s`.
     """
-    u = np.asarray(u_xyz_m_s, dtype=float)
-    xyz = np.asarray(xyz_m, dtype=float)
+    u = np.array(u_xyz_m_s, dtype=float)
+    xyz = np.array(xyz_m, dtype=float)
     if u.shape != xyz.shape or u.shape[-1] != 3:
         raise ValueError("u_xyz_m_s and xyz_m must have the same shape (..., 3)")
     omega = float(angvel_rad_s)
@@ -38,7 +38,7 @@ def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
 
 
 def normalize_surface_normals(normals_xyz):
-    n = np.asarray(normals_xyz, dtype=float)
+    n = np.array(normals_xyz, dtype=float)
     if n.shape[-1] != 3:
         raise ValueError("normals_xyz must have shape (..., 3)")
     nmag = np.sqrt(np.sum(n * n, axis=-1, keepdims=True))
@@ -48,7 +48,7 @@ def normalize_surface_normals(normals_xyz):
 
 
 def radial_surface_normals(xyz):
-    xyz = np.asarray(xyz, dtype=float)
+    xyz = np.array(xyz, dtype=float)
     if xyz.shape[-1] != 3:
         raise ValueError("xyz must have shape (..., 3)")
     return normalize_surface_normals(xyz)
@@ -81,12 +81,12 @@ def surface_torque_density_terms(
     For spherical surfaces with radial normals and `angvel_rad_s=0`, `T2=T3=0` and
     `T1+T4` reduces to the existing spherical-shell torque expression.
     """
-    xyz = np.asarray(xyz_m, dtype=float)
+    xyz = np.array(xyz_m, dtype=float)
     n = normalize_surface_normals(normals_xyz)
-    area = np.asarray(area_m2, dtype=float)
-    rho = np.asarray(rho_kg_m3, dtype=float)
-    u = np.asarray(u_xyz_m_s, dtype=float)
-    b = np.asarray(b_xyz_t, dtype=float)
+    area = np.array(area_m2, dtype=float)
+    rho = np.array(rho_kg_m3, dtype=float)
+    u = np.array(u_xyz_m_s, dtype=float)
+    b = np.array(b_xyz_t, dtype=float)
 
     if xyz.shape != u.shape or xyz.shape != b.shape or xyz.shape != n.shape:
         raise ValueError("xyz_m, normals_xyz, u_xyz_m_s, and b_xyz_t must match shape (..., 3)")
@@ -102,7 +102,7 @@ def surface_torque_density_terms(
     if pressure_pa is None:
         p = np.zeros(scalar_shape, dtype=float)
     else:
-        p = np.asarray(pressure_pa, dtype=float)
+        p = np.array(pressure_pa, dtype=float)
         if p.shape != scalar_shape:
             p = np.broadcast_to(p, scalar_shape)
 
@@ -170,7 +170,7 @@ def integrate_surface_torque_terms(terms):
     """
     Integrate per-area torque-density terms from `surface_torque_density_terms(...)`.
     """
-    area = np.asarray(terms["area [m^2]"], dtype=float)
+    area = np.array(terms["area [m^2]"], dtype=float)
     out = {}
     coverages = []
     component_keys = (
@@ -181,17 +181,17 @@ def integrate_surface_torque_terms(terms):
     )
     component_integrals = []
     for key in component_keys:
-        integral, cov = integrate_shell_scalar(np.asarray(terms[key], dtype=float), area)
-        out[key.replace("[N/m]", "[Nm]")] = np.asarray(integral, dtype=float)
-        component_integrals.append(np.asarray(integral, dtype=float))
-        coverages.append(np.asarray(cov, dtype=float))
+        integral, cov = integrate_shell_scalar(np.array(terms[key], dtype=float), area)
+        out[key.replace("[N/m]", "[Nm]")] = np.array(integral, dtype=float)
+        component_integrals.append(np.array(integral, dtype=float))
+        coverages.append(np.array(cov, dtype=float))
     # Define the total as the sum of integrated terms, so bookkeeping is exact even
     # when individual terms have different finite masks.
     out["total [Nm]"] = np.sum(np.stack(component_integrals, axis=0), axis=0)
     if "total [N/m]" in terms:
-        _direct_total, cov_total = integrate_shell_scalar(np.asarray(terms["total [N/m]"], dtype=float), area)
-        out["total_direct [Nm]"] = np.asarray(_direct_total, dtype=float)
-        coverages.append(np.asarray(cov_total, dtype=float))
+        _direct_total, cov_total = integrate_shell_scalar(np.array(terms["total [N/m]"], dtype=float), area)
+        out["total_direct [Nm]"] = np.array(_direct_total, dtype=float)
+        coverages.append(np.array(cov_total, dtype=float))
     if coverages:
         out["coverage [none]"] = np.min(np.stack(coverages, axis=0), axis=0)
     return out
@@ -299,12 +299,12 @@ def surface_torque_vs_radius(
 
     return {
         **shell_profile_radius_height(shells),
-        "T1_magnetic [Nm]": np.asarray(ints["T1_magnetic [Nm]"], dtype=float),
-        "T2_pressure [Nm]": np.asarray(ints["T2_pressure [Nm]"], dtype=float),
-        "T3_corotation [Nm]": np.asarray(ints["T3_corotation [Nm]"], dtype=float),
-        "T4_dynamic [Nm]": np.asarray(ints["T4_dynamic [Nm]"], dtype=float),
-        "total [Nm]": np.asarray(ints["total [Nm]"], dtype=float),
-        "coverage [none]": np.asarray(ints["coverage [none]"], dtype=float),
+        "T1_magnetic [Nm]": np.array(ints["T1_magnetic [Nm]"], dtype=float),
+        "T2_pressure [Nm]": np.array(ints["T2_pressure [Nm]"], dtype=float),
+        "T3_corotation [Nm]": np.array(ints["T3_corotation [Nm]"], dtype=float),
+        "T4_dynamic [Nm]": np.array(ints["T4_dynamic [Nm]"], dtype=float),
+        "total [Nm]": np.array(ints["total [Nm]"], dtype=float),
+        "coverage [none]": np.array(ints["coverage [none]"], dtype=float),
         "shell_samples": shells,
         "surface_terms": terms,
         "sampling": sampling,

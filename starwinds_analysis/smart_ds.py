@@ -340,7 +340,7 @@ class SmartDs:
 
         func = self._field_functions.get(name)
         if func is not None:
-            value = np.asarray(func(self))
+            value = np.array(func(self))
         else:
             value = self._compute_via_graph(name)
         if self._cache_enabled:

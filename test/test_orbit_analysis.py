@@ -105,7 +105,7 @@ def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
         shell_n_azimuth=24,
     )
 
-    local_vals = np.asarray(out["local_mass_loss [kg/s]"])
+    local_vals = np.array(out["local_mass_loss [kg/s]"])
     assert local_vals.shape == (96,)
     assert np.count_nonzero(np.isfinite(local_vals)) > 0
     assert np.isfinite(out["summary"]["mean"])
@@ -126,9 +126,9 @@ def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
         shell_n_azimuth=24,
     )
 
-    tot = np.asarray(out["local_total_torque [Nm]"])
-    mag = np.asarray(out["local_magnetic_torque [Nm]"])
-    dyn = np.asarray(out["local_dynamic_torque [Nm]"])
+    tot = np.array(out["local_total_torque [Nm]"])
+    mag = np.array(out["local_magnetic_torque [Nm]"])
+    dyn = np.array(out["local_dynamic_torque [Nm]"])
 
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
     assert np.isfinite(out["summary"]["mean"])
@@ -151,8 +151,8 @@ def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
         shell_n_radii=8,
     )
 
-    local_vals = np.asarray(out["local_mass_loss [kg/s]"])
-    shell_vals = np.asarray(out["shell_mass_loss_interp [kg/s]"])
+    local_vals = np.array(out["local_mass_loss [kg/s]"])
+    shell_vals = np.array(out["shell_mass_loss_interp [kg/s]"])
     assert local_vals.shape == (96,)
     assert shell_vals.shape == (96,)
     assert np.count_nonzero(np.isfinite(local_vals)) > 0
@@ -179,10 +179,10 @@ def test_local_torque_on_elliptic_orbit_runs_and_compares_to_shell_profile():
         shell_n_radii=8,
     )
 
-    tot = np.asarray(out["local_total_torque [Nm]"])
-    mag = np.asarray(out["local_magnetic_torque [Nm]"])
-    dyn = np.asarray(out["local_dynamic_torque [Nm]"])
-    shell_tot = np.asarray(out["shell_total_torque_interp [Nm]"])
+    tot = np.array(out["local_total_torque [Nm]"])
+    mag = np.array(out["local_magnetic_torque [Nm]"])
+    dyn = np.array(out["local_dynamic_torque [Nm]"])
+    shell_tot = np.array(out["shell_total_torque_interp [Nm]"])
 
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
     assert shell_tot.shape == (96,)

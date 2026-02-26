@@ -81,7 +81,7 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
     if not extra_fields:
         return smart_ds
 
-    base_points = np.asarray(smart_ds.raw.points)
+    base_points = np.array(smart_ds.raw.points)
     if base_points.ndim < 2:
         raise ValueError("Expected SmartDs raw points to have shape (..., nvars)")
     base_shape = base_points.shape[:-1]
@@ -89,7 +89,7 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
     arrays = []
     names = []
     for name, values in extra_fields.items():
-        arr = np.asarray(values, dtype=float)
+        arr = np.array(values, dtype=float)
         if arr.shape != base_shape:
             raise ValueError(
                 f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
@@ -129,15 +129,15 @@ def _attach_shell_compat_view(
     area,
 ):
     # Compatibility shim for existing shell-analysis code while APIs are migrated.
-    shell_ds.radii = np.asarray(radii, dtype=float)
-    shell_ds.theta = np.asarray(theta, dtype=float)
-    shell_ds.phi = np.asarray(phi, dtype=float)
-    shell_ds.x = np.asarray(shell_ds.variable(x_name), dtype=float)
-    shell_ds.y = np.asarray(shell_ds.variable(y_name), dtype=float)
-    shell_ds.z = np.asarray(shell_ds.variable(z_name), dtype=float)
-    shell_ds.area = np.asarray(area, dtype=float)
+    shell_ds.radii = np.array(radii, dtype=float)
+    shell_ds.theta = np.array(theta, dtype=float)
+    shell_ds.phi = np.array(phi, dtype=float)
+    shell_ds.x = np.array(shell_ds.variable(x_name), dtype=float)
+    shell_ds.y = np.array(shell_ds.variable(y_name), dtype=float)
+    shell_ds.z = np.array(shell_ds.variable(z_name), dtype=float)
+    shell_ds.area = np.array(area, dtype=float)
     shell_ds.fields = {
-        name: np.asarray(shell_ds.variable(name), dtype=float) for name in tuple(sampled_field_names)
+        name: np.array(shell_ds.variable(name), dtype=float) for name in tuple(sampled_field_names)
     }
     return shell_ds
 
@@ -189,7 +189,7 @@ def infer_cartesian_axis_radii(
     if axis_idx is None:
         raise ValueError("axis must be 'x', 'y', or 'z'")
 
-    coords = [np.asarray(smart_ds.variable(name), dtype=float).ravel() for name in coord_fields]
+    coords = [np.array(smart_ds.variable(name), dtype=float).ravel() for name in coord_fields]
     if len(coords) != 3:
         raise ValueError("coord_fields must have length 3")
     x, y, z = coords
@@ -202,7 +202,7 @@ def infer_cartesian_axis_radii(
             continue
         mask &= np.isclose(arr, 0.0, atol=float(atol), rtol=0.0)
 
-    vals = np.asarray(values[mask], dtype=float)
+    vals = np.array(values[mask], dtype=float)
     if positive_only:
         vals = vals[vals > 0.0]
     else:
@@ -248,7 +248,7 @@ def sample_spherical_shells(
     A temporary compatibility view (`.radii`, `.theta`, `.phi`, `.x`, `.y`, `.z`,
     `.area`, `.fields`) is attached for existing shell-analysis code.
     """
-    radii = np.atleast_1d(np.asarray(radii, dtype=float))
+    radii = np.atleast_1d(np.array(radii, dtype=float))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
@@ -260,9 +260,9 @@ def sample_spherical_shells(
         azimuthal_edges = np.linspace(-math.pi, math.pi, n_azimuth + 1)
 
     ang_grid = PolarAzimuthalGrid(polar_edges, azimuthal_edges)
-    theta = np.asarray(ang_grid.polar_centres, dtype=float)
-    phi = np.asarray(ang_grid.azimuthal_centres, dtype=float)
-    area_unit_sphere = np.asarray(ang_grid.cell_area, dtype=float)
+    theta = np.array(ang_grid.polar_centres, dtype=float)
+    phi = np.array(ang_grid.azimuthal_centres, dtype=float)
+    area_unit_sphere = np.array(ang_grid.cell_area, dtype=float)
     if theta.shape != area_unit_sphere.shape:
         if theta.T.shape != area_unit_sphere.shape or phi.T.shape != area_unit_sphere.shape:
             raise ValueError(
@@ -314,7 +314,7 @@ def sample_spherical_shells(
     r_field = np.broadcast_to(radii[:, None, None], (radii.size, ntheta, nphi)).copy()
     theta_field = np.broadcast_to(theta[None, :, :], (radii.size, ntheta, nphi)).copy()
     phi_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
-    area_field = np.asarray(area, dtype=float)
+    area_field = np.array(area, dtype=float)
 
     shell_ds = _append_fields_to_smart_ds(
         resampled,
@@ -359,7 +359,7 @@ def sample_spherical_shells_fibonacci(
     The returned arrays use shape `(nr, n_points, 1)` so they remain compatible with
     existing shell integrations that sum over the last two axes.
     """
-    radii = np.atleast_1d(np.asarray(radii, dtype=float))
+    radii = np.atleast_1d(np.array(radii, dtype=float))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
@@ -368,7 +368,7 @@ def sample_spherical_shells_fibonacci(
     if n_points < 8:
         raise ValueError("n_points must be >= 8")
 
-    unit = np.asarray(fibonacci_sphere(n_points, randomize=randomize), dtype=float)
+    unit = np.array(fibonacci_sphere(n_points, randomize=randomize), dtype=float)
     xhat = unit[:, 0][:, None]
     yhat = unit[:, 1][:, None]
     zhat = unit[:, 2][:, None]
@@ -391,7 +391,7 @@ def sample_spherical_shells_fibonacci(
 
     field_arrays = {}
     for name in tuple(dict.fromkeys(fields)):
-        field_arrays[name] = np.asarray(resampled.variable(name), dtype=float).reshape(
+        field_arrays[name] = np.array(resampled.variable(name), dtype=float).reshape(
             radii.size, n_points, 1
         )
 
@@ -462,8 +462,8 @@ def integrate_shell_scalar(values, area):
     Returns `(integral, coverage)` for each shell radius, where `coverage` is the
     finite-area fraction represented by finite values.
     """
-    v = np.asarray(values, dtype=float)
-    a = np.asarray(area, dtype=float)
+    v = np.array(values, dtype=float)
+    a = np.array(area, dtype=float)
     if v.shape != a.shape:
         a = np.broadcast_to(a, v.shape)
 
@@ -484,7 +484,7 @@ def integrate_shell_scalar(values, area):
 
 
 def shell_profile_radius_height(shells):
-    radii = np.asarray(shells.radii, dtype=float)
+    radii = np.array(shells.radii, dtype=float)
     return {
         "radius [R]": radii,
         "height [R]": radii - 1.0,

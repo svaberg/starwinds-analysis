@@ -66,8 +66,8 @@ class PolarAzimuthalGrid:
     """
 
     def __init__(self, polar_edge_1d, azimuthal_edge_1d, radius=1.0):
-        self._polar = np.asarray(polar_edge_1d, float)
-        self._azimuthal = np.asarray(azimuthal_edge_1d, float)
+        self._polar = np.array(polar_edge_1d, float)
+        self._azimuthal = np.array(azimuthal_edge_1d, float)
         self._meshgrid_kwargs = dict(indexing="ij")
 
 

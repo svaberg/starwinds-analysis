@@ -15,7 +15,7 @@ def magnetic_pressure(b_t_or_mag):
     """
     Magnetic pressure `B^2 / (2 mu0)` in Pa.
     """
-    b = np.asarray(b_t_or_mag, dtype=float)
+    b = np.array(b_t_or_mag, dtype=float)
     return (b * b) / (2.0 * MU0)
 
 
@@ -23,8 +23,8 @@ def ram_pressure(rho_kg_m3, speed_m_s):
     """
     Ram pressure `rho * u^2` in Pa.
     """
-    rho = np.asarray(rho_kg_m3, dtype=float)
-    u = np.asarray(speed_m_s, dtype=float)
+    rho = np.array(rho_kg_m3, dtype=float)
+    u = np.array(speed_m_s, dtype=float)
     return rho * u * u
 
 
@@ -39,9 +39,9 @@ def pressure_components(
     """
     Compute thermal/magnetic/ram pressure components from local samples.
     """
-    rho = np.asarray(rho_kg_m3, dtype=float)
-    u = np.asarray(u_xyz_m_s, dtype=float)
-    b = np.asarray(b_xyz_t, dtype=float)
+    rho = np.array(rho_kg_m3, dtype=float)
+    u = np.array(u_xyz_m_s, dtype=float)
+    b = np.array(b_xyz_t, dtype=float)
     if u.shape[-1] != 3 or b.shape[-1] != 3:
         raise ValueError("u_xyz_m_s and b_xyz_t must have shape (..., 3)")
 
@@ -55,10 +55,10 @@ def pressure_components(
     }
 
     if thermal_pressure_pa is not None:
-        out["thermal_pressure [Pa]"] = np.asarray(thermal_pressure_pa, dtype=float)
+        out["thermal_pressure [Pa]"] = np.array(thermal_pressure_pa, dtype=float)
 
     if object_velocity_xyz_m_s is not None:
-        v_obj = np.asarray(object_velocity_xyz_m_s, dtype=float)
+        v_obj = np.array(object_velocity_xyz_m_s, dtype=float)
         if v_obj.shape != u.shape:
             raise ValueError("object_velocity_xyz_m_s must match u_xyz_m_s shape")
         rel = u - v_obj

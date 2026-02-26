@@ -43,8 +43,8 @@ def resolve_batsrus_pressure_si(smart_ds):
 
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
-    points = np.asarray(points_r, dtype=float) * float(body_radius_m)
-    phase = np.asarray(phase_turns, dtype=float)
+    points = np.array(points_r, dtype=float) * float(body_radius_m)
+    phase = np.array(phase_turns, dtype=float)
     n = points.shape[0]
     if n < 3:
         return np.full_like(points, np.nan, dtype=float)
@@ -70,7 +70,7 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
 def _summaries_from_arrays(data, *, weights=None):
     out = {}
     for key, value in data.items():
-        arr = np.asarray(value, dtype=float)
+        arr = np.array(value, dtype=float)
         if arr.ndim != 1:
             continue
         out[key] = summarize_samples(arr, weights=weights)
@@ -92,10 +92,10 @@ def pressure_components_from_orbit_sample(
     (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
     p_name, p_scale = resolve_batsrus_pressure_si(smart_ds)
 
-    rho = rho_scale * np.asarray(orbit[rho_name], dtype=float)
+    rho = rho_scale * np.array(orbit[rho_name], dtype=float)
     u_xyz = u_scale * np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
     b_xyz = b_scale * np.column_stack([orbit[bx_name], orbit[by_name], orbit[bz_name]])
-    p_therm = p_scale * np.asarray(orbit[p_name], dtype=float)
+    p_therm = p_scale * np.array(orbit[p_name], dtype=float)
 
     object_velocity = None
     if (
@@ -104,7 +104,7 @@ def pressure_components_from_orbit_sample(
         and semi_major_axis_r is not None
         and np.isfinite(semi_major_axis_r)
     ):
-        phase = np.asarray(orbit.get("phase [turns]"), dtype=float)
+        phase = np.array(orbit.get("phase [turns]"), dtype=float)
         if phase.shape == (len(rho),):
             period_s = orbital_period(float(semi_major_axis_r) * body_radius_m, star_mass_kg)
             points_r = np.column_stack(
@@ -213,7 +213,7 @@ def pressure_components_on_elliptic_orbit(
     )
     out["semi_major_axis [R]"] = float(semi_major_axis)
     out["eccentricity [none]"] = float(eccentricity)
-    out["radius [R]"] = float(np.nanmean(np.asarray(orbit["R [sample]"], dtype=float)))
+    out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"], dtype=float)))
     out["radius [m]"] = out["radius [R]"] * body_radius_m
     return out
 

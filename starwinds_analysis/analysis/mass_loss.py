@@ -33,7 +33,7 @@ def _style_shell_lonlat_axes(ax, *, title: str | None = None):
 
 
 def _positive_log_plot_values(values: np.ndarray):
-    arr = np.asarray(values, dtype=float)
+    arr = np.array(values, dtype=float)
     finite = np.isfinite(arr)
     positive = finite & (arr > 0.0)
     if not np.any(positive):
@@ -63,7 +63,7 @@ def plot_shell_mass_flux_lonlat(
         raise ValueError("scale must be 'log' or 'linear'")
 
     fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
-    values = np.asarray(shell_map.mass_flux_kg_m2_s, dtype=float)
+    values = np.array(shell_map.mass_flux_kg_m2_s, dtype=float)
     cmap_obj = plt.get_cmap(cmap).copy()
     norm = None
     extend = "neither"

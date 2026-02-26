@@ -15,7 +15,7 @@ def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | No
     """
     Boxcar weights over shell radii in units of body radii.
     """
-    r = np.asarray(radii_r, dtype=float)
+    r = np.array(radii_r, dtype=float)
     w = np.ones_like(r, dtype=float)
     if rmin is not None:
         w = np.where(r >= float(rmin), w, 0.0)
@@ -38,20 +38,20 @@ def summarize_shell_series(
     """
     Weighted summary (mean/std/quantiles) for a 1D shell profile series.
     """
-    r = np.asarray(radii_r, dtype=float).ravel()
-    v = np.asarray(values, dtype=float).ravel()
+    r = np.array(radii_r, dtype=float).ravel()
+    v = np.array(values, dtype=float).ravel()
     if r.shape != v.shape:
         raise ValueError("radii and values must have the same shape")
 
     if weights is None:
         w = boxcar_shell_weights(r, rmin=rmin, rmax=rmax)
     else:
-        w = np.asarray(weights, dtype=float).ravel()
+        w = np.array(weights, dtype=float).ravel()
         if w.shape != v.shape:
             raise ValueError("weights must have the same shape as values")
 
     if coverage is not None:
-        c = np.asarray(coverage, dtype=float).ravel()
+        c = np.array(coverage, dtype=float).ravel()
         if c.shape != v.shape:
             raise ValueError("coverage must have the same shape as values")
         w = w * np.clip(c, 0.0, np.inf)
@@ -79,8 +79,8 @@ def summarize_shell_series(
         "weight_sum": weight_sum,
         "mean": float(mean),
         "std": float(std),
-        "quantiles": np.asarray(quantiles, dtype=float).tolist(),
-        "values": np.asarray(qvals, dtype=float).tolist(),
+        "quantiles": np.array(quantiles, dtype=float).tolist(),
+        "values": np.array(qvals, dtype=float).tolist(),
     }
 
 
@@ -107,10 +107,10 @@ def summarize_shell_diagnostics_band(
         for key, value in profile.items():
             if key in {"radius [R]", "height [R]", "coverage [none]", "shell_samples"}:
                 continue
-            arr = np.asarray(value)
+            arr = np.array(value)
             if arr.ndim != 1:
                 continue
-            if arr.shape != np.asarray(radii).shape:
+            if arr.shape != np.array(radii).shape:
                 continue
             per_profile[key] = summarize_shell_series(
                 radii,

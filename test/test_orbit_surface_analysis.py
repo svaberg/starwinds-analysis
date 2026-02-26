@@ -87,7 +87,7 @@ def test_pressure_components_on_orbit_surface_runs_on_example():
         "thermal_pressure [Pa]",
         "standoff_distance [m]",
     ):
-        arr = np.asarray(out[key], dtype=float)
+        arr = np.array(out[key], dtype=float)
         assert arr.shape == (64, 48)
         assert np.count_nonzero(np.isfinite(arr)) > 0
         assert key in out["summary"]
@@ -115,11 +115,11 @@ def test_torque_components_on_orbit_surface_runs_on_example():
         "total [Nm]",
         "coverage [none]",
     ):
-        arr = np.asarray(out[key], dtype=float)
+        arr = np.array(out[key], dtype=float)
         assert arr.shape == ()
         assert np.isfinite(arr)
     assert np.isclose(out["total [Nm]"], out["T1_magnetic [Nm]"] + out["T2_pressure [Nm]"] + out["T3_corotation [Nm]"] + out["T4_dynamic [Nm]"])
-    assert np.count_nonzero(np.isfinite(np.asarray(out["surface_area [m^2]"]))) > 0
+    assert np.count_nonzero(np.isfinite(np.array(out["surface_area [m^2]"]))) > 0
     assert "phase_integrals" in out and "phase_quantiles" in out
     assert out["phase_integrals"]["total"]["integral [Nm]"].shape[0] == 64
     assert out["phase_quantiles"]["total"]["values [N/m]"].shape[0] == 64

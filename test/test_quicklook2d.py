@@ -133,7 +133,7 @@ def test_quicklook_shell_figure_runs_on_example():
     )
 
     assert fig is not None
-    assert np.asarray(axs).shape == (2, 2)
+    assert np.array(axs).shape == (2, 2)
     assert "mass_loss" in diagnostics
     assert "torque" in diagnostics
     assert "open_flux" in diagnostics
@@ -156,7 +156,7 @@ def test_orbit_local_comparison_figure_runs_on_example():
         method="nearest",
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "mass_loss" in out and "torque" in out
     plt.close(fig)
 
@@ -173,7 +173,7 @@ def test_orbit_local_comparison_figure_accepts_kepler_spec():
         method="nearest",
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "mass_loss" in out and "torque" in out
     assert "semi_major_axis [R]" in out["mass_loss"]
     assert "shell_mass_loss_interp [kg/s]" in out["mass_loss"]
@@ -193,7 +193,7 @@ def test_orbit_pressure_figure_runs_on_example():
         star_mass_kg=1.98847e30,
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "ram_pressure [Pa]" in out
     assert "standoff_distance [m]" in out
     plt.close(fig)
@@ -210,7 +210,7 @@ def test_orbit_pressure_figure_accepts_kepler_spec():
         star_mass_kg=1.98847e30,
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "relative_ram_pressure [Pa]" in out
     assert "semi_major_axis [R]" in out
     plt.close(fig)
@@ -228,7 +228,7 @@ def test_orbit_surface_pressure_figure_runs_on_example():
         star_mass_kg=1.98847e30,
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "phase_quantiles" in out
     assert "ram_pressure [Pa]" in out["phase_quantiles"]
     assert "standoff_distance [m]" in out
@@ -247,7 +247,7 @@ def test_orbit_surface_torque_figure_runs_on_example():
         angvel_rad_s=0.0,
     )
     assert fig is not None
-    assert np.asarray(axs).shape == (2,)
+    assert np.array(axs).shape == (2,)
     assert "phase_integrals" in out
     assert "total" in out["phase_integrals"]
     assert "total [Nm]" in out

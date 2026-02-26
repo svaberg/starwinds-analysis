@@ -42,9 +42,9 @@ def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
         n_azimuth=n_azimuth,
         length_unit_to_m=SUN_RADIUS_M,
     )
-    bx = np.asarray(shell.fields["B_x [T]"], dtype=float)
-    by = np.asarray(shell.fields["B_y [T]"], dtype=float)
-    bz = np.asarray(shell.fields["B_z [T]"], dtype=float)
+    bx = np.array(shell.fields["B_x [T]"], dtype=float)
+    by = np.array(shell.fields["B_y [T]"], dtype=float)
+    bz = np.array(shell.fields["B_z [T]"], dtype=float)
     comps = magnetic_shell_components_from_cartesian(bx, by, bz, shell.x, shell.y, shell.z)
     return shell, comps
 
@@ -70,11 +70,11 @@ def test_magnetic_field_unit_scale_smoke():
 
 def test_direct_zdi_style_plots_smoke():
     shell, comps = _sample_shell_magnetic_components(n_polar=10, n_azimuth=20)
-    lon_deg = np.degrees(np.asarray(shell.phi, dtype=float))
-    lat_deg = 90.0 - np.degrees(np.asarray(shell.theta, dtype=float))
-    b_r = np.asarray(comps["B_r [T]"][0], dtype=float) * 1e4
-    b_phi = np.asarray(comps["B_phi [T]"][0], dtype=float) * 1e4
-    b_mer = np.asarray(comps["B_meridional [T]"][0], dtype=float) * 1e4
+    lon_deg = np.degrees(np.array(shell.phi, dtype=float))
+    lat_deg = 90.0 - np.degrees(np.array(shell.theta, dtype=float))
+    b_r = np.array(comps["B_r [T]"][0], dtype=float) * 1e4
+    b_phi = np.array(comps["B_phi [T]"][0], dtype=float) * 1e4
+    b_mer = np.array(comps["B_meridional [T]"][0], dtype=float) * 1e4
 
     fig, axes = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
     try:
@@ -89,12 +89,12 @@ def test_direct_zdi_style_plots_smoke():
 
 def test_direct_tangential_vector_plot_smoke():
     shell, comps = _sample_shell_magnetic_components(n_polar=12, n_azimuth=24)
-    lon_deg = np.degrees(np.asarray(shell.phi, dtype=float))
-    lat_deg = 90.0 - np.degrees(np.asarray(shell.theta, dtype=float))
-    b_r = np.asarray(comps["B_r [T]"][0], dtype=float) * 1e4
-    b_phi = np.asarray(comps["B_phi [T]"][0], dtype=float) * 1e4
-    b_mer = np.asarray(comps["B_meridional [T]"][0], dtype=float) * 1e4
-    b_tan = np.asarray(comps["B_tangential [T]"][0], dtype=float) * 1e4
+    lon_deg = np.degrees(np.array(shell.phi, dtype=float))
+    lat_deg = 90.0 - np.degrees(np.array(shell.theta, dtype=float))
+    b_r = np.array(comps["B_r [T]"][0], dtype=float) * 1e4
+    b_phi = np.array(comps["B_phi [T]"][0], dtype=float) * 1e4
+    b_mer = np.array(comps["B_meridional [T]"][0], dtype=float) * 1e4
+    b_tan = np.array(comps["B_tangential [T]"][0], dtype=float) * 1e4
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     try:
@@ -116,7 +116,7 @@ def test_direct_tangential_vector_plot_smoke():
 
 def test_shell_magnetic_flux_summary_primitives_smoke():
     shell, comps = _sample_shell_magnetic_components(n_polar=12, n_azimuth=24)
-    b_r = np.asarray(comps["B_r [T]"], dtype=float)
+    b_r = np.array(comps["B_r [T]"], dtype=float)
     signed_flux, signed_cov = integrate_shell_scalar(b_r, shell.area)
     unsigned_flux, unsigned_cov = integrate_shell_scalar(np.abs(b_r), shell.area)
     assert np.isfinite(signed_flux[0])

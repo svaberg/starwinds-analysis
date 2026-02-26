@@ -50,13 +50,13 @@ def test_sample_spherical_shells_returns_structured_smartds_with_free_and_bound_
 
     expected_shape = (len(radii), n_polar, n_azimuth)
 
-    x = np.asarray(shell_ds.variable("X [R]"))
-    y = np.asarray(shell_ds.variable("Y [R]"))
-    z = np.asarray(shell_ds.variable("Z [R]"))
-    r = np.asarray(shell_ds.variable("R [R]"))
-    theta = np.asarray(shell_ds.variable("theta [rad]"))
-    phi = np.asarray(shell_ds.variable("phi [rad]"))
-    sampled = np.asarray(shell_ds.variable(source_field))
+    x = np.array(shell_ds.variable("X [R]"))
+    y = np.array(shell_ds.variable("Y [R]"))
+    z = np.array(shell_ds.variable("Z [R]"))
+    r = np.array(shell_ds.variable("R [R]"))
+    theta = np.array(shell_ds.variable("theta [rad]"))
+    phi = np.array(shell_ds.variable("phi [rad]"))
+    sampled = np.array(shell_ds.variable(source_field))
 
     assert x.shape == expected_shape
     assert y.shape == expected_shape

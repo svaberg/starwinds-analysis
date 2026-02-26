@@ -43,7 +43,7 @@ def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     """
     Vis-viva orbital speed.
     """
-    r = np.asarray(radial_distance_m, dtype=float)
+    r = np.array(radial_distance_m, dtype=float)
     m = float(star_mass_kg)
     a = float(semi_major_axis_m)
     if m <= 0:
@@ -101,7 +101,7 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
     e = float(eccentricity)
     if not (0.0 <= e < 1.0):
         raise ValueError("eccentricity must satisfy 0 <= e < 1")
-    m = np.asarray(mean_anomaly_rad, dtype=float)
+    m = np.array(mean_anomaly_rad, dtype=float)
     e_anom = np.mod(m, 2.0 * math.pi)
     if e == 0.0:
         return e_anom
@@ -136,7 +136,7 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
 
 
 def _phase_from_weights(weights):
-    w = np.asarray(weights, dtype=float)
+    w = np.array(weights, dtype=float)
     if w.ndim != 1 or w.size == 0:
         return np.array([], dtype=float)
     w = np.where(np.isfinite(w) & (w >= 0), w, 0.0)
@@ -211,7 +211,7 @@ def elliptic_orbit_points(
         math.sqrt(1.0 + e) * np.sin(e_anom / 2.0),
         math.sqrt(1.0 - e) * np.cos(e_anom / 2.0),
     )
-    time_weight = np.asarray(weights, dtype=float)
+    time_weight = np.array(weights, dtype=float)
     sw = np.sum(time_weight)
     if sw > 0:
         time_weight = time_weight / sw
@@ -247,7 +247,7 @@ def sample_points(
     """
     Resample `fields` onto explicit Cartesian points.
     """
-    points = np.asarray(points, dtype=float)
+    points = np.array(points, dtype=float)
     out = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
@@ -256,7 +256,7 @@ def sample_points(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    data = {name: np.asarray(out.variable(name), dtype=float) for name in fields}
+    data = {name: np.array(out.variable(name), dtype=float) for name in fields}
     data["X [sample]"] = points[:, 0]
     data["Y [sample]"] = points[:, 1]
     data["Z [sample]"] = points[:, 2]
@@ -344,9 +344,9 @@ def sample_elliptic_orbit(
 
 
 def _interp_profile(radii, values, x):
-    r = np.asarray(radii, dtype=float)
-    y = np.asarray(values, dtype=float)
-    x = np.asarray(x, dtype=float)
+    r = np.array(radii, dtype=float)
+    y = np.array(values, dtype=float)
+    x = np.array(x, dtype=float)
     good = np.isfinite(r) & np.isfinite(y)
     if np.count_nonzero(good) < 2:
         return np.full_like(x, np.nan, dtype=float)
@@ -381,7 +381,7 @@ def _local_mass_loss_from_orbit_sample(
     uy = u_scale * orbit[uy_name]
     uz = u_scale * orbit[uz_name]
     u_r = radial_component(ux, uy, uz, x, y, z)
-    r_sample_r = np.asarray(orbit["R [sample]"], dtype=float)
+    r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
     estimates = local_mass_loss_estimates(r_m, rho, u_r)
     weights = orbit.get("time_weight [none]")
@@ -399,7 +399,7 @@ def _local_mass_loss_from_orbit_sample(
         shell_value = float(shell["mass_loss [kg/s]"][0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_radii = np.asarray(shell_radii, dtype=float)
+        shell_radii = np.array(shell_radii, dtype=float)
         shell = mass_loss_vs_radius(
             smart_ds,
             shell_radii,
@@ -450,7 +450,7 @@ def _local_torque_from_orbit_sample(
     x = orbit["X [sample]"]
     y = orbit["Y [sample]"]
     z = orbit["Z [sample]"]
-    r_sample_r = np.asarray(orbit["R [sample]"], dtype=float)
+    r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
     rho = rho_scale * orbit[rho_name]
     ux = u_scale * orbit[ux_name]
@@ -477,7 +477,7 @@ def _local_torque_from_orbit_sample(
         shell_total = float(shell["total_torque [Nm]"][0])
         shell_interp = np.full_like(local["total [Nm]"], shell_total, dtype=float)
     else:
-        shell_radii = np.asarray(shell_radii, dtype=float)
+        shell_radii = np.array(shell_radii, dtype=float)
         shell = torque_vs_radius(
             smart_ds,
             shell_radii,

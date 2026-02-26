@@ -226,7 +226,7 @@ def plot_slice_quicklook(
     contour_kwargs = dict(contour_kwargs or {})
     tris = triangles(ds)
     for overlay_field, level, color in _normalize_overlays(ds, overlays):
-        values = np.asarray(ds.variable(overlay_field))
+        values = np.array(ds.variable(overlay_field))
         kwargs = {"levels": [level], "colors": [color], "linewidths": 1.0}
         kwargs.update(contour_kwargs)
         ax_main.tricontour(tris, values, **kwargs)
@@ -266,7 +266,7 @@ def plot_radius_quicklook(
     if figsize is None:
         figsize = (4.0 * ncols, 3.0 * nrows)
     fig, axs = plt.subplots(nrows, ncols, figsize=figsize, constrained_layout=True)
-    axs = np.asarray(axs).ravel()
+    axs = np.array(axs).ravel()
 
     if mode == "binned":
         plot_binned_vs_radius(ds, axs, fields=fields, **plot_kwargs)
@@ -323,7 +323,7 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     Plot a compact shell-diagnostics summary figure.
     """
     fig, axs = plt.subplots(2, 2, figsize=figsize, constrained_layout=True)
-    axs = np.asarray(axs)
+    axs = np.array(axs)
 
     if "mass_loss" in diagnostics:
         plot_mass_loss_profile(axs[0, 0], diagnostics["mass_loss"])
@@ -342,16 +342,16 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
         ax2 = None
         if "axisymmetric_open_flux" in diagnostics:
             p = diagnostics["axisymmetric_open_flux"]
-            h = np.asarray(p["height [R]"])
-            frac = np.asarray(p["axisymmetric_open_flux_fraction [none]"])
+            h = np.array(p["height [R]"])
+            frac = np.array(p["axisymmetric_open_flux_fraction [none]"])
             ax2 = axs[1, 0].twinx()
             ax2.plot(h, frac, ".-", color="C3", label="axisymmetric fraction")
             ax2.set_ylabel("Axisymmetric fraction [none]")
             ax2.set_ylim(0, 1.05)
         if "wind_scaling" in diagnostics:
             p = diagnostics["wind_scaling"]
-            h = np.asarray(p["height [R]"])
-            y = np.asarray(p["Upsilon_open [none]"])
+            h = np.array(p["height [R]"])
+            y = np.array(p["Upsilon_open [none]"])
             if ax2 is None:
                 ax2 = axs[1, 0].twinx()
             ax2.plot(h, y, ".-", color="C4", label="Upsilon_open")
@@ -408,7 +408,7 @@ def quicklook_shell_figure(
 
 
 def plot_orbit_mass_loss_comparison(ax, result):
-    y = np.asarray(result["local_mass_loss [kg/s]"], dtype=float)
+    y = np.array(result["local_mass_loss [kg/s]"], dtype=float)
     phase = _orbit_phase(result, y.size)
     shell_interp = result.get("shell_mass_loss_interp [kg/s]")
     shell = float(result["shell_mass_loss [kg/s]"])
@@ -418,7 +418,7 @@ def plot_orbit_mass_loss_comparison(ax, result):
     if shell_interp is not None:
         ax.plot(
             phase,
-            np.asarray(shell_interp, dtype=float),
+            np.array(shell_interp, dtype=float),
             "-",
             color="C1",
             alpha=0.9,
@@ -435,7 +435,7 @@ def plot_orbit_mass_loss_comparison(ax, result):
 
 
 def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
-    tot = np.asarray(result["local_total_torque [Nm]"], dtype=float)
+    tot = np.array(result["local_total_torque [Nm]"], dtype=float)
     phase = _orbit_phase(result, tot.size)
     shell_interp = result.get("shell_total_torque_interp [Nm]")
     shell = float(result["shell_total_torque [Nm]"])
@@ -443,13 +443,13 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
 
     ax.plot(phase, tot, ",", color="C0", alpha=0.6, label="local total")
     if show_components:
-        ax.plot(phase, np.asarray(result["local_magnetic_torque [Nm]"]), ",", color="C1", alpha=0.35, label="local mag")
-        ax.plot(phase, np.asarray(result["local_dynamic_torque [Nm]"]), ",", color="C2", alpha=0.35, label="local dyn")
+        ax.plot(phase, np.array(result["local_magnetic_torque [Nm]"]), ",", color="C1", alpha=0.35, label="local mag")
+        ax.plot(phase, np.array(result["local_dynamic_torque [Nm]"]), ",", color="C2", alpha=0.35, label="local dyn")
 
     if shell_interp is not None:
         ax.plot(
             phase,
-            np.asarray(shell_interp, dtype=float),
+            np.array(shell_interp, dtype=float),
             "-",
             color="k",
             alpha=0.9,
@@ -467,7 +467,7 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
 
 def _orbit_phase(result, n):
     try:
-        phase = np.asarray(result.get("orbit_samples", {}).get("phase [turns]"), dtype=float)
+        phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"), dtype=float)
     except Exception:
         phase = np.array([], dtype=float)
     if phase.shape == (n,):
@@ -485,18 +485,18 @@ def _orbit_result_title(prefix, result):
 
 
 def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
-    phase = _orbit_phase(result, len(np.asarray(result["ram_pressure [Pa]"])))
+    phase = _orbit_phase(result, len(np.array(result["ram_pressure [Pa]"])))
     for key, label, color in (
         ("thermal_pressure [Pa]", "thermal", "C0"),
         ("magnetic_pressure [Pa]", "magnetic", "C1"),
         ("ram_pressure [Pa]", "ram", "C2"),
     ):
         if key in result:
-            ax.plot(phase, np.asarray(result[key], dtype=float), ",", color=color, alpha=0.65, label=label)
+            ax.plot(phase, np.array(result[key], dtype=float), ",", color=color, alpha=0.65, label=label)
     if include_relative and "relative_ram_pressure [Pa]" in result:
         ax.plot(
             phase,
-            np.asarray(result["relative_ram_pressure [Pa]"], dtype=float),
+            np.array(result["relative_ram_pressure [Pa]"], dtype=float),
             ",",
             color="C3",
             alpha=0.65,
@@ -564,8 +564,8 @@ def orbit_pressure_figure(
 
     fig, axs = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
     plot_orbit_pressure_components(axs[0], result)
-    phase = _orbit_phase(result, len(np.asarray(result["standoff_distance [m]"])))
-    axs[1].plot(phase, np.asarray(result["standoff_distance [m]"], dtype=float), ",", color="C4", alpha=0.7)
+    phase = _orbit_phase(result, len(np.array(result["standoff_distance [m]"])))
+    axs[1].plot(phase, np.array(result["standoff_distance [m]"], dtype=float), ",", color="C4", alpha=0.7)
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Stand-off Proxy [m]")
     axs[1].set_yscale("log")
@@ -578,9 +578,9 @@ def orbit_pressure_figure(
 
 
 def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_med=0.5, q_high=0.75):
-    phase = np.asarray(phase_profile["phase [turns]"], dtype=float)
-    qs = np.asarray(phase_profile["quantiles [none]"], dtype=float)
-    vals = np.asarray(phase_profile["values"], dtype=float)
+    phase = np.array(phase_profile["phase [turns]"], dtype=float)
+    qs = np.array(phase_profile["quantiles [none]"], dtype=float)
+    vals = np.array(phase_profile["values"], dtype=float)
     if vals.ndim != 2 or vals.shape[0] != phase.size:
         return ax
 
@@ -620,7 +620,7 @@ def orbit_surface_pressure_figure(
     pq = result["phase_quantiles"]
 
     fig, axs = plt.subplots(2, 1, figsize=figsize, constrained_layout=True, sharex=True)
-    axs = np.asarray(axs)
+    axs = np.array(axs)
 
     for key, label, color in (
         ("thermal_pressure [Pa]", "thermal", "C0"),
@@ -672,7 +672,7 @@ def orbit_surface_torque_figure(
     )
 
     fig, axs = plt.subplots(2, 1, figsize=figsize, constrained_layout=True, sharex=True)
-    axs = np.asarray(axs)
+    axs = np.array(axs)
 
     for key, label, color in (
         ("T1_magnetic", "T1 magnetic", "C1"),
@@ -683,8 +683,8 @@ def orbit_surface_torque_figure(
     ):
         p = result["phase_integrals"][key]
         axs[0].plot(
-            np.asarray(p["phase [turns]"], dtype=float),
-            np.asarray(p["integral [Nm]"], dtype=float),
+            np.array(p["phase [turns]"], dtype=float),
+            np.array(p["integral [Nm]"], dtype=float),
             ".-",
             color=color,
             alpha=0.8,
@@ -855,7 +855,7 @@ def summarize_shell_diagnostics(
         for key, value in profile.items():
             if key == "shell_samples":
                 continue
-            arr = np.asarray(value)
+            arr = np.array(value)
             if arr.ndim == 0:
                 try:
                     pdata[key] = float(arr)
@@ -901,7 +901,7 @@ def flatten_shell_diagnostics_arrays(diagnostics):
         for key, value in profile.items():
             if key == "shell_samples":
                 continue
-            arr = np.asarray(value)
+            arr = np.array(value)
             if arr.ndim == 0:
                 continue
             flat_key = f"{name}__{_slug_key(key)}"
@@ -1080,7 +1080,7 @@ def _slug_key(s: str) -> str:
 
 
 def _array_summary(values):
-    arr = np.asarray(values, dtype=float)
+    arr = np.array(values, dtype=float)
     finite = np.isfinite(arr)
     return {
         "shape": list(arr.shape),
@@ -1101,7 +1101,7 @@ def _summarize_result_object(value, *, skip_keys):
             out[str(key)] = _summarize_result_object(sub, skip_keys=skip_keys)
         return out
     try:
-        arr = np.asarray(value)
+        arr = np.array(value)
     except Exception:
         return str(value)
     if arr.ndim == 0:
@@ -1110,7 +1110,7 @@ def _summarize_result_object(value, *, skip_keys):
         except Exception:
             return str(value)
     if np.issubdtype(arr.dtype, np.number):
-        return _array_summary(np.asarray(arr, dtype=float))
+        return _array_summary(np.array(arr, dtype=float))
     return str(value)
 
 
@@ -1127,14 +1127,14 @@ def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
             )
         return
     try:
-        arr = np.asarray(value)
+        arr = np.array(value)
     except Exception:
         return
     if arr.ndim == 0:
         return
     if not np.issubdtype(arr.dtype, np.number):
         return
-    arrays[prefix] = np.asarray(arr, dtype=float)
+    arrays[prefix] = np.array(arr, dtype=float)
 
 
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):

@@ -25,12 +25,12 @@ def plot_cumulative_hists(
     """
     Cumulative histogram (CDF line) for each field on the provided axes.
     """
-    axes = np.asarray(axes).ravel()
+    axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
     for i, (ax, field) in enumerate(zip(axes, fields)):
-        x = np.asarray(ds(field)).ravel()
+        x = np.array(ds(field)).ravel()
         x = x[np.isfinite(x)]
         if x.size == 0:
             continue
@@ -72,20 +72,20 @@ def plot_vs_radius(
     s=1.0,
     alpha=0.3,
 ):
-    axes = np.asarray(axes).ravel()
+    axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.array(ds("X [R]")).ravel()
+    Y = np.array(ds("Y [R]")).ravel()
+    Z = np.array(ds("Z [R]")).ravel()
     r = np.sqrt(X**2 + Y**2 + Z**2)
 
     rmask = np.isfinite(r)
     r = r[rmask]
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[rmask]
+        f = np.array(ds(field)).ravel()[rmask]
         mask = np.isfinite(f)
 
         ax.scatter(r[mask], f[mask], s=s, color=color, alpha=alpha)
@@ -111,13 +111,13 @@ def plot_binned_vs_radius(
     color=None,
     statistic="mean",   # "mean", "median", or "sum"
 ):
-    axes = np.asarray(axes).ravel()
+    axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.array(ds("X [R]")).ravel()
+    Y = np.array(ds("Y [R]")).ravel()
+    Z = np.array(ds("Z [R]")).ravel()
 
     r = np.sqrt(X**2 + Y**2 + Z**2)
     mask = np.isfinite(r)
@@ -141,7 +141,7 @@ def plot_binned_vs_radius(
     valid = (bin_index >= 0) & (bin_index < bins)
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[mask]
+        f = np.array(ds(field)).ravel()[mask]
         fmask = np.isfinite(f) & valid
 
         y = np.full(bins, np.nan)
@@ -194,13 +194,13 @@ def plot_radial_hist2d(
     """
     from matplotlib.colors import LogNorm
 
-    axes = np.asarray(axes).ravel()
+    axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.array(ds("X [R]")).ravel()
+    Y = np.array(ds("Y [R]")).ravel()
+    Z = np.array(ds("Z [R]")).ravel()
     r = np.sqrt(X**2 + Y**2 + Z**2)
     rmask = np.isfinite(r)
     r = r[rmask]
@@ -219,16 +219,16 @@ def plot_radial_hist2d(
     if weights is None:
         w_all = None
     elif isinstance(weights, str):
-        w_all = np.asarray(ds(weights)).ravel()[rmask]
+        w_all = np.array(ds(weights)).ravel()[rmask]
     else:
-        w_all = np.asarray(weights, dtype=float).ravel()[rmask]
+        w_all = np.array(weights, dtype=float).ravel()[rmask]
 
     if isinstance(bins, int):
         bins = (int(bins), int(bins))
     r_bins, v_bins = int(bins[0]), int(bins[1])
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[rmask]
+        f = np.array(ds(field)).ravel()[rmask]
         mask = np.isfinite(r) & np.isfinite(f)
         if w_all is not None:
             mask &= np.isfinite(w_all)
@@ -256,7 +256,7 @@ def plot_radial_hist2d(
             range=(r_range, f_range),
             weights=w,
         )
-        H = np.asarray(H, dtype=float)
+        H = np.array(H, dtype=float)
 
         if normalize == "per_radius":
             colsum = H.sum(axis=1, keepdims=True)

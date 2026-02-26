@@ -123,5 +123,5 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
         rtol=1e-10,
         atol=1e-10,
     )
-    assert np.all(np.abs(np.asarray(surf["T2_pressure [Nm]"])) < 1e-6 * np.nanmax(np.abs(surf["total [Nm]"])) + 1e-12)
-    assert np.all(np.abs(np.asarray(surf["T3_corotation [Nm]"])) < 1e-12)
+    assert np.all(np.abs(np.array(surf["T2_pressure [Nm]"])) < 1e-6 * np.nanmax(np.abs(surf["total [Nm]"])) + 1e-12)
+    assert np.all(np.abs(np.array(surf["T3_corotation [Nm]"])) < 1e-12)

@@ -16,8 +16,8 @@ from starwinds_analysis.analysis._profile_plotting import (
 
 def plot_torque_profile(ax, profile, *, show_negative=True):
     h = shell_profile_height(profile)
-    mag = np.asarray(profile["magnetic_torque [Nm]"], dtype=float)
-    dyn = np.asarray(profile["dynamic_torque [Nm]"], dtype=float)
+    mag = np.array(profile["magnetic_torque [Nm]"], dtype=float)
+    dyn = np.array(profile["dynamic_torque [Nm]"], dtype=float)
 
     plot_shell_height_series(
         ax,

@@ -28,12 +28,12 @@ def spherical_wind_torque_density_terms(
 
     Returns `(magnetic_density, dynamic_density)` with units `N/m`.
     """
-    rho = np.asarray(rho_kg_m3, dtype=float)
-    u_r = np.asarray(u_radial_m_s, dtype=float)
-    u_phi = np.asarray(u_azimuthal_m_s, dtype=float)
-    b_r = np.asarray(b_radial_t, dtype=float)
-    b_phi = np.asarray(b_azimuthal_t, dtype=float)
-    varpi = np.asarray(cylindrical_radius_m, dtype=float)
+    rho = np.array(rho_kg_m3, dtype=float)
+    u_r = np.array(u_radial_m_s, dtype=float)
+    u_phi = np.array(u_azimuthal_m_s, dtype=float)
+    b_r = np.array(b_radial_t, dtype=float)
+    b_phi = np.array(b_azimuthal_t, dtype=float)
+    varpi = np.array(cylindrical_radius_m, dtype=float)
     magnetic = -varpi * b_phi * b_r / MU0
     dynamic = varpi * rho * u_phi * u_r
     return magnetic, dynamic

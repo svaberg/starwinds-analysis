@@ -29,7 +29,7 @@ def resample_smart_ds(
     """
     Resample scalar fields onto new point locations and return a new wrapped dataset.
     """
-    sample_points = np.asarray(sample_points, dtype=float)
+    sample_points = np.array(sample_points, dtype=float)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
     if sample_points.ndim < 2:
@@ -61,7 +61,7 @@ def resample_smart_ds(
                 output_variables.append(name)
 
     source_coords = np.column_stack(
-        [np.asarray(smart_ds.variable(name)).ravel() for name in coordinate_fields]
+        [np.array(smart_ds.variable(name)).ravel() for name in coordinate_fields]
     )
     coord_mask = np.isfinite(source_coords).all(axis=1)
     if not np.any(coord_mask):
@@ -78,7 +78,7 @@ def resample_smart_ds(
         if name in coordinate_fields:
             continue
 
-        values = np.asarray(smart_ds.variable(name)).ravel()
+        values = np.array(smart_ds.variable(name)).ravel()
         if values.shape[0] != source_coords.shape[0]:
             raise ValueError(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "
@@ -101,7 +101,7 @@ def resample_smart_ds(
     if corners is None:
         corners_arr = np.empty((0, 0), dtype=int)
     else:
-        corners_arr = np.asarray(corners)
+        corners_arr = np.array(corners)
 
     if copy_aux:
         aux = deepcopy(smart_ds._dataset.aux)
@@ -150,7 +150,7 @@ def interpolate_nd(source_points, values, sample_points, *, method: str, fill_va
     else:
         raise ValueError("method must be 'nearest' or 'linear'")
 
-    out = np.asarray(out, dtype=float)
+    out = np.array(out, dtype=float)
     if out.ndim == 0:
         out = out[np.newaxis]
     return out

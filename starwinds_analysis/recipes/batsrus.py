@@ -103,7 +103,7 @@ def build_griblet_unit_normalization_graph(
             continue
         graph.add_recipe(
             target_name,
-            lambda x, factor=factor: factor * np.asarray(x),
+            lambda x, factor=factor: factor * np.array(x),
             deps=[source_name],
             cost=0.05,
             metadata={"description": f"Unit conversion {unit}->{si_unit}"},
@@ -117,7 +117,7 @@ def build_griblet_unit_normalization_graph(
             target = f"{axis} [m]"
             graph.add_recipe(
                 target,
-                lambda x, scale=body_radius: scale * np.asarray(x),
+                lambda x, scale=body_radius: scale * np.array(x),
                 deps=[source],
                 cost=0.05,
                 metadata={"description": "Scale body-radius coordinates to meters"},
@@ -152,14 +152,14 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     graph.merge(build_griblet_vector_magnitude_graph(varset))
     graph.add_recipe(
         "U [m/s]",
-        lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
+        lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
         deps=["U_x [m/s]", "U_y [m/s]", "U_z [m/s]"],
         cost=0.1,
         metadata={"description": "Flow speed magnitude"},
     )
     graph.add_recipe(
         "B [T]",
-        lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
+        lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
         deps=["B_x [T]", "B_y [T]", "B_z [T]"],
         cost=0.1,
         metadata={"description": "Magnetic field magnitude"},
@@ -169,14 +169,14 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
         graph.add_recipe(
             "c_s [m/s]",
-            lambda P, rho: np.sqrt(_DEFAULT_GAMMA * np.asarray(P) / np.asarray(rho)),
+            lambda P, rho: np.sqrt(_DEFAULT_GAMMA * np.array(P) / np.array(rho)),
             deps=["P [Pa]", "Rho [kg/m^3]"],
             cost=0.25,
             metadata={"description": "Adiabatic sound speed with fallback gamma=5/3"},
         )
         graph.add_recipe(
             "c_s [m/s]",
-            lambda P, rho, gamma: np.sqrt(_safe_gamma(gamma) * np.asarray(P) / np.asarray(rho)),
+            lambda P, rho, gamma: np.sqrt(_safe_gamma(gamma) * np.array(P) / np.array(rho)),
             deps=["P [Pa]", "Rho [kg/m^3]", "GAMMA [none]"],
             cost=0.2,
             metadata={"description": "Adiabatic sound speed using GAMMA aux"},
@@ -185,35 +185,35 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     # Alfven speed and Alfven Mach
     graph.add_recipe(
         "c_A [m/s]",
-        lambda B, rho: np.asarray(B) / np.sqrt(_MU0 * np.asarray(rho)),
+        lambda B, rho: np.array(B) / np.sqrt(_MU0 * np.array(rho)),
         deps=["B [T]", "Rho [kg/m^3]"],
         cost=0.2,
         metadata={"description": "Alfven speed"},
     )
     graph.add_recipe(
         "M_A [none]",
-        lambda U, cA: np.asarray(U) / np.asarray(cA),
+        lambda U, cA: np.array(U) / np.array(cA),
         deps=["U [m/s]", "c_A [m/s]"],
         cost=0.1,
         metadata={"description": "Alfven Mach number"},
     )
     graph.add_recipe(
         "Ma [none]",
-        lambda U, cs: np.asarray(U) / np.asarray(cs),
+        lambda U, cs: np.array(U) / np.array(cs),
         deps=["U [m/s]", "c_s [m/s]"],
         cost=0.1,
         metadata={"description": "Sonic Mach number"},
     )
     graph.add_recipe(
         "P_b [Pa]",
-        lambda B: np.asarray(B) ** 2 / (2.0 * _MU0),
+        lambda B: np.array(B) ** 2 / (2.0 * _MU0),
         deps=["B [T]"],
         cost=0.12,
         metadata={"description": "Magnetic pressure"},
     )
     graph.add_recipe(
         "beta [none]",
-        lambda P, Pb: np.asarray(P) / np.asarray(Pb),
+        lambda P, Pb: np.array(P) / np.array(Pb),
         deps=["P [Pa]", "P_b [Pa]"],
         cost=0.12,
         metadata={"description": "Plasma beta"},
@@ -242,7 +242,7 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
         graph.add_recipe(
             f"{prefix} [{unit}]",
-            lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
+            lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
             deps=deps,
             cost=0.1,
             metadata={"description": f"{prefix} magnitude"},

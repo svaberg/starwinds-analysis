@@ -87,10 +87,10 @@ def torque_vs_radius(
 
     return {
         **shell_profile_radius_height(shells),
-        "magnetic_torque [Nm]": np.asarray(magnetic, dtype=float),
-        "dynamic_torque [Nm]": np.asarray(dynamic, dtype=float),
-        "total_torque [Nm]": np.asarray(total, dtype=float),
-        "coverage [none]": np.asarray(coverage, dtype=float),
+        "magnetic_torque [Nm]": np.array(magnetic, dtype=float),
+        "dynamic_torque [Nm]": np.array(dynamic, dtype=float),
+        "total_torque [Nm]": np.array(total, dtype=float),
+        "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
 __all__ = ["MU0", "torque_vs_radius"]

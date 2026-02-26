@@ -103,8 +103,8 @@ def test_mass_loss_profile_runs_on_example():
         method="nearest",
     )
 
-    m = np.asarray(profile["mass_loss [kg/s]"])
-    c = np.asarray(profile["coverage [none]"])
+    m = np.array(profile["mass_loss [kg/s]"])
+    c = np.array(profile["coverage [none]"])
 
     assert m.shape == (4,)
     assert c.shape == (4,)
@@ -147,10 +147,10 @@ def test_torque_profile_runs_on_example():
         method="nearest",
     )
 
-    mag = np.asarray(profile["magnetic_torque [Nm]"])
-    dyn = np.asarray(profile["dynamic_torque [Nm]"])
-    tot = np.asarray(profile["total_torque [Nm]"])
-    cov = np.asarray(profile["coverage [none]"])
+    mag = np.array(profile["magnetic_torque [Nm]"])
+    dyn = np.array(profile["dynamic_torque [Nm]"])
+    tot = np.array(profile["total_torque [Nm]"])
+    cov = np.array(profile["coverage [none]"])
 
     assert mag.shape == dyn.shape == tot.shape == (4,)
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
@@ -174,10 +174,10 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
         method="nearest",
     )
 
-    signed_scalar = np.asarray(profile["signed_flux [Wb]"])
-    signed_vector = np.asarray(profile["signed_flux_from_vector [Wb]"])
-    open_flux = np.asarray(profile["open_flux [Wb]"])
-    cov = np.asarray(profile["coverage [none]"])
+    signed_scalar = np.array(profile["signed_flux [Wb]"])
+    signed_vector = np.array(profile["signed_flux_from_vector [Wb]"])
+    open_flux = np.array(profile["open_flux [Wb]"])
+    cov = np.array(profile["coverage [none]"])
 
     np.testing.assert_allclose(signed_scalar, signed_vector, rtol=1e-10, atol=1e-10)
     assert np.all(open_flux >= np.abs(signed_scalar) - 1e-12)
@@ -196,9 +196,9 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
         method="nearest",
     )
 
-    axi = np.asarray(profile["axisymmetric_open_flux [Wb]"])
-    total = np.asarray(profile["open_flux [Wb]"])
-    frac = np.asarray(profile["axisymmetric_open_flux_fraction [none]"])
+    axi = np.array(profile["axisymmetric_open_flux [Wb]"])
+    total = np.array(profile["open_flux [Wb]"])
+    frac = np.array(profile["axisymmetric_open_flux_fraction [none]"])
     finite = np.isfinite(frac)
 
     assert np.any(finite)
@@ -221,8 +221,8 @@ def test_energy_flux_profile_runs_on_example():
         method="nearest",
     )
 
-    y = np.asarray(profile["energy_flux [W]"])
-    c = np.asarray(profile["coverage [none]"])
+    y = np.array(profile["energy_flux [W]"])
+    c = np.array(profile["coverage [none]"])
     assert y.shape == (4,)
     assert np.count_nonzero(np.isfinite(y)) == 4
     assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))

@@ -39,7 +39,7 @@ class ShellMassFluxMap:
         return float(integral[0]), float(coverage[0])
 
     def summary(self):
-        arr = np.asarray(self.mass_flux_kg_m2_s, dtype=float)
+        arr = np.array(self.mass_flux_kg_m2_s, dtype=float)
         finite = arr[np.isfinite(arr)]
         out = {
             "finite_cells": int(finite.size),
@@ -87,19 +87,19 @@ def sample_shell_mass_flux_map(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = rho_scale * np.asarray(shells.fields[rho_name], dtype=float)
-    ux = u_scale * np.asarray(shells.fields[ux_name], dtype=float)
-    uy = u_scale * np.asarray(shells.fields[uy_name], dtype=float)
-    uz = u_scale * np.asarray(shells.fields[uz_name], dtype=float)
+    rho = rho_scale * np.array(shells.fields[rho_name], dtype=float)
+    ux = u_scale * np.array(shells.fields[ux_name], dtype=float)
+    uy = u_scale * np.array(shells.fields[uy_name], dtype=float)
+    uz = u_scale * np.array(shells.fields[uz_name], dtype=float)
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
-    mass_flux = np.asarray(radial_advective_flux_density(rho, u_r), dtype=float)
+    mass_flux = np.array(radial_advective_flux_density(rho, u_r), dtype=float)
 
     return ShellMassFluxMap(
         radius=float(radius),
         shell_samples=shells,
-        lon_deg=np.degrees(np.asarray(shells.phi, dtype=float)),
-        lat_deg=90.0 - np.degrees(np.asarray(shells.theta, dtype=float)),
-        mass_flux_kg_m2_s=np.asarray(mass_flux[0], dtype=float),
+        lon_deg=np.degrees(np.array(shells.phi, dtype=float)),
+        lat_deg=90.0 - np.degrees(np.array(shells.theta, dtype=float)),
+        mass_flux_kg_m2_s=np.array(mass_flux[0], dtype=float),
     )
 def mass_loss_vs_radius(
     smart_ds,
@@ -148,8 +148,8 @@ def mass_loss_vs_radius(
     mass_loss, coverage = integrate_shell_scalar(mass_flux, shells.area)
     return {
         **shell_profile_radius_height(shells),
-        "mass_loss [kg/s]": np.asarray(mass_loss, dtype=float),
-        "coverage [none]": np.asarray(coverage, dtype=float),
+        "mass_loss [kg/s]": np.array(mass_loss, dtype=float),
+        "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
 __all__ = [
