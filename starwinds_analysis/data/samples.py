@@ -18,7 +18,7 @@ def sample_data_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "sample_data"
 
 
-def get_sample(name: str) -> Path:
+def get_sample(name: str, *, echo: bool = False) -> Path:
     """
     Return an absolute `Path` to a file in `sample_data`.
 
@@ -26,9 +26,13 @@ def get_sample(name: str) -> Path:
     ----------
     name
         Exact filename under `sample_data`, e.g. `z=0_var_3_n00060000.plt`.
+    echo
+        If True, print the resolved path (useful in interactive examples/notebooks).
     """
     path = sample_data_dir() / str(name)
     if path.exists():
+        if echo:
+            print(f"Using: {path}")
         return path
 
     available = sorted(p.name for p in sample_data_dir().glob("*.plt"))

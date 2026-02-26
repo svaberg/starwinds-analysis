@@ -137,6 +137,16 @@ Preferred pattern:
 - raw/non-SI fields are allowed for plotting/inspection
 - unit handling and field resolution should be centralized (eventually in `SmartDs`)
 
+Related rule (local variables):
+
+- Do not add unit suffixes to local variable names when the values are already in the
+  default/base SI unit for that context.
+- Example bad notebook variable names: `b_r_T`, `u_m_s`, `rho_si`
+- Prefer plain quantity names (`b_r`, `u`, `rho`) and state units in:
+  - field names (`"B_r [T]"`)
+  - plot labels/titles
+  - a short nearby comment when needed
+
 ## 4. Duplicated Field/Unit Resolution Logic (`resolve_*` proliferation)
 
 Bad:
