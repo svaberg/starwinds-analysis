@@ -129,6 +129,7 @@ def register_spherical_geometry_fields(
     if r_name is None:
         r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
+    # Radius from Cartesian coordinates (same unit as `coord_fields`).
     def _r(ds):
         x = ds.variable(x_name)
         y = ds.variable(y_name)
@@ -136,6 +137,7 @@ def register_spherical_geometry_fields(
         r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return r
 
+    # Colatitude from Cartesian coordinates.
     def _theta(ds):
         x = ds.variable(x_name)
         y = ds.variable(y_name)
@@ -143,6 +145,7 @@ def register_spherical_geometry_fields(
         _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return theta
 
+    # Azimuth from Cartesian coordinates.
     def _phi(ds):
         x = ds.variable(x_name)
         y = ds.variable(y_name)
@@ -210,6 +213,7 @@ def register_vector_spherical_components(
     else:
         component_names = dict(component_names)
 
+    # Compute all spherical vector components once per SmartDs request.
     def _compute(ds):
         x = ds.variable(x_name)
         y = ds.variable(y_name)
@@ -301,14 +305,17 @@ def build_griblet_spherical_geometry_graph(
 
     graph = griblet.ComputationGraph()
 
+    # Radius recipe from Cartesian coordinates.
     def _r(x, y, z):
         r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return r
 
+    # Colatitude recipe from Cartesian coordinates.
     def _theta(x, y, z):
         _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return theta
 
+    # Azimuth recipe from Cartesian coordinates.
     def _phi(x, y, z):
         _r, _theta, phi = cartesian_to_spherical_angles(x, y, z)
         return phi
@@ -371,6 +378,7 @@ def build_griblet_vector_spherical_components_graph(
 
     graph = griblet.ComputationGraph()
 
+    # Compute all spherical vector components once for graph recipes.
     def _all(vx, vy, vz, x, y, z):
         return spherical_vector_components(vx, vy, vz, x, y, z)
 

@@ -654,6 +654,7 @@ def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_
     if vals.ndim != 2 or vals.shape[0] != phase.size:
         return ax
 
+    # Pick the nearest stored quantile column for plotting.
     def _pick(qtarget):
         idx = int(np.argmin(np.abs(qs - qtarget)))
         return vals[:, idx]

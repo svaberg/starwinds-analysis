@@ -41,6 +41,7 @@ def explain_field(smart_ds, name: str, *, return_tree: bool = False):
 
     lines: list[str] = []
 
+    # Walk the resolved dependency tree recursively to render an explanation string.
     def walk(node, depth=0):
         meta = getattr(node, "recipe_metadata", {}) or {}
         desc = meta.get("description", "")
@@ -159,4 +160,3 @@ def evaluate_resolved_tree(node, graph):
         if tuple(recipe["deps"]) == dep_fields:
             return recipe["func"](*values)
     raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
-

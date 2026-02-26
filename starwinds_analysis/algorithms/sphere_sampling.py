@@ -72,6 +72,7 @@ class PolarAzimuthalGrid:
         centres_cartesian(radius)
     """
 
+    # Store angular shell-grid edges; radius is supplied when embedding in 3D.
     def __init__(self, polar_edge_1d, azimuthal_edge_1d):
         self._polar = np.array(polar_edge_1d, float)
         self._azimuthal = np.array(azimuthal_edge_1d, float)
@@ -79,36 +80,43 @@ class PolarAzimuthalGrid:
 
 
     @property
+    # Polar (colatitude) edge mesh for corner-based shell workflows.
     def polar_edges(self):
         return np.meshgrid(self._azimuthal, self._polar, **self._meshgrid_kwargs)[1]
 
     @property
+    # Azimuth edge mesh for corner-based shell workflows.
     def azimuthal_edges(self):
         return np.meshgrid(self._azimuthal, self._polar, **self._meshgrid_kwargs)[0]
 
     @property
+    # Polar centre mesh for cell-centered shell workflows.
     def polar_centres(self):
         polar_c = 0.5 * (self._polar[:-1] + self._polar[1:])
         azimuthal_c = 0.5 * (self._azimuthal[:-1] + self._azimuthal[1:])
         return np.meshgrid(azimuthal_c, polar_c, **self._meshgrid_kwargs)[1]
 
     @property
+    # Azimuth centre mesh for cell-centered shell workflows.
     def azimuthal_centres(self):
         polar_c = 0.5 * (self._polar[:-1] + self._polar[1:])
         azimuthal_c = 0.5 * (self._azimuthal[:-1] + self._azimuthal[1:])
         return np.meshgrid(azimuthal_c, polar_c, **self._meshgrid_kwargs)[0]
 
     @property
+    # Per-cell solid angle on the angular grid (steradians).
     def cell_solid_angle(self):
         dphi = np.diff(self._azimuthal)[None, :]
         band = (np.cos(self._polar[:-1]) - np.cos(self._polar[1:]))[:, None]
         return band * dphi
 
+    # Per-cell area on a spherical shell of radius `radius`.
     def cell_area(self, radius=1.0):
         radius = float(radius)
         return (radius**2) * self.cell_solid_angle
 
     @staticmethod
+    # Convert angular coordinates to embedded 3D Cartesian points.
     def _angles_to_cartesian(theta, phi, *, radius=1.0):
         radius = float(radius)
         sin_theta = np.sin(theta)
@@ -117,9 +125,11 @@ class PolarAzimuthalGrid:
         z = radius * np.cos(theta)
         return np.stack((x, y, z), axis=-1)
 
+    # Corner-point Cartesian grid for shell plotting/resampling.
     def corners_cartesian(self, radius=1.0):
         return self._angles_to_cartesian(self.polar_edges, self.azimuthal_edges, radius=radius)
     
+    # Centre-point Cartesian grid for cell-centered shell sampling.
     def centres_cartesian(self, radius=1.0):
         return self._angles_to_cartesian(
             self.polar_centres,

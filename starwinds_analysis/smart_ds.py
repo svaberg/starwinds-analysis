@@ -42,6 +42,7 @@ class SmartDs:
       measures (e.g. `length [..]`, `area [..^2]`, `volume [..^3]`) for regular grids.
     """
 
+    # Wrap a raw Dataset and initialize aliases, local field functions, and graph hooks.
     def __init__(
         self,
         dataset: Dataset,
@@ -65,12 +66,14 @@ class SmartDs:
 
         self._auto_register_builtin_fields()
 
+    # Debug-style summary string for interactive use.
     def __repr__(self) -> str:
         return (
             f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
             f"points={len(self.points)}, variables={len(self.variables)})"
         )
 
+    # Human-readable dataset summary for notebooks/examples (`print(sds)`).
     def __str__(self) -> str:
         return "\n".join(
             (
@@ -83,9 +86,11 @@ class SmartDs:
         )
 
     @classmethod
+    # Construct a SmartDs directly from a `.plt` file path.
     def from_file(cls, file: str | PathLike[str], **kwargs) -> "SmartDs":
         return cls(Dataset.from_file(str(file)), **kwargs)
 
+    # Register built-in spherical geometry/vector fields when XYZ coordinates are present.
     def _auto_register_builtin_fields(self) -> None:
         """
         Register lightweight built-in derived fields that should be available by default.
@@ -106,46 +111,57 @@ class SmartDs:
         auto_register_vector_spherical_components(self, coord_fields=coord_fields)
 
     @property
+    # Direct access to the underlying `starwinds_readplt.Dataset`.
     def raw(self) -> Dataset:
         return self._dataset
 
     @property
+    # Readability alias for `raw`.
     def dataset(self) -> Dataset:
         # Alias for readability at call sites.
         return self._dataset
 
     @property
+    # AUX metadata passthrough from the raw dataset.
     def aux(self):
         return self._dataset.aux
 
     @property
+    # Dataset title passthrough.
     def title(self):
         return self._dataset.title
 
     @property
+    # Zone name passthrough.
     def zone(self):
         return self._dataset.zone
 
     @property
+    # Raw point array passthrough.
     def points(self):
         return self._dataset.points
 
     @property
+    # Raw cell connectivity passthrough.
     def corners(self):
         return self._dataset.corners
 
     @property
+    # Raw variable names as an immutable tuple.
     def variables(self) -> tuple[str, ...]:
         return tuple(self._dataset.variables)
 
     @property
+    # Registered local field functions (lazy computed fields, no griblet).
     def field_functions(self) -> Mapping[str, FieldFunction]:
         return self._field_functions
 
     @property
+    # Attached griblet graph (or None).
     def computation_graph(self):
         return self._computation_graph
 
+    # Known field names from raw variables, local fields, and the attached graph.
     def keys(self) -> tuple[str, ...]:
         """Known field names (raw + registered computed fields)."""
         names = list(self._dataset.variables)
@@ -157,20 +173,25 @@ class SmartDs:
                 names.append(name)
         return tuple(names)
 
+    # Support `name in sds` by checking field availability.
     def __contains__(self, name: object) -> bool:
         return isinstance(name, str) and self.has_field(name)
 
+    # `sds(name)` is shorthand for `sds.variable(name)`.
     def __call__(self, index_or_name):
         return self.variable(index_or_name)
 
+    # `sds[name]` is raw-dataset access only (no aliases/local fields/griblet).
     def __getitem__(self, index_or_name):
         # `[]` is a raw-dataset passthrough (base fields only). Use `()` / `.variable()`
         # for SmartDs field resolution (aliases, lazy fields, griblet recipes).
         return self._dataset.variable(index_or_name)
 
+    # Check only raw dataset fields (including alias fallback).
     def has_raw_field(self, name: str) -> bool:
         return self._resolve_raw_name(name) is not None
 
+    # Check whether a field is available from raw data, local fields, or griblet.
     def has_field(self, name: str) -> bool:
         if self.has_raw_field(name) or name in self._field_functions:
             return True
@@ -182,17 +203,20 @@ class SmartDs:
         except Exception:
             return False
 
+    # Dict-like getter wrapper around `variable(...)` with a default.
     def get(self, name: str, default=None):
         try:
             return self.variable(name)
         except (IndexError, KeyError):
             return default
 
+    # Map a canonical field name to one or more raw field candidates.
     def set_alias(self, name: str, candidates: str | Sequence[str]) -> None:
         if isinstance(candidates, str):
             candidates = (candidates,)
         self._aliases[name] = tuple(candidates)
 
+    # Register a lazy local field function on this SmartDs instance.
     def register_field(
         self,
         name: str,
@@ -208,6 +232,7 @@ class SmartDs:
             self.set_alias(name, aliases)
         self._cache.pop(name, None)
 
+    # Attach or merge a griblet computation graph used for unresolved fields.
     def set_computation_graph(self, graph, *, merge: bool = False):
         """
         Attach a griblet computation graph used as a fallback for unresolved fields.
@@ -230,6 +255,7 @@ class SmartDs:
             self._computation_graph = graph
         return self
 
+    # Add local (non-griblet) spherical geometry/vector component fields.
     def add_spherical_fields(
         self,
         *,
@@ -258,6 +284,7 @@ class SmartDs:
         )
         return self
 
+    # Add griblet spherical geometry/vector recipes to the attached graph.
     def add_spherical_graph(
         self,
         *,
@@ -289,6 +316,7 @@ class SmartDs:
         self.set_computation_graph(graph, merge=merge)
         return self
 
+    # Add the BATSRUS SI-normalization and derived-field recipe graph.
     def add_batsrus_graph(
         self,
         *,
@@ -312,6 +340,7 @@ class SmartDs:
         self.set_computation_graph(graph, merge=merge)
         return self
 
+    # Clear cached field values (all or selected names).
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()
@@ -319,6 +348,7 @@ class SmartDs:
         for name in names:
             self._cache.pop(name, None)
 
+    # Main field accessor: raw passthrough, then local fields, then griblet graph.
     def variable(self, index_or_name):
         # Preserve Dataset behavior for integer indexing.
         if not isinstance(index_or_name, str):
@@ -344,6 +374,7 @@ class SmartDs:
             self._cache[name] = value
         return value
 
+    # Graph-path resolver (`cost, tree`) used by `has_field` and `explain`.
     def resolve(self, name: str):
         # TODO smartds-resolve:
         # This currently means "resolve computation path via griblet". The user-facing
@@ -352,12 +383,15 @@ class SmartDs:
         # this graph-planning method to avoid semantic collision.
         return _resolve_field(self, name)
 
+    # Human-readable explanation of the chosen griblet path for a field.
     def explain(self, name: str, *, return_tree: bool = False):
         return _explain_field(self, name, return_tree=return_tree)
 
+    # Evaluate a field via the attached griblet graph.
     def _compute_via_graph(self, name: str):
         return _compute_via_graph(self, name)
 
+    # Generic resampling entry point returning a new SmartDs (flat or structured targets).
     def resample(
         self,
         sample_points,
@@ -412,6 +446,7 @@ class SmartDs:
             zone=zone,
         )
 
+    # Resolve a requested name to an existing raw dataset field (via aliases).
     def _resolve_raw_name(self, name: str) -> str | None:
         if name in self._dataset.variables:
             return name
@@ -421,6 +456,7 @@ class SmartDs:
                 return candidate
         return None
 
+    # Infer coordinate fields from common BATSRUS-style XYZ names.
     def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:
         preferred = [
             "X [R]",
@@ -434,4 +470,3 @@ class SmartDs:
         raise ValueError(
             "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
-
