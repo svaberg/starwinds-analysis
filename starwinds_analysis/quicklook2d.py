@@ -491,7 +491,13 @@ def plot_orbit_mass_loss_comparison(ax, result):
     ax.axhline(-shell, color="C1", linestyle=":")
     ax.set_xlabel("Orbit phase [turns]")
     ax.set_ylabel("Mass loss [kg/s]")
-    ax.set_title(_orbit_result_title("Mass Loss", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        ax.set_title(
+            f"Mass Loss @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        ax.set_title(f"Mass Loss @ r={float(result['radius [R]']):.3g} R")
     return ax
 
 def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
@@ -525,7 +531,13 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     ax.axhline(-shell, color="k", linestyle=":")
     ax.set_xlabel("Orbit phase [turns]")
     ax.set_ylabel("Torque [Nm]")
-    ax.set_title(_orbit_result_title("Torque", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        ax.set_title(
+            f"Torque @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        ax.set_title(f"Torque @ r={float(result['radius [R]']):.3g} R")
     return ax
 
 def _orbit_phase(result, n):
@@ -540,18 +552,6 @@ def _orbit_phase(result, n):
     if phase.shape == (n,):
         return phase
     return np.arange(n, dtype=float) / max(1, n)
-
-def _orbit_result_title(prefix, result):
-    """
-    Build a compact title string for orbit quicklook result figures.
-    Used by: `starwinds_analysis/quicklook2d.py`
-    """
-    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
-        return (
-            f"{prefix} @ a={float(result['semi_major_axis [R]']):.3g} R, "
-            f"e={float(result['eccentricity [none]']):.3g}"
-        )
-    return f"{prefix} @ r={float(result['radius [R]']):.3g} R"
 
 def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
     """
@@ -578,7 +578,13 @@ def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True)
     ax.set_xlabel("Orbit phase [turns]")
     ax.set_ylabel("Pressure [Pa]")
     ax.set_yscale("log")
-    ax.set_title(_orbit_result_title("Orbit Pressures", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        ax.set_title(
+            f"Orbit Pressures @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        ax.set_title(f"Orbit Pressures @ r={float(result['radius [R]']):.3g} R")
     return ax
 
 def orbit_pressure_figure(
@@ -642,7 +648,13 @@ def orbit_pressure_figure(
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Stand-off Proxy [m]")
     axs[1].set_yscale("log")
-    axs[1].set_title(_orbit_result_title("Stand-off Proxy", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        axs[1].set_title(
+            f"Stand-off Proxy @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        axs[1].set_title(f"Stand-off Proxy @ r={float(result['radius [R]']):.3g} R")
     for ax in np.ravel(axs):
         ax.grid(True, alpha=0.3)
         ax.grid(True, which="minor", alpha=0.1)
@@ -713,7 +725,13 @@ def orbit_surface_pressure_figure(
         _plot_phase_quantile_band(axs[0], pq["relative_ram_pressure [Pa]"], label="relative ram", color="C3")
     axs[0].set_ylabel("Pressure [Pa]")
     axs[0].set_yscale("log")
-    axs[0].set_title(_orbit_result_title("Orbit-Surface Pressures", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        axs[0].set_title(
+            f"Orbit-Surface Pressures @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        axs[0].set_title(f"Orbit-Surface Pressures @ r={float(result['radius [R]']):.3g} R")
     axs[0].legend(loc="best")
 
     if "standoff_distance [m]" in pq:
@@ -721,7 +739,13 @@ def orbit_surface_pressure_figure(
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Stand-off Proxy [m]")
     axs[1].set_yscale("log")
-    axs[1].set_title(_orbit_result_title("Orbit-Surface Stand-off", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        axs[1].set_title(
+            f"Orbit-Surface Stand-off @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        axs[1].set_title(f"Orbit-Surface Stand-off @ r={float(result['radius [R]']):.3g} R")
 
     for ax in axs:
         ax.grid(True, alpha=0.3)
@@ -772,7 +796,13 @@ def orbit_surface_torque_figure(
         )
     axs[0].set_ylabel("Phase Ring Integral [Nm]")
     axs[0].set_yscale("symlog", linthresh=1e-3)
-    axs[0].set_title(_orbit_result_title("Orbit-Surface Torque Terms", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        axs[0].set_title(
+            f"Orbit-Surface Torque Terms @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        axs[0].set_title(f"Orbit-Surface Torque Terms @ r={float(result['radius [R]']):.3g} R")
     axs[0].legend(loc="best", ncol=2)
 
     if "total" in result["phase_quantiles"]:
@@ -811,7 +841,13 @@ def orbit_surface_torque_figure(
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Torque Density [N/m]")
     axs[1].set_yscale("symlog", linthresh=1e-6)
-    axs[1].set_title(_orbit_result_title("Orbit-Surface Torque Density Quantiles", result))
+    if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
+        axs[1].set_title(
+            f"Orbit-Surface Torque Density Quantiles @ a={float(result['semi_major_axis [R]']):.3g} R, "
+            f"e={float(result['eccentricity [none]']):.3g}"
+        )
+    else:
+        axs[1].set_title(f"Orbit-Surface Torque Density Quantiles @ r={float(result['radius [R]']):.3g} R")
     axs[1].legend(loc="best")
 
     for ax in axs:
