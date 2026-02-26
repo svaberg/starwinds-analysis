@@ -186,6 +186,7 @@ Related rule (local variables):
 Bad:
 
 - many helper functions that all perform local field-name candidate lookup and scaling
+- explicit `resolve_*` helper usage in analysis/notebook code
 
 Why this is a smell:
 
@@ -195,11 +196,20 @@ Why this is a smell:
 Preferred direction:
 
 - `SmartDs` should own resolution/canonicalization
+- ask `SmartDs` for the quantity you want, in the units you want (SI for analysis)
+- let `griblet` + `SmartDs` decide the computation/conversion path
 - field resolution API should return data plus parsed unit metadata
 
 Note:
 
 - Existing `resolve_*` functions remain for now, but are marked with TODOs for migration.
+
+Hard rule:
+
+- Do not introduce new `resolve_*` methods/functions.
+- Do not call `resolve_*` helpers in new analysis code when `SmartDs` can provide the quantity directly.
+- `resolve_*` is the wrong layer: this is what `griblet` + `SmartDs` are for.
+- In analysis code, request the physical quantity directly in SI units and let `SmartDs` provide it.
 
 ## 5. Duplicated Physical Quantity Definitions
 
