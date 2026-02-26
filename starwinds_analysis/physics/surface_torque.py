@@ -221,17 +221,27 @@ def surface_torque_terms_on_shell_samples(
     body_radius_m: float = 1.0,
     normals_xyz=None,
     use_rotating_frame: bool = True,
+    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    area_field: str = "dA [m^2]",
 ):
     """
     Convenience wrapper for explicit-surface torque terms on shell samples.
     """
-    xyz_r = np.stack((shells.x, shells.y, shells.z), axis=-1)
+    x_name, y_name, z_name = coordinate_fields
+    xyz_r = np.stack(
+        [
+            np.array(shells(x_name), dtype=float),
+            np.array(shells(y_name), dtype=float),
+            np.array(shells(z_name), dtype=float),
+        ],
+        axis=-1,
+    )
     xyz_m = xyz_r * float(body_radius_m)
     normals = radial_surface_normals(xyz_m) if normals_xyz is None else normals_xyz
     return surface_torque_density_terms(
         xyz_m=xyz_m,
         normals_xyz=normals,
-        area_m2=shells.area,
+        area_m2=np.array(shells(area_field), dtype=float),
         rho_kg_m3=rho_kg_m3,
         u_xyz_m_s=u_xyz_m_s,
         b_xyz_t=b_xyz_t,
@@ -292,10 +302,16 @@ def surface_torque_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = shells.fields[rho_name]
-    u_xyz = np.stack([shells.fields[ux_name], shells.fields[uy_name], shells.fields[uz_name]], axis=-1)
-    b_xyz = np.stack([shells.fields[bx_name], shells.fields[by_name], shells.fields[bz_name]], axis=-1)
-    p = None if p_name is None else p_scale * shells.fields[p_name]
+    rho = np.array(shells(rho_name), dtype=float)
+    u_xyz = np.stack(
+        [np.array(shells(ux_name), dtype=float), np.array(shells(uy_name), dtype=float), np.array(shells(uz_name), dtype=float)],
+        axis=-1,
+    )
+    b_xyz = np.stack(
+        [np.array(shells(bx_name), dtype=float), np.array(shells(by_name), dtype=float), np.array(shells(bz_name), dtype=float)],
+        axis=-1,
+    )
+    p = None if p_name is None else p_scale * np.array(shells(p_name), dtype=float)
 
     terms = surface_torque_terms_on_shell_samples(
         shells,
@@ -306,6 +322,7 @@ def surface_torque_vs_radius(
         angvel_rad_s=angvel_rad_s,
         body_radius_m=body_radius_m,
         use_rotating_frame=True,
+        coordinate_fields=coordinate_fields,
     )
     ints = integrate_surface_torque_terms(terms)
 
