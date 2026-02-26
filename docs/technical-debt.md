@@ -21,7 +21,7 @@ Legend:
 - `starwinds_analysis/_smart_ds_resample.py` — **Reviewed**. Core resampling internals; no new bad-practice hit beyond existing documented NaN handling for interpolation edge cases.
 - `starwinds_analysis/algorithms/sphere_sampling.py` — **Reviewed**. Geometry/sampling primitive module (good layer fit).
 - `starwinds_analysis/analysis/__init__.py` — **Reviewed**. Re-export facade removed; package boundary is now minimal (`__all__ = []`).
-- `starwinds_analysis/analysis/orbits.py` — **Debt**. Mixed generic orbit geometry/sampling with quantity-specific comparison workflows (`local_mass_loss_*`, `local_torque_*`); imports from `physics`. Code TODO: added TODO.
+- `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Now limited to orbit geometry/sampling primitives (local mass-loss/torque workflows moved out).
 - `starwinds_analysis/analysis/shell_summary.py` — **Reviewed**. Reducer/summary helpers; finite filtering appears intentional for shell-band summaries.
 - `starwinds_analysis/analysis/shells.py` — **Debt**. Contains `resolve_*` helpers and compatibility custom container (`SphericalShellSamples`) alongside core shell primitives. Code TODO: added TODO + existing TODOs.
 - `starwinds_analysis/analysis/slices.py` — **Reviewed**. Structured slice resampling/topology helpers; no clear rule violation found in this pass.
@@ -35,6 +35,7 @@ Legend:
 - `starwinds_analysis/physics/magnetic.py` — **Debt**. Magnetic spherical components (`B_r`, `B_theta`, `B_phi`) are recomputed locally instead of requested via SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/mass_loss.py` — **Debt**. Quantity-specific shell pipeline wrappers (`sample_shell_mass_flux_map`, `mass_loss_vs_radius`), custom container (`ShellMassFluxMap`), `resolve_*`, and `analysis.shells` dependency. Code TODO: added TODO + existing TODO(griblet).
 - `starwinds_analysis/physics/orbit_pressure.py` — **Debt**. Orbit workflow/pipeline in `physics` (sampling + field resolution + summaries), imports `analysis`, and uses `resolve_*`. Code TODO: added TODO + existing TODO(griblet).
+- `starwinds_analysis/physics/orbit_local.py` — **Debt**. Quantity-specific local orbit workflow wrappers (`local_mass_loss_*`, `local_torque_*`) now live in `physics`; still depend on `analysis` sampling and `resolve_*` helpers. Code TODO: added TODO.
 - `starwinds_analysis/physics/orbit_surface.py` — **Debt**. Large orbit-surface workflow/pipeline in `physics`, imports `analysis`, and couples geometry/sampling with quantity assembly. Code TODO: added TODO.
 - `starwinds_analysis/physics/orbits.py` — **Reviewed**. Kepler orbit kinematics primitives moved into `physics` (deeper/shared layer).
 - `starwinds_analysis/physics/planetary_orbits.py` — **Reviewed**. Named orbit presets/helpers now depend on deep `physics.orbits` primitives instead of `analysis.orbits`.

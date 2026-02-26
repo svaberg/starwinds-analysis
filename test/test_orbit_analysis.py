@@ -7,15 +7,16 @@ from scipy import constants as const
 from starwinds_analysis.analysis.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
+    sample_circular_orbit,
+    sample_elliptic_orbit,
+)
+from starwinds_analysis.physics.orbit_local import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
     local_torque_on_circular_orbit,
     local_torque_on_elliptic_orbit,
-    orbital_period,
-    orbital_velocity,
-    sample_circular_orbit,
-    sample_elliptic_orbit,
 )
+from starwinds_analysis.physics.orbits import orbital_period, orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
 
 

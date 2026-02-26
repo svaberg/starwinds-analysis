@@ -34,7 +34,8 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 - NEXT: split `physics/surface_torque.py` back down so only local torque terms remain in the deep layer.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
-- Example target: extract reusable non-quantity helpers from `analysis/orbits.py` if cleanly separable.
+- DONE (partial): `analysis/orbits.py` now contains geometry/sampling primitives only; local mass-loss/torque orbit workflows were moved out.
+- NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific and `resolve_*`-based).
 
 ## Phase 2 (SmartDs / griblet Migration)
 

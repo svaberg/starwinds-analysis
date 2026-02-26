@@ -26,15 +26,15 @@ from starwinds_analysis.physics.orbit_surface import (
     pressure_components_on_orbit_surface,
     torque_components_on_orbit_surface,
 )
-from starwinds_analysis.analysis.orbits import (
+from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
+from starwinds_analysis.analysis.slices import resample_structured_xz_slice
+from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
+from starwinds_analysis.physics.orbit_local import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
     local_torque_on_circular_orbit,
     local_torque_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
-from starwinds_analysis.analysis.slices import resample_structured_xz_slice
-from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,
