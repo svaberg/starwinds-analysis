@@ -1,11 +1,7 @@
 """THIS FILE contains spherical shell sampling and shell-integration primitives.
 
 It is the foundation layer for shell-based analyses (sampling geometry, integration, coverage).
-Temporary field-resolution helpers live here for now, but should migrate into SmartDs.
 """
-
-# TODO(debt): `resolve_*` field/unit helpers in this module are a known smell; callers
-# should request SI quantities directly from SmartDs/griblet.
 
 from __future__ import annotations
 

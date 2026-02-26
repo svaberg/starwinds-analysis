@@ -4,8 +4,8 @@ These are plotting-only functions (Matplotlib fig/ax). They are kept out of the
 `analysis` layer to preserve the analysis/data-vs-plotting boundary.
 """
 
-# TODO(debt): `physics` is a deep layer and should not grow a large plotting API
-# surface; keep only plotting code that is demonstrably reusable and generic.
+# TODO(debt): Keep this plotting surface small and generic; do not rebuild
+# quantity-specific plotting wrappers here.
 
 from __future__ import annotations
 
