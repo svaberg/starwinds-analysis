@@ -305,6 +305,32 @@ Rule:
 - Do not sprinkle numerical constants around the codebase.
 - Physical constants (especially magnetic permeability / `MU0`) must come from a single shared definition.
 
+## 6d. Circular Imports / Reversed Inclusion Paths
+
+Bad:
+
+- circular imports between layers (`analysis <-> physics`, etc.)
+- importing "up" or sideways across the intended layer boundary
+- fixing cycles with lazy imports instead of fixing the dependency direction
+
+Why this is a smell:
+
+- usually means the layer split is wrong or responsibilities are mixed
+- causes fragile import-time behavior and hidden coupling
+- encourages "just move an import inside a function" patches instead of architectural fixes
+
+Preferred pattern:
+
+- define a clear one-way dependency direction between layers
+- keep lower/deeper layers independent of higher/shallow layers
+- move shared primitives to the correct layer instead of cross-importing both ways
+
+Rule:
+
+- Avoid circular imports entirely.
+- Reversed inclusion paths are a bad smell and should be fixed at the layer boundary.
+- In this project, `analysis` should not import from `physics` (if that import is needed, the split is likely wrong).
+
 ## 7. Over-Fragmentation Into Tiny Helpers
 
 Bad:
