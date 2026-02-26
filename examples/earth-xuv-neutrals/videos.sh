@@ -1,0 +1,20 @@
+# planet_00000000_ne.png
+# planet_00000000_nh.png
+# planet_00000000_nhp.png
+# planet_00000000_rho.png
+# planet_00000000_slice_quantiles.png
+# planet_00000000_slice.png
+# planet_00000000_tau.png
+# planet_00000000_temperature.png
+# planet_00000000_xuvheat.png
+
+# sw-make-video "planet*slice.png"
+# sw-make-video "planet_????????_ne.png"
+# sw-make-video "planet_????????_nh.png"
+# sw-make-video "planet_????????_nhp.png"
+sw-make-video "planet_????????_rho.png"
+sw-make-video "planet_????????_slice_quantiles.png"
+sw-make-video "planet_????????_slice.png"
+# sw-make-video "planet_????????_tau.png"
+# sw-make-video "planet_????????_temperature.png"
+# sw-make-video "planet_????????_xuvheat.png"
