@@ -55,7 +55,7 @@ def test_sample_spherical_shells_area_matches_sphere():
         length_unit_to_m=SUN_RADIUS_M,
     )
 
-    area_total = np.sum(shells.area, axis=(-2, -1))
+    area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
     expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=2e-2, atol=0.0)
 
@@ -85,10 +85,10 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
         length_unit_to_m=SUN_RADIUS_M,
     )
 
-    area_total = np.sum(shells.area, axis=(-2, -1))
+    area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
     expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=1e-12, atol=0.0)
-    assert shells.x.shape[-1] == 1
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -112,7 +112,7 @@ def test_mass_loss_profile_runs_on_example():
     assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
-    assert profile["shell_samples"].x.shape[-1] == 1  # Fibonacci default
+    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -132,9 +132,12 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
     ux = np.array(shells("U_x [m/s]"), dtype=float)
     uy = np.array(shells("U_y [m/s]"), dtype=float)
     uz = np.array(shells("U_z [m/s]"), dtype=float)
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    x = np.array(shells("X [R]"), dtype=float)
+    y = np.array(shells("Y [R]"), dtype=float)
+    z = np.array(shells("Z [R]"), dtype=float)
+    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
     mass_flux = radial_advective_flux_density(rho, u_r)
-    integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, shells.area)
+    integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, np.array(shells("dA [m^2]"), dtype=float))
     integral = float(integral_arr[0])
     coverage = float(coverage_arr[0])
     assert np.isfinite(integral)
@@ -167,7 +170,7 @@ def test_torque_profile_runs_on_example():
     assert np.all(np.isfinite(cov))
     assert np.all((cov > 0.90) & (cov <= 1.0 + 1e-12))
     assert np.any(np.isfinite(tot))
-    assert profile["shell_samples"].x.shape[-1] == 1  # Fibonacci default
+    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -216,7 +219,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
     assert np.all(total[finite] >= 0)
     assert np.all(frac[finite] >= -1e-12)
     assert np.all(frac[finite] <= 1.0 + 1e-12)
-    assert profile["shell_samples"].x.shape[-1] > 1  # grid sampler retained for axisymmetry
+    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] > 1  # grid sampler retained for axisymmetry
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

@@ -86,11 +86,11 @@ Goal: stop inventing per-function containers and use shared abstractions.
 1. Replace `SphericalShellSamples` compatibility usage gradually with structured `SmartDs` shell resampling.
 - DONE (partial): both grid and Fibonacci shell samplers now return structured `SmartDs`
   with explicit metadata fields (`R`, `theta`, `phi`, `dA`).
-- DONE (partial): core shell profile workflows and explicit-surface shell wrappers now
-  read shell values directly from the shell `SmartDs` (`shell_ds("...")`) instead of
+- DONE: core shell profile workflows and explicit-surface shell wrappers now read
+  shell values directly from the shell `SmartDs` (`shell_ds("...")`) instead of
   using compat `.fields/.x/.area`.
-- NEXT: remove the temporary compatibility bridge (`.radii/.theta/.phi/.x/.y/.z/.area/.fields`)
-  by migrating remaining callers/tests/notebooks.
+- DONE: temporary shell compatibility bridge (`.radii/.theta/.phi/.x/.y/.z/.area/.fields`)
+  removed after migrating remaining callers/tests/notebooks.
 
 2. Remove `ShellMassFluxMap` (custom workflow container).
 - DONE: `ShellMassFluxMap` and `sample_shell_mass_flux_map(...)` were removed.

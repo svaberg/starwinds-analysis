@@ -6,8 +6,6 @@ Temporary field-resolution helpers live here for now, but should migrate into Sm
 
 # TODO(debt): `resolve_*` field/unit helpers in this module are a known smell; callers
 # should request SI quantities directly from SmartDs/griblet.
-# TODO(debt): Shell samplers still attach compatibility attributes (`.radii/.theta/
-# .phi/.x/.y/.z/.area/.fields`) to structured SmartDs while callers are migrated.
 
 from __future__ import annotations
 
@@ -89,32 +87,6 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
         computation_graph=smart_ds._computation_graph,
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
-
-
-def _attach_shell_compat_view(
-    shell_ds,
-    *,
-    radii,
-    theta,
-    phi,
-    x_name,
-    y_name,
-    z_name,
-    sampled_field_names,
-    area,
-):
-    # Compatibility shim for existing shell-analysis code while APIs are migrated.
-    shell_ds.radii = np.array(radii, dtype=float)
-    shell_ds.theta = np.array(theta, dtype=float)
-    shell_ds.phi = np.array(phi, dtype=float)
-    shell_ds.x = np.array(shell_ds.variable(x_name), dtype=float)
-    shell_ds.y = np.array(shell_ds.variable(y_name), dtype=float)
-    shell_ds.z = np.array(shell_ds.variable(z_name), dtype=float)
-    shell_ds.area = np.array(area, dtype=float)
-    shell_ds.fields = {
-        name: np.array(shell_ds.variable(name), dtype=float) for name in tuple(sampled_field_names)
-    }
-    return shell_ds
 
 
 # TODO this is too permissive and hacky.
@@ -220,8 +192,8 @@ def sample_spherical_shells(
     - requested sampled fields (or all parent raw fields if `fields is None`)
     - free spherical coordinates (`R [unit]`, `theta [rad]`, `phi [rad]`)
 
-    A temporary compatibility view (`.radii`, `.theta`, `.phi`, `.x`, `.y`, `.z`,
-    `.area`, `.fields`) is attached for existing shell-analysis code.
+    No shell-specific custom container is created; callers should request fields
+    directly from the returned structured `SmartDs`.
     """
     radii = np.atleast_1d(np.array(radii, dtype=float))
     if radii.ndim != 1:
@@ -267,13 +239,6 @@ def sample_spherical_shells(
         title_suffix="shell samples (grid)",
     )
 
-    if fields is None:
-        sampled_field_names = tuple(
-            name for name in resampled.variables if name not in tuple(coordinate_fields)
-        )
-    else:
-        sampled_field_names = tuple(dict.fromkeys(fields))
-
     area = (radii[:, None, None] ** 2) * area_unit_sphere[None, :, :]
     if length_unit_to_m is not None:
         area = area * float(length_unit_to_m) ** 2
@@ -302,18 +267,7 @@ def sample_spherical_shells(
         zone_suffix="shell-grid-structured",
     )
 
-    # Attach compatibility attributes expected by existing shell-analysis code.
-    return _attach_shell_compat_view(
-        shell_ds,
-        radii=radii,
-        theta=theta,
-        phi=phi,
-        x_name=x_name,
-        y_name=y_name,
-        z_name=z_name,
-        sampled_field_names=sampled_field_names,
-        area=area,
-    )
+    return shell_ds
 
 
 def sample_spherical_shells_fibonacci(
@@ -332,8 +286,8 @@ def sample_spherical_shells_fibonacci(
     Resample fields onto equal-area Fibonacci sphere points on each shell.
 
     Returns a NEW structured `SmartDs` whose arrays have shape `(nr, n_points, 1)`.
-    As with the grid sampler, a temporary compatibility view is attached for callers
-    that still expect `.radii/.theta/.phi/.x/.y/.z/.area/.fields`.
+    As with the grid sampler, no shell-specific custom container is created; callers
+    should request fields directly from the returned structured `SmartDs`.
     """
     radii = np.atleast_1d(np.array(radii, dtype=float))
     if radii.ndim != 1:
@@ -365,13 +319,6 @@ def sample_spherical_shells_fibonacci(
         title_suffix="shell samples (fibonacci)",
     )
 
-    if fields is None:
-        sampled_field_names = tuple(
-            name for name in resampled.variables if name not in tuple(coordinate_fields)
-        )
-    else:
-        sampled_field_names = tuple(dict.fromkeys(fields))
-
     area_unit = (4.0 * math.pi) / float(n_points)
     area = (radii[:, None, None] ** 2) * area_unit
     if length_unit_to_m is not None:
@@ -400,17 +347,7 @@ def sample_spherical_shells_fibonacci(
         },
         zone_suffix="shell-fibonacci-structured",
     )
-    return _attach_shell_compat_view(
-        shell_ds,
-        radii=radii,
-        theta=theta,
-        phi=phi,
-        x_name=x_name,
-        y_name=y_name,
-        z_name=z_name,
-        sampled_field_names=sampled_field_names,
-        area=area_field,
-    )
+    return shell_ds
 
 
 def sample_spherical_shells_by_strategy(
@@ -492,7 +429,7 @@ def shell_profile_radius_height(shells):
         else:
             radii = np.array(r_field, dtype=float)
     else:
-        radii = np.array(shells.radii, dtype=float)
+        raise ValueError("shell_profile_radius_height expects a shell SmartDs with 'R [R]'")
     return {
         "radius [R]": radii,
         "height [R]": radii - 1.0,
