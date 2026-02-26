@@ -9,11 +9,7 @@ import numpy as np
 
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.data.samples import get_sample
-from starwinds_analysis.physics.magnetic import (
-    magnetic_field_unit_scale,
-    magnetic_shell_components_from_cartesian,
-)
-from starwinds_analysis.recipes.spherical import spherical_vector_components
+from starwinds_analysis.physics.magnetic import magnetic_field_unit_scale
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -41,17 +37,17 @@ def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
         n_azimuth=n_azimuth,
         length_unit_to_m=SUN_RADIUS_M,
     )
-    bx = np.array(shell("B_x [T]"), dtype=float)
-    by = np.array(shell("B_y [T]"), dtype=float)
-    bz = np.array(shell("B_z [T]"), dtype=float)
-    x = np.array(shell("X [R]"), dtype=float)
-    y = np.array(shell("Y [R]"), dtype=float)
-    z = np.array(shell("Z [R]"), dtype=float)
-    comps = magnetic_shell_components_from_cartesian(bx, by, bz, x, y, z)
+    comps = {
+        "B_r [T]": np.array(shell("B_r [T]"), dtype=float),
+        "B_theta [T]": np.array(shell("B_theta [T]"), dtype=float),
+        "B_phi [T]": np.array(shell("B_phi [T]"), dtype=float),
+        "B_meridional [T]": np.array(shell("B_meridional [T]"), dtype=float),
+        "B_tangential [T]": np.array(shell("B_tangential [T]"), dtype=float),
+    }
     return shell, comps
 
 
-def test_magnetic_shell_components_from_cartesian_shapes():
+def test_shell_magnetic_component_fields_via_griblet_shapes():
     shell, comps = _sample_shell_magnetic_components(n_polar=12, n_azimuth=24)
 
     assert np.array(shell("theta [rad]"), dtype=float).shape == (1, 12, 24)
@@ -140,14 +136,7 @@ def test_direct_shell_mass_flux_lonlat_plot_smoke():
         length_unit_to_m=SUN_RADIUS_M,
     )
     rho = np.array(shell("Rho [kg/m^3]"), dtype=float)
-    ux = np.array(shell("U_x [m/s]"), dtype=float)
-    uy = np.array(shell("U_y [m/s]"), dtype=float)
-    uz = np.array(shell("U_z [m/s]"), dtype=float)
-    x = np.array(shell("X [R]"), dtype=float)
-    y = np.array(shell("Y [R]"), dtype=float)
-    z = np.array(shell("Z [R]"), dtype=float)
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
-    mass_flux = rho * u_r
+    mass_flux = rho * np.array(shell("U_r [m/s]"), dtype=float)
     lon_deg = np.degrees(np.array(shell("phi [rad]"), dtype=float)[0])
     lat_deg = 90.0 - np.degrees(np.array(shell("theta [rad]"), dtype=float)[0])
     fig, ax = plt.subplots(figsize=(6, 3))
