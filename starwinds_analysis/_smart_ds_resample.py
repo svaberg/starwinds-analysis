@@ -88,13 +88,31 @@ def resample_smart_ds(
         if not np.any(valid):
             continue
 
-        out_points[:, out_index[name]] = interpolate_nd(
-            source_coords[valid],
-            values[valid],
-            flat_sample_points,
-            method=method,
-            fill_value=fill_value,
-        )
+        try:
+            from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
+        except ImportError as e:
+            raise ImportError(
+                "Resampling requires scipy (scipy.interpolate). Install scipy to use "
+                "SmartDs.resample()."
+            ) from e
+
+        if method == "nearest":
+            interpolator = NearestNDInterpolator(source_coords[valid], values[valid])
+            out = interpolator(flat_sample_points)
+        elif method == "linear":
+            interpolator = LinearNDInterpolator(
+                source_coords[valid],
+                values[valid],
+                fill_value=fill_value,
+            )
+            out = interpolator(flat_sample_points)
+        else:
+            raise ValueError("method must be 'nearest' or 'linear'")
+
+        out = np.array(out)
+        if out.ndim == 0:
+            out = out[np.newaxis]
+        out_points[:, out_index[name]] = out
 
     out_points = out_points.reshape(*grid_shape, len(output_variables))
 
@@ -130,31 +148,3 @@ def resample_smart_ds(
         computation_graph=smart_ds._computation_graph,
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
-
-def interpolate_nd(source_points, values, sample_points, *, method: str, fill_value: float):
-    """
-    Interpolate one field onto target points using SciPy nearest/linear ND interpolators.
-    Used by: `starwinds_analysis/_smart_ds_resample.py`
-    """
-    try:
-        from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-    except ImportError as e:
-        raise ImportError(
-            "Resampling requires scipy (scipy.interpolate). Install scipy to use "
-            "SmartDs.resample()."
-        ) from e
-
-    if method == "nearest":
-        interpolator = NearestNDInterpolator(source_points, values)
-        out = interpolator(sample_points)
-    elif method == "linear":
-        interpolator = LinearNDInterpolator(source_points, values, fill_value=fill_value)
-        out = interpolator(sample_points)
-    else:
-        raise ValueError("method must be 'nearest' or 'linear'")
-
-    out = np.array(out)
-    if out.ndim == 0:
-        out = out[np.newaxis]
-    return out
-

@@ -142,14 +142,14 @@ def build_griblet_unit_normalization_graph(
         )
 
     # Parse common scalar aux values into numeric fields.
-    if aux is not None and "GAMMA" in aux:
-        graph.add_recipe(
-            "GAMMA [none]",
-            _parse_float,
-            deps=["GAMMA"],
-            cost=0.01,
-            metadata={"description": "Parse GAMMA from aux"},
-        )
+        if aux is not None and "GAMMA" in aux:
+            graph.add_recipe(
+                "GAMMA [none]",
+                lambda x: float(x) if isinstance(x, (int, float, np.floating)) else float(str(x).strip()),
+                deps=["GAMMA"],
+                cost=0.01,
+                metadata={"description": "Parse GAMMA from aux"},
+            )
 
     return graph
 
@@ -368,21 +368,15 @@ def _parse_var_name(name: str):
             return base, unit
     return None
 
-def _parse_float(x):
-    """
-    Parse a float from aux/meta strings with safe fallback to `None`.
-    Used by: `starwinds_analysis/recipes/batsrus.py`
-    """
-    if isinstance(x, (int, float, np.floating)):
-        return float(x)
-    return float(str(x).strip())
-
 def _safe_gamma(gamma):
     """
     Return a physically valid adiabatic index fallback when metadata is missing/bad.
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    g = _parse_float(gamma)
+    if isinstance(gamma, (int, float, np.floating)):
+        g = float(gamma)
+    else:
+        g = float(str(gamma).strip())
     if not np.isfinite(g) or g <= 0:
         return _DEFAULT_GAMMA
     return g
@@ -402,7 +396,10 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
     for key in ("RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
         if key in aux:
             try:
-                return _parse_float(aux[key])
+                value = aux[key]
+                if isinstance(value, (int, float, np.floating)):
+                    return float(value)
+                return float(str(value).strip())
             except Exception:
                 return None
     return None

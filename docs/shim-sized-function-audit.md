@@ -4,14 +4,10 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 ## Heuristic
 - `stmt_count <= 2`, or `stmt_count <= 4` and mostly returns/delegates (`callish`)
 - Excludes nothing automatically; exceptions are listed explicitly below
-- Current counts: `213` total functions/methods, `96` with `<=4` statements, `48` shim-like by heuristic
+- Current counts: `210` total functions/methods, `94` with `<=4` statements, `46` shim-like by heuristic
 ## Strong Shim-Smell Candidates (manual review first)
-- `starwinds_analysis/data/samples.py:11` `sample_data_dir` (1 stmts): One-line path wrapper; probably not worth a separate function.
-- `starwinds_analysis/quicklook2d.py:195` `_resolve_first_field` (2 stmts): Tiny selection helper; likely notebook/orchestration-local convenience.
-- `starwinds_analysis/quicklook2d.py:554` `_orbit_result_title` (2 stmts): Formatting shim (small helper) in already-large orchestration module.
-- `starwinds_analysis/recipes/batsrus.py:371` `_parse_float` (2 stmts): Very small parser wrapper; review if call text would be clearer inline.
-## Extra Manual Candidates (missed by the shim heuristic)
-- `starwinds_analysis/_smart_ds_resample.py:120` `interpolate_nd`: small SciPy wrapper with a method switch (`nearest`/`linear`); good example of low-signal wrapper bloat even though it exceeds the simple statement-count heuristic.
+- `starwinds_analysis/data/samples.py:11` `sample_data_dir` (1 stmts): One-line path wrapper; user explicitly chose to keep this for future complexity.
+- `starwinds_analysis/quicklook2d.py:544` `_orbit_result_title` (2 stmts): Formatting shim in a large orchestration module; review whether repeated title text is clearer inline.
 ## SmartDs Passthrough/Delegator Cluster (likely intentional API surface, but review size creep)
 - `starwinds_analysis/smart_ds.py:72` `SmartDs.__repr__` (1 stmts)
 - `starwinds_analysis/smart_ds.py:82` `SmartDs.__str__` (1 stmts)
@@ -48,6 +44,10 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 - `starwinds_analysis/recipes/spherical.py:319` `build_griblet_spherical_geometry_graph._theta` (2 stmts)
 - `starwinds_analysis/recipes/spherical.py:327` `build_griblet_spherical_geometry_graph._phi` (2 stmts)
 - `starwinds_analysis/recipes/spherical.py:392` `build_griblet_vector_spherical_components_graph._all` (1 stmts)
+## Recently Removed Shim Candidates
+- `starwinds_analysis/_smart_ds_resample.py:interpolate_nd` (inlined into `resample_smart_ds(...)`)
+- `starwinds_analysis/quicklook2d.py:_resolve_first_field` (inlined at the only call site)
+- `starwinds_analysis/recipes/batsrus.py:_parse_float` (inlined at the two call sites)
 ## Full Heuristic List (shim-like)
 | File | Line | Function | Stmts | Span | Notes |
 |---|---:|---|---:|---:|---|
@@ -66,10 +66,8 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 | `starwinds_analysis/physics/pressure.py` | 13 | `magnetic_pressure` | 1 | 6 |  |
 | `starwinds_analysis/physics/pressure.py` | 20 | `ram_pressure` | 1 | 7 |  |
 | `starwinds_analysis/quicklook2d.py` | 131 | `_load_slice_styles` | 2 | 24 |  |
-| `starwinds_analysis/quicklook2d.py` | 195 | `_resolve_first_field` | 2 | 9 | strong-smell |
-| `starwinds_analysis/quicklook2d.py` | 554 | `_orbit_result_title` | 2 | 11 | strong-smell |
-| `starwinds_analysis/quicklook2d.py` | 673 | `_plot_phase_quantile_band._pick` | 2 | 7 |  |
-| `starwinds_analysis/recipes/batsrus.py` | 371 | `_parse_float` | 2 | 8 | strong-smell |
+| `starwinds_analysis/quicklook2d.py` | 544 | `_orbit_result_title` | 2 | 11 | strong-smell |
+| `starwinds_analysis/quicklook2d.py` | 663 | `_plot_phase_quantile_band._pick` | 2 | 7 |  |
 | `starwinds_analysis/recipes/spherical.py` | 311 | `build_griblet_spherical_geometry_graph._r` | 2 | 7 | likely-acceptable |
 | `starwinds_analysis/recipes/spherical.py` | 319 | `build_griblet_spherical_geometry_graph._theta` | 2 | 7 | likely-acceptable |
 | `starwinds_analysis/recipes/spherical.py` | 327 | `build_griblet_spherical_geometry_graph._phi` | 2 | 7 | likely-acceptable |

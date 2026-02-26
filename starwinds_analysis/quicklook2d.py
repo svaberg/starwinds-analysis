@@ -192,16 +192,6 @@ def _has_field(ds, name: str) -> bool:
         return False
     return True
 
-def _resolve_first_field(ds, candidates):
-    """
-    Pick the first available field from a candidate list.
-    Used by: `starwinds_analysis/quicklook2d.py`
-    """
-    for name in candidates:
-        if _has_field(ds, name):
-            return name
-    return None
-
 def _normalize_overlays(ds, overlays):
     """
     Normalize overlay specs into a list for quicklook plotting.
@@ -240,7 +230,7 @@ def plot_slice_quicklook(
         if preset not in SLICE_PRESETS:
             raise KeyError(f"Unknown preset '{preset}'")
         preset_cfg = SLICE_PRESETS[preset]
-        field = _resolve_first_field(ds, preset_cfg.field_candidates)
+        field = next((name for name in preset_cfg.field_candidates if _has_field(ds, name)), None)
         if field is None:
             joined = ", ".join(preset_cfg.field_candidates)
             raise KeyError(f"None of the preset fields are available for '{preset}': {joined}")
