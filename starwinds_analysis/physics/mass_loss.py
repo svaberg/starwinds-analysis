@@ -7,20 +7,15 @@ plotting wrappers.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import (
-    SphericalShellSamples,
-    infer_body_radius_m,
-    integrate_shell_scalar,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
-    sample_spherical_shells_by_strategy,
-    shell_profile_radius_height,
-)
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.recipes.spherical import spherical_vector_components
+
+if TYPE_CHECKING:
+    from starwinds_analysis.analysis.shells import SphericalShellSamples
 
 
 @dataclass
@@ -32,6 +27,8 @@ class ShellMassFluxMap:
     mass_flux_kg_m2_s: np.ndarray
 
     def integrate(self):
+        from starwinds_analysis.analysis.shells import integrate_shell_scalar
+
         integral, coverage = integrate_shell_scalar(
             self.mass_flux_kg_m2_s[None, ...],
             self.shell_samples.area[:1],
@@ -70,6 +67,13 @@ def sample_shell_mass_flux_map(
 
     Uses grid sampling so the result is directly plottable on a lon/lat mesh.
     """
+    from starwinds_analysis.analysis.shells import (
+        infer_body_radius_m,
+        resolve_batsrus_density_si,
+        resolve_batsrus_vector_xyz_si,
+        sample_spherical_shells_by_strategy,
+    )
+
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
@@ -119,6 +123,15 @@ def mass_loss_vs_radius(
 
     Returns a dict with SI mass-loss values and shell coverage fractions.
     """
+    from starwinds_analysis.analysis.shells import (
+        infer_body_radius_m,
+        integrate_shell_scalar,
+        resolve_batsrus_density_si,
+        resolve_batsrus_vector_xyz_si,
+        sample_spherical_shells_by_strategy,
+        shell_profile_radius_height,
+    )
+
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
     (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")

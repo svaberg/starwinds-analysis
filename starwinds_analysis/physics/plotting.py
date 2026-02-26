@@ -11,8 +11,6 @@ from matplotlib.colors import LogNorm
 from matplotlib.ticker import MultipleLocator
 import numpy as np
 
-from starwinds_analysis.physics.mass_loss import ShellMassFluxMap
-
 
 SHELL_HEIGHT_XLABEL = "Height over surface [R]"
 
@@ -77,7 +75,7 @@ def _positive_log_plot_values(values: np.ndarray):
 
 
 def plot_shell_mass_flux_lonlat(
-    shell_map: ShellMassFluxMap,
+    shell_map,
     *,
     scale: str = "log",
     figsize=(9, 4.5),
