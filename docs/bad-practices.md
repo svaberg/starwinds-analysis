@@ -116,6 +116,7 @@ Notebook code should optimize for:
 - Do not build a mini plotting framework in a notebook (switches, config systems, wrappers).
 - Do not add defensive-programming clutter in notebooks (`np.isfinite` checks, masking pipelines, fallback branches) unless the notebook is specifically demonstrating that behavior.
 - Do not sprinkle `matplotlib.rcParams[...]` tweaks around notebook cells.
+- Do not use `np.asarray(...)` in notebooks. Use the values directly, or `np.array(...)` only when conversion is actually needed.
 - Do not replace whole cells and drop user comments/TODOs.
 - Do not move simple plotting code into helper files just to "clean up" the notebook.
 - Do not use notebook-only orchestration wrappers when direct library calls are clearer.
@@ -253,6 +254,29 @@ Preferred pattern:
 
 - make helpers only when they reduce duplication, complexity, or bug risk
 - examples should remain readable and instructional
+
+## 7b. `np.asarray(...)` Casting Everywhere
+
+Bad:
+
+- sprinkling `np.asarray(...)` across library, tests, and notebooks as a reflex
+- field access patterns like `np.asarray(sds("..."))` when direct arrays already work
+
+Why this is bad:
+
+- adds noise without clarifying intent
+- hides whether conversion is actually needed
+- makes code look defensive/mechanical
+
+Preferred pattern:
+
+- use values directly when they already behave like arrays
+- use `np.array(...)` only when you explicitly need a NumPy array / dtype conversion / copy semantics
+
+Rule:
+
+- Do not use `np.asarray(...)` in this repo.
+- If a conversion is required, make that choice explicit with `np.array(...)` (or a more specific conversion).
 
 ## 8. Per-Function Custom Data Containers
 
