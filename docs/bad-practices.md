@@ -281,6 +281,30 @@ Rule:
 - NaN-tolerance is a bad smell.
 - If NaN handling is needed, make the reason explicit in code/comments at that exact location.
 
+## 6c. Sprinkled Numerical Constants (Especially Physical Constants)
+
+Bad:
+
+- repeating raw numerical constants in multiple files/functions
+- inline physical constants (especially `mu_0` / `MU0`) typed directly in formulas
+
+Why this is a smell:
+
+- easy to introduce inconsistent values
+- obscures meaning of formulas
+- makes refactors/reviews harder because the same constant is hidden in many places
+
+Preferred pattern:
+
+- define constants once in the appropriate deep layer/module
+- import and reuse the named constant everywhere else
+- prefer descriptive names over anonymous numbers
+
+Rule:
+
+- Do not sprinkle numerical constants around the codebase.
+- Physical constants (especially magnetic permeability / `MU0`) must come from a single shared definition.
+
 ## 7. Over-Fragmentation Into Tiny Helpers
 
 Bad:
