@@ -19,21 +19,10 @@ from starwinds_analysis.analysis.shells import (
     resolve_batsrus_vector_xyz_si,
     sample_spherical_shells,
 )
-from starwinds_analysis.recipes.spherical import spherical_vector_components
-
-
-def _magnetic_unit_scale(unit: str) -> tuple[float, str]:
-    key = str(unit).strip()
-    table = {
-        "T": (1.0, "T"),
-        "Tesla": (1.0, "T"),
-        "G": (1e4, "G"),
-        "Gauss": (1e4, "G"),
-        "nT": (1e9, "nT"),
-    }
-    if key not in table:
-        raise ValueError(f"Unsupported magnetic display unit '{unit}'")
-    return table[key]
+from starwinds_analysis.physics.magnetic import (
+    magnetic_field_unit_scale,
+    magnetic_shell_components_from_cartesian,
+)
 
 
 @dataclass
@@ -51,7 +40,7 @@ class ShellMagneticFieldMap:
     b_tangential_T: np.ndarray
 
     def component(self, name: str, *, unit: str = "T") -> np.ndarray:
-        scale, _unit_label = _magnetic_unit_scale(unit)
+        scale, _unit_label = magnetic_field_unit_scale(unit)
         key = str(name).lower()
         if key in {"radial", "r", "b_r"}:
             arr = self.b_r_T
@@ -107,9 +96,7 @@ def sample_shell_magnetic_field_map(
     y = np.asarray(shell.y[0], dtype=float)
     z = np.asarray(shell.z[0], dtype=float)
 
-    b_r, b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
-    b_meridional = -b_theta
-    b_tangential = np.sqrt(b_phi * b_phi + b_meridional * b_meridional)
+    comps = magnetic_shell_components_from_cartesian(bx, by, bz, x, y, z)
 
     theta = np.asarray(shell.theta, dtype=float)
     phi = np.asarray(shell.phi, dtype=float)
@@ -120,11 +107,11 @@ def sample_shell_magnetic_field_map(
         lon_deg=np.degrees(phi),
         lat_deg=90.0 - np.degrees(theta),
         shell_samples=shell,
-        b_r_T=np.asarray(b_r, dtype=float),
-        b_theta_T=np.asarray(b_theta, dtype=float),
-        b_phi_T=np.asarray(b_phi, dtype=float),
-        b_meridional_T=np.asarray(b_meridional, dtype=float),
-        b_tangential_T=np.asarray(b_tangential, dtype=float),
+        b_r_T=np.asarray(comps["B_r [T]"], dtype=float),
+        b_theta_T=np.asarray(comps["B_theta [T]"], dtype=float),
+        b_phi_T=np.asarray(comps["B_phi [T]"], dtype=float),
+        b_meridional_T=np.asarray(comps["B_meridional [T]"], dtype=float),
+        b_tangential_T=np.asarray(comps["B_tangential [T]"], dtype=float),
     )
 
 
@@ -234,7 +221,7 @@ def plot_magnetic_zdi_triplet(
     """
     Plot radial/azimuthal/meridional shell magnetic components in a ZDI-like 3x1 layout.
     """
-    _scale, unit_label = _magnetic_unit_scale(unit)
+    _scale, unit_label = magnetic_field_unit_scale(unit)
     components = [
         ("radial", "Radial", shell_map.component("radial", unit=unit)),
         ("azimuthal", "Azimuthal", shell_map.component("azimuthal", unit=unit)),
@@ -287,7 +274,7 @@ def plot_shell_tangential_vectors_lonlat(
     `normalize_arrows=True`, arrow length is fixed in plot coordinates and does not
     encode magnitude (magnitude is shown by the background).
     """
-    _scale, unit_label = _magnetic_unit_scale(unit)
+    _scale, unit_label = magnetic_field_unit_scale(unit)
     lon_deg = shell_map.lon_deg
     lat_deg = shell_map.lat_deg
 
