@@ -257,7 +257,7 @@ This keeps physics, sampling, and plotting separate.
 - `starwinds_analysis/analysis/stats.py`
   - weighted mean/std
   - weighted quantiles
-- `starwinds_analysis/quicklook2d.py`
+- `starwinds_analysis/pipelines/quicklook2d.py`
   - orchestration only
   - preset plot bundles
   - saves figures / tabular summaries

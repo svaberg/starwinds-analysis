@@ -8,7 +8,7 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.quicklook2d import (
+from starwinds_analysis.pipelines.quicklook2d import (
     RADIAL_SUMMARY_PRESETS,
     RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
     RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,

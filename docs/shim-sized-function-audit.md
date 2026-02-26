@@ -45,9 +45,9 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 - `starwinds_analysis/recipes/spherical.py:392` `build_griblet_vector_spherical_components_graph._all` (1 stmts)
 ## Recently Removed Shim Candidates
 - `starwinds_analysis/_smart_ds_resample.py:interpolate_nd` (inlined into `resample_smart_ds(...)`)
-- `starwinds_analysis/quicklook2d.py:_resolve_first_field` (inlined at the only call site)
-- `starwinds_analysis/quicklook2d.py:_orbit_result_title` (inlined at orbit quicklook title call sites)
-- `starwinds_analysis/quicklook2d.py:_open_wind_magnetisation_from_diagnostics` (inlined at the two quicklook call sites)
+- `starwinds_analysis/pipelines/quicklook2d.py:_resolve_first_field` (inlined at the only call site)
+- `starwinds_analysis/pipelines/quicklook2d.py:_orbit_result_title` (inlined at orbit quicklook title call sites)
+- `starwinds_analysis/pipelines/quicklook2d.py:_open_wind_magnetisation_from_diagnostics` (inlined at the two quicklook call sites)
 - `starwinds_analysis/recipes/batsrus.py:_parse_float` (inlined at the two call sites)
 - `starwinds_analysis/analysis/shells.py:shell_profile_radius_height` (inlined at shell profile return sites)
 ## Full Heuristic List (shim-like)
@@ -66,8 +66,8 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 | `starwinds_analysis/physics/planetary_orbits.py` | 73 | `planet_orbit_period` | 2 | 7 |  |
 | `starwinds_analysis/physics/pressure.py` | 13 | `magnetic_pressure` | 1 | 6 |  |
 | `starwinds_analysis/physics/pressure.py` | 20 | `ram_pressure` | 1 | 7 |  |
-| `starwinds_analysis/quicklook2d.py` | 131 | `_load_slice_styles` | 2 | 24 |  |
-| `starwinds_analysis/quicklook2d.py` | 675 | `_plot_phase_quantile_band._pick` | 2 | 7 |  |
+| `starwinds_analysis/pipelines/quicklook2d.py` | 131 | `_load_slice_styles` | 2 | 24 |  |
+| `starwinds_analysis/pipelines/quicklook2d.py` | 675 | `_plot_phase_quantile_band._pick` | 2 | 7 |  |
 | `starwinds_analysis/recipes/spherical.py` | 311 | `build_griblet_spherical_geometry_graph._r` | 2 | 7 | likely-acceptable |
 | `starwinds_analysis/recipes/spherical.py` | 319 | `build_griblet_spherical_geometry_graph._theta` | 2 | 7 | likely-acceptable |
 | `starwinds_analysis/recipes/spherical.py` | 327 | `build_griblet_spherical_geometry_graph._phi` | 2 | 7 | likely-acceptable |

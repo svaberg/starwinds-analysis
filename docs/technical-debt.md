@@ -44,7 +44,7 @@ Legend:
 - `starwinds_analysis/physics/wind_scaling.py` — **Reviewed**. Local wind-scaling formulas only; profile-bundle helper removed and `MU0` now comes from `physics.constants`.
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.
 - `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Orbit geometry and 1D-curve sampling primitives live in `analysis`; removed the one-module `sampling/` package.
-- `starwinds_analysis/quicklook2d.py` — **Debt**. High-level orchestration/convenience wrappers in library (large API surface, quantity-specific presets/workflows) vs library-purity guideline. Code TODO: added TODO.
+- `starwinds_analysis/pipelines/quicklook2d.py` — **Debt**. High-level orchestration/convenience wrappers in library (large API surface, quantity-specific presets/workflows) vs library-purity guideline. Code TODO: added TODO.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
 - `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).

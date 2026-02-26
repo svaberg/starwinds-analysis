@@ -304,7 +304,7 @@ def pressure_components_on_orbit_surface(
 ):
     """
     Pressure-component analytics on a surface of revolution around an orbit path.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -406,7 +406,7 @@ def torque_components_on_orbit_surface(
 ):
     """
     Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

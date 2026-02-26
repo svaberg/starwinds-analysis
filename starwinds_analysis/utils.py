@@ -43,7 +43,7 @@ def triangles(ds, uname=None, vname=None):
     """
     Build a Matplotlib triangulation from 2D quad-cell connectivity.
     Used by: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
-      `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+      `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
 
     if uname is None and vname is None:

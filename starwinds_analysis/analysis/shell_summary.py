@@ -93,7 +93,7 @@ def summarize_shell_diagnostics_band(
 ):
     """
     Summarize all 1D shell-profile series in a diagnostics bundle over a shell-radius band.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
     out = {}
     for name, profile in diagnostics.items():

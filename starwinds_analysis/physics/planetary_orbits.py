@@ -52,7 +52,7 @@ def planet_orbit_spec(
 ):
     """
     Build a `run_quicklook2d` orbit spec dict for a named planet, in stellar radii.
-    Used by: `test/test_planetary_orbits.py`, `starwinds_analysis/quicklook2d.py`
+    Used by: `test/test_planetary_orbits.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
     star_radius_m = float(star_radius_m)
     if star_radius_m <= 0:

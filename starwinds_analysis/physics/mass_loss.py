@@ -29,7 +29,7 @@ def mass_loss_vs_radius(
     """
     Wind mass-loss profile on spherical shells.
     Used by: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
-      `starwinds_analysis/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
+      `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
     """
     from starwinds_analysis.analysis.shells import (
         infer_body_radius_m,

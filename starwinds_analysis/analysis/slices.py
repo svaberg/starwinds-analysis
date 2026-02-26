@@ -62,7 +62,7 @@ def resample_structured_xz_slice(
 ):
     """
     Resample a 3D dataset onto a structured XZ plane and return a new `SmartDs`.
-    Used by: `test/test_slices_analysis.py`, `starwinds_analysis/quicklook2d.py`
+    Used by: `test/test_slices_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
     if nx < 2 or nz < 2:
         raise ValueError("nx and nz must be >= 2")

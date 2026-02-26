@@ -57,7 +57,7 @@ def torque_vs_radius(
     """
     Spherical-shell wind torque profile (magnetic + dynamic + total).
     Used by: `test/test_surface_torque_analysis.py`, `test/test_shell_analysis.py`,
-      `starwinds_analysis/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
+      `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
