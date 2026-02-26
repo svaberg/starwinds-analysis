@@ -26,7 +26,6 @@ Legend:
 - `starwinds_analysis/analysis/shells.py` — **Debt**. Contains `resolve_*` helpers and compatibility custom container (`SphericalShellSamples`) alongside core shell primitives. Code TODO: added TODO + existing TODOs.
 - `starwinds_analysis/analysis/slices.py` — **Reviewed**. Structured slice resampling/topology helpers; no clear rule violation found in this pass.
 - `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; no clear rule violation found in this pass.
-- `starwinds_analysis/analysis/surface_torque.py` — **Debt**. Quantity-specific `surface_torque` analysis wrappers (`*_vs_radius`) and `resolve_*` usage; imports from `physics`. Code TODO: added TODO.
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.
 - `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer package boundary is now minimal (`__all__ = []`).
 - `starwinds_analysis/physics/fluxes.py` — **Debt**. Quantity-specific shell flux profile wrappers remain (`*_vs_radius`) and still use `resolve_*` + local quantity recomputation (`B_r`, `U_r`, `E*U_r`). Code TODO: existing TODO(debt) + TODO(griblet).
@@ -42,7 +41,7 @@ Legend:
 - `starwinds_analysis/physics/plotting.py` — **Debt**. Deep-layer plotting still includes quantity-specific shell-map plotting (`plot_shell_mass_flux_lonlat`). The profile-specific wrappers were removed in this pass, but plotting API surface is still larger than desired. Code TODO: added TODO.
 - `starwinds_analysis/physics/pressure.py` — **Debt**. Pressure and standoff quantities (`magnetic_pressure`, `ram_pressure`, component bundle) still computed outside SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/shell_torque.py` — **Debt**. Quantity-specific shell torque profile wrapper (`torque_vs_radius`) depends on `analysis.shells` + `resolve_*`. Code TODO: added TODO.
-- `starwinds_analysis/physics/surface_torque.py` — **Debt**. Local torque terms (`T1..T4`) still computed outside SmartDs/griblet; heavy finite-mask/NaN handling should remain intentional/documented. Code TODO: existing TODO(griblet) added.
+- `starwinds_analysis/physics/surface_torque.py` — **Debt**. Local torque terms (`T1..T4`) still computed outside SmartDs/griblet, and the file now also carries temporary shell/radius wrapper functions (`surface_torque_vs_radius`, etc.). Code TODO: existing TODO(griblet) + TODO(debt).
 - `starwinds_analysis/physics/torque.py` — **Debt**. Local spherical torque-density terms are physical quantities computed outside SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/wind_scaling.py` — **Reviewed**. Local wind-scaling formulas only; profile-bundle helper removed and `MU0` now comes from `physics.constants`.
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.

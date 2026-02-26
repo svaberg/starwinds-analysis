@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
-from starwinds_analysis.analysis.surface_torque import (
+from starwinds_analysis.physics.surface_torque import (
     MU0,
     integrate_surface_torque_terms,
     surface_torque_density_terms,

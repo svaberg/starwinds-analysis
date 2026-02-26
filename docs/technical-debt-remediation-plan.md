@@ -30,7 +30,8 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 2. Continue removing stale debt markers by fixing or deleting the underlying patterns.
 - DONE: `analysis/__init__.py` (`analysis` re-exporting `physics`) removed.
 - PARTIAL: `analysis/fluxes.py` moved to `physics/fluxes.py`; quantity-specific wrapper debt remains and top-level TODOs still apply there.
-- NEXT: `analysis/surface_torque.py` top-level debt comments should drive actual refactors, not remain permanent comments.
+- DONE (intermediate): `analysis/surface_torque.py` removed; wrappers currently live in `physics/surface_torque.py`.
+- NEXT: split `physics/surface_torque.py` back down so only local torque terms remain in the deep layer.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - Example target: extract reusable non-quantity helpers from `analysis/orbits.py` if cleanly separable.
