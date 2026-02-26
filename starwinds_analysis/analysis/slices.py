@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 
+# Quad connectivity for a row-major `(nz, nx)` point grid.
+# Used in: `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`
 def structured_quad_corners(nx: int, nz: int):
     """
     Quad connectivity for a row-major `(nz, nx)` point grid.
@@ -25,6 +27,8 @@ def structured_quad_corners(nx: int, nz: int):
             k += 1
     return corners
 
+# Infer a plotting/resampling range from data with optional symmetry/padding.
+# Used in: `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`
 def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
     v = np.array(values)
     v = v[np.isfinite(v)]
@@ -41,6 +45,8 @@ def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
         hi += pad
     return lo, hi
 
+# Resample a 3D dataset onto a structured XZ plane and return a new `SmartDs`.
+# Used in: `test/test_slices_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def resample_structured_xz_slice(
     smart_ds,
     *,

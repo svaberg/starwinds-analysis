@@ -13,6 +13,9 @@ log = logging.getLogger(__name__)
 from starwinds_readplt.dataset import Dataset
 
 
+# Read a `.plt` file and optionally convert to base SI after VTK conversion.
+# Used in: `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`,
+#   `test/test_integrals.py`
 def read(file='sample_data/3d__var_1_n00060000.plt', convert_to_si_base=True):
 
     dataset = Dataset.from_file(file)
@@ -24,6 +27,8 @@ def read(file='sample_data/3d__var_1_n00060000.plt', convert_to_si_base=True):
     return grid
 
 
+# Convert a `starwinds_readplt.Dataset` into a PyVista unstructured grid.
+# Used in: `starwinds_analysis/vtk_utils.py`
 def convert(dataset, copy_aux_to_fields=True):
 
     grid = pv.UnstructuredGrid({pv.CellType.HEXAHEDRON: dataset.corners}, dataset.points[:,:3])
@@ -67,6 +72,8 @@ _factors={
     '`mA/m^2': ['A/m^2', 1e-6]
     }
 
+# Rename/scale common BATSRUS variables in a VTK grid into base SI units.
+# Used in: `starwinds_analysis/vtk_utils.py`
 def convert_to_base_si(grid):
 
     # Make sure all units are bracketed

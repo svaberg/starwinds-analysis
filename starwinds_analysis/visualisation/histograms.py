@@ -8,6 +8,9 @@ import numpy as np
 from starwinds_readplt.dataset import Dataset
 
 
+# Cumulative histogram (CDF line) for each field on the provided axes.
+# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/planet.py`,
+#   `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def plot_cumulative_hists(
     ds,
     axes,
@@ -59,6 +62,10 @@ def plot_cumulative_hists(
 
 
 
+# Scatter raw samples vs radius for one or more fields.
+# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
+#   `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+#   xuv-neutrals.py`
 def plot_vs_radius(
     ds,
     axes,
@@ -97,6 +104,10 @@ def plot_vs_radius(
 import numpy as np
 
 
+# Plot binned radial summaries (mean/median/sum) for one or more fields.
+# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
+#   `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+#   xuv-neutrals.py`
 def plot_binned_vs_radius(
     ds,
     axes,
@@ -169,6 +180,8 @@ def plot_binned_vs_radius(
         ax.set_xlabel("r [R]")
 
 
+# 2D histogram (radius vs field value) as a compact replacement for old "monster" plots.
+# Used in: `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/quicklook2d.py`
 def plot_radial_hist2d(
     ds,
     axes,

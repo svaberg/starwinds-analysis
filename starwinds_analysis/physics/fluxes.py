@@ -21,6 +21,9 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 
+# Signed/unsigned magnetic flux on spherical shells.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`,
+#   `starwinds_analysis/physics/fluxes.py`
 def open_magnetic_flux_vs_radius(
     smart_ds,
     radii,
@@ -87,6 +90,8 @@ def open_magnetic_flux_vs_radius(
         "shell_samples": shells,
     }
 
+# Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def axisymmetric_open_flux_vs_radius(
     smart_ds,
     radii,
@@ -142,6 +147,8 @@ def axisymmetric_open_flux_vs_radius(
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
     return prof
 
+# Radial energy flux profile using `E * U_r`.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def energy_flux_vs_radius(
     smart_ds,
     radii,

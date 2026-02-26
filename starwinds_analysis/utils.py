@@ -17,6 +17,9 @@ from matplotlib.colors import LogNorm
 import re
 
 
+# Detect the two varying coordinates in a nominal 2D slice dataset.
+# Used in: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
+#   `starwinds_analysis/utils.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def auto_coords(ds, names=None):
 
     if names is None:
@@ -34,6 +37,9 @@ def auto_coords(ds, names=None):
 
 
 
+# Build a Matplotlib triangulation from 2D quad-cell connectivity.
+# Used in: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
+#   `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def triangles(ds, uname=None, vname=None):
     """ """
 
@@ -51,6 +57,8 @@ def triangles(ds, uname=None, vname=None):
 
 
 
+# Extract the step number from a filename of the form '..._n00060000.dat'.
+# Used in: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def extract_index(p):
     """Extract the step number from a filename of the form '..._n00060000.dat'."""
     #TODO fix this so that it is not looking jsut for dat files we onlhy reaally need th n00060000 bit. that is enough for extraction. 
@@ -58,6 +66,8 @@ def extract_index(p):
     return int(m.group(1)) if m else -1
 
 
+# Sort by the number in the filename, with trailing zeros prioritized.
+# Used in: no external call sites found
 def sort_key(p):
     """Sort by the number in the filename, with trailing zeros prioritized."""
     # TODO this should use extract_index.

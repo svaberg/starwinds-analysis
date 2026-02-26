@@ -8,12 +8,16 @@ from __future__ import annotations
 
 import importlib
 
+# List available field names from the runtime griblet graph.
+# Used in: no external call sites found
 def graph_field_names(smart_ds):
     graph = smart_ds._computation_graph
     if graph is None or not hasattr(graph, "fields"):
         return ()
     return tuple(graph.fields())
 
+# Resolve a field through the attached griblet computation graph.
+# Used in: `starwinds_analysis/_smart_ds_graph.py`
 def resolve_field(smart_ds, name: str):
     """
     Resolve a field through the attached griblet computation graph.
@@ -28,6 +32,8 @@ def resolve_field(smart_ds, name: str):
     solver = griblet.DependencySolver(graph)
     return solver.resolve_field(name)
 
+# Build a human-readable explanation of the chosen graph path.
+# Used in: no external call sites found
 def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     cost, tree = resolve_field(smart_ds, name)
     if return_tree:
@@ -52,6 +58,8 @@ def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     header = f"{name} total_cost={cost}"
     return "\n".join([header, *lines])
 
+# Compute a field by resolving + evaluating a griblet graph path.
+# Used in: no external call sites found
 def compute_via_graph(smart_ds, name: str):
     if smart_ds._computation_graph is None:
         raise IndexError(
@@ -65,6 +73,8 @@ def compute_via_graph(smart_ds, name: str):
     _cost, tree = solver.resolve_field(name)
     return evaluate_resolved_tree(tree, graph)
 
+# Merge loader graph and user graph into a runtime graph for one SmartDs instance.
+# Used in: `starwinds_analysis/_smart_ds_graph.py`
 def build_runtime_graph(smart_ds):
     if smart_ds._computation_graph is None:
         raise RuntimeError("No computation graph attached")
@@ -74,6 +84,8 @@ def build_runtime_graph(smart_ds):
     runtime_graph.merge(smart_ds._computation_graph)
     return runtime_graph
 
+# Build a zero-dependency graph exposing raw dataset variables (+ selected aux).
+# Used in: `starwinds_analysis/_smart_ds_graph.py`
 def build_loader_graph(smart_ds):
     """
     Build a zero-dependency graph exposing raw dataset variables (+ selected aux).
@@ -115,6 +127,8 @@ def build_loader_graph(smart_ds):
             )
     return graph
 
+# Import griblet lazily and return required runtime pieces.
+# Used in: `starwinds_analysis/_smart_ds_graph.py`
 def import_griblet():
     try:
         return importlib.import_module("griblet")
@@ -124,6 +138,8 @@ def import_griblet():
             "or use local register_field(...) functions."
         ) from e
 
+# Evaluate a griblet-resolved computation tree.
+# Used in: `starwinds_analysis/_smart_ds_graph.py`
 def evaluate_resolved_tree(node, graph):
     """
     Evaluate a griblet-resolved computation tree.

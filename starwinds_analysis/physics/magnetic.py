@@ -6,6 +6,8 @@ Pointwise magnetic spherical components should come from SmartDs/griblet recipes
 
 from __future__ import annotations
 
+# Return scale factor + label for plotting magnetic field in `T` or `G`.
+# Used in: `test/test_shell_magnetic_analysis.py`
 def magnetic_field_unit_scale(unit: str) -> tuple[float, str]:
     key = str(unit).strip()
     table = {

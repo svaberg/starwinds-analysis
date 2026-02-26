@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import numpy as np
 
+# Weighted mean and standard deviation over finite values.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`,
+#   `starwinds_analysis/analysis/stats.py`
 def weighted_mean_std(values, weights=None):
     """
     Weighted mean and standard deviation over finite values.
@@ -34,6 +37,9 @@ def weighted_mean_std(values, weights=None):
     var = float(np.average((v - mean) ** 2, weights=w))
     return mean, float(np.sqrt(var))
 
+# Weighted quantiles for 1D data.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`,
+#   `starwinds_analysis/analysis/stats.py`
 def weighted_quantile(values, quantiles, weights=None):
     """
     Weighted quantiles for 1D data.
@@ -66,6 +72,9 @@ def weighted_quantile(values, quantiles, weights=None):
     out = v[np.searchsorted(cdf, q, side="left")]
     return float(out) if np.ndim(quantiles) == 0 else out
 
+# Weighted quantiles + mean/std summary for 1D samples.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
+#   `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`
 def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
     """
     Weighted quantiles + mean/std summary for 1D samples.

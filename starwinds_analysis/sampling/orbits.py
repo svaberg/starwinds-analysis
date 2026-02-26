@@ -10,6 +10,9 @@ import math
 
 import numpy as np
 
+# Cartesian points on a circular orbit (same coordinate unit as `radius`).
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/sampling/orbits.py`,
+#   `starwinds_analysis/physics/orbit_surface.py`
 def circular_orbit_points(
     radius,
     *,
@@ -49,6 +52,8 @@ def circular_orbit_points(
         raise ValueError("plane must be 'xy', 'xz', or 'yz'")
     return pts
 
+# Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
+# Used in: `starwinds_analysis/sampling/orbits.py`
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
     Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
@@ -69,6 +74,8 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
             break
     return e_anom
 
+# Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates.
+# Used in: `starwinds_analysis/sampling/orbits.py`
 def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
     cx, cy, cz = map(float, center)
     pts = np.empty((x.size, 3), dtype=float)
@@ -88,6 +95,8 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
         raise ValueError("plane must be 'xy', 'xz', or 'yz'")
     return pts
 
+# Convert periodic sample weights into cumulative phase turns.
+# Used in: `starwinds_analysis/sampling/orbits.py`
 def _phase_from_weights(weights):
     w = np.array(weights)
     if w.ndim != 1 or w.size == 0:
@@ -103,6 +112,9 @@ def _phase_from_weights(weights):
         phase[1:] = np.cumsum(w[:-1])
     return phase
 
+# Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`).
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/sampling/orbits.py`,
+#   `starwinds_analysis/physics/orbit_surface.py`
 def elliptic_orbit_points(
     semi_major_axis,
     *,
@@ -186,6 +198,8 @@ def elliptic_orbit_points(
         "sample": sample,
     }
 
+# Resample `fields` onto explicit Cartesian points.
+# Used in: `starwinds_analysis/sampling/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`
 def sample_points(
     smart_ds,
     points,
@@ -214,6 +228,9 @@ def sample_points(
     data["R [sample]"] = np.sqrt(np.sum(points * points, axis=1))
     return data
 
+# Sample requested fields along a circular orbit path using generic point resampling.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
+#   `starwinds_analysis/physics/orbit_pressure.py`
 def sample_circular_orbit(
     smart_ds,
     radius,
@@ -244,6 +261,9 @@ def sample_circular_orbit(
     sampled["kind"] = "circular"
     return sampled
 
+# Sample requested fields along an elliptic orbit path using generic point resampling.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
+#   `starwinds_analysis/physics/orbit_pressure.py`
 def sample_elliptic_orbit(
     smart_ds,
     semi_major_axis,

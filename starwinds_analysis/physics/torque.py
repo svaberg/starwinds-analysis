@@ -21,6 +21,8 @@ from starwinds_analysis.physics.constants import MU0
 # (`torque_vs_radius`, `surface_torque_vs_radius`) in a deep layer.
 
 
+# Spherical-shell wind torque-density terms about +z.
+# Used in: no external call sites found
 def spherical_wind_torque_density_terms(
     *,
     rho_kg_m3,
@@ -43,6 +45,9 @@ def spherical_wind_torque_density_terms(
     return magnetic, dynamic
 
 
+# Spherical-shell wind torque profile (magnetic + dynamic + total).
+# Used in: `test/test_surface_torque_analysis.py`, `test/test_shell_analysis.py`,
+#   `starwinds_analysis/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
 def torque_vs_radius(
     smart_ds,
     radii,
@@ -103,6 +108,8 @@ def torque_vs_radius(
     }
 
 
+# Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
+# Used in: `starwinds_analysis/physics/torque.py`
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     """
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
@@ -120,6 +127,8 @@ def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     return v
 
 
+# Normalize explicit surface normals safely for torque integration.
+# Used in: `starwinds_analysis/physics/torque.py`
 def normalize_surface_normals(normals_xyz):
     n = np.array(normals_xyz)
     if n.shape[-1] != 3:
@@ -130,6 +139,8 @@ def normalize_surface_normals(normals_xyz):
     return out
 
 
+# Build radial normals from explicit Cartesian surface points.
+# Used in: `starwinds_analysis/physics/torque.py`
 def radial_surface_normals(xyz):
     xyz = np.array(xyz)
     if xyz.shape[-1] != 3:
@@ -137,6 +148,9 @@ def radial_surface_normals(xyz):
     return normalize_surface_normals(xyz)
 
 
+# Mestel/Vidotto-like z-angular-momentum flux terms on an explicit surface.
+# Used in: `test/test_surface_torque_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
+#   `starwinds_analysis/physics/torque.py`
 def surface_torque_density_terms(
     *,
     xyz_m,
@@ -241,6 +255,9 @@ def surface_torque_density_terms(
     }
 
 
+# Integrate per-area torque-density terms from `surface_torque_density_terms(...)`.
+# Used in: `test/test_surface_torque_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
+#   `starwinds_analysis/physics/torque.py`
 def integrate_surface_torque_terms(terms):
     """
     Integrate per-area torque-density terms from `surface_torque_density_terms(...)`.
@@ -270,6 +287,8 @@ def integrate_surface_torque_terms(terms):
     return out
 
 
+# Convenience wrapper for explicit-surface torque terms on shell samples.
+# Used in: `starwinds_analysis/physics/torque.py`
 def surface_torque_terms_on_shell_samples(
     shells,
     *,
@@ -311,6 +330,8 @@ def surface_torque_terms_on_shell_samples(
     )
 
 
+# Explicit-surface torque profile on spherical shells using general T1..T4 terms.
+# Used in: `test/test_surface_torque_analysis.py`
 def surface_torque_vs_radius(
     smart_ds,
     radii,

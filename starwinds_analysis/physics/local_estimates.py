@@ -11,6 +11,8 @@ import numpy as np
 
 from starwinds_analysis.physics.constants import MU0
 
+# Pointwise local mass-loss estimates using `4*pi*r^2*rho*u_r`.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
 def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):
     """
     Pointwise local mass-loss estimates using `4*pi*r^2*rho*u_r`.
@@ -19,6 +21,8 @@ def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):
     # the required SI inputs (`R`, `rho`, `U_r`) are available on samples.
     return 4.0 * math.pi * np.square(radius_m) * rho_kg_m3 * u_radial_m_s
 
+# Pointwise local torque estimates using the spherical-shell scaling from old quicklook.
+# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
 def local_torque_estimates(radius_m, rho_kg_m3, u_radial_m_s, u_phi_m_s, b_r_t, b_phi_t):
     """
     Pointwise local torque estimates using the spherical-shell scaling from old quicklook.

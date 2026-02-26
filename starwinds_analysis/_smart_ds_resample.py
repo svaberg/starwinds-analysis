@@ -12,6 +12,8 @@ import numpy as np
 
 from starwinds_readplt.dataset import Dataset
 
+# Resample scalar fields onto new point locations and return a new wrapped dataset.
+# Used in: `starwinds_analysis/smart_ds.py`
 def resample_smart_ds(
     smart_ds,
     sample_points,
@@ -130,6 +132,8 @@ def resample_smart_ds(
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
 
+# Interpolate one field onto target points using SciPy nearest/linear ND interpolators.
+# Used in: `starwinds_analysis/_smart_ds_resample.py`
 def interpolate_nd(source_points, values, sample_points, *, method: str, fill_value: float):
     try:
         from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator

@@ -30,12 +30,16 @@ SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
     "Mars": PlanetOrbitElements(1.523679 * AU_M, 0.0934, 0.0, 5.65),
 }
 
+# Return named planet orbital elements from the built-in preset table.
+# Used in: `test/test_planetary_orbits.py`, `starwinds_analysis/physics/planetary_orbits.py`
 def get_planet_orbit_elements(name: str) -> PlanetOrbitElements:
     try:
         return SOLAR_SYSTEM_PLANETS[str(name)]
     except KeyError as exc:
         raise KeyError(f"Unknown planet '{name}'. Available: {sorted(SOLAR_SYSTEM_PLANETS)}") from exc
 
+# Build a `run_quicklook2d` orbit spec dict for a named planet, in stellar radii.
+# Used in: `test/test_planetary_orbits.py`, `starwinds_analysis/quicklook2d.py`
 def planet_orbit_spec(
     name: str,
     *,
@@ -69,6 +73,8 @@ def planet_orbit_spec(
         spec["angle0"] = float(elem.argument_of_periapsis_deg) * 3.141592653589793 / 180.0
     return spec
 
+# Keplerian period for a named planet around a star of mass `star_mass_kg`.
+# Used in: `test/test_planetary_orbits.py`
 def planet_orbit_period(name: str, *, star_mass_kg: float):
     """
     Keplerian period for a named planet around a star of mass `star_mass_kg`.

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# Return the repository's `sample_data` directory.
+# Used in: `test/test_sample_data_helpers.py`, `starwinds_analysis/data/samples.py`
 def sample_data_dir() -> Path:
     """
     Return the repository's `sample_data` directory.
@@ -16,6 +18,11 @@ def sample_data_dir() -> Path:
     """
     return Path(__file__).resolve().parents[2] / "sample_data"
 
+# Return an absolute `Path` to a file in `sample_data`.
+# Used in: `test/test_shell_magnetic_analysis.py`, `test/test_sample_data_helpers.py`,
+#   `examples/smartds_radial_histograms.ipynb`,
+#   `examples/smartds_inner_boundary_magnetic_zdi.ipynb`,
+#   `examples/smartds_quicklook_profiles.ipynb` (+2 more)
 def get_sample(name: str, *, echo: bool = False) -> Path:
     """
     Return an absolute `Path` to a file in `sample_data`.

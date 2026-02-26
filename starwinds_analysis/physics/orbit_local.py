@@ -23,6 +23,8 @@ from starwinds_analysis.physics.local_estimates import (
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
 
+# 1D interpolate a shell profile onto orbit sample radii (with NaNs outside range).
+# Used in: `starwinds_analysis/physics/orbit_local.py`
 def _interp_profile(radii, values, x):
     r = np.array(radii)
     y = np.array(values)
@@ -39,6 +41,8 @@ def _interp_profile(radii, values, x):
     out[(x < r[0]) | (x > r[-1])] = np.nan
     return out
 
+# Compute local mass-loss estimates on one sampled orbit and compare to shell profile values.
+# Used in: `starwinds_analysis/physics/orbit_local.py`
 def _local_mass_loss_from_orbit_sample(
     smart_ds,
     orbit,
@@ -103,6 +107,9 @@ def _local_mass_loss_from_orbit_sample(
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
     return out
 
+# Compute local torque estimates on one sampled orbit and compare to shell torque profile
+#   values.
+# Used in: `starwinds_analysis/physics/orbit_local.py`
 def _local_torque_from_orbit_sample(
     smart_ds,
     orbit,
@@ -175,6 +182,8 @@ def _local_torque_from_orbit_sample(
         out["shell_total_torque_interp [Nm]"] = shell_interp
     return out
 
+# Sample a circular orbit and compute local-vs-shell mass-loss comparisons.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def local_mass_loss_on_circular_orbit(
     smart_ds,
     radius,
@@ -212,6 +221,8 @@ def local_mass_loss_on_circular_orbit(
         shell_radii=None,
     )
 
+# Sample a circular orbit and compute local-vs-shell torque comparisons.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def local_torque_on_circular_orbit(
     smart_ds,
     radius,
@@ -255,6 +266,8 @@ def local_torque_on_circular_orbit(
         shell_radii=None,
     )
 
+# Sample an elliptic orbit and compute local-vs-shell mass-loss comparisons.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def local_mass_loss_on_elliptic_orbit(
     smart_ds,
     semi_major_axis,
@@ -306,6 +319,8 @@ def local_mass_loss_on_elliptic_orbit(
     out["eccentricity [none]"] = float(eccentricity)
     return out
 
+# Sample an elliptic orbit and compute local-vs-shell torque comparisons.
+# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def local_torque_on_elliptic_orbit(
     smart_ds,
     semi_major_axis,

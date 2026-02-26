@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import numpy as np
 
+# Wind mass-loss profile on spherical shells.
+# Used in: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
+#   `starwinds_analysis/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
 def mass_loss_vs_radius(
     smart_ds,
     radii,

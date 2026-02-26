@@ -13,6 +13,8 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
+# Generate approximately uniformly distributed points on the unit sphere
+# Used in: `test/test_surface_torque_analysis.py`, `starwinds_analysis/analysis/shells.py`
 def fibonacci_sphere(num_points, randomize=False):
     """
     Generate approximately uniformly distributed points on the unit sphere

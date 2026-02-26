@@ -10,18 +10,25 @@ import numpy as np
 
 from starwinds_analysis.physics.constants import MU0
 
+# Magnetic pressure `B^2 / (2 mu0)` in Pa.
+# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`
 def magnetic_pressure(b_t_or_mag):
     """
     Magnetic pressure `B^2 / (2 mu0)` in Pa.
     """
     return np.square(b_t_or_mag) / (2.0 * MU0)
 
+# Ram pressure `rho * u^2` in Pa.
+# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`,
+#   `starwinds_analysis/physics/orbit_pressure.py`
 def ram_pressure(rho_kg_m3, speed_m_s):
     """
     Ram pressure `rho * u^2` in Pa.
     """
     return rho_kg_m3 * np.square(speed_m_s)
 
+# Compute thermal/magnetic/ram pressure components from local samples.
+# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/physics/orbit_surface.py`
 def pressure_components(
     rho_kg_m3,
     u_xyz_m_s,
@@ -66,6 +73,9 @@ def pressure_components(
         out["relative_ram_pressure [Pa]"] = ram_pressure(rho_kg_m3, rel_speed)
     return out
 
+# Vidotto-style stand-off distance proxy from pressure balance.
+# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/physics/orbit_surface.py`,
+#   `starwinds_analysis/physics/orbit_pressure.py`
 def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e-4):
     """
     Vidotto-style stand-off distance proxy from pressure balance.
