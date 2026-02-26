@@ -25,13 +25,13 @@ Legend:
 - `starwinds_analysis/analysis/shell_summary.py` — **Reviewed**. Reducer/summary helpers; finite filtering appears intentional for shell-band summaries.
 - `starwinds_analysis/analysis/shells.py` — **Debt**. Contains `resolve_*` helpers and compatibility custom container (`SphericalShellSamples`) alongside core shell primitives. Code TODO: added TODO + existing TODOs.
 - `starwinds_analysis/analysis/slices.py` — **Reviewed**. Structured slice resampling/topology helpers; no clear rule violation found in this pass.
-- `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; no clear rule violation found in this pass.
+- `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; now also owns the reusable `summarize_samples(...)` helper.
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.
 - `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer package boundary is now minimal (`__all__ = []`).
 - `starwinds_analysis/physics/fluxes.py` — **Debt**. Quantity-specific shell flux profile wrappers remain (`*_vs_radius`); SI field requests now go through SmartDs/griblet, but local quantity recomputation (`B_r`, `U_r`, `E*U_r`) is still done in code. Code TODO: existing TODO(debt) + TODO(griblet).
 - `starwinds_analysis/physics/constants.py` — **Reviewed**. Shared constants module (good deep-layer home for physical constants like `MU0`).
 - `starwinds_analysis/physics/flux_density.py` — **Debt**. Local physical quantity (`q * U_r`) is computed outside SmartDs/griblet instead of requested as an SI quantity. Code TODO: existing TODO(griblet) added.
-- `starwinds_analysis/physics/local_estimates.py` — **Debt**. Mixes local physics formulas with summary/reporting helper and imports `analysis.stats` (reversed layer direction). Code TODO: added TODO + existing TODO(griblet).
+- `starwinds_analysis/physics/local_estimates.py` — **Debt**. Local physics formulas remain outside SmartDs/griblet (intentional TODOs), but summary/reporting helper was removed and the `analysis.stats` import was eliminated. Code TODO: existing TODO(griblet).
 - `starwinds_analysis/physics/magnetic.py` — **Debt**. Magnetic spherical components (`B_r`, `B_theta`, `B_phi`) are recomputed locally instead of requested via SmartDs/griblet. Code TODO: existing TODO(griblet) added.
 - `starwinds_analysis/physics/mass_loss.py` — **Debt**. Quantity-specific shell pipeline wrappers (`sample_shell_mass_flux_map`, `mass_loss_vs_radius`), custom container (`ShellMassFluxMap`), and `analysis.shells` dependency remain. SI field requests now go through SmartDs/griblet (no `resolve_*` in this file). Code TODO: added TODO + existing TODO(griblet).
 - `starwinds_analysis/physics/orbit_pressure.py` — **Debt**. Orbit workflow/pipeline in `physics` (sampling + field resolution + summaries) and imports `analysis`; SI field requests now go through SmartDs/griblet (no `resolve_*` in this file). Code TODO: added TODO + existing TODO(griblet).

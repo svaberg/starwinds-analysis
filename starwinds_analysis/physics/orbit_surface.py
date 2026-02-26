@@ -16,7 +16,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.physics.local_estimates import summarize_samples
+from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import (
     circular_orbit_points,

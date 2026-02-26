@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.physics.local_estimates import summarize_samples
+from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.physics.pressure import (

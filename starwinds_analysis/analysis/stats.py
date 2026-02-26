@@ -69,5 +69,19 @@ def weighted_quantile(values, quantiles, weights=None):
     return float(out) if np.ndim(quantiles) == 0 else out
 
 
-__all__ = ["weighted_mean_std", "weighted_quantile"]
+def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
+    """
+    Weighted quantiles + mean/std summary for 1D samples.
+    """
+    v = np.array(values, dtype=float)
+    qv = weighted_quantile(v, quantiles, weights=weights)
+    mean, std = weighted_mean_std(v, weights=weights)
+    return {
+        "quantiles": np.array(quantiles, dtype=float),
+        "values": np.array(qv, dtype=float),
+        "mean": float(mean),
+        "std": float(std),
+    }
 
+
+__all__ = ["weighted_mean_std", "weighted_quantile", "summarize_samples"]

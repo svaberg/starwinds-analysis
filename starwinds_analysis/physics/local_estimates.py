@@ -1,12 +1,7 @@
 """THIS FILE contains local analytic estimators for mass loss and torque.
 
-These are pointwise formulas and sample summaries, not shell/surface integrators.
-It should stay free of resampling and plotting orchestration.
+These are pointwise formulas (no resampling, no plotting, no summaries).
 """
-
-# TODO(debt): This file imports summaries from `analysis.stats` (reversed layer
-# direction) and mixes local physics formulas with reporting/summarization helpers.
-# Split local quantity formulas from sample-summary utilities.
 
 from __future__ import annotations
 
@@ -14,7 +9,6 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 from starwinds_analysis.physics.constants import MU0
 
 
@@ -55,24 +49,7 @@ def local_torque_estimates(radius_m, rho_kg_m3, u_radial_m_s, u_phi_m_s, b_r_t, 
     total = magnetic + dynamic
     return {"magnetic [Nm]": magnetic, "dynamic [Nm]": dynamic, "total [Nm]": total}
 
-
-def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
-    """
-    Small helper mirroring the old quicklook habit of logging quantiles + mean/std.
-    """
-    v = np.array(values, dtype=float)
-    qv = weighted_quantile(v, quantiles, weights=weights)
-    mean, std = weighted_mean_std(v, weights=weights)
-    return {
-        "quantiles": np.array(quantiles, dtype=float),
-        "values": np.array(qv, dtype=float),
-        "mean": float(mean),
-        "std": float(std),
-    }
-
-
 __all__ = [
     "local_mass_loss_estimates",
     "local_torque_estimates",
-    "summarize_samples",
 ]

@@ -11,8 +11,8 @@ from starwinds_analysis.physics.fluxes import (
 from starwinds_analysis.physics.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
-    summarize_samples,
 )
+from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
 from starwinds_analysis.analysis.shell_summary import (
