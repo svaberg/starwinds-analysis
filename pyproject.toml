@@ -17,5 +17,7 @@ tag_prefix = "v"
 parentdir_prefix = ""
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-console-scripts", ]
+tests = ["pytest", "pytest-console-scripts", "nbstripout", ]
+
+dev = ["nbstripout", ]
 
