@@ -1,7 +1,7 @@
 """THIS FILE contains shell-integrated flux diagnostics.
 
 It computes quantity-specific flux profiles from shell samples.
-Flux plotting helpers are implemented in `starwinds_analysis.physics.plotting`.
+Flux plotting helpers are implemented in `starwinds_analysis.visualisation.profile_plots`.
 """
 
 # TODO(debt): This file is quantity-specific (`fluxes`) and should eventually be

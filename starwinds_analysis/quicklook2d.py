@@ -40,7 +40,7 @@ from starwinds_analysis.physics.fluxes import (
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
 )
-from starwinds_analysis.physics.plotting import (
+from starwinds_analysis.visualisation.profile_plots import (
     plot_shell_height_series,
     shell_profile_height,
 )

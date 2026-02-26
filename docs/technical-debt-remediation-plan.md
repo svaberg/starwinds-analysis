@@ -131,8 +131,9 @@ Recommended next implementation batches:
 - NEXT: separate orbit geometry/sampling from quantity assembly and reduce `physics -> analysis` dependencies.
 
 3. `physics.plotting.py` + `quicklook2d.py`
-- Delete quantity-specific plotting wrappers as notebooks/examples use direct Matplotlib
-- Keep only genuinely reused plotting primitives (if any)
+- DONE (partial): quantity-specific shell mass-flux plotting wrapper removed.
+- DONE (partial): generic shell-profile plotting helpers moved out of `physics` into `visualisation/profile_plots.py`.
+- NEXT: continue shrinking `quicklook2d.py` without creating notebook convenience wrappers.
 
 ## Testing Strategy (Required For Each Batch)
 
