@@ -4,6 +4,10 @@ It groups stable analysis functions in one import location.
 It should not implement analysis logic itself.
 """
 
+# TODO(debt): `analysis` currently re-exports many `physics` symbols, which is a
+# reversed layer inclusion path under the current architecture rules. Shrink this
+# surface and move callers to the owning modules directly.
+
 from .fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,

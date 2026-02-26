@@ -4,6 +4,12 @@ It provides circular/elliptic paths and SmartDs resampling along those paths.
 It should not own low-level pressure or torque formulas.
 """
 
+# TODO(debt): This module mixes generic orbit geometry/sampling with quantity-specific
+# comparison workflows (`local_mass_loss_*`, `local_torque_*`) and imports from
+# `physics`, which is a reversed layer direction under current rules.
+# TODO(debt): Split reusable orbit geometry/sampling primitives from one-off or
+# quantity-specific comparison workflows.
+
 from __future__ import annotations
 
 import math

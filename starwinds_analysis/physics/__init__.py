@@ -4,6 +4,10 @@ It groups pointwise/domain formulas (no sampling, no plotting, no notebook orche
 It should not depend on SmartDs or analysis pipelines.
 """
 
+# TODO(debt): This re-export surface currently includes non-local helpers (for example
+# profile-derived wind-scaling helpers). Keep the `physics` API small and limited to
+# local formulas/quantities.
+
 from .pressure import (
     MU0,
     magnetic_pressure,

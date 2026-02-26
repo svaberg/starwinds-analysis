@@ -4,6 +4,12 @@ It integrates sampled torque-density terms and builds shell/radius workflows.
 Local explicit-surface torque physics primitives live in `starwinds_analysis.physics.surface_torque`.
 """
 
+# TODO(debt): This is a quantity-specific analysis wrapper module (`surface_torque`)
+# with `*_vs_radius` orchestration and `resolve_*` usage. Keep only genuinely generic
+# surface integration/reduction primitives in `analysis`.
+# TODO(debt): `analysis` imports `physics` here, which is a reversed layer inclusion
+# path under the current architecture rules.
+
 from __future__ import annotations
 
 import numpy as np

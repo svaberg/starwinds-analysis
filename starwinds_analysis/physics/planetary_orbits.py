@@ -4,6 +4,9 @@ It is a data/constants layer plus lightweight helpers.
 It should not contain SmartDs access, resampling, or plotting.
 """
 
+# TODO(debt): This file still imports `orbital_period` from `analysis.orbits`
+# (reversed layer direction). Kepler primitives should live in a deeper/shared module.
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -87,4 +90,3 @@ __all__ = [
     "planet_orbit_spec",
     "planet_orbit_period",
 ]
-

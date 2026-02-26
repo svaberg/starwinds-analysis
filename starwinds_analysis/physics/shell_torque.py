@@ -3,6 +3,10 @@
 It computes shell torque profiles (magnetic/dynamic/total) without plotting wrappers.
 """
 
+# TODO(debt): This is a quantity-specific shell profile wrapper (`torque_vs_radius`)
+# in a deep layer and depends on `analysis.shells` + `resolve_*` helpers. Keep local
+# torque-density formulas in `physics` and push orchestration upward.
+
 from __future__ import annotations
 
 import numpy as np

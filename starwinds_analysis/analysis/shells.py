@@ -4,6 +4,11 @@ It is the foundation layer for shell-based analyses (sampling geometry, integrat
 Temporary field-resolution helpers live here for now, but should migrate into SmartDs.
 """
 
+# TODO(debt): `resolve_*` field/unit helpers in this module are a known smell; callers
+# should request SI quantities directly from SmartDs/griblet.
+# TODO(debt): `SphericalShellSamples` is a custom container kept for compatibility.
+# The preferred direction is structured `SmartDs` resampling + shared metadata fields.
+
 from __future__ import annotations
 
 from dataclasses import dataclass

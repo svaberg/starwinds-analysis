@@ -4,6 +4,12 @@ It orchestrates orbit sampling with pressure formulas and includes temporary BAT
 Pressure formulas themselves belong in pressure.py.
 """
 
+# TODO(debt): This file is an orbit workflow/pipeline (sampling + field resolution +
+# summaries) but currently lives in `physics`.
+# TODO(debt): It imports from `analysis` and uses `resolve_*` helpers; the intended
+# direction is SmartDs/griblet SI requests plus a higher-level pipeline layer when
+# multi-step orchestration is truly needed.
+
 from __future__ import annotations
 
 import numpy as np

@@ -4,6 +4,12 @@ It builds explicit surfaces from orbital paths and evaluates pressure/torque com
 It should reuse pressure/torque core functions rather than redefining those quantities.
 """
 
+# TODO(debt): This file combines geometry generation, resampling, pressure/torque
+# quantity assembly, and summaries. It behaves like a workflow/pipeline but currently
+# lives in `physics`.
+# TODO(debt): It imports from `analysis` (reversed layer direction) and still relies
+# on `resolve_*` field-resolution glue via orbit-pressure helpers.
+
 from __future__ import annotations
 
 import math

@@ -4,6 +4,10 @@ These are pointwise formulas and sample summaries, not shell/surface integrators
 It should stay free of resampling and plotting orchestration.
 """
 
+# TODO(debt): This file imports summaries from `analysis.stats` (reversed layer
+# direction) and mixes local physics formulas with reporting/summarization helpers.
+# Split local quantity formulas from sample-summary utilities.
+
 from __future__ import annotations
 
 import math

@@ -4,6 +4,13 @@ It defines reusable mass-loss computations (sampling + shell integration), witho
 plotting wrappers.
 """
 
+# TODO(debt): This module mixes local quantity logic with shell sampling/integration
+# orchestration and depends on `analysis.shells` (reversed layer direction).
+# TODO(debt): `ShellMassFluxMap` is a workflow-specific custom container; prefer
+# shared abstractions (structured SmartDs + explicit metadata fields).
+# TODO(debt): `sample_shell_mass_flux_map` / `mass_loss_vs_radius` are quantity-
+# specific pipeline wrappers; keep only generic primitives at deep layers.
+
 from __future__ import annotations
 
 from dataclasses import dataclass

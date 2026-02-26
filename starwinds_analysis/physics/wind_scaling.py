@@ -4,6 +4,11 @@ It defines local/scalar array formulas (for example escape speed and open-wind
 magnetisation) without profile-bundle orchestration.
 """
 
+# TODO(debt): `open_wind_magnetisation_from_profiles` is a profile-bundle/orchestration
+# helper, not a local formula. Split it from the local wind-scaling formulas.
+# TODO(debt): Consolidate `MU0` to a single shared constant source (do not redefine
+# physical constants in multiple modules).
+
 from __future__ import annotations
 
 import math
@@ -11,7 +16,7 @@ import math
 import numpy as np
 import scipy.constants as c
 
-# TODO why is this not taken from scipy.constants? 
+# TODO(debt): Reuse the shared `MU0` constant instead of defining it locally.
 MU0 = 4.0e-7 * math.pi
 
 

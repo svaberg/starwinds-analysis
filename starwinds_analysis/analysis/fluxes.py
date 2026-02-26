@@ -4,6 +4,12 @@ It computes flux profiles from shell samples.
 Flux plotting helpers are implemented in `starwinds_analysis.physics.plotting`.
 """
 
+# TODO(debt): This file is quantity-specific (`fluxes`) and still lives in
+# `analysis`. The shell sampling/integration primitive should be separate from the
+# physical quantity definitions, which should be requested via SmartDs/griblet.
+# TODO(debt): This module still depends on `resolve_*` helpers and recomputes local
+# quantities (`B_r`, `U_r`, `E*U_r`) outside SmartDs/griblet.
+
 from __future__ import annotations
 
 import numpy as np

@@ -4,6 +4,10 @@ It assembles analysis results, plots, and exports for quicklook-style workflows.
 Core quantity definitions and sampling primitives should live in analysis modules instead.
 """
 
+# TODO(debt): This is a high-level orchestration/wrapper module inside the library and
+# contains quantity-specific presets/workflows. Re-evaluate this API against the
+# library-purity rule and keep one-off example composition in notebooks/scripts.
+
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -4,6 +4,12 @@ These are plotting-only functions (Matplotlib fig/ax). They are kept out of the
 `analysis` layer to preserve the analysis/data-vs-plotting boundary.
 """
 
+# TODO(debt): This module contains quantity-specific plotting wrappers (`plot_*`
+# for mass-loss/torque/energy/open-flux). Prefer notebooks/direct Matplotlib calls or
+# genuinely general visualisation primitives rather than quantity-named library plots.
+# TODO(debt): `physics` is a deep layer and should not grow a large plotting API
+# surface; keep only plotting code that is demonstrably reusable and generic.
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
