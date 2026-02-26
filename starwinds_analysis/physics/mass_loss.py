@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.physics.flux_density import radial_advective_flux_density
-
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
     """
@@ -77,7 +75,7 @@ def mass_loss_vs_radius(
 
     # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
     # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
-    mass_flux = radial_advective_flux_density(rho, u_r)  # kg / m^2 / s
+    mass_flux = rho * u_r  # kg / m^2 / s
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
     return {

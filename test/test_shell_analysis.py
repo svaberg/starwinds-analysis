@@ -14,7 +14,6 @@ from starwinds_analysis.physics.local_estimates import (
 )
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.analysis.shell_summary import (
     boxcar_shell_weights,
     summarize_shell_diagnostics_band,
@@ -136,7 +135,7 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
     y = np.array(shells("Y [R]"), dtype=float)
     z = np.array(shells("Z [R]"), dtype=float)
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
-    mass_flux = radial_advective_flux_density(rho, u_r)
+    mass_flux = rho * u_r
     integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, np.array(shells("dA [m^2]"), dtype=float))
     integral = float(integral_arr[0])
     coverage = float(coverage_arr[0])

@@ -20,7 +20,6 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_by_strategy,
     shell_profile_radius_height,
 )
-from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy: bool = False) -> None:
@@ -214,7 +213,7 @@ def energy_flux_vs_radius(
 
     # TODO(griblet): Request energy-flux density directly from SmartDs/griblet in SI
     # (e.g. `energy_flux [W/m^2]`) instead of recomputing `E * U_r` here.
-    energy_flux_density = radial_advective_flux_density(e, u_r)  # W / m^2
+    energy_flux_density = e * u_r  # W / m^2
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     return {
         **shell_profile_radius_height(shells),

@@ -9,7 +9,6 @@ import numpy as np
 
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.data.samples import get_sample
-from starwinds_analysis.physics.flux_density import radial_advective_flux_density
 from starwinds_analysis.physics.magnetic import (
     magnetic_field_unit_scale,
     magnetic_shell_components_from_cartesian,
@@ -148,7 +147,7 @@ def test_direct_shell_mass_flux_lonlat_plot_smoke():
     y = np.array(shell("Y [R]"), dtype=float)
     z = np.array(shell("Z [R]"), dtype=float)
     u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
-    mass_flux = radial_advective_flux_density(rho, u_r)
+    mass_flux = rho * u_r
     lon_deg = np.degrees(np.array(shell("phi [rad]"), dtype=float)[0])
     lat_deg = 90.0 - np.degrees(np.array(shell("theta [rad]"), dtype=float)[0])
     fig, ax = plt.subplots(figsize=(6, 3))
