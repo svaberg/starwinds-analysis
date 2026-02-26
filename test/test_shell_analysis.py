@@ -276,10 +276,10 @@ def test_local_torque_estimate_formula_and_summary():
     b_r = np.array([1e-3, 2e-3, 3e-3])
     b_phi = np.array([2e-3, 1e-3, -1e-3])
 
-    out = local_torque_estimates(r, rho, u_r, u_phi, b_r, b_phi)
-    np.testing.assert_allclose(out["total [Nm]"], out["magnetic [Nm]"] + out["dynamic [Nm]"])
+    magnetic, dynamic, total = local_torque_estimates(r, rho, u_r, u_phi, b_r, b_phi)
+    np.testing.assert_allclose(total, magnetic + dynamic)
 
-    summary = summarize_samples(out["total [Nm]"])
+    summary = summarize_samples(total)
     assert np.isfinite(summary["mean"])
     assert np.isfinite(summary["std"])
     assert summary["values"].shape == (5,)

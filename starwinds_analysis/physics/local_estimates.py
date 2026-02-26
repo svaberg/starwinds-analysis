@@ -28,10 +28,10 @@ def local_torque_estimates(radius_m, rho_kg_m3, u_radial_m_s, u_phi_m_s, b_r_t, 
     - dynamic torque density term without the cylindrical factor
     - multiply by `∫ C dS = pi^2 r^3` for a sphere of radius `r`
     """
-    # TODO(griblet): This local torque estimate bundle should move behind SmartDs/
-    # griblet field requests.
+    # TODO(griblet): These local torque estimate quantities should move behind
+    # SmartDs/griblet field requests.
     rest_integral = (math.pi**2) * np.power(radius_m, 3)
     magnetic = (-b_phi_t * b_r_t / MU0) * rest_integral
     dynamic = (u_phi_m_s * u_radial_m_s * rho_kg_m3) * rest_integral
     total = magnetic + dynamic
-    return {"magnetic [Nm]": magnetic, "dynamic [Nm]": dynamic, "total [Nm]": total}
+    return magnetic, dynamic, total

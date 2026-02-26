@@ -121,7 +121,7 @@ def _local_torque_from_orbit_sample(
     u_phi = orbit["U_phi [m/s]"]
     b_r = orbit["B_r [T]"]
     b_phi = orbit["B_phi [T]"]
-    local = local_torque_estimates(r_m, rho, u_r, u_phi, b_r, b_phi)
+    local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_phi, b_r, b_phi)
     weights = orbit.get("time_weight [none]")
 
     if shell_radii is None:
@@ -134,7 +134,7 @@ def _local_torque_from_orbit_sample(
             method=method,
         )
         shell_total = float(shell["total_torque [Nm]"][0])
-        shell_interp = np.full_like(local["total [Nm]"], shell_total, dtype=float)
+        shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
         shell_radii = np.array(shell_radii)
         shell = torque_vs_radius(
@@ -150,7 +150,7 @@ def _local_torque_from_orbit_sample(
         )
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
-    summary = summarize_samples(local["total [Nm]"], weights=weights)
+    summary = summarize_samples(local_total, weights=weights)
     with np.errstate(invalid="ignore", divide="ignore"):
         mean_to_shell = summary["mean"] / shell_total if shell_total != 0 else np.nan
 
@@ -162,9 +162,9 @@ def _local_torque_from_orbit_sample(
         "u_phi [m/s]": u_phi,
         "b_r [T]": b_r,
         "b_phi [T]": b_phi,
-        "local_magnetic_torque [Nm]": local["magnetic [Nm]"],
-        "local_dynamic_torque [Nm]": local["dynamic [Nm]"],
-        "local_total_torque [Nm]": local["total [Nm]"],
+        "local_magnetic_torque [Nm]": local_magnetic,
+        "local_dynamic_torque [Nm]": local_dynamic,
+        "local_total_torque [Nm]": local_total,
         "summary": summary,
         "shell_total_torque [Nm]": float(shell_total),
         "mean_to_shell [none]": float(mean_to_shell),
