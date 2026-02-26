@@ -23,22 +23,6 @@ from starwinds_analysis.physics.pressure import (
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
-def _ensure_batsrus_orbit_pressure_fields(smart_ds, *, body_radius_m: float) -> None:
-    needed = {
-        "Rho [kg/m^3]",
-        "U_x [m/s]",
-        "U_y [m/s]",
-        "U_z [m/s]",
-        "B_x [T]",
-        "B_y [T]",
-        "B_z [T]",
-    }
-    if "P [Pa]" in getattr(smart_ds, "variables", ()):
-        needed.add("P [Pa]")
-    if all(smart_ds.has_field(name) for name in needed):
-        return
-    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 def _pressure_field_name_and_scale(smart_ds):
     if smart_ds.has_field("P [Pa]"):
         return "P [Pa]", 1.0
@@ -152,7 +136,7 @@ def pressure_components_on_circular_orbit(
     include_relative_ram: bool = True,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_pressure_fields(smart_ds, body_radius_m=body_radius_m)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
@@ -192,7 +176,7 @@ def pressure_components_on_elliptic_orbit(
     include_relative_ram: bool = True,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    _ensure_batsrus_orbit_pressure_fields(smart_ds, body_radius_m=body_radius_m)
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
@@ -221,4 +205,3 @@ def pressure_components_on_elliptic_orbit(
     out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"], dtype=float)))
     out["radius [m]"] = out["radius [R]"] * body_radius_m
     return out
-
