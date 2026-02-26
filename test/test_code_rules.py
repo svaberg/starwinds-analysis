@@ -195,8 +195,12 @@ def test_code_rules_baseline():
     if findings != baseline:
         baseline_set = {json.dumps(x, sort_keys=True) for x in baseline}
         findings_set = {json.dumps(x, sort_keys=True) for x in findings}
-        new = sorted(json.loads(x) for x in (findings_set - baseline_set))
-        gone = sorted(json.loads(x) for x in (baseline_set - findings_set))
+        def _sorted_items(items):
+            decoded = [json.loads(x) for x in items]
+            return sorted(decoded, key=lambda d: (d["file"], str(d["line"]), d["rule"], d.get("detail", "")))
+
+        new = _sorted_items(findings_set - baseline_set)
+        gone = _sorted_items(baseline_set - findings_set)
 
         lines = ["Code rules baseline mismatch."]
         if new:
