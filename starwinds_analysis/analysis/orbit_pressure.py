@@ -14,7 +14,7 @@ from starwinds_analysis.analysis.orbits import (
     sample_circular_orbit,
     sample_elliptic_orbit,
 )
-from starwinds_analysis.analysis.pressure import (
+from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )

@@ -50,7 +50,7 @@ from .orbit_surface import (
     surface_of_revolution_from_path,
     torque_components_on_orbit_surface,
 )
-from .pressure import (
+from ..physics.pressure import (
     magnetic_pressure,
     magnetospheric_standoff_distance,
     pressure_components,

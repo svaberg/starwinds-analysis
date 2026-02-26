@@ -2,6 +2,7 @@
 
 These are quantity definitions (ram, magnetic, component combinations, standoff distance).
 It should stay as pure math on arrays/scalars, not dataset-specific logic.
+TODO why whould you say this? THis is retarded.
 """
 
 from __future__ import annotations
