@@ -12,7 +12,6 @@ import numpy as np
 
 from starwinds_readplt.dataset import Dataset
 
-
 def resample_smart_ds(
     smart_ds,
     sample_points,
@@ -131,7 +130,6 @@ def resample_smart_ds(
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
 
-
 def interpolate_nd(source_points, values, sample_points, *, method: str, fill_value: float):
     try:
         from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
@@ -155,5 +153,3 @@ def interpolate_nd(source_points, values, sample_points, *, method: str, fill_va
         out = out[np.newaxis]
     return out
 
-
-__all__ = ["interpolate_nd", "resample_smart_ds"]

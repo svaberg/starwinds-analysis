@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 def sample_data_dir() -> Path:
     """
     Return the repository's `sample_data` directory.
@@ -16,7 +15,6 @@ def sample_data_dir() -> Path:
     This helper is intended for local examples/tests in a source checkout.
     """
     return Path(__file__).resolve().parents[2] / "sample_data"
-
 
 def get_sample(name: str, *, echo: bool = False) -> Path:
     """
@@ -40,5 +38,3 @@ def get_sample(name: str, *, echo: bool = False) -> Path:
         f"Sample file not found: {name}. Available .plt files: {', '.join(available)}"
     )
 
-
-__all__ = ["get_sample", "sample_data_dir"]

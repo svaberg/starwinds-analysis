@@ -21,7 +21,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 
-
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy: bool = False) -> None:
     needed = {"B_x [T]", "B_y [T]", "B_z [T]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"}
     if include_energy:
@@ -29,7 +28,6 @@ def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy:
     if all(smart_ds.has_field(name) for name in needed):
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 
 def open_magnetic_flux_vs_radius(
     smart_ds,
@@ -97,7 +95,6 @@ def open_magnetic_flux_vs_radius(
         "shell_samples": shells,
     }
 
-
 def axisymmetric_open_flux_vs_radius(
     smart_ds,
     radii,
@@ -152,7 +149,6 @@ def axisymmetric_open_flux_vs_radius(
     prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction, dtype=float)
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
     return prof
-
 
 def energy_flux_vs_radius(
     smart_ds,
@@ -222,8 +218,3 @@ def energy_flux_vs_radius(
         "shell_samples": shells,
     }
 
-__all__ = [
-    "axisymmetric_open_flux_vs_radius",
-    "energy_flux_vs_radius",
-    "open_magnetic_flux_vs_radius",
-]

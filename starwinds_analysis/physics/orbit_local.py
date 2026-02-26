@@ -24,7 +24,6 @@ from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
 
-
 def _ensure_batsrus_orbit_fields(smart_ds, *, body_radius_m: float, need_b: bool) -> None:
     needed = {
         "Rho [kg/m^3]",
@@ -37,7 +36,6 @@ def _ensure_batsrus_orbit_fields(smart_ds, *, body_radius_m: float, need_b: bool
     if all(smart_ds.has_field(name) for name in needed):
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 
 def _interp_profile(radii, values, x):
     r = np.array(radii, dtype=float)
@@ -54,7 +52,6 @@ def _interp_profile(radii, values, x):
     out = np.interp(x, r, y, left=np.nan, right=np.nan)
     out[(x < r[0]) | (x > r[-1])] = np.nan
     return out
-
 
 def _local_mass_loss_from_orbit_sample(
     smart_ds,
@@ -127,7 +124,6 @@ def _local_mass_loss_from_orbit_sample(
     if shell_radii is not None:
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
     return out
-
 
 def _local_torque_from_orbit_sample(
     smart_ds,
@@ -212,7 +208,6 @@ def _local_torque_from_orbit_sample(
         out["shell_total_torque_interp [Nm]"] = shell_interp
     return out
 
-
 def local_mass_loss_on_circular_orbit(
     smart_ds,
     radius,
@@ -248,7 +243,6 @@ def local_mass_loss_on_circular_orbit(
         shell_n_azimuth=shell_n_azimuth,
         shell_radii=None,
     )
-
 
 def local_torque_on_circular_orbit(
     smart_ds,
@@ -288,7 +282,6 @@ def local_torque_on_circular_orbit(
         shell_n_azimuth=shell_n_azimuth,
         shell_radii=None,
     )
-
 
 def local_mass_loss_on_elliptic_orbit(
     smart_ds,
@@ -339,7 +332,6 @@ def local_mass_loss_on_elliptic_orbit(
     out["semi_major_axis [R]"] = float(semi_major_axis)
     out["eccentricity [none]"] = float(eccentricity)
     return out
-
 
 def local_torque_on_elliptic_orbit(
     smart_ds,
@@ -394,10 +386,3 @@ def local_torque_on_elliptic_orbit(
     out["eccentricity [none]"] = float(eccentricity)
     return out
 
-
-__all__ = [
-    "local_mass_loss_on_circular_orbit",
-    "local_mass_loss_on_elliptic_orbit",
-    "local_torque_on_circular_orbit",
-    "local_torque_on_elliptic_orbit",
-]

@@ -15,14 +15,12 @@ from scipy.constants import au as AU_M
 
 from starwinds_analysis.physics.orbits import orbital_period
 
-
 @dataclass(frozen=True)
 class PlanetOrbitElements:
     semi_major_axis_m: float
     eccentricity: float
     argument_of_periapsis_deg: float = 0.0
     inclination_deg: float = 0.0
-
 
 # Values copied from the old batplotlib elliptic_orbit.py presets.
 SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
@@ -32,13 +30,11 @@ SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
     "Mars": PlanetOrbitElements(1.523679 * AU_M, 0.0934, 0.0, 5.65),
 }
 
-
 def get_planet_orbit_elements(name: str) -> PlanetOrbitElements:
     try:
         return SOLAR_SYSTEM_PLANETS[str(name)]
     except KeyError as exc:
         raise KeyError(f"Unknown planet '{name}'. Available: {sorted(SOLAR_SYSTEM_PLANETS)}") from exc
-
 
 def planet_orbit_spec(
     name: str,
@@ -73,7 +69,6 @@ def planet_orbit_spec(
         spec["angle0"] = float(elem.argument_of_periapsis_deg) * 3.141592653589793 / 180.0
     return spec
 
-
 def planet_orbit_period(name: str, *, star_mass_kg: float):
     """
     Keplerian period for a named planet around a star of mass `star_mass_kg`.
@@ -81,12 +76,3 @@ def planet_orbit_period(name: str, *, star_mass_kg: float):
     elem = get_planet_orbit_elements(name)
     return orbital_period(elem.semi_major_axis_m, star_mass_kg)
 
-
-__all__ = [
-    "AU_M",
-    "PlanetOrbitElements",
-    "SOLAR_SYSTEM_PLANETS",
-    "get_planet_orbit_elements",
-    "planet_orbit_spec",
-    "planet_orbit_period",
-]

@@ -19,7 +19,6 @@ from starwinds_analysis.analysis.shells import (
 )
 from starwinds_analysis.physics.torque import MU0, spherical_wind_torque_density_terms
 
-
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
     needed = (
         "Rho [kg/m^3]",
@@ -33,7 +32,6 @@ def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
     if all(smart_ds.has_field(name) for name in needed):
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 
 def torque_vs_radius(
     smart_ds,
@@ -110,4 +108,3 @@ def torque_vs_radius(
         "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
-__all__ = ["MU0", "torque_vs_radius"]

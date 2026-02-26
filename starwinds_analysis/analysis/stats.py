@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def weighted_mean_std(values, weights=None):
     """
     Weighted mean and standard deviation over finite values.
@@ -34,7 +33,6 @@ def weighted_mean_std(values, weights=None):
     mean = float(np.average(v, weights=w))
     var = float(np.average((v - mean) ** 2, weights=w))
     return mean, float(np.sqrt(var))
-
 
 def weighted_quantile(values, quantiles, weights=None):
     """
@@ -68,7 +66,6 @@ def weighted_quantile(values, quantiles, weights=None):
     out = v[np.searchsorted(cdf, q, side="left")]
     return float(out) if np.ndim(quantiles) == 0 else out
 
-
 def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
     """
     Weighted quantiles + mean/std summary for 1D samples.
@@ -83,5 +80,3 @@ def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=
         "std": float(std),
     }
 
-
-__all__ = ["weighted_mean_std", "weighted_quantile", "summarize_samples"]

@@ -23,7 +23,6 @@ from starwinds_analysis.physics.pressure import (
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
-
 def _ensure_batsrus_orbit_pressure_fields(smart_ds, *, body_radius_m: float) -> None:
     needed = {
         "Rho [kg/m^3]",
@@ -40,14 +39,12 @@ def _ensure_batsrus_orbit_pressure_fields(smart_ds, *, body_radius_m: float) -> 
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
-
 def _pressure_field_name_and_scale(smart_ds):
     if smart_ds.has_field("P [Pa]"):
         return "P [Pa]", 1.0
     if smart_ds.has_field("P [dyne/cm^2]"):
         return "P [dyne/cm^2]", 0.1
     raise KeyError("Could not find pressure field in SI or cgs form")
-
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
     points = np.array(points_r, dtype=float) * float(body_radius_m)
@@ -73,7 +70,6 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
         where=denom[:, None] != 0,
     )
 
-
 def _summaries_from_arrays(data, *, weights=None):
     out = {}
     for key, value in data.items():
@@ -82,7 +78,6 @@ def _summaries_from_arrays(data, *, weights=None):
             continue
         out[key] = summarize_samples(arr, weights=weights)
     return out
-
 
 def pressure_components_from_orbit_sample(
     smart_ds,
@@ -145,7 +140,6 @@ def pressure_components_from_orbit_sample(
         "summary": _summaries_from_arrays(comps, weights=weights),
     }
 
-
 def pressure_components_on_circular_orbit(
     smart_ds,
     radius,
@@ -182,7 +176,6 @@ def pressure_components_on_circular_orbit(
     out["radius [R]"] = float(radius)
     out["radius [m]"] = float(radius) * body_radius_m
     return out
-
 
 def pressure_components_on_elliptic_orbit(
     smart_ds,
@@ -229,9 +222,3 @@ def pressure_components_on_elliptic_orbit(
     out["radius [m]"] = out["radius [R]"] * body_radius_m
     return out
 
-
-__all__ = [
-    "pressure_components_from_orbit_sample",
-    "pressure_components_on_circular_orbit",
-    "pressure_components_on_elliptic_orbit",
-]

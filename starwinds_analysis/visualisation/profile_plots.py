@@ -11,9 +11,7 @@ from __future__ import annotations
 
 import numpy as np
 
-
 SHELL_HEIGHT_XLABEL = "Height over surface [R]"
-
 
 def shell_profile_height(profile) -> np.ndarray:
     if "height [R]" in profile:
@@ -21,7 +19,6 @@ def shell_profile_height(profile) -> np.ndarray:
     if "radius [R]" in profile:
         return np.array(profile["radius [R]"], dtype=float) - 1.0
     raise KeyError("Profile must contain 'height [R]' or 'radius [R]'")
-
 
 def plot_shell_height_series(
     ax,
@@ -42,8 +39,3 @@ def plot_shell_height_series(
     ax.set_ylabel(ylabel)
     return ax
 
-__all__ = [
-    "SHELL_HEIGHT_XLABEL",
-    "shell_profile_height",
-    "plot_shell_height_series",
-]

@@ -6,4 +6,3 @@ sprinkled magic numbers.
 
 from scipy.constants import mu_0 as MU0
 
-__all__ = ["MU0"]

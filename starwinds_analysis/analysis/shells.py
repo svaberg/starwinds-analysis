@@ -36,7 +36,6 @@ def _resample_shell_points(
         zone="shell-samples",
     )
 
-
 def _field_unit_from_brackets(name: str) -> str | None:
     text = str(name)
     i = text.rfind("[")
@@ -44,7 +43,6 @@ def _field_unit_from_brackets(name: str) -> str | None:
     if i == -1 or j == -1 or j <= i:
         return None
     return text[i + 1 : j].strip() or None
-
 
 def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *, zone_suffix: str):
     if not extra_fields:
@@ -84,7 +82,6 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
 
-
 # TODO this is too permissive and hacky.
 # TODO if RBODY exists, which it often does, it is in solar units, same as X [R], etc.
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
@@ -109,7 +106,6 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     raise ValueError(
         "Could not infer body radius in meters. Pass body_radius_m explicitly."
     )
-
 
 def infer_cartesian_axis_radii(
     smart_ds,
@@ -160,7 +156,6 @@ def infer_cartesian_axis_radii(
     if radii.size == 0:
         raise ValueError("Could not infer any axis-aligned radii from the dataset points")
     return radii
-
 
 def sample_spherical_shells(
     smart_ds,
@@ -265,7 +260,6 @@ def sample_spherical_shells(
 
     return shell_ds
 
-
 def sample_spherical_shells_fibonacci(
     smart_ds,
     radii,
@@ -345,7 +339,6 @@ def sample_spherical_shells_fibonacci(
     )
     return shell_ds
 
-
 def sample_spherical_shells_by_strategy(
     smart_ds,
     radii,
@@ -388,7 +381,6 @@ def sample_spherical_shells_by_strategy(
         )
     raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
-
 def integrate_shell_scalar(values, area):
     """
     Integrate scalar values over shell surfaces with NaN-safe area weighting.
@@ -416,7 +408,6 @@ def integrate_shell_scalar(values, area):
 
     return sum_val, coverage
 
-
 def shell_profile_radius_height(shells):
     if hasattr(shells, "has_field") and shells.has_field("R [R]"):
         r_field = np.array(shells("R [R]"), dtype=float)
@@ -431,12 +422,3 @@ def shell_profile_radius_height(shells):
         "height [R]": radii - 1.0,
     }
 
-__all__ = [
-    "infer_body_radius_m",
-    "infer_cartesian_axis_radii",
-    "integrate_shell_scalar",
-    "shell_profile_radius_height",
-    "sample_spherical_shells_by_strategy",
-    "sample_spherical_shells",
-    "sample_spherical_shells_fibonacci",
-]

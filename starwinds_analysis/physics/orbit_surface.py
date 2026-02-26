@@ -36,7 +36,6 @@ from starwinds_analysis.analysis.shells import (
 )
 from starwinds_analysis.analysis.stats import weighted_quantile
 
-
 def _ensure_batsrus_surface_fields(
     smart_ds,
     *,
@@ -58,14 +57,12 @@ def _ensure_batsrus_surface_fields(
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
-
 def _pressure_field_name_and_scale(smart_ds):
     if smart_ds.has_field("P [Pa]"):
         return "P [Pa]", 1.0
     if smart_ds.has_field("P [dyne/cm^2]"):
         return "P [dyne/cm^2]", 0.1
     raise KeyError("Could not find pressure field in SI or cgs form")
-
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     """
@@ -101,7 +98,6 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
         "radius [surface]": np.sqrt(np.sum(surface * surface, axis=-1)),
     }
 
-
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
     points = np.array(points_r, dtype=float) * float(body_radius_m)
     phase = np.array(phase_turns, dtype=float)
@@ -125,7 +121,6 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
         where=denom[:, None] != 0,
     )
 
-
 def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     az_w = np.full(int(n_longitudes), 1.0 / float(n_longitudes), dtype=float)
     if time_weight is None:
@@ -139,7 +134,6 @@ def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
         t_w = t_w / sw if sw > 0 else np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
     return np.outer(t_w, az_w)
 
-
 def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     arr = np.array(values_2d, dtype=float)
     if arr.ndim != 2:
@@ -152,7 +146,6 @@ def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
         if np.any(m):
             out[i] = np.quantile(row[m], q)
     return q, out
-
 
 def surface_point_normals_and_areas(surface_points_xyz_m):
     """
@@ -180,7 +173,6 @@ def surface_point_normals_and_areas(surface_points_xyz_m):
         )
     return normals, area
 
-
 def _phase_line_integrals(values_2d, area_2d):
     """
     Integrate sampled surface density values over longitude for each orbit phase.
@@ -201,7 +193,6 @@ def _phase_line_integrals(values_2d, area_2d):
             where=total > 0,
         )
     return integ, cov
-
 
 def sample_orbit_surface_revolution(
     smart_ds,
@@ -306,7 +297,6 @@ def sample_orbit_surface_revolution(
             sampled[key] = arr.reshape(n_phase, n_lon)
     return sampled
 
-
 def pressure_components_on_orbit_surface(
     smart_ds,
     orbit,
@@ -408,7 +398,6 @@ def pressure_components_on_orbit_surface(
     elif "radius [R]" in orbit_meta:
         out["radius [R]"] = float(orbit_meta["radius [R]"])
     return out
-
 
 def torque_components_on_orbit_surface(
     smart_ds,
@@ -537,11 +526,3 @@ def torque_components_on_orbit_surface(
         out["radius [R]"] = float(orbit_meta["radius [R]"])
     return out
 
-
-__all__ = [
-    "surface_of_revolution_from_path",
-    "surface_point_normals_and_areas",
-    "sample_orbit_surface_revolution",
-    "pressure_components_on_orbit_surface",
-    "torque_components_on_orbit_surface",
-]

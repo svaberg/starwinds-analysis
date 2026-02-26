@@ -8,13 +8,11 @@ from __future__ import annotations
 
 import importlib
 
-
 def graph_field_names(smart_ds):
     graph = smart_ds._computation_graph
     if graph is None or not hasattr(graph, "fields"):
         return ()
     return tuple(graph.fields())
-
 
 def resolve_field(smart_ds, name: str):
     """
@@ -29,7 +27,6 @@ def resolve_field(smart_ds, name: str):
     griblet = import_griblet()
     solver = griblet.DependencySolver(graph)
     return solver.resolve_field(name)
-
 
 def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     cost, tree = resolve_field(smart_ds, name)
@@ -55,7 +52,6 @@ def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     header = f"{name} total_cost={cost}"
     return "\n".join([header, *lines])
 
-
 def compute_via_graph(smart_ds, name: str):
     if smart_ds._computation_graph is None:
         raise IndexError(
@@ -69,7 +65,6 @@ def compute_via_graph(smart_ds, name: str):
     _cost, tree = solver.resolve_field(name)
     return evaluate_resolved_tree(tree, graph)
 
-
 def build_runtime_graph(smart_ds):
     if smart_ds._computation_graph is None:
         raise RuntimeError("No computation graph attached")
@@ -78,7 +73,6 @@ def build_runtime_graph(smart_ds):
     runtime_graph.merge(build_loader_graph(smart_ds))
     runtime_graph.merge(smart_ds._computation_graph)
     return runtime_graph
-
 
 def build_loader_graph(smart_ds):
     """
@@ -121,7 +115,6 @@ def build_loader_graph(smart_ds):
             )
     return graph
 
-
 def import_griblet():
     try:
         return importlib.import_module("griblet")
@@ -130,7 +123,6 @@ def import_griblet():
             "griblet is required for computation-graph resolution. Install griblet "
             "or use local register_field(...) functions."
         ) from e
-
 
 def evaluate_resolved_tree(node, graph):
     """
@@ -152,14 +144,3 @@ def evaluate_resolved_tree(node, graph):
             return recipe["func"](*values)
     raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
 
-
-__all__ = [
-    "build_loader_graph",
-    "build_runtime_graph",
-    "compute_via_graph",
-    "evaluate_resolved_tree",
-    "explain_field",
-    "graph_field_names",
-    "import_griblet",
-    "resolve_field",
-]

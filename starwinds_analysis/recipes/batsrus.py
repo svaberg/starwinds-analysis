@@ -13,11 +13,9 @@ import re
 
 import numpy as np
 
-
 _AMU_KG = 1.66053906660e-27
 _MU0 = 4.0e-7 * math.pi
 _DEFAULT_GAMMA = 5.0 / 3.0
-
 
 _UNIT_FACTORS = {
     "g/cm^3": ("kg/m^3", 1e3),
@@ -31,7 +29,6 @@ _UNIT_FACTORS = {
     "nPa": ("Pa", 1e-9),
     "`mA/m^2": ("A/m^2", 1e-6),
 }
-
 
 def build_griblet_batsrus_graph(
     variable_names: Sequence[str],
@@ -63,7 +60,6 @@ def build_griblet_batsrus_graph(
         graph.merge(build_griblet_common_derived_graph(vars_set))
 
     return graph
-
 
 def build_griblet_unit_normalization_graph(
     variable_names: Sequence[str],
@@ -141,7 +137,6 @@ def build_griblet_unit_normalization_graph(
         )
 
     return graph
-
 
 def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
     griblet = importlib.import_module("griblet")
@@ -221,7 +216,6 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 
     return graph
 
-
 def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
@@ -249,7 +243,6 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
         )
     return graph
 
-
 def _parse_var_name(name: str):
     """
     Parse BATSRUS variable names.
@@ -269,19 +262,16 @@ def _parse_var_name(name: str):
             return base, unit
     return None
 
-
 def _parse_float(x):
     if isinstance(x, (int, float, np.floating)):
         return float(x)
     return float(str(x).strip())
-
 
 def _safe_gamma(gamma):
     g = _parse_float(gamma)
     if not np.isfinite(g) or g <= 0:
         return _DEFAULT_GAMMA
     return g
-
 
 def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: float | None):
     if body_radius_m is not None:
@@ -299,10 +289,3 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
                 return None
     return None
 
-
-__all__ = [
-    "build_griblet_batsrus_graph",
-    "build_griblet_common_derived_graph",
-    "build_griblet_unit_normalization_graph",
-    "build_griblet_vector_magnitude_graph",
-]

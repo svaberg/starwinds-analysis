@@ -20,9 +20,7 @@ from starwinds_analysis._smart_ds_graph import (
 )
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
 
-
 FieldFunction = Callable[["SmartDs"], np.ndarray]
-
 
 class SmartDs:
     """
@@ -437,5 +435,3 @@ class SmartDs:
             "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
 
-
-__all__ = ["SmartDs"]

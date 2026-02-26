@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def structured_quad_corners(nx: int, nz: int):
     """
     Quad connectivity for a row-major `(nz, nx)` point grid.
@@ -26,7 +25,6 @@ def structured_quad_corners(nx: int, nz: int):
             k += 1
     return corners
 
-
 def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
     v = np.array(values, dtype=float)
     v = v[np.isfinite(v)]
@@ -42,7 +40,6 @@ def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
         lo -= pad
         hi += pad
     return lo, hi
-
 
 def resample_structured_xz_slice(
     smart_ds,
@@ -96,7 +93,4 @@ def resample_structured_xz_slice(
         zone=f"{smart_ds.zone} (XZ slice y={y_value:g})",
     )
     return sliced
-
-
-__all__ = ["infer_range", "resample_structured_xz_slice", "structured_quad_corners"]
 

@@ -54,13 +54,11 @@ from starwinds_analysis.visualisation.histograms import (
     plot_vs_radius,
 )
 
-
 @dataclass(frozen=True)
 class SlicePreset:
     field_candidates: tuple[str, ...]
     overlays: tuple[tuple[str, float, str], ...] = ()
     intent: str = "si_diagnostic"
-
 
 def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star_radius_m):
     """
@@ -76,7 +74,6 @@ def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star
         "height [R]": np.array(diagnostics["mass_loss"]["height [R]"], dtype=float),
         "Upsilon_open [none]": np.array(y, dtype=float),
     }
-
 
 SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
     "rho": SlicePreset(("Rho [kg/m^3]",), intent="si_diagnostic"),
@@ -130,7 +127,6 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
     **SLICE_PRESETS_RAW_DISPLAY,
 }
 
-
 def _load_slice_styles():
     try:
         from starwinds_analysis.visualisation.slice import (
@@ -175,7 +171,6 @@ RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
     **RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
 }
 
-
 def _has_field(ds, name: str) -> bool:
     if hasattr(ds, "has_field"):
         try:
@@ -188,13 +183,11 @@ def _has_field(ds, name: str) -> bool:
         return False
     return True
 
-
 def _resolve_first_field(ds, candidates):
     for name in candidates:
         if _has_field(ds, name):
             return name
     return None
-
 
 def _normalize_overlays(ds, overlays):
     out = []
@@ -207,7 +200,6 @@ def _normalize_overlays(ds, overlays):
         if _has_field(ds, field):
             out.append((field, float(level), color))
     return out
-
 
 def plot_slice_quicklook(
     ds,
@@ -252,7 +244,6 @@ def plot_slice_quicklook(
         ax_main.tricontour(tris, values, **kwargs)
 
     return fig, axes, cbar
-
 
 def plot_radius_quicklook(
     ds,
@@ -303,7 +294,6 @@ def plot_radius_quicklook(
         ax.set_visible(False)
     return fig, axs[:n]
 
-
 def compute_shell_diagnostics(
     smart_ds,
     radii,
@@ -336,7 +326,6 @@ def compute_shell_diagnostics(
     if "axisymmetric_open_flux" in include:
         out["axisymmetric_open_flux"] = axisymmetric_open_flux_vs_radius(smart_ds, radii, **common)
     return out
-
 
 def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     """
@@ -427,7 +416,6 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
 
     return fig, axs
 
-
 def quicklook_shell_figure(
     smart_ds,
     radii,
@@ -461,7 +449,6 @@ def quicklook_shell_figure(
     fig, axs = plot_shell_diagnostics(diagnostics, figsize=figsize)
     return fig, axs, diagnostics
 
-
 def plot_orbit_mass_loss_comparison(ax, result):
     y = np.array(result["local_mass_loss [kg/s]"], dtype=float)
     phase = _orbit_phase(result, y.size)
@@ -487,7 +474,6 @@ def plot_orbit_mass_loss_comparison(ax, result):
     ax.set_ylabel("Mass loss [kg/s]")
     ax.set_title(_orbit_result_title("Mass Loss", result))
     return ax
-
 
 def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     tot = np.array(result["local_total_torque [Nm]"], dtype=float)
@@ -519,7 +505,6 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     ax.set_title(_orbit_result_title("Torque", result))
     return ax
 
-
 def _orbit_phase(result, n):
     try:
         phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"), dtype=float)
@@ -529,7 +514,6 @@ def _orbit_phase(result, n):
         return phase
     return np.arange(n, dtype=float) / max(1, n)
 
-
 def _orbit_result_title(prefix, result):
     if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
         return (
@@ -537,7 +521,6 @@ def _orbit_result_title(prefix, result):
             f"e={float(result['eccentricity [none]']):.3g}"
         )
     return f"{prefix} @ r={float(result['radius [R]']):.3g} R"
-
 
 def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
     phase = _orbit_phase(result, len(np.array(result["ram_pressure [Pa]"])))
@@ -562,7 +545,6 @@ def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True)
     ax.set_yscale("log")
     ax.set_title(_orbit_result_title("Orbit Pressures", result))
     return ax
-
 
 def orbit_pressure_figure(
     smart_ds,
@@ -631,7 +613,6 @@ def orbit_pressure_figure(
     axs[0].legend(loc="best")
     return fig, axs, result
 
-
 def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_med=0.5, q_high=0.75):
     phase = np.array(phase_profile["phase [turns]"], dtype=float)
     qs = np.array(phase_profile["quantiles [none]"], dtype=float)
@@ -649,7 +630,6 @@ def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_
     ax.fill_between(phase, y_lo, y_hi, color=color, alpha=0.15)
     ax.plot(phase, y_md, "-", color=color, label=label)
     return ax
-
 
 def orbit_surface_pressure_figure(
     smart_ds,
@@ -702,7 +682,6 @@ def orbit_surface_pressure_figure(
         ax.grid(True, alpha=0.3)
         ax.grid(True, which="minor", alpha=0.1)
     return fig, axs, result
-
 
 def orbit_surface_torque_figure(
     smart_ds,
@@ -793,7 +772,6 @@ def orbit_surface_torque_figure(
         ax.grid(True, alpha=0.3)
         ax.grid(True, which="minor", alpha=0.1)
     return fig, axs, result
-
 
 def orbit_local_comparison_figure(
     smart_ds,
@@ -890,7 +868,6 @@ def orbit_local_comparison_figure(
     axs[1].legend(loc="best")
     return fig, axs, {"mass_loss": mass, "torque": torque}
 
-
 def summarize_shell_diagnostics(
     diagnostics,
     *,
@@ -944,7 +921,6 @@ def summarize_shell_diagnostics(
             pass
     return out
 
-
 def flatten_shell_diagnostics_arrays(diagnostics):
     """
     Flatten shell diagnostic arrays for `np.savez`.
@@ -962,7 +938,6 @@ def flatten_shell_diagnostics_arrays(diagnostics):
             flat_key = f"{name}__{_slug_key(key)}"
             arrays[flat_key] = arr
     return arrays
-
 
 def summarize_orbit_results(orbit_results):
     """
@@ -989,7 +964,6 @@ def summarize_orbit_results(orbit_results):
             orbit_out[group_name] = group_out
         out[str(orbit_key)] = orbit_out
     return out
-
 
 def flatten_orbit_results_arrays(orbit_results):
     """
@@ -1019,7 +993,6 @@ def flatten_orbit_results_arrays(orbit_results):
             )
     return arrays
 
-
 def save_shell_diagnostics_json(
     path,
     diagnostics,
@@ -1039,14 +1012,12 @@ def save_shell_diagnostics_json(
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
     return path
 
-
 def save_shell_diagnostics_npz(path, diagnostics):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_shell_diagnostics_arrays(diagnostics)
     np.savez(path, **arrays)
     return path
-
 
 def save_orbit_results_json(path, orbit_results):
     path = Path(path)
@@ -1055,14 +1026,12 @@ def save_orbit_results_json(path, orbit_results):
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
     return path
 
-
 def save_orbit_results_npz(path, orbit_results):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_orbit_results_arrays(orbit_results)
     np.savez(path, **arrays)
     return path
-
 
 def save_quicklook2d_bundle(
     output_dir,
@@ -1120,7 +1089,6 @@ def save_quicklook2d_bundle(
 
     return saved
 
-
 def _slug_key(s: str) -> str:
     out = []
     for ch in str(s):
@@ -1133,7 +1101,6 @@ def _slug_key(s: str) -> str:
         slug = slug.replace("__", "_")
     return slug.strip("_") or "item"
 
-
 def _array_summary(values):
     arr = np.array(values, dtype=float)
     finite = np.isfinite(arr)
@@ -1145,7 +1112,6 @@ def _array_summary(values):
         "max": float(np.nanmax(arr)) if np.any(finite) else np.nan,
         "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
     }
-
 
 def _summarize_result_object(value, *, skip_keys):
     if isinstance(value, dict):
@@ -1167,7 +1133,6 @@ def _summarize_result_object(value, *, skip_keys):
     if np.issubdtype(arr.dtype, np.number):
         return _array_summary(np.array(arr, dtype=float))
     return str(value)
-
 
 def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
     if isinstance(value, dict):
@@ -1191,7 +1156,6 @@ def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
         return
     arrays[prefix] = np.array(arr, dtype=float)
 
-
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
     """
     Best-effort setup of common BATSRUS + spherical derived fields.
@@ -1210,7 +1174,6 @@ def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = Non
     if hasattr(smart_ds, "add_spherical_fields"):
         smart_ds.add_spherical_fields(vectors=("B", "U"))
     return smart_ds
-
 
 def run_quicklook2d(
     smart_ds,
@@ -1413,36 +1376,3 @@ def run_quicklook2d(
         )
     return out
 
-
-__all__ = [
-    "RADIAL_SUMMARY_PRESETS",
-    "RADIAL_SUMMARY_PRESETS_RAW_DISPLAY",
-    "RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC",
-    "SLICE_PRESETS",
-    "SLICE_PRESETS_RAW_DISPLAY",
-    "SLICE_PRESETS_SI_DIAGNOSTIC",
-    "SlicePreset",
-    "compute_shell_diagnostics",
-    "flatten_shell_diagnostics_arrays",
-    "flatten_orbit_results_arrays",
-    "plot_shell_diagnostics",
-    "plot_radius_quicklook",
-    "plot_slice_quicklook",
-    "plot_orbit_mass_loss_comparison",
-    "plot_orbit_pressure_components",
-    "plot_orbit_torque_comparison",
-    "prepare_smartds_for_quicklook",
-    "quicklook_shell_figure",
-    "orbit_local_comparison_figure",
-    "orbit_pressure_figure",
-    "orbit_surface_pressure_figure",
-    "orbit_surface_torque_figure",
-    "run_quicklook2d",
-    "save_quicklook2d_bundle",
-    "save_orbit_results_json",
-    "save_orbit_results_npz",
-    "save_shell_diagnostics_json",
-    "save_shell_diagnostics_npz",
-    "summarize_orbit_results",
-    "summarize_shell_diagnostics",
-]

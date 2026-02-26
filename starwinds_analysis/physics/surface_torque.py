@@ -20,7 +20,6 @@ from starwinds_analysis.physics.constants import MU0
 # wrappers (`surface_torque_vs_radius`, etc.). Keep the local torque terms here, but
 # move wrapper orchestration toward generic shell/surface reduction primitives.
 
-
 def _ensure_batsrus_surface_torque_fields(
     smart_ds,
     *,
@@ -42,7 +41,6 @@ def _ensure_batsrus_surface_torque_fields(
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
 
-
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     """
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
@@ -59,7 +57,6 @@ def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     v[..., 2] = u[..., 2]
     return v
 
-
 def normalize_surface_normals(normals_xyz):
     n = np.array(normals_xyz, dtype=float)
     if n.shape[-1] != 3:
@@ -69,13 +66,11 @@ def normalize_surface_normals(normals_xyz):
         out = np.divide(n, nmag, out=np.full_like(n, np.nan), where=nmag > 0)
     return out
 
-
 def radial_surface_normals(xyz):
     xyz = np.array(xyz, dtype=float)
     if xyz.shape[-1] != 3:
         raise ValueError("xyz must have shape (..., 3)")
     return normalize_surface_normals(xyz)
-
 
 def surface_torque_density_terms(
     *,
@@ -180,7 +175,6 @@ def surface_torque_density_terms(
         "total [N/m]": total,
     }
 
-
 def integrate_surface_torque_terms(terms):
     """
     Integrate per-area torque-density terms from `surface_torque_density_terms(...)`.
@@ -208,7 +202,6 @@ def integrate_surface_torque_terms(terms):
     if coverages:
         out["coverage [none]"] = np.min(np.stack(coverages, axis=0), axis=0)
     return out
-
 
 def surface_torque_terms_on_shell_samples(
     shells,
@@ -249,7 +242,6 @@ def surface_torque_terms_on_shell_samples(
         angvel_rad_s=angvel_rad_s,
         use_rotating_frame=use_rotating_frame,
     )
-
 
 def surface_torque_vs_radius(
     smart_ds,
@@ -339,14 +331,3 @@ def surface_torque_vs_radius(
         "sampling": sampling,
     }
 
-
-__all__ = [
-    "MU0",
-    "integrate_surface_torque_terms",
-    "normalize_surface_normals",
-    "radial_surface_normals",
-    "rotational_frame_velocity",
-    "surface_torque_terms_on_shell_samples",
-    "surface_torque_density_terms",
-    "surface_torque_vs_radius",
-]

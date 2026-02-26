@@ -49,7 +49,6 @@ def circular_orbit_points(
         raise ValueError("plane must be 'xy', 'xz', or 'yz'")
     return pts
 
-
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
     Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
@@ -70,7 +69,6 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
             break
     return e_anom
 
-
 def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
     cx, cy, cz = map(float, center)
     pts = np.empty((x.size, 3), dtype=float)
@@ -90,7 +88,6 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
         raise ValueError("plane must be 'xy', 'xz', or 'yz'")
     return pts
 
-
 def _phase_from_weights(weights):
     w = np.array(weights, dtype=float)
     if w.ndim != 1 or w.size == 0:
@@ -105,7 +102,6 @@ def _phase_from_weights(weights):
     if w.size > 1:
         phase[1:] = np.cumsum(w[:-1])
     return phase
-
 
 def elliptic_orbit_points(
     semi_major_axis,
@@ -190,7 +186,6 @@ def elliptic_orbit_points(
         "sample": sample,
     }
 
-
 def sample_points(
     smart_ds,
     points,
@@ -218,7 +213,6 @@ def sample_points(
     data["Z [sample]"] = points[:, 2]
     data["R [sample]"] = np.sqrt(np.sum(points * points, axis=1))
     return data
-
 
 def sample_circular_orbit(
     smart_ds,
@@ -249,7 +243,6 @@ def sample_circular_orbit(
     sampled["time_weight [none]"] = np.full(n_points, 1.0 / n_points, dtype=float)
     sampled["kind"] = "circular"
     return sampled
-
 
 def sample_elliptic_orbit(
     smart_ds,
@@ -298,11 +291,3 @@ def sample_elliptic_orbit(
     sampled["sample_parameter"] = sample
     return sampled
 
-
-__all__ = [
-    "circular_orbit_points",
-    "elliptic_orbit_points",
-    "sample_points",
-    "sample_circular_orbit",
-    "sample_elliptic_orbit",
-]

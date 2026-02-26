@@ -10,7 +10,6 @@ import numpy as np
 
 from starwinds_analysis.physics.constants import MU0
 
-
 def spherical_wind_torque_density_terms(
     *,
     rho_kg_m3,
@@ -38,5 +37,3 @@ def spherical_wind_torque_density_terms(
     dynamic = varpi * rho * u_phi * u_r
     return magnetic, dynamic
 
-
-__all__ = ["MU0", "spherical_wind_torque_density_terms"]

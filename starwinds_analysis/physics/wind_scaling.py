@@ -19,7 +19,6 @@ from starwinds_analysis.physics.constants import MU0
 
 # DONE(debt): Reuse the shared `MU0` constant from `physics.constants`.
 
-
 def surface_escape_speed(star_mass_kg, star_radius_m):
     """
     Surface escape speed `sqrt(2GM/R)`.
@@ -28,7 +27,6 @@ def surface_escape_speed(star_mass_kg, star_radius_m):
     r = np.array(star_radius_m, dtype=float)
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.sqrt(2.0 * c.G * m / r)
-
 
 def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_radius_m):
     """
@@ -41,9 +39,3 @@ def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_rad
     with np.errstate(invalid="ignore", divide="ignore"):
         return (4.0 * math.pi / MU0) * phi * phi / (r * r * dotm * vesc)
 
-
-__all__ = [
-    "MU0",
-    "open_wind_magnetisation",
-    "surface_escape_speed",
-]

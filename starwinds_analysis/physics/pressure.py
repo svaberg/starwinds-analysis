@@ -10,7 +10,6 @@ import numpy as np
 
 from starwinds_analysis.physics.constants import MU0
 
-
 def magnetic_pressure(b_t_or_mag):
     """
     Magnetic pressure `B^2 / (2 mu0)` in Pa.
@@ -19,7 +18,6 @@ def magnetic_pressure(b_t_or_mag):
     # so callers can request it directly in SI units.
     b = np.array(b_t_or_mag, dtype=float)
     return (b * b) / (2.0 * MU0)
-
 
 def ram_pressure(rho_kg_m3, speed_m_s):
     """
@@ -30,7 +28,6 @@ def ram_pressure(rho_kg_m3, speed_m_s):
     rho = np.array(rho_kg_m3, dtype=float)
     u = np.array(speed_m_s, dtype=float)
     return rho * u * u
-
 
 def pressure_components(
     rho_kg_m3,
@@ -75,7 +72,6 @@ def pressure_components(
         out["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
     return out
 
-
 def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e-4):
     """
     Vidotto-style stand-off distance proxy from pressure balance.
@@ -89,11 +85,3 @@ def magnetospheric_standoff_distance(rho_kg_m3, speed_m_s, *, b0_t: float = 0.7e
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.power(numer / p_ram, 1.0 / 6.0)
 
-
-__all__ = [
-    "MU0",
-    "magnetic_pressure",
-    "ram_pressure",
-    "pressure_components",
-    "magnetospheric_standoff_distance",
-]

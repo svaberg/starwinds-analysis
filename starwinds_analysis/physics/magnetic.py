@@ -10,7 +10,6 @@ import numpy as np
 
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
-
 def magnetic_field_unit_scale(unit: str) -> tuple[float, str]:
     key = str(unit).strip()
     table = {
@@ -24,7 +23,7 @@ def magnetic_field_unit_scale(unit: str) -> tuple[float, str]:
         raise ValueError(f"Unsupported magnetic display unit '{unit}'")
     return table[key]
 
-
+# TODO Why is this here? There is no content!
 def magnetic_shell_components_from_cartesian(bx_t, by_t, bz_t, x, y, z):
     """
     Magnetic shell components from Cartesian magnetic field and coordinates.
@@ -52,5 +51,3 @@ def magnetic_shell_components_from_cartesian(bx_t, by_t, bz_t, x, y, z):
         "B_tangential [T]": np.array(b_tangential, dtype=float),
     }
 
-
-__all__ = ["magnetic_field_unit_scale", "magnetic_shell_components_from_cartesian"]

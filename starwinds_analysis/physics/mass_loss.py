@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import numpy as np
 
-
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
     """
     Ensure common BATSRUS SI fields are requestable from `SmartDs`.
@@ -22,7 +21,6 @@ def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
     if all(smart_ds.has_field(name) for name in needed):
         return
     smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
-
 
 def mass_loss_vs_radius(
     smart_ds,
@@ -84,6 +82,3 @@ def mass_loss_vs_radius(
         "coverage [none]": np.array(coverage, dtype=float),
         "shell_samples": shells,
     }
-__all__ = [
-    "mass_loss_vs_radius",
-]

@@ -10,7 +10,6 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 
-
 def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | None = None):
     """
     Boxcar weights over shell radii in units of body radii.
@@ -23,7 +22,6 @@ def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | No
         w = np.where(r <= float(rmax), w, 0.0)
     w = np.where(np.isfinite(r), w, 0.0)
     return w
-
 
 def summarize_shell_series(
     radii_r,
@@ -83,7 +81,6 @@ def summarize_shell_series(
         "values": np.array(qvals, dtype=float).tolist(),
     }
 
-
 def summarize_shell_diagnostics_band(
     diagnostics,
     *,
@@ -125,9 +122,3 @@ def summarize_shell_diagnostics_band(
             out[name] = per_profile
     return out
 
-
-__all__ = [
-    "boxcar_shell_weights",
-    "summarize_shell_diagnostics_band",
-    "summarize_shell_series",
-]
