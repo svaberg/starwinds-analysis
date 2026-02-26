@@ -18,7 +18,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.torque import MU0, spherical_wind_torque_density_terms
-from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
@@ -61,7 +60,7 @@ def torque_vs_radius(
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-    x_name, y_name, z_name = coordinate_fields
+    x_name, y_name = coordinate_fields[:2]
     area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
@@ -79,19 +78,13 @@ def torque_vs_radius(
     )
 
     rho = np.array(shells(rho_name), dtype=float)
-    ux = np.array(shells(ux_name), dtype=float)
-    uy = np.array(shells(uy_name), dtype=float)
-    uz = np.array(shells(uz_name), dtype=float)
-    bx = np.array(shells(bx_name), dtype=float)
-    by = np.array(shells(by_name), dtype=float)
-    bz = np.array(shells(bz_name), dtype=float)
     x = np.array(shells(x_name), dtype=float)
     y = np.array(shells(y_name), dtype=float)
-    z = np.array(shells(z_name), dtype=float)
     area = np.array(shells(area_name), dtype=float)
-
-    u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
-    b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
+    u_r = np.array(shells("U_r [m/s]"), dtype=float)
+    u_phi = np.array(shells("U_phi [m/s]"), dtype=float)
+    b_r = np.array(shells("B_r [T]"), dtype=float)
+    b_phi = np.array(shells("B_phi [T]"), dtype=float)
 
     varpi = np.sqrt(x * x + y * y) * body_radius_m
 

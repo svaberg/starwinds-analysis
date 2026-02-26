@@ -6,8 +6,9 @@ Flux plotting helpers are implemented in `starwinds_analysis.visualisation.profi
 
 # TODO(debt): This file is quantity-specific (`fluxes`) and should eventually be
 # expressed as local quantity definitions + generic shell reduction primitives.
-# TODO(debt): This module now requests SI fields through SmartDs/griblet, but still
-# recomputes local quantities (`B_r`, `U_r`, `E*U_r`) outside SmartDs/griblet.
+# TODO(debt): This module now requests SI fields (including spherical components)
+# through SmartDs/griblet, but still computes some local diagnostics in code
+# (`B·n`, axisymmetric reductions, `E*U_r`).
 
 from __future__ import annotations
 
@@ -20,7 +21,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
-from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float, include_energy: bool = False) -> None:
@@ -75,9 +75,7 @@ def open_magnetic_flux_vs_radius(
     y = np.array(shells(y_name), dtype=float)
     z = np.array(shells(z_name), dtype=float)
     area = np.array(shells(area_name), dtype=float)
-    # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
-    # of recomputing spherical components in the analysis layer.
-    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, x, y, z)
+    b_r = np.array(shells("B_r [T]"), dtype=float)
 
     signed_flux, cov_signed = integrate_shell_scalar(b_r, area)
     open_flux, cov_open = integrate_shell_scalar(np.abs(b_r), area)
@@ -133,17 +131,8 @@ def axisymmetric_open_flux_vs_radius(
     )
     shells = prof["shell_samples"]
     # Reconstruct B_r from the cached shell samples in SI.
-    x_name, y_name, z_name = coordinate_fields
-    bx = np.array(shells("B_x [T]"), dtype=float)
-    by = np.array(shells("B_y [T]"), dtype=float)
-    bz = np.array(shells("B_z [T]"), dtype=float)
-    x = np.array(shells(x_name), dtype=float)
-    y = np.array(shells(y_name), dtype=float)
-    z = np.array(shells(z_name), dtype=float)
     area = np.array(shells("dA [m^2]"), dtype=float)
-    # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
-    # of recomputing spherical components in the analysis layer.
-    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, x, y, z)
+    b_r = np.array(shells("B_r [T]"), dtype=float)
 
     with np.errstate(invalid="ignore"):
         b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
@@ -203,7 +192,6 @@ def energy_flux_vs_radius(
             names = ", ".join(name for name, _ in energy_field_candidates)
             raise KeyError(f"Could not find any energy field candidate: {names}")
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    x_name, y_name, z_name = coordinate_fields
     area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
@@ -221,16 +209,8 @@ def energy_flux_vs_radius(
     )
 
     e = e_scale * np.array(shells(e_name), dtype=float)
-    ux = np.array(shells(ux_name), dtype=float)
-    uy = np.array(shells(uy_name), dtype=float)
-    uz = np.array(shells(uz_name), dtype=float)
-    x = np.array(shells(x_name), dtype=float)
-    y = np.array(shells(y_name), dtype=float)
-    z = np.array(shells(z_name), dtype=float)
     area = np.array(shells(area_name), dtype=float)
-    # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on shell samples
-    # instead of recomputing spherical components in the analysis layer.
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
+    u_r = np.array(shells("U_r [m/s]"), dtype=float)
 
     # TODO(griblet): Request energy-flux density directly from SmartDs/griblet in SI
     # (e.g. `energy_flux [W/m^2]`) instead of recomputing `E * U_r` here.

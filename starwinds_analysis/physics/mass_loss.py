@@ -14,7 +14,6 @@ from __future__ import annotations
 import numpy as np
 
 from starwinds_analysis.physics.flux_density import radial_advective_flux_density
-from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
@@ -56,7 +55,6 @@ def mass_loss_vs_radius(
     _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    x_name, y_name, z_name = coordinate_fields
     area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
@@ -74,17 +72,9 @@ def mass_loss_vs_radius(
     )
 
     rho = np.array(shells(rho_name), dtype=float)
-    ux = np.array(shells(ux_name), dtype=float)
-    uy = np.array(shells(uy_name), dtype=float)
-    uz = np.array(shells(uz_name), dtype=float)
-    x = np.array(shells(x_name), dtype=float)
-    y = np.array(shells(y_name), dtype=float)
-    z = np.array(shells(z_name), dtype=float)
+    u_r = np.array(shells("U_r [m/s]"), dtype=float)
     area = np.array(shells(area_name), dtype=float)
 
-    # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
-    # instead of recomputing spherical components here.
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
     # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
     # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
     mass_flux = radial_advective_flux_density(rho, u_r)  # kg / m^2 / s
