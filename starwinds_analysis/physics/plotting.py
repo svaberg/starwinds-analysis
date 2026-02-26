@@ -4,9 +4,9 @@ These are plotting-only functions (Matplotlib fig/ax). They are kept out of the
 `analysis` layer to preserve the analysis/data-vs-plotting boundary.
 """
 
-# TODO(debt): This module contains quantity-specific plotting wrappers (`plot_*`
-# for mass-loss/torque/energy/open-flux). Prefer notebooks/direct Matplotlib calls or
-# genuinely general visualisation primitives rather than quantity-named library plots.
+# TODO(debt): This module still contains quantity-specific plotting
+# (`plot_shell_mass_flux_lonlat`) in a deep layer. Prefer notebooks/direct Matplotlib
+# calls or genuinely general visualisation primitives.
 # TODO(debt): `physics` is a deep layer and should not grow a large plotting API
 # surface; keep only plotting code that is demonstrably reusable and generic.
 
@@ -118,68 +118,9 @@ def plot_shell_mass_flux_lonlat(
     return fig, ax, extra
 
 
-def plot_mass_loss_profile(ax, profile, *, show_negative=True):
-    return plot_shell_height_series(
-        ax,
-        profile,
-        "mass_loss [kg/s]",
-        label="mass loss",
-        ylabel="Mass flux [kg/s]",
-        color="C0",
-        show_negative=show_negative,
-    )
-
-
-def plot_torque_profile(ax, profile, *, show_negative=True):
-    h = shell_profile_height(profile)
-    mag = np.array(profile["magnetic_torque [Nm]"], dtype=float)
-    dyn = np.array(profile["dynamic_torque [Nm]"], dtype=float)
-
-    plot_shell_height_series(
-        ax,
-        profile,
-        "total_torque [Nm]",
-        label="total",
-        ylabel="Torque [Nm]",
-        color="C0",
-        show_negative=show_negative,
-    )
-    ax.plot(h, mag, ".-", color="C1", label="magnetic")
-    ax.plot(h, dyn, ".-", color="C2", label="dynamic")
-    return ax
-
-
-def plot_open_flux_profile(ax, profile):
-    return plot_shell_height_series(
-        ax,
-        profile,
-        "open_flux [Wb]",
-        label="open flux",
-        ylabel="Open magnetic flux [Wb]",
-        color="C0",
-        show_negative=False,
-    )
-
-
-def plot_energy_flux_profile(ax, profile, *, show_negative=True):
-    return plot_shell_height_series(
-        ax,
-        profile,
-        "energy_flux [W]",
-        label="energy flux",
-        ylabel="Energy flux [W]",
-        color="C0",
-        show_negative=show_negative,
-    )
-
-
 __all__ = [
     "SHELL_HEIGHT_XLABEL",
     "shell_profile_height",
     "plot_shell_height_series",
     "plot_shell_mass_flux_lonlat",
-    "plot_mass_loss_profile",
-    "plot_torque_profile",
-    "plot_open_flux_profile",
-    "plot_energy_flux_profile",
 ]

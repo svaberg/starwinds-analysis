@@ -41,10 +41,8 @@ from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostic
 from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.plotting import (
-    plot_energy_flux_profile,
-    plot_mass_loss_profile,
-    plot_open_flux_profile,
-    plot_torque_profile,
+    plot_shell_height_series,
+    shell_profile_height,
 )
 from starwinds_analysis.physics.shell_torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
@@ -348,18 +346,45 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     axs = np.array(axs)
 
     if "mass_loss" in diagnostics:
-        plot_mass_loss_profile(axs[0, 0], diagnostics["mass_loss"])
+        plot_shell_height_series(
+            axs[0, 0],
+            diagnostics["mass_loss"],
+            "mass_loss [kg/s]",
+            label="mass loss",
+            ylabel="Mass flux [kg/s]",
+            color="C0",
+            show_negative=True,
+        )
         axs[0, 0].set_title("Wind Mass Loss")
         axs[0, 0].set_yscale("symlog", linthresh=1e-3)
 
     if "torque" in diagnostics:
-        plot_torque_profile(axs[0, 1], diagnostics["torque"])
+        plot_shell_height_series(
+            axs[0, 1],
+            diagnostics["torque"],
+            "total_torque [Nm]",
+            label="total",
+            ylabel="Torque [Nm]",
+            color="C0",
+            show_negative=True,
+        )
+        h = shell_profile_height(diagnostics["torque"])
+        axs[0, 1].plot(h, np.array(diagnostics["torque"]["magnetic_torque [Nm]"]), ".-", color="C1", label="magnetic")
+        axs[0, 1].plot(h, np.array(diagnostics["torque"]["dynamic_torque [Nm]"]), ".-", color="C2", label="dynamic")
         axs[0, 1].set_title("Wind Torque")
         axs[0, 1].set_yscale("symlog", linthresh=1e-3)
         axs[0, 1].legend(loc="best")
 
     if "open_flux" in diagnostics:
-        plot_open_flux_profile(axs[1, 0], diagnostics["open_flux"])
+        plot_shell_height_series(
+            axs[1, 0],
+            diagnostics["open_flux"],
+            "open_flux [Wb]",
+            label="open flux",
+            ylabel="Open magnetic flux [Wb]",
+            color="C0",
+            show_negative=False,
+        )
         axs[1, 0].set_title("Open Magnetic Flux")
         ax2 = None
         if "axisymmetric_open_flux" in diagnostics:
@@ -383,7 +408,15 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
                 ax2.set_yscale("log")
 
     if "energy" in diagnostics:
-        plot_energy_flux_profile(axs[1, 1], diagnostics["energy"])
+        plot_shell_height_series(
+            axs[1, 1],
+            diagnostics["energy"],
+            "energy_flux [W]",
+            label="energy flux",
+            ylabel="Energy flux [W]",
+            color="C0",
+            show_negative=True,
+        )
         axs[1, 1].set_title("Energy Flux")
         axs[1, 1].set_yscale("symlog", linthresh=1e-3)
 
