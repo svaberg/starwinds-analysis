@@ -62,13 +62,15 @@ class PolarAzimuthalGrid:
         azimuthal_edges
         polar_centres
         azimuthal_centres
-        cell_area
+        cell_solid_angle
+        cell_area(radius)
+        corners_cartesian(radius)
+        centres_cartesian(radius)
     """
 
-    def __init__(self, polar_edge_1d, azimuthal_edge_1d, radius=1.0):
+    def __init__(self, polar_edge_1d, azimuthal_edge_1d):
         self._polar = np.array(polar_edge_1d, float)
         self._azimuthal = np.array(azimuthal_edge_1d, float)
-        self._radius = float(radius)
         self._meshgrid_kwargs = dict(indexing="ij")
 
 
@@ -98,27 +100,27 @@ class PolarAzimuthalGrid:
         band = (np.cos(self._polar[:-1]) - np.cos(self._polar[1:]))[:, None]
         return band * dphi
 
-    @property
-    def cell_area(self):
-        return (self._radius**2) * self.cell_solid_angle
+    def cell_area(self, radius=1.0):
+        radius = float(radius)
+        return (radius**2) * self.cell_solid_angle
 
     # TODO the conversion back and from to cartisian coordinates should be centralised. 
-    @property
-    def corners_cartesian(self):
+    def corners_cartesian(self, radius=1.0):
+        radius = float(radius)
         theta_edges = self.polar_edges
         phi_edges = self.azimuthal_edges
         sin_theta = np.sin(theta_edges)
-        x = self._radius * sin_theta * np.cos(phi_edges)
-        y = self._radius * sin_theta * np.sin(phi_edges)
-        z = self._radius * np.cos(theta_edges)
+        x = radius * sin_theta * np.cos(phi_edges)
+        y = radius * sin_theta * np.sin(phi_edges)
+        z = radius * np.cos(theta_edges)
         return np.stack((x, y, z), axis=-1)
     
-    @property
-    def centres_cartesian(self):
+    def centres_cartesian(self, radius=1.0):
+        radius = float(radius)
         theta_centres = self.polar_centres
         phi_centres = self.azimuthal_centres
         sin_theta = np.sin(theta_centres)
-        x = self._radius * sin_theta * np.cos(phi_centres)
-        y = self._radius * sin_theta * np.sin(phi_centres)
-        z = self._radius * np.cos(theta_centres)
+        x = radius * sin_theta * np.cos(phi_centres)
+        y = radius * sin_theta * np.sin(phi_centres)
+        z = radius * np.cos(theta_centres)
         return np.stack((x, y, z), axis=-1)
