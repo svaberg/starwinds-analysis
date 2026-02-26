@@ -114,6 +114,8 @@ Notebook code should optimize for:
 - Prefer normal local variable names in notebooks (`x_field`, `color_field`, `n_polar`) unless there is a clear reason to mirror Matplotlib examples/standards.
 - Keep TODO comments unless they are actually implemented.
 - When a TODO is implemented, prefer changing `TODO` -> `DONE` rather than silently deleting it.
+- Commit notebooks in stripped ("naked") form: no output blobs, no execution-count churn.
+- `nbstripout` is required for this project and should be installed/enabled for local git usage.
 
 ### Notebook Rules (Do Not)
 
