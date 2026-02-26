@@ -22,7 +22,6 @@ from starwinds_analysis.physics.local_estimates import (
 )
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
-from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
 
 def _interp_profile(radii, values, x):
     r = np.array(radii, dtype=float)
@@ -51,18 +50,8 @@ def _local_mass_loss_from_orbit_sample(
     shell_radii=None,
 ):
     rho_name = "Rho [kg/m^3]"
-    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-
-    x = orbit["X [sample]"]
-    y = orbit["Y [sample]"]
-    z = orbit["Z [sample]"]
     rho = orbit[rho_name]
-    ux = orbit[ux_name]
-    uy = orbit[uy_name]
-    uz = orbit[uz_name]
-    # TODO(griblet): Request `U_r [m/s]` directly on sampled orbit points instead of
-    # recomputing the radial component here.
-    u_r = radial_component(ux, uy, uz, x, y, z)
+    u_r = orbit["U_r [m/s]"]
     r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
     estimates = local_mass_loss_estimates(r_m, rho, u_r)
@@ -125,26 +114,13 @@ def _local_torque_from_orbit_sample(
     shell_radii=None,
 ):
     rho_name = "Rho [kg/m^3]"
-    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-
-    x = orbit["X [sample]"]
-    y = orbit["Y [sample]"]
-    z = orbit["Z [sample]"]
     r_sample_r = np.array(orbit["R [sample]"], dtype=float)
     r_m = r_sample_r * body_radius_m
     rho = orbit[rho_name]
-    ux = orbit[ux_name]
-    uy = orbit[uy_name]
-    uz = orbit[uz_name]
-    bx = orbit[bx_name]
-    by = orbit[by_name]
-    bz = orbit[bz_name]
-
-    # TODO(griblet): Request `U_r/U_phi` and `B_r/B_phi` directly on sampled orbit
-    # points instead of recomputing spherical components here.
-    u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
-    b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
+    u_r = orbit["U_r [m/s]"]
+    u_phi = orbit["U_phi [m/s]"]
+    b_r = orbit["B_r [T]"]
+    b_phi = orbit["B_phi [T]"]
     local = local_torque_estimates(r_m, rho, u_r, u_phi, b_r, b_phi)
     weights = orbit.get("time_weight [none]")
 
@@ -220,6 +196,7 @@ def local_mass_loss_on_circular_orbit(
             "U_x [m/s]",
             "U_y [m/s]",
             "U_z [m/s]",
+            "U_r [m/s]",
         ),
         n_points=n_points,
         plane=plane,
@@ -259,6 +236,10 @@ def local_torque_on_circular_orbit(
             "B_x [T]",
             "B_y [T]",
             "B_z [T]",
+            "U_r [m/s]",
+            "U_phi [m/s]",
+            "B_r [T]",
+            "B_phi [T]",
         ),
         n_points=n_points,
         plane=plane,
@@ -296,6 +277,7 @@ def local_mass_loss_on_elliptic_orbit(
         "U_x [m/s]",
         "U_y [m/s]",
         "U_z [m/s]",
+        "U_r [m/s]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,
@@ -349,6 +331,10 @@ def local_torque_on_elliptic_orbit(
         "B_x [T]",
         "B_y [T]",
         "B_z [T]",
+        "U_r [m/s]",
+        "U_phi [m/s]",
+        "B_r [T]",
+        "B_phi [T]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,
