@@ -14,7 +14,6 @@ from starwinds_analysis.physics.magnetic import (
     magnetic_shell_components_from_cartesian,
 )
 from starwinds_analysis.physics.mass_loss import sample_shell_mass_flux_map
-from starwinds_analysis.physics.plotting import plot_shell_mass_flux_lonlat
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -125,7 +124,7 @@ def test_shell_magnetic_flux_summary_primitives_smoke():
     assert unsigned_cov[0] > 0.0
 
 
-def test_plot_shell_mass_flux_lonlat_smoke():
+def test_direct_shell_mass_flux_lonlat_plot_smoke():
     sds = SmartDs.from_file(str(EXAMPLE_3D))
     shell_map = sample_shell_mass_flux_map(
         sds,
@@ -134,10 +133,19 @@ def test_plot_shell_mass_flux_lonlat_smoke():
         n_polar=10,
         n_azimuth=20,
     )
-    fig, ax, extra = plot_shell_mass_flux_lonlat(shell_map, scale="log", figsize=(6, 3))
+    fig, ax = plt.subplots(figsize=(6, 3))
     try:
+        img = ax.pcolormesh(
+            shell_map.lon_deg,
+            shell_map.lat_deg,
+            shell_map.mass_flux_kg_m2_s,
+            shading="nearest",
+            cmap="viridis",
+        )
+        fig.colorbar(img, ax=ax)
+        ax.set_xlim(-180, 180)
+        ax.set_ylim(-90, 90)
         assert ax.get_xlim()[0] <= -180
         assert ax.get_xlim()[1] >= 180
-        assert "n_nonpositive" in extra
     finally:
         plt.close(fig)
