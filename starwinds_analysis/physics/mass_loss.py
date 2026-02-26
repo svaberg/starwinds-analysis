@@ -22,7 +22,7 @@ from starwinds_analysis.physics.flux_density import radial_advective_flux_densit
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 
 if TYPE_CHECKING:
-    from starwinds_analysis.analysis.shells import SphericalShellSamples
+    from starwinds_analysis.smart_ds import SmartDs
 
 
 def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
@@ -38,7 +38,7 @@ def _ensure_batsrus_si_fields(smart_ds, *, body_radius_m: float) -> None:
 @dataclass
 class ShellMassFluxMap:
     radius: float
-    shell_samples: SphericalShellSamples
+    shell_samples: "SmartDs"
     lon_deg: np.ndarray
     lat_deg: np.ndarray
     mass_flux_kg_m2_s: np.ndarray

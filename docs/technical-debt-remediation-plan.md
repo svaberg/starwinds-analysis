@@ -80,8 +80,10 @@ Goal: one primitive pipeline + parameterized quantities, not `*_vs_radius` dupli
 Goal: stop inventing per-function containers and use shared abstractions.
 
 1. Replace `SphericalShellSamples` compatibility usage gradually with structured `SmartDs` shell resampling.
-- Preserve explicit metadata fields (`R`, `theta`, `phi`, `area`) on resampled SmartDs.
-- Keep temporary compatibility bridge only while migrating callers.
+- DONE (partial): both grid and Fibonacci shell samplers now return structured `SmartDs`
+  with explicit metadata fields (`R`, `theta`, `phi`, `dA`).
+- NEXT: remove the temporary compatibility bridge (`.radii/.theta/.phi/.x/.y/.z/.area/.fields`)
+  by migrating remaining callers to direct SmartDs field requests.
 
 2. Remove `ShellMassFluxMap` (custom workflow container).
 - Use structured resampled `SmartDs` + explicit arrays/metadata instead.

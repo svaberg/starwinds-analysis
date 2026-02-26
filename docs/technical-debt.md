@@ -23,7 +23,7 @@ Legend:
 - `starwinds_analysis/analysis/__init__.py` — **Reviewed**. Re-export facade removed; package boundary is now minimal (`__all__ = []`).
 - `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Now limited to orbit geometry/sampling primitives (local mass-loss/torque workflows moved out).
 - `starwinds_analysis/analysis/shell_summary.py` — **Reviewed**. Reducer/summary helpers; finite filtering appears intentional for shell-band summaries.
-- `starwinds_analysis/analysis/shells.py` — **Debt**. Compatibility custom container (`SphericalShellSamples`) is still present alongside core shell primitives. Dead `resolve_*` helpers were removed in this pass. Code TODO: existing TODOs.
+- `starwinds_analysis/analysis/shells.py` — **Debt**. Both shell samplers now return structured `SmartDs`, but temporary compatibility attributes (`.radii/.theta/.phi/.x/.y/.z/.area/.fields`) are still attached for legacy callers. Dead `resolve_*` helpers and the `SphericalShellSamples` custom container were removed. Code TODO: existing TODOs.
 - `starwinds_analysis/analysis/slices.py` — **Reviewed**. Structured slice resampling/topology helpers; no clear rule violation found in this pass.
 - `starwinds_analysis/analysis/stats.py` — **Reviewed**. Generic weighted stats primitives; now also owns the reusable `summarize_samples(...)` helper.
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.

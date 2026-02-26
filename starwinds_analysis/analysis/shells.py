@@ -6,47 +6,17 @@ Temporary field-resolution helpers live here for now, but should migrate into Sm
 
 # TODO(debt): `resolve_*` field/unit helpers in this module are a known smell; callers
 # should request SI quantities directly from SmartDs/griblet.
-# TODO(debt): `SphericalShellSamples` is a custom container kept for compatibility.
-# The preferred direction is structured `SmartDs` resampling + shared metadata fields.
+# TODO(debt): Shell samplers still attach compatibility attributes (`.radii/.theta/
+# .phi/.x/.y/.z/.area/.fields`) to structured SmartDs while callers are migrated.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
 
 import numpy as np
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
-
-
-@dataclass
-class SphericalShellSamples:
-    """
-    Samples on one or more spherical shells.
-
-    Shapes:
-    - `radii`: `(nr,)`
-    Grid sampler:
-    - `theta`, `phi`: `(ntheta, nphi)`
-    - `x`, `y`, `z`, `area`: `(nr, ntheta, nphi)`
-    - each `fields[name]`: `(nr, ntheta, nphi)`
-
-    Fibonacci sampler:
-    - `theta`, `phi`: `(npts, 1)`
-    - `x`, `y`, `z`, `area`: `(nr, npts, 1)`
-    - each `fields[name]`: `(nr, npts, 1)`
-    """
-
-    radii: np.ndarray
-    theta: np.ndarray
-    phi: np.ndarray
-    x: np.ndarray
-    y: np.ndarray
-    z: np.ndarray
-    area: np.ndarray
-    fields: dict[str, np.ndarray]
-
 
 def _resample_shell_points(
     smart_ds,
@@ -350,7 +320,7 @@ def sample_spherical_shells_fibonacci(
     smart_ds,
     radii,
     *,
-    fields=(),
+    fields=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_points: int = 512,
     randomize: bool = False,
@@ -361,8 +331,9 @@ def sample_spherical_shells_fibonacci(
     """
     Resample fields onto equal-area Fibonacci sphere points on each shell.
 
-    The returned arrays use shape `(nr, n_points, 1)` so they remain compatible with
-    existing shell integrations that sum over the last two axes.
+    Returns a NEW structured `SmartDs` whose arrays have shape `(nr, n_points, 1)`.
+    As with the grid sampler, a temporary compatibility view is attached for callers
+    that still expect `.radii/.theta/.phi/.x/.y/.z/.area/.fields`.
     """
     radii = np.atleast_1d(np.array(radii, dtype=float))
     if radii.ndim != 1:
@@ -382,7 +353,7 @@ def sample_spherical_shells_fibonacci(
 
     xyz_unit = np.stack((xhat, yhat, zhat), axis=-1)  # (npts, 1, 3)
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]  # (nr, npts, 1, 3)
-    sample_points = xyz.reshape(-1, 3)
+    sample_points = xyz
 
     resampled = _resample_shell_points(
         smart_ds,
@@ -394,26 +365,51 @@ def sample_spherical_shells_fibonacci(
         title_suffix="shell samples (fibonacci)",
     )
 
-    field_arrays = {}
-    for name in tuple(dict.fromkeys(fields)):
-        field_arrays[name] = np.array(resampled.variable(name), dtype=float).reshape(
-            radii.size, n_points, 1
+    if fields is None:
+        sampled_field_names = tuple(
+            name for name in resampled.variables if name not in tuple(coordinate_fields)
         )
+    else:
+        sampled_field_names = tuple(dict.fromkeys(fields))
 
     area_unit = (4.0 * math.pi) / float(n_points)
     area = (radii[:, None, None] ** 2) * area_unit
     if length_unit_to_m is not None:
         area = area * float(length_unit_to_m) ** 2
 
-    return SphericalShellSamples(
+    x_name, y_name, z_name = coordinate_fields
+    length_unit = _field_unit_from_brackets(x_name) or "R"
+    r_name = f"R [{length_unit}]"
+    theta_name = "theta [rad]"
+    phi_name = "phi [rad]"
+    area_unit_name = "m^2" if length_unit_to_m is not None else f"{length_unit}^2"
+    area_name = f"dA [{area_unit_name}]"
+
+    r_field = np.broadcast_to(radii[:, None, None], (radii.size, n_points, 1)).copy()
+    theta_field = np.broadcast_to(theta[None, :, :], (radii.size, n_points, 1)).copy()
+    phi_field = np.broadcast_to(phi[None, :, :], (radii.size, n_points, 1)).copy()
+    area_field = np.broadcast_to(area, (radii.size, n_points, 1)).copy()
+
+    shell_ds = _append_fields_to_smart_ds(
+        resampled,
+        {
+            r_name: r_field,
+            theta_name: theta_field,
+            phi_name: phi_field,
+            area_name: area_field,
+        },
+        zone_suffix="shell-fibonacci-structured",
+    )
+    return _attach_shell_compat_view(
+        shell_ds,
         radii=radii,
         theta=theta,
         phi=phi,
-        x=xyz[..., 0],
-        y=xyz[..., 1],
-        z=xyz[..., 2],
-        area=np.broadcast_to(area, (radii.size, n_points, 1)).copy(),
-        fields=field_arrays,
+        x_name=x_name,
+        y_name=y_name,
+        z_name=z_name,
+        sampled_field_names=sampled_field_names,
+        area=area_field,
     )
 
 
@@ -421,7 +417,7 @@ def sample_spherical_shells_by_strategy(
     smart_ds,
     radii,
     *,
-    fields=(),
+    fields=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
@@ -496,7 +492,6 @@ def shell_profile_radius_height(shells):
     }
 
 __all__ = [
-    "SphericalShellSamples",
     "infer_body_radius_m",
     "infer_cartesian_axis_radii",
     "integrate_shell_scalar",
