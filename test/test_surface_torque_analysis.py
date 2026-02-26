@@ -4,13 +4,13 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
-from starwinds_analysis.physics.surface_torque import (
+from starwinds_analysis.physics.torque import (
     MU0,
     integrate_surface_torque_terms,
     surface_torque_density_terms,
     surface_torque_vs_radius,
 )
-from starwinds_analysis.physics.shell_torque import torque_vs_radius
+from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.smart_ds import SmartDs
 
 

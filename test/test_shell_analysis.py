@@ -26,7 +26,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_fibonacci,
 )
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
-from starwinds_analysis.physics.shell_torque import torque_vs_radius
+from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.recipes.spherical import spherical_vector_components
 from starwinds_analysis.physics.wind_scaling import (
     open_wind_magnetisation,

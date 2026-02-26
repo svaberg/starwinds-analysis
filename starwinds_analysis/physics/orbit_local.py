@@ -21,7 +21,7 @@ from starwinds_analysis.physics.local_estimates import (
     local_torque_estimates,
 )
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.physics.shell_torque import torque_vs_radius
+from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
 
 def _interp_profile(radii, values, x):

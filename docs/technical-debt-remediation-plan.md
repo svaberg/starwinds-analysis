@@ -30,8 +30,8 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 2. Continue removing stale debt markers by fixing or deleting the underlying patterns.
 - DONE: `analysis/__init__.py` (`analysis` re-exporting `physics`) removed.
 - PARTIAL: `analysis/fluxes.py` moved to `physics/fluxes.py`; quantity-specific wrapper debt remains and top-level TODOs still apply there.
-- DONE (intermediate): `analysis/surface_torque.py` removed; wrappers currently live in `physics/surface_torque.py`.
-- NEXT: split `physics/surface_torque.py` back down so only local torque terms remain in the deep layer.
+- DONE (intermediate): `analysis/surface_torque.py` removed; torque code is currently consolidated in `physics/torque.py`.
+- NEXT: shrink `physics/torque.py` so only local torque terms remain in the deep layer and shell/surface wrappers move upward or become generic reducers.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - DONE (updated): orbit geometry/sampling primitives moved to a neutral `sampling.orbits`
@@ -54,7 +54,7 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
    explicit-surface torque terms through griblet where appropriate.
 
 2. DONE (current pass): Replace `resolve_*` usage in callers with direct SmartDs requests.
-- Shell profile workflows (`physics/fluxes.py`, `physics/mass_loss.py`, `physics/shell_torque.py`)
+- Shell profile workflows (`physics/fluxes.py`, `physics/mass_loss.py`, torque wrappers in `physics/torque.py`)
 - Orbit workflows (`physics/orbit_pressure.py`, `physics/orbit_surface.py`, `physics/orbit_local.py`)
 - Dead `resolve_*` helper definitions removed from `analysis/shells.py`
 
@@ -77,7 +77,7 @@ Goal: one primitive pipeline + parameterized quantities, not `*_vs_radius` dupli
 - Keep only truly distinct algorithms (for example axisymmetric reductions requiring grid structure).
 
 4. Apply the same split to explicit-surface torque.
-- Keep local `T1..T4` physics in `physics.surface_torque`
+- Keep local `T1..T4` physics in `physics.torque`
 - Keep generic explicit-surface integration/reduction in `analysis`
 - Remove quantity-specific `*_vs_radius` wrappers as separate APIs when possible
 
@@ -135,7 +135,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 
 Recommended next implementation batches:
 
-1. `physics/fluxes.py` + `physics/mass_loss.py` + `physics/shell_torque.py`
+1. `physics/fluxes.py` + `physics/mass_loss.py` + torque wrappers in `physics/torque.py`
 - DONE (partial): `resolve_*` field-resolution helpers removed from these files; SI fields are now requested through SmartDs/griblet.
 - NEXT: Introduce shared shell reduction primitive usage and remove local `B_r`/`U_r`/flux-density recomputation where possible.
 

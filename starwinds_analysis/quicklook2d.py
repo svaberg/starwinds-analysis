@@ -44,7 +44,7 @@ from starwinds_analysis.visualisation.profile_plots import (
     plot_shell_height_series,
     shell_profile_height,
 )
-from starwinds_analysis.physics.shell_torque import torque_vs_radius
+from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.utils import triangles
 from starwinds_analysis.visualisation.histograms import (
@@ -1375,4 +1375,3 @@ def run_quicklook2d(
             star_radius_m=body_radius_m,
         )
     return out
-
