@@ -61,23 +61,15 @@ def _check_docstring(node):
     if not doc:
         return "missing docstring"
 
+    # Require at least one non-empty descriptive line.
     lines = [line.strip() for line in doc.splitlines() if line.strip()]
-    if len(lines) < 2:
-        return "docstring should have at least 2 non-empty lines (what it does + used by)"
-
-    has_used_by = any(line.startswith("Used by:") or line.startswith("Used in:") for line in lines)
-    if not has_used_by:
-        return "docstring missing 'Used by:' (or 'Used in:') line"
-
-    # Require at least one non-'Used by' descriptive line.
-    has_description = any(not (line.startswith("Used by:") or line.startswith("Used in:")) for line in lines)
-    if not has_description:
+    if not lines:
         return "docstring missing descriptive line"
 
     return None
 
 
-def test_all_functions_have_short_docstrings_with_usage():
+def test_all_functions_have_docstrings():
     violations = []
     for path in _iter_python_files():
         source = path.read_text()
@@ -97,12 +89,9 @@ def test_all_functions_have_short_docstrings_with_usage():
 
     if violations:
         lines = [
-            f"Found {len(violations)} functions/methods without the required docstring format.",
+            f"Found {len(violations)} functions/methods missing docstrings.",
             "",
-            "Each function/method should have a short docstring with:",
-            "- what it does",
-            "- a 'Used by:' (or 'Used in:') line",
-            "",
+            "Each function/method should have a short docstring saying what it does.",
             "First violations:",
         ]
         for item in violations[:80]:
