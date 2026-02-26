@@ -92,6 +92,13 @@ Notebook code should optimize for:
 - Do not sprinkle `matplotlib.rcParams[...]` tweaks around notebook cells.
 - Do not replace whole cells and drop user comments/TODOs.
 - Do not move simple plotting code into helper files just to "clean up" the notebook.
+- Do not use notebook-only orchestration wrappers when direct library calls are clearer.
+  Example bad pattern in a notebook:
+  - calling a convenience wrapper that computes and plots everything (`quicklook_*_figure(...)`)
+    when the notebook is meant to show the explicit workflow
+  Preferred:
+  - call the analysis functions directly in the notebook
+  - then plot with direct Matplotlib primitives
 
 Preferred `rcParams` usage in notebooks:
 
