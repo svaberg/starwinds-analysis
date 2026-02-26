@@ -63,6 +63,8 @@ Examples of good direction:
 Rule:
 
 - If the only difference is the field name/label/unit/cmap/scale, do not create a new function.
+- Plotting functions (functions that take or create `fig`/`ax`) should not live in `analysis/`.
+- `analysis/` is for data/sampling/reduction/orchestration; plotting belongs in notebooks/examples or a clearly separate visualisation layer when truly reusable.
 
 ## 2. Notebook Business Logic ("Slop")
 
