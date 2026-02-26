@@ -165,15 +165,15 @@ def energy_flux_vs_radius(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     if smart_ds.has_field("E [J/m^3]"):
-        e_name, e_scale = "E [J/m^3]", 1.0
+        e_name = "E [J/m^3]"
     elif smart_ds.has_field("E [erg/cm^3]"):
-        e_name, e_scale = "E [erg/cm^3]", 1e-1
+        e_name = "E [erg/cm^3]"
     else:
         # Fall back to the historical candidate list without using `resolve_*`.
-        e_name = e_scale = None
+        e_name = None
         for cand_name, cand_scale in energy_field_candidates:
             if smart_ds.has_field(cand_name):
-                e_name, e_scale = cand_name, float(cand_scale)
+                e_name = cand_name
                 break
         if e_name is None:
             names = ", ".join(name for name, _ in energy_field_candidates)
@@ -195,13 +195,9 @@ def energy_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    e = e_scale * np.array(shells(e_name), dtype=float)
     area = np.array(shells(area_name), dtype=float)
-    u_r = np.array(shells("U_r [m/s]"), dtype=float)
 
-    # TODO(griblet): Request energy-flux density directly from SmartDs/griblet in SI
-    # (e.g. `energy_flux [W/m^2]`) instead of recomputing `E * U_r` here.
-    energy_flux_density = e * u_r  # W / m^2
+    energy_flux_density = np.array(shells("energy_flux [W/m^2]"), dtype=float)
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     return {
         **shell_profile_radius_height(shells),

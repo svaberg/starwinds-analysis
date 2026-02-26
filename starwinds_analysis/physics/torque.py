@@ -68,7 +68,6 @@ def torque_vs_radius(
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-    x_name, y_name = coordinate_fields[:2]
     area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
@@ -85,25 +84,9 @@ def torque_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = np.array(shells(rho_name), dtype=float)
-    x = np.array(shells(x_name), dtype=float)
-    y = np.array(shells(y_name), dtype=float)
     area = np.array(shells(area_name), dtype=float)
-    u_r = np.array(shells("U_r [m/s]"), dtype=float)
-    u_phi = np.array(shells("U_phi [m/s]"), dtype=float)
-    b_r = np.array(shells("B_r [T]"), dtype=float)
-    b_phi = np.array(shells("B_phi [T]"), dtype=float)
-
-    varpi = np.sqrt(x * x + y * y) * body_radius_m
-
-    magnetic_density, dynamic_density = spherical_wind_torque_density_terms(
-        rho_kg_m3=rho,
-        u_radial_m_s=u_r,
-        u_azimuthal_m_s=u_phi,
-        b_radial_t=b_r,
-        b_azimuthal_t=b_phi,
-        cylindrical_radius_m=varpi,
-    )
+    magnetic_density = np.array(shells("magnetic_torque_density [N/m]"), dtype=float)
+    dynamic_density = np.array(shells("dynamic_torque_density [N/m]"), dtype=float)
 
     magnetic, cov_mag = integrate_shell_scalar(magnetic_density, area)
     dynamic, cov_dyn = integrate_shell_scalar(dynamic_density, area)

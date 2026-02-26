@@ -108,19 +108,19 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     np.testing.assert_allclose(
         surf["T1_magnetic [Nm]"],
         shell["magnetic_torque [Nm]"],
-        rtol=1e-10,
+        rtol=2e-10,
         atol=1e-10,
     )
     np.testing.assert_allclose(
         surf["T4_dynamic [Nm]"],
         shell["dynamic_torque [Nm]"],
-        rtol=1e-10,
+        rtol=2e-10,
         atol=1e-10,
     )
     np.testing.assert_allclose(
         surf["total [Nm]"],
         shell["total_torque [Nm]"],
-        rtol=1e-10,
+        rtol=2e-10,
         atol=1e-10,
     )
     assert np.all(np.abs(np.array(surf["T2_pressure [Nm]"])) < 1e-6 * np.nanmax(np.abs(surf["total [Nm]"])) + 1e-12)

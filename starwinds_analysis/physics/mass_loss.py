@@ -58,13 +58,9 @@ def mass_loss_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = np.array(shells(rho_name), dtype=float)
-    u_r = np.array(shells("U_r [m/s]"), dtype=float)
     area = np.array(shells(area_name), dtype=float)
 
-    # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
-    # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
-    mass_flux = rho * u_r  # kg / m^2 / s
+    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"), dtype=float)
 
     mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
     return {
