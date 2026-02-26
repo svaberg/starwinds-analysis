@@ -61,6 +61,8 @@ def torque_vs_radius(
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
+    x_name, y_name, z_name = coordinate_fields
+    area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -76,18 +78,22 @@ def torque_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = shells.fields[rho_name]
-    ux = shells.fields[ux_name]
-    uy = shells.fields[uy_name]
-    uz = shells.fields[uz_name]
-    bx = shells.fields[bx_name]
-    by = shells.fields[by_name]
-    bz = shells.fields[bz_name]
+    rho = np.array(shells(rho_name), dtype=float)
+    ux = np.array(shells(ux_name), dtype=float)
+    uy = np.array(shells(uy_name), dtype=float)
+    uz = np.array(shells(uz_name), dtype=float)
+    bx = np.array(shells(bx_name), dtype=float)
+    by = np.array(shells(by_name), dtype=float)
+    bz = np.array(shells(bz_name), dtype=float)
+    x = np.array(shells(x_name), dtype=float)
+    y = np.array(shells(y_name), dtype=float)
+    z = np.array(shells(z_name), dtype=float)
+    area = np.array(shells(area_name), dtype=float)
 
-    u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
-    b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
+    u_r, _u_theta, u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
+    b_r, _b_theta, b_phi = spherical_vector_components(bx, by, bz, x, y, z)
 
-    varpi = np.sqrt(shells.x * shells.x + shells.y * shells.y) * body_radius_m
+    varpi = np.sqrt(x * x + y * y) * body_radius_m
 
     magnetic_density, dynamic_density = spherical_wind_torque_density_terms(
         rho_kg_m3=rho,
@@ -98,8 +104,8 @@ def torque_vs_radius(
         cylindrical_radius_m=varpi,
     )
 
-    magnetic, cov_mag = integrate_shell_scalar(magnetic_density, shells.area)
-    dynamic, cov_dyn = integrate_shell_scalar(dynamic_density, shells.area)
+    magnetic, cov_mag = integrate_shell_scalar(magnetic_density, area)
+    dynamic, cov_dyn = integrate_shell_scalar(dynamic_density, area)
     total = magnetic + dynamic
     coverage = np.minimum(cov_mag, cov_dyn)
 

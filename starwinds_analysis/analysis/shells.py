@@ -485,7 +485,14 @@ def integrate_shell_scalar(values, area):
 
 
 def shell_profile_radius_height(shells):
-    radii = np.array(shells.radii, dtype=float)
+    if hasattr(shells, "has_field") and shells.has_field("R [R]"):
+        r_field = np.array(shells("R [R]"), dtype=float)
+        if r_field.ndim >= 2:
+            radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+        else:
+            radii = np.array(r_field, dtype=float)
+    else:
+        radii = np.array(shells.radii, dtype=float)
     return {
         "radius [R]": radii,
         "height [R]": radii - 1.0,

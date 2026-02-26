@@ -56,6 +56,8 @@ def mass_loss_vs_radius(
     _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    x_name, y_name, z_name = coordinate_fields
+    area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -71,19 +73,23 @@ def mass_loss_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    rho = shells.fields[rho_name]
-    ux = shells.fields[ux_name]
-    uy = shells.fields[uy_name]
-    uz = shells.fields[uz_name]
+    rho = np.array(shells(rho_name), dtype=float)
+    ux = np.array(shells(ux_name), dtype=float)
+    uy = np.array(shells(uy_name), dtype=float)
+    uz = np.array(shells(uz_name), dtype=float)
+    x = np.array(shells(x_name), dtype=float)
+    y = np.array(shells(y_name), dtype=float)
+    z = np.array(shells(z_name), dtype=float)
+    area = np.array(shells(area_name), dtype=float)
 
     # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on the shell sample
     # instead of recomputing spherical components here.
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
     # TODO(griblet): Request mass-flux density directly from SmartDs/griblet in SI
     # (e.g. `mass_flux [kg/m^2/s]`) instead of recomputing `rho * U_r` here.
     mass_flux = radial_advective_flux_density(rho, u_r)  # kg / m^2 / s
 
-    mass_loss, coverage = integrate_shell_scalar(mass_flux, shells.area)
+    mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
     return {
         **shell_profile_radius_height(shells),
         "mass_loss [kg/s]": np.array(mass_loss, dtype=float),

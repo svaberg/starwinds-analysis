@@ -51,6 +51,8 @@ def open_magnetic_flux_vs_radius(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     _ensure_batsrus_si_fields(smart_ds, body_radius_m=body_radius_m)
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
+    x_name, y_name, z_name = coordinate_fields
+    area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -66,23 +68,27 @@ def open_magnetic_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    bx = shells.fields[bx_name]
-    by = shells.fields[by_name]
-    bz = shells.fields[bz_name]
+    bx = np.array(shells(bx_name), dtype=float)
+    by = np.array(shells(by_name), dtype=float)
+    bz = np.array(shells(bz_name), dtype=float)
+    x = np.array(shells(x_name), dtype=float)
+    y = np.array(shells(y_name), dtype=float)
+    z = np.array(shells(z_name), dtype=float)
+    area = np.array(shells(area_name), dtype=float)
     # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
     # of recomputing spherical components in the analysis layer.
-    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
+    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, x, y, z)
 
-    signed_flux, cov_signed = integrate_shell_scalar(b_r, shells.area)
-    open_flux, cov_open = integrate_shell_scalar(np.abs(b_r), shells.area)
+    signed_flux, cov_signed = integrate_shell_scalar(b_r, area)
+    open_flux, cov_open = integrate_shell_scalar(np.abs(b_r), area)
 
-    r_norm = np.sqrt(shells.x * shells.x + shells.y * shells.y + shells.z * shells.z)
+    r_norm = np.sqrt(x * x + y * y + z * z)
     with np.errstate(invalid="ignore", divide="ignore"):
-        nx = shells.x / r_norm
-        ny = shells.y / r_norm
-        nz = shells.z / r_norm
+        nx = x / r_norm
+        ny = y / r_norm
+        nz = z / r_norm
     bdotn = bx * nx + by * ny + bz * nz
-    signed_flux_from_vector, cov_vec = integrate_shell_scalar(bdotn, shells.area)
+    signed_flux_from_vector, cov_vec = integrate_shell_scalar(bdotn, area)
 
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     return {
@@ -127,17 +133,22 @@ def axisymmetric_open_flux_vs_radius(
     )
     shells = prof["shell_samples"]
     # Reconstruct B_r from the cached shell samples in SI.
-    bx = shells.fields["B_x [T]"]
-    by = shells.fields["B_y [T]"]
-    bz = shells.fields["B_z [T]"]
+    x_name, y_name, z_name = coordinate_fields
+    bx = np.array(shells("B_x [T]"), dtype=float)
+    by = np.array(shells("B_y [T]"), dtype=float)
+    bz = np.array(shells("B_z [T]"), dtype=float)
+    x = np.array(shells(x_name), dtype=float)
+    y = np.array(shells(y_name), dtype=float)
+    z = np.array(shells(z_name), dtype=float)
+    area = np.array(shells("dA [m^2]"), dtype=float)
     # TODO(griblet): Request `B_r [T]` from SmartDs/griblet on shell samples instead
     # of recomputing spherical components in the analysis layer.
-    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, shells.x, shells.y, shells.z)
+    b_r, _b_theta, _b_phi = spherical_vector_components(bx, by, bz, x, y, z)
 
     with np.errstate(invalid="ignore"):
         b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
     b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
-    axi_open_flux, cov_axi = integrate_shell_scalar(np.abs(b_r_axi), shells.area)
+    axi_open_flux, cov_axi = integrate_shell_scalar(np.abs(b_r_axi), area)
 
     open_flux = np.array(prof["open_flux [Wb]"], dtype=float)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -192,6 +203,8 @@ def energy_flux_vs_radius(
             names = ", ".join(name for name, _ in energy_field_candidates)
             raise KeyError(f"Could not find any energy field candidate: {names}")
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    x_name, y_name, z_name = coordinate_fields
+    area_name = "dA [m^2]"
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -207,18 +220,22 @@ def energy_flux_vs_radius(
         length_unit_to_m=body_radius_m,
     )
 
-    e = e_scale * shells.fields[e_name]
-    ux = shells.fields[ux_name]
-    uy = shells.fields[uy_name]
-    uz = shells.fields[uz_name]
+    e = e_scale * np.array(shells(e_name), dtype=float)
+    ux = np.array(shells(ux_name), dtype=float)
+    uy = np.array(shells(uy_name), dtype=float)
+    uz = np.array(shells(uz_name), dtype=float)
+    x = np.array(shells(x_name), dtype=float)
+    y = np.array(shells(y_name), dtype=float)
+    z = np.array(shells(z_name), dtype=float)
+    area = np.array(shells(area_name), dtype=float)
     # TODO(griblet): Request `U_r [m/s]` from SmartDs/griblet on shell samples
     # instead of recomputing spherical components in the analysis layer.
-    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, shells.x, shells.y, shells.z)
+    u_r, _u_theta, _u_phi = spherical_vector_components(ux, uy, uz, x, y, z)
 
     # TODO(griblet): Request energy-flux density directly from SmartDs/griblet in SI
     # (e.g. `energy_flux [W/m^2]`) instead of recomputing `E * U_r` here.
     energy_flux_density = radial_advective_flux_density(e, u_r)  # W / m^2
-    energy_flux, coverage = integrate_shell_scalar(energy_flux_density, shells.area)
+    energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     return {
         **shell_profile_radius_height(shells),
         "energy_flux [W]": np.array(energy_flux, dtype=float),
