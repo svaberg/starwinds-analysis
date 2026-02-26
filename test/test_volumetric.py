@@ -27,7 +27,7 @@ def test_volumetric():
 
 
 @pytest.mark.interactive
-def test_density_volumetric(file='sample_data/3d__var_1_n00000000.plt'):
+def test_density_volumetric(file='sample_data/3d__var_1_n00060000.plt'):
     grid = reader.read(file)
 
     grid['log10 Rho [kg/m^3]'] = np.log10(grid['Rho [kg/m^3]'])
@@ -72,7 +72,7 @@ def test_raytrace():
 
 
 @pytest.mark.interactive
-def test_plot_over_line(file='sample_data/3d__var_1_n00000000.plt'):
+def test_plot_over_line(file='sample_data/3d__var_1_n00060000.plt'):
     grid = reader.read(file)
 
 

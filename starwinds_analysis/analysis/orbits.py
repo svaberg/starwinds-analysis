@@ -11,7 +11,7 @@ import math
 import numpy as np
 from scipy.constants import G as GRAVITATIONAL_CONSTANT
 
-from starwinds_analysis.analysis.local_estimates import (
+from starwinds_analysis.physics.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
     summarize_samples,

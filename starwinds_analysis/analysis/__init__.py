@@ -11,7 +11,7 @@ from .fluxes import (
     plot_energy_flux_profile,
     plot_open_flux_profile,
 )
-from .local_estimates import (
+from ..physics.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
     summarize_samples,

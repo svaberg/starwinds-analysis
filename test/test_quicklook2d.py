@@ -28,7 +28,7 @@ from starwinds_analysis.quicklook2d import (
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 SUN_RADIUS_M = 6.957e8
 SLICE_PLOTTING_AVAILABLE = importlib.util.find_spec("starwinds_analysis.visualisation.slice") is not None
 

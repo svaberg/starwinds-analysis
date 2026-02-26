@@ -10,7 +10,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.local_estimates import summarize_samples
+from starwinds_analysis.physics.local_estimates import summarize_samples
 from starwinds_analysis.physics.orbit_pressure import (
     resolve_batsrus_pressure_si,
 )

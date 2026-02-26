@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.local_estimates import summarize_samples
+from starwinds_analysis.physics.local_estimates import summarize_samples
 from starwinds_analysis.analysis.orbits import (
     orbital_period,
     sample_circular_orbit,

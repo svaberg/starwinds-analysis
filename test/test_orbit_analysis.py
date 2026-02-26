@@ -19,7 +19,7 @@ from starwinds_analysis.analysis.orbits import (
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00000000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 SUN_RADIUS_M = 6.957e8
 
 

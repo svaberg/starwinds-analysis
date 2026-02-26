@@ -8,7 +8,7 @@ from starwinds_analysis.analysis.fluxes import (
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
 )
-from starwinds_analysis.analysis.local_estimates import (
+from starwinds_analysis.physics.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
     summarize_samples,
