@@ -14,12 +14,7 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 def _example_3d():
-    for name in ("3d__var_1_n00060000.plt", "3d__var_3_n00060000.plt"):
-        try:
-            return Path(get_sample(name))
-        except FileNotFoundError:
-            pass
-    raise FileNotFoundError("No suitable 3d sample found in sample_data")
+    return Path(get_sample("3d__var_1_n00060000.plt"))
 
 
 EXAMPLE_3D = _example_3d()

@@ -94,7 +94,7 @@ def test_plot_over_line(file='sample_data/3d__var_1_n00060000.plt'):
     grid.plot_over_line(a, b, resolution=100)
 
 
-# def test_sample_over_line(file='sample_data/3d__var_3_n00060000.plt'):
+# def test_sample_over_line(file='sample_data/3d__var_1_n00060000.plt'):
 #     grid = reader.read(file)
 
 #     a = np.array([grid.bounds[0], grid.bounds[2], grid.bounds[4]])
