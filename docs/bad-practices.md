@@ -393,7 +393,36 @@ Rule:
 - Do not use `np.asarray(...)` in this repo.
 - If a conversion is required, make that choice explicit with `np.array(...)` (or a more specific conversion).
 
-## 8. Per-Function Custom Data Containers
+## 8. Wrapper Bloat / Low-Signal Functions
+
+Bad:
+
+- functions with 2-5 real lines of math wrapped in many lines of:
+  - redundant local recasting (`x = np.array(x, dtype=float)`)
+  - renaming every argument to a new local with the same meaning
+  - re-boxing outputs (`np.array(...)`) when the expression already returns arrays
+  - oversized docstrings/comments explaining obvious code
+
+Why this is bad:
+
+- hides the actual formula/operation
+- makes the code look defensive and mechanical
+- increases maintenance surface without adding behavior
+- encourages one-function-per-quantity file sprawl
+
+Preferred pattern:
+
+- write the core expression directly
+- keep only the checks/conversions that are actually required
+- let wrong inputs fail naturally unless there is a clear user-facing reason to validate
+- if the function is only a thin alias around one expression, consider deleting it
+
+Rule:
+
+- Do not pad simple functions with casting/renaming/boxing boilerplate.
+- The signal (actual computation) should dominate the function body.
+
+## 9. Per-Function Custom Data Containers
 
 Bad:
 
@@ -412,7 +441,7 @@ Preferred pattern:
 - add small shared metadata objects only when genuinely needed (and reused)
 - do not invent a new container just because one function needs a convenient shape
 
-## 9. Bypassing `SmartDs` For Resampling Without A Specific Reason
+## 10. Bypassing `SmartDs` For Resampling Without A Specific Reason
 
 Bad:
 
@@ -444,6 +473,7 @@ Preferred pattern:
 - Am I sprinkling `rcParams` changes or using unnecessary ALL_CAPS names in a notebook?
 - Am I inventing a one-off data container instead of reusing a shared abstraction?
 - Am I bypassing `SmartDs.resample(...)` without a specific documented reason?
+- Is this function mostly boilerplate around 1-3 lines of actual computation?
 
 ## Current Priority Enforcement
 
@@ -454,4 +484,5 @@ Highest priority to avoid:
 3. Duplicated physical quantity definitions
 4. New duplicated `resolve_*` helpers
 5. Per-function custom data containers
-6. Bypassing `SmartDs` for resampling without a specific reason
+6. Wrapper bloat / low-signal functions
+7. Bypassing `SmartDs` for resampling without a specific reason
