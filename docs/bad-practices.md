@@ -9,6 +9,32 @@ The goal is not "purity". The goal is:
 - notebooks/examples that demonstrate easy usage
 - SI-first analysis (with explicit exceptions like `R` and Gauss-for-plotting)
 
+## 0. Library Purity (Hard Boundary)
+
+Rule:
+
+- The library should be **pure**:
+  - general
+  - reusable
+  - composable
+- The library should **not** contain functions that are only used once (especially notebook-only helpers/wrappers).
+
+What goes where:
+
+- `starwinds_analysis/...`:
+  - reusable analysis logic
+  - reusable data/sampling/topology logic
+  - general plotting primitives only when genuinely reused
+- `examples/*.ipynb` and `examples/*.py`:
+  - one-off workflow code
+  - direct plotting calls
+  - non-reused glue
+
+Litmus test:
+
+- If a function exists only to make one notebook cell shorter, it probably does **not** belong in the library.
+- If code is specific to one example narrative and not reused elsewhere, keep it in the notebook/script.
+
 ## 1. Hard-Coded Quantity-Specific Plot Functions (Primary Anti-Pattern)
 
 Bad:
