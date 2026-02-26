@@ -110,6 +110,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 
 1. Remove `analysis -> physics` imports where the split is wrong.
 - Move shared primitives deeper (for example `physics.constants`, `physics.orbits`) or sideways into a true primitive module.
+ - DONE (current pass): `starwinds_analysis/analysis/` no longer imports from `starwinds_analysis/physics/`.
 
 2. Remove `physics -> analysis` imports in workflow-heavy modules by either:
 - moving workflows out of `physics`, or
