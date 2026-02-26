@@ -18,7 +18,7 @@ from starwinds_analysis.analysis.fluxes import (
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
 )
-from starwinds_analysis.analysis.planetary_orbits import planet_orbit_spec
+from starwinds_analysis.physics.planetary_orbits import planet_orbit_spec
 from starwinds_analysis.physics.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,

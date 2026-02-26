@@ -27,14 +27,6 @@ from .orbits import (
     sample_elliptic_orbit,
     sample_points,
 )
-from .planetary_orbits import (
-    AU_M,
-    PlanetOrbitElements,
-    SOLAR_SYSTEM_PLANETS,
-    get_planet_orbit_elements,
-    planet_orbit_period,
-    planet_orbit_spec,
-)
 from ..physics.pressure import (
     magnetic_pressure,
     magnetospheric_standoff_distance,
@@ -116,12 +108,6 @@ __all__ = [
     "magnetospheric_standoff_distance",
     "surface_escape_speed",
     "open_wind_magnetisation",
-    "AU_M",
-    "PlanetOrbitElements",
-    "SOLAR_SYSTEM_PLANETS",
-    "get_planet_orbit_elements",
-    "planet_orbit_spec",
-    "planet_orbit_period",
     "mass_loss_vs_radius",
     "torque_vs_radius",
     "rotational_frame_velocity",

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import constants as const
 
-from starwinds_analysis.analysis.planetary_orbits import (
+from starwinds_analysis.physics.planetary_orbits import (
     SOLAR_SYSTEM_PLANETS,
     get_planet_orbit_elements,
     planet_orbit_period,
