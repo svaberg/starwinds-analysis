@@ -45,19 +45,36 @@ def build_griblet_batsrus_graph(
     - canonical bracketed names for unbracketed unit strings
     - SI conversion recipes for common BATSRUS units
     - optional coordinate conversion X/Y/Z [R] -> [m] (requires ``body_radius_m``)
-    - common derived fields: |U|, |B|, c_s, c_A, M_A
+    - spherical geometry/vector components (for available Cartesian vectors)
+    - common derived fields and pointwise SI quantities
     """
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
     vars_list = list(variable_names)
-    vars_set = set(vars_list)
 
     if include_unit_normalization:
         graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
 
     if include_derived:
-        graph.merge(build_griblet_common_derived_graph(vars_set))
+        from starwinds_analysis.recipes.spherical import (
+            build_griblet_auto_vector_spherical_components_graph,
+            build_griblet_spherical_geometry_graph,
+        )
+
+        # Include spherical geometry/components in the BATSRUS graph from the start so
+        # pointwise recipes can depend on U_r/B_r/U_phi/B_phi without extra setup.
+        graph.merge(build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]")))
+        graph.merge(
+            build_griblet_auto_vector_spherical_components_graph(
+                list(graph.fields()) if hasattr(graph, "fields") else vars_list,
+                coord_fields=("X [R]", "Y [R]", "Z [R]"),
+                prefixes=None,
+                components=("r", "theta", "phi"),
+            )
+        )
+        derived_names = set(graph.fields()) if hasattr(graph, "fields") else set(vars_list)
+        graph.merge(build_griblet_common_derived_graph(derived_names))
 
     return graph
 
@@ -207,11 +224,96 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         metadata={"description": "Magnetic pressure"},
     )
     graph.add_recipe(
+        "magnetic_pressure [Pa]",
+        lambda pb: np.array(pb),
+        deps=["P_b [Pa]"],
+        cost=0.01,
+        metadata={"description": "Magnetic pressure alias"},
+    )
+    graph.add_recipe(
+        "ram_pressure [Pa]",
+        lambda rho, U: np.array(rho) * (np.array(U) ** 2),
+        deps=["Rho [kg/m^3]", "U [m/s]"],
+        cost=0.12,
+        metadata={"description": "Ram pressure"},
+    )
+    graph.add_recipe(
         "beta [none]",
         lambda P, Pb: np.array(P) / np.array(Pb),
         deps=["P [Pa]", "P_b [Pa]"],
         cost=0.12,
         metadata={"description": "Plasma beta"},
+    )
+
+    # Pointwise flux densities (depend on spherical velocity component).
+    graph.add_recipe(
+        "mass_flux [kg/m^2/s]",
+        lambda rho, ur: np.array(rho) * np.array(ur),
+        deps=["Rho [kg/m^3]", "U_r [m/s]"],
+        cost=0.12,
+        metadata={"description": "Radial mass flux density"},
+    )
+    graph.add_recipe(
+        "energy_flux [W/m^2]",
+        lambda e, ur: np.array(e) * np.array(ur),
+        deps=["E [J/m^3]", "U_r [m/s]"],
+        cost=0.12,
+        metadata={"description": "Radial energy flux density"},
+    )
+
+    # Useful geometry helpers derived from coordinates.
+    graph.add_recipe(
+        "cylindrical_radius [R]",
+        lambda x, y: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2),
+        deps=["X [R]", "Y [R]"],
+        cost=0.1,
+        metadata={"description": "Cylindrical radius from body-radius coordinates"},
+    )
+    graph.add_recipe(
+        "cylindrical_radius [m]",
+        lambda x, y: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2),
+        deps=["X [m]", "Y [m]"],
+        cost=0.1,
+        metadata={"description": "Cylindrical radius from SI coordinates"},
+    )
+
+    # Pointwise shell-style torque densities (about +z).
+    graph.add_recipe(
+        "magnetic_torque_density [N/m]",
+        lambda varpi, bphi, br: -np.array(varpi) * np.array(bphi) * np.array(br) / _MU0,
+        deps=["cylindrical_radius [m]", "B_phi [T]", "B_r [T]"],
+        cost=0.2,
+        metadata={"description": "Magnetic z-torque density (shell form)"},
+    )
+    graph.add_recipe(
+        "dynamic_torque_density [N/m]",
+        lambda varpi, rho, uphi, ur: np.array(varpi) * np.array(rho) * np.array(uphi) * np.array(ur),
+        deps=["cylindrical_radius [m]", "Rho [kg/m^3]", "U_phi [m/s]", "U_r [m/s]"],
+        cost=0.2,
+        metadata={"description": "Dynamic z-torque density (shell form)"},
+    )
+    graph.add_recipe(
+        "total_torque_density [N/m]",
+        lambda tmag, tdyn: np.array(tmag) + np.array(tdyn),
+        deps=["magnetic_torque_density [N/m]", "dynamic_torque_density [N/m]"],
+        cost=0.05,
+        metadata={"description": "Total z-torque density (shell form)"},
+    )
+
+    # Latitude-map magnetic components (common plotting quantities).
+    graph.add_recipe(
+        "B_meridional [T]",
+        lambda btheta: -np.array(btheta),
+        deps=["B_theta [T]"],
+        cost=0.05,
+        metadata={"description": "Meridional magnetic component (northward)"},
+    )
+    graph.add_recipe(
+        "B_tangential [T]",
+        lambda bphi, bmer: np.sqrt(np.array(bphi) ** 2 + np.array(bmer) ** 2),
+        deps=["B_phi [T]", "B_meridional [T]"],
+        cost=0.08,
+        metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )
 
     return graph
@@ -288,4 +390,3 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
             except Exception:
                 return None
     return None
-

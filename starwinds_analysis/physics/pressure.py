@@ -14,16 +14,12 @@ def magnetic_pressure(b_t_or_mag):
     """
     Magnetic pressure `B^2 / (2 mu0)` in Pa.
     """
-    # TODO(griblet): `magnetic_pressure [Pa]` should be a SmartDs/griblet quantity
-    # so callers can request it directly in SI units.
     return np.square(b_t_or_mag) / (2.0 * MU0)
 
 def ram_pressure(rho_kg_m3, speed_m_s):
     """
     Ram pressure `rho * u^2` in Pa.
     """
-    # TODO(griblet): `ram_pressure [Pa]` should be a SmartDs/griblet quantity so
-    # callers do not recompute it outside the field graph.
     return rho_kg_m3 * np.square(speed_m_s)
 
 def pressure_components(

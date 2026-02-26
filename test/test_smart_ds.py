@@ -10,6 +10,7 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+SUN_RADIUS_M = 6.96e8
 
 
 def make_dataset_2d():
@@ -292,7 +293,7 @@ def test_griblet_add_spherical_graph_on_real_example_data():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_griblet_batsrus_si_normalization_and_derived_fields():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph()
+    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
 
     # Unit normalization examples
     bx_g = np.array(sds.variable("B_x [Gauss]"))
@@ -338,9 +339,36 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
 
     p_b = np.array(sds.variable("P_b [Pa]"))
     np.testing.assert_allclose(p_b, b**2 / (2 * (4e-7 * np.pi)), rtol=1e-10, atol=1e-10)
+    magnetic_pressure = np.array(sds.variable("magnetic_pressure [Pa]"))
+    np.testing.assert_allclose(magnetic_pressure, p_b, rtol=1e-12, atol=1e-12)
+
+    ram_pressure = np.array(sds.variable("ram_pressure [Pa]"))
+    np.testing.assert_allclose(ram_pressure, rho_si * u**2, rtol=1e-10, atol=1e-10)
 
     beta = np.array(sds.variable("beta [none]"))
     np.testing.assert_allclose(beta, p_si / p_b, rtol=1e-10, atol=1e-10)
+
+    # Pointwise spherical/flux/torque quantities (via batsrus graph + spherical graph).
+    u_r = np.array(sds.variable("U_r [m/s]"))
+    mass_flux = np.array(sds.variable("mass_flux [kg/m^2/s]"))
+    np.testing.assert_allclose(mass_flux, rho_si * u_r, rtol=1e-10, atol=1e-10)
+
+    b_r = np.array(sds.variable("B_r [T]"))
+    b_phi = np.array(sds.variable("B_phi [T]"))
+    u_phi = np.array(sds.variable("U_phi [m/s]"))
+    varpi = np.array(sds.variable("cylindrical_radius [m]"))
+    tmag = np.array(sds.variable("magnetic_torque_density [N/m]"))
+    tdyn = np.array(sds.variable("dynamic_torque_density [N/m]"))
+    ttot = np.array(sds.variable("total_torque_density [N/m]"))
+    np.testing.assert_allclose(tmag, -varpi * b_phi * b_r / (4e-7 * np.pi), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(tdyn, varpi * rho_si * u_phi * u_r, rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(ttot, tmag + tdyn, rtol=1e-10, atol=1e-10)
+
+    b_mer = np.array(sds.variable("B_meridional [T]"))
+    b_theta = np.array(sds.variable("B_theta [T]"))
+    b_tan = np.array(sds.variable("B_tangential [T]"))
+    np.testing.assert_allclose(b_mer, -b_theta, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(b_tan, np.sqrt(np.array(sds.variable("B_phi [T]")) ** 2 + b_mer**2), rtol=1e-10, atol=1e-10)
 
     expl = sds.explain("M_A [none]")
     assert "M_A [none]" in expl
@@ -348,3 +376,4 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     assert "U [m/s]" in expl
 
     assert "beta [none]" in sds.explain("beta [none]")
+    assert "mass_flux [kg/m^2/s]" in sds.explain("mass_flux [kg/m^2/s]")
