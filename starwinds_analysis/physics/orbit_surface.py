@@ -7,8 +7,8 @@ It should reuse pressure/torque core functions rather than redefining those quan
 # TODO(debt): This file combines geometry generation, resampling, pressure/torque
 # quantity assembly, and summaries. It behaves like a workflow/pipeline but currently
 # lives in `physics`.
-# TODO(debt): It imports from `analysis` (reversed layer direction) and still relies
-# on `resolve_*` field-resolution glue via orbit-pressure helpers.
+# TODO(debt): It imports from `analysis` (reversed layer direction). Keep moving
+# shared orbit/surface sampling pieces into primitives.
 
 from __future__ import annotations
 
@@ -17,9 +17,6 @@ import math
 import numpy as np
 
 from starwinds_analysis.physics.local_estimates import summarize_samples
-from starwinds_analysis.physics.orbit_pressure import (
-    resolve_batsrus_pressure_si,
-)
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import (
     circular_orbit_points,
@@ -36,10 +33,38 @@ from starwinds_analysis.physics.surface_torque import (
 )
 from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
 )
 from starwinds_analysis.analysis.stats import weighted_quantile
+
+
+def _ensure_batsrus_surface_fields(
+    smart_ds,
+    *,
+    body_radius_m: float,
+    include_pressure: bool,
+) -> None:
+    needed = {
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
+    }
+    if include_pressure:
+        needed.add("P [Pa]")
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
+
+
+def _pressure_field_name_and_scale(smart_ds):
+    if smart_ds.has_field("P [Pa]"):
+        return "P [Pa]", 1.0
+    if smart_ds.has_field("P [dyne/cm^2]"):
+        return "P [dyne/cm^2]", 0.1
+    raise KeyError("Could not find pressure field in SI or cgs form")
 
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
@@ -298,10 +323,11 @@ def pressure_components_on_orbit_surface(
     Pressure-component analytics on a surface of revolution around an orbit path.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
-    p_name, p_scale = resolve_batsrus_pressure_si(smart_ds)
+    _ensure_batsrus_surface_fields(smart_ds, body_radius_m=body_radius_m, include_pressure=True)
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
+    p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
 
     sampled = sample_orbit_surface_revolution(
         smart_ds,
@@ -311,11 +337,11 @@ def pressure_components_on_orbit_surface(
         n_longitudes=n_longitudes,
     )
 
-    rho = rho_scale * np.array(sampled[rho_name], dtype=float)
-    u_xyz = u_scale * np.stack(
+    rho = np.array(sampled[rho_name], dtype=float)
+    u_xyz = np.stack(
         [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
     )
-    b_xyz = b_scale * np.stack(
+    b_xyz = np.stack(
         [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
     )
     p_therm = p_scale * np.array(sampled[p_name], dtype=float)
@@ -399,15 +425,20 @@ def torque_components_on_orbit_surface(
     Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
+    _ensure_batsrus_surface_fields(
+        smart_ds,
+        body_radius_m=body_radius_m,
+        include_pressure=include_pressure_term,
+    )
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
     p_name = p_scale = None
     if include_pressure_term:
         try:
-            p_name, p_scale = resolve_batsrus_pressure_si(smart_ds)
+            p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
             fields.append(p_name)
         except Exception:
             p_name = p_scale = None
@@ -420,11 +451,11 @@ def torque_components_on_orbit_surface(
         n_longitudes=n_longitudes,
     )
 
-    rho = rho_scale * np.array(sampled[rho_name], dtype=float)
-    u_xyz = u_scale * np.stack(
+    rho = np.array(sampled[rho_name], dtype=float)
+    u_xyz = np.stack(
         [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
     )
-    b_xyz = b_scale * np.stack(
+    b_xyz = np.stack(
         [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
     )
     p = None if p_name is None else p_scale * np.array(sampled[p_name], dtype=float)

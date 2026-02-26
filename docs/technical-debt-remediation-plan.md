@@ -126,8 +126,8 @@ Recommended next implementation batches:
 - NEXT: Introduce shared shell reduction primitive usage and remove local `B_r`/`U_r`/flux-density recomputation where possible.
 
 2. `physics/orbit_pressure.py` + `physics/orbit_surface.py`
-- Separate orbit geometry/sampling from quantity assembly
-- Remove remaining `resolve_*` calls in favor of SmartDs requests
+- DONE (partial): `resolve_*` calls removed in favor of SI SmartDs/griblet requests.
+- NEXT: separate orbit geometry/sampling from quantity assembly and reduce `physics -> analysis` dependencies.
 
 3. `physics.plotting.py` + `quicklook2d.py`
 - Delete quantity-specific plotting wrappers as notebooks/examples use direct Matplotlib

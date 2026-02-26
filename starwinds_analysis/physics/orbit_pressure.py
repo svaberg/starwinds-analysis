@@ -6,9 +6,8 @@ Pressure formulas themselves belong in pressure.py.
 
 # TODO(debt): This file is an orbit workflow/pipeline (sampling + field resolution +
 # summaries) but currently lives in `physics`.
-# TODO(debt): It imports from `analysis` and uses `resolve_*` helpers; the intended
-# direction is SmartDs/griblet SI requests plus a higher-level pipeline layer when
-# multi-step orchestration is truly needed.
+# TODO(debt): It imports from `analysis`; keep moving shared orbit/sampling pieces
+# into primitives and use SmartDs/griblet SI requests internally.
 
 from __future__ import annotations
 
@@ -21,28 +20,32 @@ from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )
-from starwinds_analysis.analysis.shells import (
-    infer_body_radius_m,
-    resolve_batsrus_density_si,
-    resolve_batsrus_vector_xyz_si,
-    resolve_field_with_scale,
-)
+from starwinds_analysis.analysis.shells import infer_body_radius_m
 
 
-#
-# TODO smartds-resolve:
-# This BATSRUS pressure resolver should move into SmartDs so analysis code can ask
-# SmartDs for SI-ready pressure data (with units parsed from bracketed field names)
-# instead of maintaining local fallback logic.
-#
-def resolve_batsrus_pressure_si(smart_ds):
-    return resolve_field_with_scale(
-        smart_ds,
-        [
-            ("P [Pa]", 1.0),
-            ("P [dyne/cm^2]", 0.1),
-        ],
-    )
+def _ensure_batsrus_orbit_pressure_fields(smart_ds, *, body_radius_m: float) -> None:
+    needed = {
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
+    }
+    if "P [Pa]" in getattr(smart_ds, "variables", ()):
+        needed.add("P [Pa]")
+    if all(smart_ds.has_field(name) for name in needed):
+        return
+    smart_ds.add_batsrus_graph(body_radius_m=float(body_radius_m))
+
+
+def _pressure_field_name_and_scale(smart_ds):
+    if smart_ds.has_field("P [Pa]"):
+        return "P [Pa]", 1.0
+    if smart_ds.has_field("P [dyne/cm^2]"):
+        return "P [dyne/cm^2]", 0.1
+    raise KeyError("Could not find pressure field in SI or cgs form")
 
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
@@ -93,14 +96,14 @@ def pressure_components_from_orbit_sample(
     # TODO(griblet): These pressure/standoff derived quantities should be requested
     # through SmartDs/griblet in SI units where possible, instead of being assembled
     # ad hoc in the orbit workflow.
-    rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)
-    (ux_name, uy_name, uz_name), u_scale = resolve_batsrus_vector_xyz_si(smart_ds, "U")
-    (bx_name, by_name, bz_name), b_scale = resolve_batsrus_vector_xyz_si(smart_ds, "B")
-    p_name, p_scale = resolve_batsrus_pressure_si(smart_ds)
+    rho_name = "Rho [kg/m^3]"
+    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
+    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
+    p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
 
-    rho = rho_scale * np.array(orbit[rho_name], dtype=float)
-    u_xyz = u_scale * np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
-    b_xyz = b_scale * np.column_stack([orbit[bx_name], orbit[by_name], orbit[bz_name]])
+    rho = np.array(orbit[rho_name], dtype=float)
+    u_xyz = np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
+    b_xyz = np.column_stack([orbit[bx_name], orbit[by_name], orbit[bz_name]])
     p_therm = p_scale * np.array(orbit[p_name], dtype=float)
 
     object_velocity = None
@@ -154,10 +157,11 @@ def pressure_components_on_circular_orbit(
     include_relative_ram: bool = True,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name = resolve_batsrus_density_si(smart_ds)[0]
-    p_name = resolve_batsrus_pressure_si(smart_ds)[0]
-    u_xyz = resolve_batsrus_vector_xyz_si(smart_ds, "U")[0]
-    b_xyz = resolve_batsrus_vector_xyz_si(smart_ds, "B")[0]
+    _ensure_batsrus_orbit_pressure_fields(smart_ds, body_radius_m=body_radius_m)
+    rho_name = "Rho [kg/m^3]"
+    p_name = _pressure_field_name_and_scale(smart_ds)[0]
+    u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
+    b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
@@ -194,10 +198,11 @@ def pressure_components_on_elliptic_orbit(
     include_relative_ram: bool = True,
 ):
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name = resolve_batsrus_density_si(smart_ds)[0]
-    p_name = resolve_batsrus_pressure_si(smart_ds)[0]
-    u_xyz = resolve_batsrus_vector_xyz_si(smart_ds, "U")[0]
-    b_xyz = resolve_batsrus_vector_xyz_si(smart_ds, "B")[0]
+    _ensure_batsrus_orbit_pressure_fields(smart_ds, body_radius_m=body_radius_m)
+    rho_name = "Rho [kg/m^3]"
+    p_name = _pressure_field_name_and_scale(smart_ds)[0]
+    u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
+    b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
     orbit = sample_elliptic_orbit(
         smart_ds,
         semi_major_axis,
@@ -225,7 +230,6 @@ def pressure_components_on_elliptic_orbit(
 
 
 __all__ = [
-    "resolve_batsrus_pressure_si",
     "pressure_components_from_orbit_sample",
     "pressure_components_on_circular_orbit",
     "pressure_components_on_elliptic_orbit",
