@@ -243,6 +243,30 @@ Preferred pattern:
 - obvious parameter names (`scale='log'|'linear'`, `sampling='grid'|'fibonacci'`)
 - return metadata/summary where helpful
 
+## 6b. NaN-Tolerance As A Default Coding Style
+
+Bad:
+
+- writing code that is "NaN-tolerant" by default (`nanmean`, `nanmax`, blanket finite masks, silent NaN filtering)
+- treating unexpected NaNs as normal and just plotting/integrating around them
+
+Why this is a smell:
+
+- hides bugs in field resolution, resampling, or physics definitions
+- makes bad data look like a normal edge case
+- spreads defensive clutter through notebooks and library code
+
+Preferred pattern:
+
+- assume valid data unless there is a specific, known reason NaNs can occur
+- let failures be visible during development
+- handle NaNs only where the behavior is intentional and documented (for example: known undefined coordinates at poles/origin)
+
+Rule:
+
+- NaN-tolerance is a bad smell.
+- If NaN handling is needed, make the reason explicit in code/comments at that exact location.
+
 ## 7. Over-Fragmentation Into Tiny Helpers
 
 Bad:
