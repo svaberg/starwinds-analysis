@@ -61,15 +61,6 @@ from .shell_summary import (
     summarize_shell_diagnostics_band,
     summarize_shell_series,
 )
-from .shell_magnetic import (
-    ShellMagneticFieldMap,
-    plot_magnetic_zdi_triplet,
-    plot_shell_scalar_lonlat,
-    plot_shell_tangential_vectors_lonlat,
-    sample_shell_magnetic_field_map,
-    summarize_shell_magnetic_field_map,
-    style_shell_lonlat_axes,
-)
 from .slices import infer_range, resample_structured_xz_slice, structured_quad_corners
 from .stats import weighted_mean_std, weighted_quantile
 from .torque import plot_torque_profile
@@ -99,16 +90,9 @@ __all__ = [
     "boxcar_shell_weights",
     "summarize_shell_series",
     "summarize_shell_diagnostics_band",
-    "ShellMagneticFieldMap",
     "ShellMassFluxMap",
-    "sample_shell_magnetic_field_map",
     "sample_shell_mass_flux_map",
-    "style_shell_lonlat_axes",
-    "plot_shell_scalar_lonlat",
     "plot_shell_mass_flux_lonlat",
-    "plot_magnetic_zdi_triplet",
-    "plot_shell_tangential_vectors_lonlat",
-    "summarize_shell_magnetic_field_map",
     "weighted_mean_std",
     "weighted_quantile",
     "open_magnetic_flux_vs_radius",
