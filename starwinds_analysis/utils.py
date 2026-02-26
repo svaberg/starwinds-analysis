@@ -17,11 +17,13 @@ from matplotlib.colors import LogNorm
 import re
 
 
-# Detect the two varying coordinates in a nominal 2D slice dataset.
-# Used in: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
-#   `starwinds_analysis/utils.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def auto_coords(ds, names=None):
 
+    """
+    Detect the two varying coordinates in a nominal 2D slice dataset.
+    Used by: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
+      `starwinds_analysis/utils.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+    """
     if names is None:
         names = "X [R]", "Y [R]", "Z [R]"
 
@@ -37,11 +39,12 @@ def auto_coords(ds, names=None):
 
 
 
-# Build a Matplotlib triangulation from 2D quad-cell connectivity.
-# Used in: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
-#   `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def triangles(ds, uname=None, vname=None):
-    """ """
+    """
+    Build a Matplotlib triangulation from 2D quad-cell connectivity.
+    Used by: `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`,
+      `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+    """
 
     if uname is None and vname is None:
         uname, vname = auto_coords(ds)
@@ -57,19 +60,21 @@ def triangles(ds, uname=None, vname=None):
 
 
 
-# Extract the step number from a filename of the form '..._n00060000.dat'.
-# Used in: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def extract_index(p):
-    """Extract the step number from a filename of the form '..._n00060000.dat'."""
+    """
+    Extract the step number from a filename of the form '..._n00060000.dat'.
+    Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+    """
     #TODO fix this so that it is not looking jsut for dat files we onlhy reaally need th n00060000 bit. that is enough for extraction. 
     m = re.search(r"_n(\d+)\.dat$", p.name)
     return int(m.group(1)) if m else -1
 
 
-# Sort by the number in the filename, with trailing zeros prioritized.
-# Used in: no external call sites found
 def sort_key(p):
-    """Sort by the number in the filename, with trailing zeros prioritized."""
+    """
+    Sort by the number in the filename, with trailing zeros prioritized.
+    Used by: no external call sites found
+    """
     # TODO this should use extract_index.
     m = re.search(r"_n(\d+)\.dat$", p.name)
     num_str = m.group(1)

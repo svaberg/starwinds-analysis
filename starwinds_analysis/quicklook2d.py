@@ -60,11 +60,10 @@ class SlicePreset:
     overlays: tuple[tuple[str, float, str], ...] = ()
     intent: str = "si_diagnostic"
 
-# Local quicklook adapter from shell-profile dicts to the `Upsilon_open` formula.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _open_wind_magnetisation_from_diagnostics(diagnostics, *, star_mass_kg, star_radius_m):
     """
     Local quicklook adapter from shell-profile dicts to the `Upsilon_open` formula.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     if "open_flux" not in diagnostics or "mass_loss" not in diagnostics:
         raise KeyError("diagnostics must include 'open_flux' and 'mass_loss'")
@@ -129,9 +128,11 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
     **SLICE_PRESETS_RAW_DISPLAY,
 }
 
-# Lazy-import slice plotting styles/helpers only when slice quicklooks are used.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _load_slice_styles():
+    """
+    Lazy-import slice plotting styles/helpers only when slice quicklooks are used.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     try:
         from starwinds_analysis.visualisation.slice import (
             plot_xz_slice_tripcolor_with_cross_quantiles,
@@ -175,9 +176,11 @@ RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
     **RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
 }
 
-# Check if a SmartDs has a field without raising in quicklook field selection.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _has_field(ds, name: str) -> bool:
+    """
+    Check if a SmartDs has a field without raising in quicklook field selection.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     if hasattr(ds, "has_field"):
         try:
             return bool(ds.has_field(name))
@@ -189,17 +192,21 @@ def _has_field(ds, name: str) -> bool:
         return False
     return True
 
-# Pick the first available field from a candidate list.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _resolve_first_field(ds, candidates):
+    """
+    Pick the first available field from a candidate list.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     for name in candidates:
         if _has_field(ds, name):
             return name
     return None
 
-# Normalize overlay specs into a list for quicklook plotting.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _normalize_overlays(ds, overlays):
+    """
+    Normalize overlay specs into a list for quicklook plotting.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     out = []
     for item in overlays or ():
         if len(item) == 2:
@@ -211,8 +218,6 @@ def _normalize_overlays(ds, overlays):
             out.append((field, float(level), color))
     return out
 
-# Thin 2D quicklook wrapper over existing slice plotting helpers.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def plot_slice_quicklook(
     ds,
     *,
@@ -225,6 +230,7 @@ def plot_slice_quicklook(
 ):
     """
     Thin 2D quicklook wrapper over existing slice plotting helpers.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     slice_styles = _load_slice_styles()
 
@@ -257,8 +263,6 @@ def plot_slice_quicklook(
 
     return fig, axes, cbar
 
-# Radius/scatter/cumulative/hist2d quicklook wrapper over `visualisation.histograms`.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def plot_radius_quicklook(
     ds,
     *,
@@ -271,6 +275,7 @@ def plot_radius_quicklook(
 ):
     """
     Radius/scatter/cumulative/hist2d quicklook wrapper over `visualisation.histograms`.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     if fields is None:
         if preset is None:
@@ -308,8 +313,6 @@ def plot_radius_quicklook(
         ax.set_visible(False)
     return fig, axs[:n]
 
-# Compute a bundle of shell diagnostics used by 2D quicklook summaries.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def compute_shell_diagnostics(
     smart_ds,
     radii,
@@ -322,6 +325,7 @@ def compute_shell_diagnostics(
 ):
     """
     Compute a bundle of shell diagnostics used by 2D quicklook summaries.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     include = tuple(include)
     out = {}
@@ -343,11 +347,10 @@ def compute_shell_diagnostics(
         out["axisymmetric_open_flux"] = axisymmetric_open_flux_vs_radius(smart_ds, radii, **common)
     return out
 
-# Plot a compact shell-diagnostics summary figure.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     """
     Plot a compact shell-diagnostics summary figure.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     fig, axs = plt.subplots(2, 2, figsize=figsize, constrained_layout=True)
     axs = np.array(axs)
@@ -434,8 +437,6 @@ def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
 
     return fig, axs
 
-# Convenience shell-diagnostics figure builder used by quicklook and tests.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def quicklook_shell_figure(
     smart_ds,
     radii,
@@ -448,6 +449,10 @@ def quicklook_shell_figure(
     star_mass_kg: float | None = None,
     figsize=(12, 8),
 ):
+    """
+    Convenience shell-diagnostics figure builder used by quicklook and tests.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
+    """
     diagnostics = compute_shell_diagnostics(
         smart_ds,
         radii,
@@ -469,9 +474,11 @@ def quicklook_shell_figure(
     fig, axs = plot_shell_diagnostics(diagnostics, figsize=figsize)
     return fig, axs, diagnostics
 
-# Plot local-vs-shell mass-loss comparison for one orbit result bundle.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def plot_orbit_mass_loss_comparison(ax, result):
+    """
+    Plot local-vs-shell mass-loss comparison for one orbit result bundle.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     y = np.array(result["local_mass_loss [kg/s]"])
     phase = _orbit_phase(result, y.size)
     shell_interp = result.get("shell_mass_loss_interp [kg/s]")
@@ -497,9 +504,11 @@ def plot_orbit_mass_loss_comparison(ax, result):
     ax.set_title(_orbit_result_title("Mass Loss", result))
     return ax
 
-# Plot local-vs-shell torque comparison for one orbit result bundle.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
+    """
+    Plot local-vs-shell torque comparison for one orbit result bundle.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     tot = np.array(result["local_total_torque [Nm]"])
     phase = _orbit_phase(result, tot.size)
     shell_interp = result.get("shell_total_torque_interp [Nm]")
@@ -529,9 +538,11 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     ax.set_title(_orbit_result_title("Torque", result))
     return ax
 
-# Extract orbit phase array from result bundles with a safe empty fallback.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _orbit_phase(result, n):
+    """
+    Extract orbit phase array from result bundles with a safe empty fallback.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     try:
         phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"))
     except Exception:
@@ -540,9 +551,11 @@ def _orbit_phase(result, n):
         return phase
     return np.arange(n, dtype=float) / max(1, n)
 
-# Build a compact title string for orbit quicklook result figures.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _orbit_result_title(prefix, result):
+    """
+    Build a compact title string for orbit quicklook result figures.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     if "semi_major_axis [R]" in result and "eccentricity [none]" in result:
         return (
             f"{prefix} @ a={float(result['semi_major_axis [R]']):.3g} R, "
@@ -550,9 +563,11 @@ def _orbit_result_title(prefix, result):
         )
     return f"{prefix} @ r={float(result['radius [R]']):.3g} R"
 
-# Plot orbit pressure-component series and derived standoff proxy.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
+    """
+    Plot orbit pressure-component series and derived standoff proxy.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     phase = _orbit_phase(result, len(np.array(result["ram_pressure [Pa]"])))
     for key, label, color in (
         ("thermal_pressure [Pa]", "thermal", "C0"),
@@ -576,8 +591,6 @@ def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True)
     ax.set_title(_orbit_result_title("Orbit Pressures", result))
     return ax
 
-# Orbit pressure quicklook (thermal/magnetic/ram and stand-off proxy).
-# Used in: `test/test_quicklook2d.py`
 def orbit_pressure_figure(
     smart_ds,
     radius,
@@ -591,6 +604,7 @@ def orbit_pressure_figure(
 ):
     """
     Orbit pressure quicklook (thermal/magnetic/ram and stand-off proxy).
+    Used by: `test/test_quicklook2d.py`
     """
     if isinstance(radius, dict):
         spec = dict(radius)
@@ -645,17 +659,22 @@ def orbit_pressure_figure(
     axs[0].legend(loc="best")
     return fig, axs, result
 
-# Plot filled phase-quantile bands for orbit-surface diagnostics.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_med=0.5, q_high=0.75):
+    """
+    Plot filled phase-quantile bands for orbit-surface diagnostics.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     phase = np.array(phase_profile["phase [turns]"])
     qs = np.array(phase_profile["quantiles [none]"])
     vals = np.array(phase_profile["values"])
     if vals.ndim != 2 or vals.shape[0] != phase.size:
         return ax
 
-    # Pick the nearest stored quantile column for plotting.
     def _pick(qtarget):
+        """
+        Pick the nearest stored quantile column for plotting.
+        Used by: `_plot_phase_quantile_band` (nested helper)
+        """
         idx = int(np.argmin(np.abs(qs - qtarget)))
         return vals[:, idx]
 
@@ -666,8 +685,6 @@ def _plot_phase_quantile_band(ax, phase_profile, *, label, color, q_low=0.25, q_
     ax.plot(phase, y_md, "-", color=color, label=label)
     return ax
 
-# Surface-of-revolution orbit pressure quicklook (pure NumPy/SciPy resampling).
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def orbit_surface_pressure_figure(
     smart_ds,
     orbit,
@@ -680,6 +697,7 @@ def orbit_surface_pressure_figure(
 ):
     """
     Surface-of-revolution orbit pressure quicklook (pure NumPy/SciPy resampling).
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     result = pressure_components_on_orbit_surface(
         smart_ds,
@@ -720,8 +738,6 @@ def orbit_surface_pressure_figure(
         ax.grid(True, which="minor", alpha=0.1)
     return fig, axs, result
 
-# Surface-of-revolution torque quicklook (`T1..T4` + total), non-VTK.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def orbit_surface_torque_figure(
     smart_ds,
     orbit,
@@ -734,6 +750,7 @@ def orbit_surface_torque_figure(
 ):
     """
     Surface-of-revolution torque quicklook (`T1..T4` + total), non-VTK.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     result = torque_components_on_orbit_surface(
         smart_ds,
@@ -812,8 +829,6 @@ def orbit_surface_torque_figure(
         ax.grid(True, which="minor", alpha=0.1)
     return fig, axs, result
 
-# Compute and plot local-vs-shell comparisons for mass loss and torque on one orbit.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def orbit_local_comparison_figure(
     smart_ds,
     radius,
@@ -828,9 +843,7 @@ def orbit_local_comparison_figure(
 ):
     """
     Compute and plot local-vs-shell comparisons for mass loss and torque on one orbit.
-
-    `radius` may be a float (circular orbit radius in `R`) or a dict describing a
-    Kepler ellipse, e.g. `{"semi_major_axis": 10.0, "eccentricity": 0.2}`.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     if isinstance(radius, dict):
         spec = dict(radius)
@@ -909,8 +922,6 @@ def orbit_local_comparison_figure(
     axs[1].legend(loc="best")
     return fig, axs, {"mass_loss": mass, "torque": torque}
 
-# JSON-friendly summary (stats only) of shell diagnostics.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def summarize_shell_diagnostics(
     diagnostics,
     *,
@@ -921,6 +932,7 @@ def summarize_shell_diagnostics(
 ):
     """
     JSON-friendly summary (stats only) of shell diagnostics.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     out = {}
     for name, profile in diagnostics.items():
@@ -964,11 +976,10 @@ def summarize_shell_diagnostics(
             pass
     return out
 
-# Flatten shell diagnostic arrays for `np.savez`.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def flatten_shell_diagnostics_arrays(diagnostics):
     """
     Flatten shell diagnostic arrays for `np.savez`.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     arrays = {}
     for name, profile in diagnostics.items():
@@ -984,11 +995,10 @@ def flatten_shell_diagnostics_arrays(diagnostics):
             arrays[flat_key] = arr
     return arrays
 
-# JSON-friendly summary of orbit local-vs-shell comparison results.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def summarize_orbit_results(orbit_results):
     """
     JSON-friendly summary of orbit local-vs-shell comparison results.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     skip_keys = {
         "orbit_samples",
@@ -1012,11 +1022,10 @@ def summarize_orbit_results(orbit_results):
         out[str(orbit_key)] = orbit_out
     return out
 
-# Flatten selected orbit result arrays for `np.savez`.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def flatten_orbit_results_arrays(orbit_results):
     """
     Flatten selected orbit result arrays for `np.savez`.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     skip_keys = {
         "orbit_samples",
@@ -1042,8 +1051,6 @@ def flatten_orbit_results_arrays(orbit_results):
             )
     return arrays
 
-# Save shell diagnostics summary JSON to disk.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def save_shell_diagnostics_json(
     path,
     diagnostics,
@@ -1052,6 +1059,10 @@ def save_shell_diagnostics_json(
     star_mass_kg: float | None = None,
     star_radius_m: float | None = None,
 ):
+    """
+    Save shell diagnostics summary JSON to disk.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = summarize_shell_diagnostics(
@@ -1063,35 +1074,39 @@ def save_shell_diagnostics_json(
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
     return path
 
-# Save shell diagnostics arrays to NPZ.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def save_shell_diagnostics_npz(path, diagnostics):
+    """
+    Save shell diagnostics arrays to NPZ.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_shell_diagnostics_arrays(diagnostics)
     np.savez(path, **arrays)
     return path
 
-# Save orbit-result summaries to JSON.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def save_orbit_results_json(path, orbit_results):
+    """
+    Save orbit-result summaries to JSON.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = summarize_orbit_results(orbit_results)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
     return path
 
-# Save orbit-result arrays to NPZ.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def save_orbit_results_npz(path, orbit_results):
+    """
+    Save orbit-result arrays to NPZ.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_orbit_results_arrays(orbit_results)
     np.savez(path, **arrays)
     return path
 
-# Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle.
-# Used in: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
 def save_quicklook2d_bundle(
     output_dir,
     *,
@@ -1108,6 +1123,7 @@ def save_quicklook2d_bundle(
 ):
     """
     Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle.
+    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/quicklook2d.py`
     """
     outdir = Path(output_dir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1148,9 +1164,11 @@ def save_quicklook2d_bundle(
 
     return saved
 
-# Make a filesystem-safe-ish slug for summary/array keys.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _slug_key(s: str) -> str:
+    """
+    Make a filesystem-safe-ish slug for summary/array keys.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     out = []
     for ch in str(s):
         if ch.isalnum():
@@ -1162,9 +1180,11 @@ def _slug_key(s: str) -> str:
         slug = slug.replace("__", "_")
     return slug.strip("_") or "item"
 
-# Return small summary stats for an array (shape/finite/min/max etc.).
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _array_summary(values):
+    """
+    Return small summary stats for an array (shape/finite/min/max etc.).
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     arr = np.array(values)
     finite = np.isfinite(arr)
     return {
@@ -1176,9 +1196,11 @@ def _array_summary(values):
         "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
     }
 
-# Recursively summarize nested result dicts into JSON-friendly metadata.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _summarize_result_object(value, *, skip_keys):
+    """
+    Recursively summarize nested result dicts into JSON-friendly metadata.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     if isinstance(value, dict):
         out = {}
         for key, sub in value.items():
@@ -1199,9 +1221,11 @@ def _summarize_result_object(value, *, skip_keys):
         return _array_summary(np.array(arr))
     return str(value)
 
-# Collect arrays from nested result objects into a flat dict for NPZ export.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
+    """
+    Collect arrays from nested result objects into a flat dict for NPZ export.
+    Used by: `starwinds_analysis/quicklook2d.py`
+    """
     if isinstance(value, dict):
         for key, sub in value.items():
             if key in skip_keys:
@@ -1223,11 +1247,10 @@ def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
         return
     arrays[prefix] = np.array(arr)
 
-# Best-effort setup of common BATSRUS + spherical derived fields.
-# Used in: `starwinds_analysis/quicklook2d.py`
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
     """
     Best-effort setup of common BATSRUS + spherical derived fields.
+    Used by: `starwinds_analysis/quicklook2d.py`
     """
     if hasattr(smart_ds, "add_batsrus_graph"):
         try:
@@ -1244,8 +1267,6 @@ def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = Non
         smart_ds.add_spherical_fields(vectors=("B", "U"))
     return smart_ds
 
-# End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
-# Used in: `test/test_quicklook2d.py`
 def run_quicklook2d(
     smart_ds,
     *,
@@ -1277,6 +1298,7 @@ def run_quicklook2d(
 ):
     """
     End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
+    Used by: `test/test_quicklook2d.py`
     """
     prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
 

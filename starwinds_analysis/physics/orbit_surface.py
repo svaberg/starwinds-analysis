@@ -36,25 +36,23 @@ from starwinds_analysis.analysis.shells import (
 )
 from starwinds_analysis.analysis.stats import weighted_quantile
 
-# Choose a thermal-pressure field name and conversion scale from available orbit/surface
-#   sample fields.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`,
-#   `starwinds_analysis/physics/orbit_pressure.py`
 def _pressure_field_name_and_scale(smart_ds):
+    """
+    Choose a thermal-pressure field name and conversion scale from available orbit/surface
+      sample fields.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`,
+      `starwinds_analysis/physics/orbit_pressure.py`
+    """
     if smart_ds.has_field("P [Pa]"):
         return "P [Pa]", 1.0
     if smart_ds.has_field("P [dyne/cm^2]"):
         return "P [dyne/cm^2]", 0.1
     raise KeyError("Could not find pressure field in SI or cgs form")
 
-# Surface of revolution around the z-axis from a sampled orbit path.
-# Used in: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     """
     Surface of revolution around the z-axis from a sampled orbit path.
-
-    The path is represented only by cylindrical radius and z-coordinate, matching the
-    old `elliptic_orbit.surface_from_orbit(...)` behavior.
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     pts = np.array(points)
     if pts.ndim != 2 or pts.shape[1] != 3:
@@ -83,11 +81,13 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
         "radius [surface]": np.sqrt(np.sum(surface * surface, axis=-1)),
     }
 
-# Compute periodic orbit-frame velocity components from sampled points/phase for relative-
-#   speed calculations.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`,
-#   `starwinds_analysis/physics/orbit_pressure.py`
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
+    """
+    Compute periodic orbit-frame velocity components from sampled points/phase for relative-
+      speed calculations.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`,
+      `starwinds_analysis/physics/orbit_pressure.py`
+    """
     points = np.array(points_r) * float(body_radius_m)
     phase = np.array(phase_turns)
     n = points.shape[0]
@@ -110,9 +110,11 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
         where=denom[:, None] != 0,
     )
 
-# Build integration/summary weights for orbit-surface sampled data.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`
 def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
+    """
+    Build integration/summary weights for orbit-surface sampled data.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`
+    """
     az_w = np.full(int(n_longitudes), 1.0 / float(n_longitudes), dtype=float)
     if time_weight is None:
         t_w = np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
@@ -125,9 +127,11 @@ def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
         t_w = t_w / sw if sw > 0 else np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
     return np.outer(t_w, az_w)
 
-# Compute phase-binned quantiles for 2D orbit-surface sampled values.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`
 def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
+    """
+    Compute phase-binned quantiles for 2D orbit-surface sampled values.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`
+    """
     arr = np.array(values_2d)
     if arr.ndim != 2:
         raise ValueError("values_2d must be 2D")
@@ -140,14 +144,10 @@ def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
             out[i] = np.quantile(row[m], q)
     return q, out
 
-# Estimate point normals and point-associated areas on a periodic structured surface.
-# Used in: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
 def surface_point_normals_and_areas(surface_points_xyz_m):
     """
     Estimate point normals and point-associated areas on a periodic structured surface.
-
-    Uses centered differences in both directions with periodic wrapping. The resulting
-    area weights are suitable for integrating sampled fields over the orbit surface.
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     pts = np.array(surface_points_xyz_m)
     if pts.ndim != 3 or pts.shape[-1] != 3:
@@ -168,11 +168,10 @@ def surface_point_normals_and_areas(surface_points_xyz_m):
         )
     return normals, area
 
-# Integrate sampled surface density values over longitude for each orbit phase.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`
 def _phase_line_integrals(values_2d, area_2d):
     """
     Integrate sampled surface density values over longitude for each orbit phase.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     v = np.array(values_2d)
     a = np.array(area_2d)
@@ -191,8 +190,6 @@ def _phase_line_integrals(values_2d, area_2d):
         )
     return integ, cov
 
-# Sample explicit fields on a surface of revolution generated from an orbit path.
-# Used in: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
 def sample_orbit_surface_revolution(
     smart_ds,
     *,
@@ -206,10 +203,7 @@ def sample_orbit_surface_revolution(
 ):
     """
     Sample explicit fields on a surface of revolution generated from an orbit path.
-
-    `orbit` can be:
-    - a float (circular radius in `R`)
-    - a dict orbit spec with `semi_major_axis`, `eccentricity`, etc. (Kepler ellipse)
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     if isinstance(orbit, dict):
         spec = dict(orbit)
@@ -296,8 +290,6 @@ def sample_orbit_surface_revolution(
             sampled[key] = arr.reshape(n_phase, n_lon)
     return sampled
 
-# Pressure-component analytics on a surface of revolution around an orbit path.
-# Used in: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def pressure_components_on_orbit_surface(
     smart_ds,
     orbit,
@@ -312,6 +304,7 @@ def pressure_components_on_orbit_surface(
 ):
     """
     Pressure-component analytics on a surface of revolution around an orbit path.
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -400,8 +393,6 @@ def pressure_components_on_orbit_surface(
         out["radius [R]"] = float(orbit_meta["radius [R]"])
     return out
 
-# Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
-# Used in: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def torque_components_on_orbit_surface(
     smart_ds,
     orbit,
@@ -415,6 +406,7 @@ def torque_components_on_orbit_surface(
 ):
     """
     Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/quicklook2d.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

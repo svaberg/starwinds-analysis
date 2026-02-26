@@ -19,11 +19,10 @@ from starwinds_analysis.physics.constants import MU0
 
 # DONE(debt): Reuse the shared `MU0` constant from `physics.constants`.
 
-# Surface escape speed `sqrt(2GM/R)`.
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/physics/wind_scaling.py`
 def surface_escape_speed(star_mass_kg, star_radius_m):
     """
     Surface escape speed `sqrt(2GM/R)`.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/wind_scaling.py`
     """
     # TODO(griblet): If stellar mass/radius are carried as SmartDs/aux quantities,
     # this should be requestable as a derived SI quantity instead of recomputed.
@@ -32,11 +31,10 @@ def surface_escape_speed(star_mass_kg, star_radius_m):
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.sqrt(2.0 * c.G * m / r)
 
-# Reville-style open wind magnetisation used in the old quicklook (`Upsilon_open`).
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_radius_m):
     """
     Reville-style open wind magnetisation used in the old quicklook (`Upsilon_open`).
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
     """
     # TODO(griblet): `Upsilon_open` is a derived physical quantity and should be
     # requestable via SmartDs/griblet when its SI inputs are present.

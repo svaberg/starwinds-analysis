@@ -13,11 +13,13 @@ log = logging.getLogger(__name__)
 from starwinds_readplt.dataset import Dataset
 
 
-# Read a `.plt` file and optionally convert to base SI after VTK conversion.
-# Used in: `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`,
-#   `test/test_integrals.py`
 def read(file='sample_data/3d__var_1_n00060000.plt', convert_to_si_base=True):
 
+    """
+    Read a `.plt` file and optionally convert to base SI after VTK conversion.
+    Used by: `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`,
+      `test/test_integrals.py`
+    """
     dataset = Dataset.from_file(file)
     grid = convert(dataset)
 
@@ -27,14 +29,20 @@ def read(file='sample_data/3d__var_1_n00060000.plt', convert_to_si_base=True):
     return grid
 
 
-# Convert a `starwinds_readplt.Dataset` into a PyVista unstructured grid.
-# Used in: `starwinds_analysis/vtk_utils.py`
 def convert(dataset, copy_aux_to_fields=True):
 
+    """
+    Convert a `starwinds_readplt.Dataset` into a PyVista unstructured grid.
+    Used by: `starwinds_analysis/vtk_utils.py`
+    """
     grid = pv.UnstructuredGrid({pv.CellType.HEXAHEDRON: dataset.corners}, dataset.points[:,:3])
     # TODO better handling of point positions; currently they are duplicated.
 
     def scan_names(variable_names):
+        """
+        scan names.
+        Used by: `convert` (nested helper)
+        """
         mappings = defaultdict(list)
         current_vector_name = None
         for vn in variable_names:
@@ -72,11 +80,13 @@ _factors={
     '`mA/m^2': ['A/m^2', 1e-6]
     }
 
-# Rename/scale common BATSRUS variables in a VTK grid into base SI units.
-# Used in: `starwinds_analysis/vtk_utils.py`
 def convert_to_base_si(grid):
 
     # Make sure all units are bracketed
+    """
+    Rename/scale common BATSRUS variables in a VTK grid into base SI units.
+    Used by: `starwinds_analysis/vtk_utils.py`
+    """
     for old_name in grid.point_data.keys():
         try:
             left_bracket_pos = old_name.index('[')

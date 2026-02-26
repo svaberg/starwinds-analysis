@@ -13,17 +13,10 @@ import re
 import numpy as np
 
 
-# Convert Cartesian coordinates to spherical coordinates.
-# Used in: `starwinds_analysis/recipes/spherical.py`
 def cartesian_to_spherical_angles(x, y, z):
     """
     Convert Cartesian coordinates to spherical coordinates.
-
-    Conventions:
-    - ``r >= 0``
-    - ``theta`` is colatitude in ``[0, pi]`` (NaN at ``r == 0``)
-    - ``phi`` is azimuth from ``atan2(y, x)`` in ``[-pi, pi]``
-      (NaN where ``x == y == 0``)
+    Used by: `starwinds_analysis/recipes/spherical.py`
     """
     x = np.array(x)
     y = np.array(y)
@@ -48,9 +41,11 @@ def cartesian_to_spherical_angles(x, y, z):
     return r, theta, phi
 
 
-# Project a Cartesian vector onto the radial direction defined by `(x,y,z)`.
-# Used in: no external call sites found
 def radial_component(vx, vy, vz, x, y, z):
+    """
+    Project a Cartesian vector onto the radial direction defined by `(x,y,z)`.
+    Used by: no external call sites found
+    """
     x = np.array(x)
     y = np.array(y)
     z = np.array(z)
@@ -65,14 +60,10 @@ def radial_component(vx, vy, vz, x, y, z):
     return out
 
 
-# Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``.
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/recipes/spherical.py`
 def spherical_vector_components(vx, vy, vz, x, y, z):
     """
     Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``.
-
-    ``v_theta`` and ``v_phi`` are undefined on the polar axis (``x=y=0``) and are
-    returned as NaN there. All components are NaN at ``r=0``.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/recipes/spherical.py`
     """
     x = np.array(x)
     y = np.array(y)
@@ -111,8 +102,6 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     return v_r, v_theta, v_phi
 
 
-# Register local on-demand spherical coordinate fields on a SmartDs wrapper.
-# Used in: `starwinds_analysis/smart_ds.py`
 def register_spherical_geometry_fields(
     smart_ds,
     *,
@@ -125,28 +114,41 @@ def register_spherical_geometry_fields(
     latitude_deg_name: str = "latitude [deg]",
     longitude_deg_name: str = "longitude [deg]",
 ):
+    """
+    Register local on-demand spherical coordinate fields on a SmartDs wrapper.
+    Used by: `starwinds_analysis/smart_ds.py`
+    """
     x_name, y_name, z_name = coord_fields
     if r_name is None:
         r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
-    # Radius from Cartesian coordinates (same unit as `coord_fields`).
     def _r(ds):
+        """
+        Radius from Cartesian coordinates (same unit as `coord_fields`).
+        Used by: `register_spherical_geometry_fields` (nested helper)
+        """
         x = ds.variable(x_name)
         y = ds.variable(y_name)
         z = ds.variable(z_name)
         r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return r
 
-    # Colatitude from Cartesian coordinates.
     def _theta(ds):
+        """
+        Colatitude from Cartesian coordinates.
+        Used by: `register_spherical_geometry_fields` (nested helper)
+        """
         x = ds.variable(x_name)
         y = ds.variable(y_name)
         z = ds.variable(z_name)
         _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return theta
 
-    # Azimuth from Cartesian coordinates.
     def _phi(ds):
+        """
+        Azimuth from Cartesian coordinates.
+        Used by: `register_spherical_geometry_fields` (nested helper)
+        """
         x = ds.variable(x_name)
         y = ds.variable(y_name)
         z = ds.variable(z_name)
@@ -188,8 +190,6 @@ def register_spherical_geometry_fields(
     }
 
 
-# Register local on-demand spherical vector components for one Cartesian vector triplet.
-# Used in: `starwinds_analysis/recipes/spherical.py`
 def register_vector_spherical_components(
     smart_ds,
     *,
@@ -199,6 +199,10 @@ def register_vector_spherical_components(
     component_names: Mapping[str, str] | None = None,
     register_components: Sequence[str] = ("r", "theta", "phi"),
 ):
+    """
+    Register local on-demand spherical vector components for one Cartesian vector triplet.
+    Used by: `starwinds_analysis/recipes/spherical.py`
+    """
     x_name, y_name, z_name = coord_fields
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
@@ -213,8 +217,11 @@ def register_vector_spherical_components(
     else:
         component_names = dict(component_names)
 
-    # Compute all spherical vector components once per SmartDs request.
     def _compute(ds):
+        """
+        Compute all spherical vector components once per SmartDs request.
+        Used by: `register_vector_spherical_components` (nested helper)
+        """
         x = ds.variable(x_name)
         y = ds.variable(y_name)
         z = ds.variable(z_name)
@@ -233,8 +240,6 @@ def register_vector_spherical_components(
     return component_names
 
 
-# Auto-detect vector component triplets named like ``prefix_x [unit]``.
-# Used in: `starwinds_analysis/smart_ds.py`
 def auto_register_vector_spherical_components(
     smart_ds,
     *,
@@ -244,6 +249,7 @@ def auto_register_vector_spherical_components(
 ):
     """
     Auto-detect vector component triplets named like ``prefix_x [unit]``.
+    Used by: `starwinds_analysis/smart_ds.py`
     """
     by_prefix: dict[str, dict[str, str]] = {}
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
@@ -279,9 +285,6 @@ def auto_register_vector_spherical_components(
     return created
 
 
-# Build a griblet graph for spherical geometry fields.
-# Used in: `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`,
-#   `starwinds_analysis/recipes/batsrus.py`
 def build_griblet_spherical_geometry_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
@@ -295,8 +298,8 @@ def build_griblet_spherical_geometry_graph(
 ):
     """
     Build a griblet graph for spherical geometry fields.
-
-    This is optional and only available when ``griblet`` is installed.
+    Used by: `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`,
+      `starwinds_analysis/recipes/batsrus.py`
     """
     griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
@@ -305,18 +308,27 @@ def build_griblet_spherical_geometry_graph(
 
     graph = griblet.ComputationGraph()
 
-    # Radius recipe from Cartesian coordinates.
     def _r(x, y, z):
+        """
+        Radius recipe from Cartesian coordinates.
+        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
+        """
         r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return r
 
-    # Colatitude recipe from Cartesian coordinates.
     def _theta(x, y, z):
+        """
+        Colatitude recipe from Cartesian coordinates.
+        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
+        """
         _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return theta
 
-    # Azimuth recipe from Cartesian coordinates.
     def _phi(x, y, z):
+        """
+        Azimuth recipe from Cartesian coordinates.
+        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
+        """
         _r, _theta, phi = cartesian_to_spherical_angles(x, y, z)
         return phi
 
@@ -357,8 +369,6 @@ def build_griblet_spherical_geometry_graph(
     return graph
 
 
-# Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components.
-# Used in: `starwinds_analysis/recipes/spherical.py`
 def build_griblet_vector_spherical_components_graph(
     *,
     prefix: str,
@@ -368,6 +378,7 @@ def build_griblet_vector_spherical_components_graph(
 ):
     """
     Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components.
+    Used by: `starwinds_analysis/recipes/spherical.py`
     """
     griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
@@ -378,8 +389,11 @@ def build_griblet_vector_spherical_components_graph(
 
     graph = griblet.ComputationGraph()
 
-    # Compute all spherical vector components once for graph recipes.
     def _all(vx, vy, vz, x, y, z):
+        """
+        Compute all spherical vector components once for graph recipes.
+        Used by: `build_griblet_vector_spherical_components_graph` (nested helper)
+        """
         return spherical_vector_components(vx, vy, vz, x, y, z)
 
     if "r" in register_components:
@@ -409,9 +423,6 @@ def build_griblet_vector_spherical_components_graph(
     return graph
 
 
-# Auto-detect Cartesian vector triplets in `variable_names` and build a merged spherical-
-#   component recipe graph.
-# Used in: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
 def build_griblet_auto_vector_spherical_components_graph(
     variable_names: Sequence[str],
     *,
@@ -420,8 +431,9 @@ def build_griblet_auto_vector_spherical_components_graph(
     components: Sequence[str] = ("r", "theta", "phi"),
 ):
     """
-    Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged
-    griblet graph for their spherical components.
+    Auto-detect Cartesian vector triplets in `variable_names` and build a merged spherical-
+      component recipe graph.
+    Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
     """
     griblet = importlib.import_module("griblet")
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
@@ -457,9 +469,11 @@ def build_griblet_auto_vector_spherical_components_graph(
     return merged
 
 
-# Infer the matching radius field name/unit from coordinate field names.
-# Used in: `starwinds_analysis/recipes/spherical.py`
 def _infer_radius_name_from_coord(x_name: str) -> str | None:
+    """
+    Infer the matching radius field name/unit from coordinate field names.
+    Used by: `starwinds_analysis/recipes/spherical.py`
+    """
     m = re.match(r"^X \[(.+)\]$", x_name)
     if m:
         return f"R [{m.group(1)}]"

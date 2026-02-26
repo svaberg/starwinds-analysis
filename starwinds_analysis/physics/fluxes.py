@@ -21,9 +21,6 @@ from starwinds_analysis.analysis.shells import (
     shell_profile_radius_height,
 )
 
-# Signed/unsigned magnetic flux on spherical shells.
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`,
-#   `starwinds_analysis/physics/fluxes.py`
 def open_magnetic_flux_vs_radius(
     smart_ds,
     radii,
@@ -39,6 +36,8 @@ def open_magnetic_flux_vs_radius(
 ):
     """
     Signed/unsigned magnetic flux on spherical shells.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`,
+      `starwinds_analysis/physics/fluxes.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -90,8 +89,6 @@ def open_magnetic_flux_vs_radius(
         "shell_samples": shells,
     }
 
-# Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def axisymmetric_open_flux_vs_radius(
     smart_ds,
     radii,
@@ -106,8 +103,7 @@ def axisymmetric_open_flux_vs_radius(
 ):
     """
     Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
-
-    Axisymmetry is defined here as the azimuthal mean of `B_r` at each `(r, theta)`.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
     """
     if sampling != "grid":
         raise ValueError("axisymmetric_open_flux_vs_radius currently requires sampling='grid'")
@@ -147,8 +143,6 @@ def axisymmetric_open_flux_vs_radius(
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
     return prof
 
-# Radial energy flux profile using `E * U_r`.
-# Used in: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
 def energy_flux_vs_radius(
     smart_ds,
     radii,
@@ -168,6 +162,7 @@ def energy_flux_vs_radius(
 ):
     """
     Radial energy flux profile using `E * U_r`.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/quicklook2d.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

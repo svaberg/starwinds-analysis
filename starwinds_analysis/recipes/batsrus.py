@@ -30,8 +30,6 @@ _UNIT_FACTORS = {
     "`mA/m^2": ("A/m^2", 1e-6),
 }
 
-# Build a griblet graph for BATSRUS-style fields.
-# Used in: `starwinds_analysis/smart_ds.py`
 def build_griblet_batsrus_graph(
     variable_names: Sequence[str],
     *,
@@ -42,13 +40,7 @@ def build_griblet_batsrus_graph(
 ):
     """
     Build a griblet graph for BATSRUS-style fields.
-
-    Current scope:
-    - canonical bracketed names for unbracketed unit strings
-    - SI conversion recipes for common BATSRUS units
-    - optional coordinate conversion X/Y/Z [R] -> [m] (requires ``body_radius_m``)
-    - spherical geometry/vector components (for available Cartesian vectors)
-    - common derived fields and pointwise SI quantities
+    Used by: `starwinds_analysis/smart_ds.py`
     """
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
@@ -80,14 +72,16 @@ def build_griblet_batsrus_graph(
 
     return graph
 
-# Add raw->SI unit conversion recipes (BATSRUS naming conventions).
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def build_griblet_unit_normalization_graph(
     variable_names: Sequence[str],
     *,
     aux: Mapping[str, object] | None = None,
     body_radius_m: float | None = None,
 ):
+    """
+    Add raw->SI unit conversion recipes (BATSRUS naming conventions).
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
@@ -159,10 +153,12 @@ def build_griblet_unit_normalization_graph(
 
     return graph
 
-# Add common BATSRUS derived SI quantities (pressures, Mach numbers, fluxes, torque
-#   densities).
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
+    """
+    Add common BATSRUS derived SI quantities (pressures, Mach numbers, fluxes, torque
+      densities).
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
@@ -325,9 +321,11 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 
     return graph
 
-# Add vector-magnitude recipes (e.g. `|U|`, `|B|`) for available Cartesian triplets.
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
+    """
+    Add vector-magnitude recipes (e.g. `|U|`, `|B|`) for available Cartesian triplets.
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
@@ -354,15 +352,10 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
         )
     return graph
 
-# Parse BATSRUS variable names.
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def _parse_var_name(name: str):
     """
     Parse BATSRUS variable names.
-
-    Supports:
-    - ``Foo [unit]``
-    - ``Foo unit``  (legacy unbracketed style)
+    Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     m = re.match(r"^(?P<base>.+?) \[(?P<unit>.+)\]$", name)
     if m:
@@ -375,24 +368,30 @@ def _parse_var_name(name: str):
             return base, unit
     return None
 
-# Parse a float from aux/meta strings with safe fallback to `None`.
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def _parse_float(x):
+    """
+    Parse a float from aux/meta strings with safe fallback to `None`.
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     if isinstance(x, (int, float, np.floating)):
         return float(x)
     return float(str(x).strip())
 
-# Return a physically valid adiabatic index fallback when metadata is missing/bad.
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def _safe_gamma(gamma):
+    """
+    Return a physically valid adiabatic index fallback when metadata is missing/bad.
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     g = _parse_float(gamma)
     if not np.isfinite(g) or g <= 0:
         return _DEFAULT_GAMMA
     return g
 
-# Resolve body radius in meters from explicit arg or BATSRUS aux metadata.
-# Used in: `starwinds_analysis/recipes/batsrus.py`
 def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: float | None):
+    """
+    Resolve body radius in meters from explicit arg or BATSRUS aux metadata.
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
     if body_radius_m is not None:
         return float(body_radius_m)
 

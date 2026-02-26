@@ -23,22 +23,26 @@ from starwinds_analysis.physics.pressure import (
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
-# Choose a thermal-pressure field name and conversion scale from available orbit/surface
-#   sample fields.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`,
-#   `starwinds_analysis/physics/orbit_pressure.py`
 def _pressure_field_name_and_scale(smart_ds):
+    """
+    Choose a thermal-pressure field name and conversion scale from available orbit/surface
+      sample fields.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`,
+      `starwinds_analysis/physics/orbit_pressure.py`
+    """
     if smart_ds.has_field("P [Pa]"):
         return "P [Pa]", 1.0
     if smart_ds.has_field("P [dyne/cm^2]"):
         return "P [dyne/cm^2]", 0.1
     raise KeyError("Could not find pressure field in SI or cgs form")
 
-# Compute periodic orbit-frame velocity components from sampled points/phase for relative-
-#   speed calculations.
-# Used in: `starwinds_analysis/physics/orbit_surface.py`,
-#   `starwinds_analysis/physics/orbit_pressure.py`
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
+    """
+    Compute periodic orbit-frame velocity components from sampled points/phase for relative-
+      speed calculations.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`,
+      `starwinds_analysis/physics/orbit_pressure.py`
+    """
     points = np.array(points_r) * float(body_radius_m)
     phase = np.array(phase_turns)
     n = points.shape[0]
@@ -62,9 +66,11 @@ def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
         where=denom[:, None] != 0,
     )
 
-# Build weighted summary dicts (mean/std/quantiles) for a dict of arrays.
-# Used in: `starwinds_analysis/physics/orbit_pressure.py`
 def _summaries_from_arrays(data, *, weights=None):
+    """
+    Build weighted summary dicts (mean/std/quantiles) for a dict of arrays.
+    Used by: `starwinds_analysis/physics/orbit_pressure.py`
+    """
     out = {}
     for key, value in data.items():
         arr = np.array(value)
@@ -73,8 +79,6 @@ def _summaries_from_arrays(data, *, weights=None):
         out[key] = summarize_samples(arr, weights=weights)
     return out
 
-# Assemble orbit-sampled pressure components and standoff proxies from sampled fields.
-# Used in: `starwinds_analysis/physics/orbit_pressure.py`
 def pressure_components_from_orbit_sample(
     smart_ds,
     orbit,
@@ -85,6 +89,10 @@ def pressure_components_from_orbit_sample(
     include_relative_ram: bool = True,
     standoff_b0_t: float = 0.7e-4,
 ):
+    """
+    Assemble orbit-sampled pressure components and standoff proxies from sampled fields.
+    Used by: `starwinds_analysis/physics/orbit_pressure.py`
+    """
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
@@ -141,8 +149,6 @@ def pressure_components_from_orbit_sample(
         "summary": _summaries_from_arrays(comps, weights=weights),
     }
 
-# Sample a circular orbit and compute pressure-component diagnostics.
-# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/quicklook2d.py`
 def pressure_components_on_circular_orbit(
     smart_ds,
     radius,
@@ -154,6 +160,10 @@ def pressure_components_on_circular_orbit(
     star_mass_kg: float | None = None,
     include_relative_ram: bool = True,
 ):
+    """
+    Sample a circular orbit and compute pressure-component diagnostics.
+    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/quicklook2d.py`
+    """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -181,8 +191,6 @@ def pressure_components_on_circular_orbit(
     out["radius [m]"] = float(radius) * body_radius_m
     return out
 
-# Sample an elliptic orbit and compute pressure-component diagnostics.
-# Used in: `test/test_orbit_pressure.py`, `starwinds_analysis/quicklook2d.py`
 def pressure_components_on_elliptic_orbit(
     smart_ds,
     semi_major_axis,
@@ -197,6 +205,10 @@ def pressure_components_on_elliptic_orbit(
     star_mass_kg: float | None = None,
     include_relative_ram: bool = True,
 ):
+    """
+    Sample an elliptic orbit and compute pressure-component diagnostics.
+    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/quicklook2d.py`
+    """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"

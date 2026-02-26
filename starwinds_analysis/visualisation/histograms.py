@@ -8,9 +8,6 @@ import numpy as np
 from starwinds_readplt.dataset import Dataset
 
 
-# Cumulative histogram (CDF line) for each field on the provided axes.
-# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/planet.py`,
-#   `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 def plot_cumulative_hists(
     ds,
     axes,
@@ -27,6 +24,8 @@ def plot_cumulative_hists(
 ):
     """
     Cumulative histogram (CDF line) for each field on the provided axes.
+    Used by: `examples/smartds_radial_histograms.ipynb`, `examples/planet.py`,
+      `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
@@ -62,10 +61,6 @@ def plot_cumulative_hists(
 
 
 
-# Scatter raw samples vs radius for one or more fields.
-# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
-#   `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
-#   xuv-neutrals.py`
 def plot_vs_radius(
     ds,
     axes,
@@ -79,6 +74,12 @@ def plot_vs_radius(
     s=1.0,
     alpha=0.3,
 ):
+    """
+    Scatter raw samples vs radius for one or more fields.
+    Used by: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
+      `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+      xuv-neutrals.py`
+    """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
@@ -104,10 +105,6 @@ def plot_vs_radius(
 import numpy as np
 
 
-# Plot binned radial summaries (mean/median/sum) for one or more fields.
-# Used in: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
-#   `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
-#   xuv-neutrals.py`
 def plot_binned_vs_radius(
     ds,
     axes,
@@ -122,6 +119,12 @@ def plot_binned_vs_radius(
     color=None,
     statistic="mean",   # "mean", "median", or "sum"
 ):
+    """
+    Plot binned radial summaries (mean/median/sum) for one or more fields.
+    Used by: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
+      `examples/planet.py`, `starwinds_analysis/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+      xuv-neutrals.py`
+    """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
@@ -180,8 +183,6 @@ def plot_binned_vs_radius(
         ax.set_xlabel("r [R]")
 
 
-# 2D histogram (radius vs field value) as a compact replacement for old "monster" plots.
-# Used in: `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/quicklook2d.py`
 def plot_radial_hist2d(
     ds,
     axes,
@@ -201,9 +202,7 @@ def plot_radial_hist2d(
 ):
     """
     2D histogram (radius vs field value) as a compact replacement for old "monster" plots.
-
-    `normalize="per_radius"` scales each radial bin to unit sum, which makes the
-    distribution shape visible even when density changes strongly with radius.
+    Used by: `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/quicklook2d.py`
     """
     from matplotlib.colors import LogNorm
 

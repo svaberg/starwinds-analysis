@@ -12,8 +12,6 @@ from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 
-# Resample requested fields onto explicit shell points and return a shell SmartDs.
-# Used in: `starwinds_analysis/analysis/shells.py`
 def _resample_shell_points(
     smart_ds,
     sample_points,
@@ -24,6 +22,10 @@ def _resample_shell_points(
     fill_value,
     title_suffix="shell samples",
 ):
+    """
+    Resample requested fields onto explicit shell points and return a shell SmartDs.
+    Used by: `starwinds_analysis/analysis/shells.py`
+    """
     if fields is None:
         fields_arg = None
     else:
@@ -38,9 +40,11 @@ def _resample_shell_points(
         zone="shell-samples",
     )
 
-# Extract the unit substring from a bracketed field name like `X [R]`.
-# Used in: `starwinds_analysis/analysis/shells.py`
 def _field_unit_from_brackets(name: str) -> str | None:
+    """
+    Extract the unit substring from a bracketed field name like `X [R]`.
+    Used by: `starwinds_analysis/analysis/shells.py`
+    """
     text = str(name)
     i = text.rfind("[")
     j = text.rfind("]")
@@ -48,9 +52,11 @@ def _field_unit_from_brackets(name: str) -> str | None:
         return None
     return text[i + 1 : j].strip() or None
 
-# Attach derived arrays (free coords/areas/etc.) to a resampled shell SmartDs.
-# Used in: `starwinds_analysis/analysis/shells.py`
 def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *, zone_suffix: str):
+    """
+    Attach derived arrays (free coords/areas/etc.) to a resampled shell SmartDs.
+    Used by: `starwinds_analysis/analysis/shells.py`
+    """
     if not extra_fields:
         return smart_ds
 
@@ -88,13 +94,15 @@ def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *,
         include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
 
-# TODO this is too permissive and hacky.
-# TODO if RBODY exists, which it often does, it is in solar units, same as X [R], etc.
-# Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI.
-# Used in: `starwinds_analysis/physics/orbit_local.py`,
-#   `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`,
-#   `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py` (+1 more)
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
+    """
+    TODO this is too permissive and hacky.
+    TODO if RBODY exists, which it often does, it is in solar units, same as X [R], etc.
+    Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI.
+    Used by: `starwinds_analysis/physics/orbit_local.py`,
+      `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`,
+      `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py` (+1 more)
+    """
     if body_radius_m is not None:
         return float(body_radius_m)
 
@@ -117,8 +125,6 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
         "Could not infer body radius in meters. Pass body_radius_m explicitly."
     )
 
-# Infer available shell radii from points lying on a Cartesian axis.
-# Used in: `test/test_shell_analysis.py`
 def infer_cartesian_axis_radii(
     smart_ds,
     *,
@@ -131,9 +137,7 @@ def infer_cartesian_axis_radii(
 ):
     """
     Infer available shell radii from points lying on a Cartesian axis.
-
-    This is useful for choosing shell radii that align with native BATSRUS radial
-    sampling (e.g. points with `y=z=0` on the positive `x` axis).
+    Used by: `test/test_shell_analysis.py`
     """
     axis_key = str(axis).lower()
     axis_idx = {"x": 0, "y": 1, "z": 2}.get(axis_key)
@@ -169,10 +173,6 @@ def infer_cartesian_axis_radii(
         raise ValueError("Could not infer any axis-aligned radii from the dataset points")
     return radii
 
-# Resample fields onto spherical shell cell centers.
-# Used in: `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`,
-#   `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`,
-#   `examples/smartds_shell_mass_flux.ipynb` (+1 more)
 def sample_spherical_shells(
     smart_ds,
     radii,
@@ -189,18 +189,9 @@ def sample_spherical_shells(
 ):
     """
     Resample fields onto spherical shell cell centers.
-
-    `radii` and `coordinate_fields` are assumed to use the same length unit.
-    If `length_unit_to_m` is provided, shell areas are computed in `m^2`; otherwise in
-    the square of the shell coordinate unit.
-
-    Returns a NEW structured `SmartDs` whose variables include:
-    - sampled bound coordinates (e.g. `X [R]`, `Y [R]`, `Z [R]`)
-    - requested sampled fields (or all parent raw fields if `fields is None`)
-    - free spherical coordinates (`R [unit]`, `theta [rad]`, `phi [rad]`)
-
-    No shell-specific custom container is created; callers should request fields
-    directly from the returned structured `SmartDs`.
+    Used by: `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`,
+      `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`,
+      `examples/smartds_shell_mass_flux.ipynb` (+1 more)
     """
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
@@ -276,9 +267,6 @@ def sample_spherical_shells(
 
     return shell_ds
 
-# Resample fields onto equal-area Fibonacci sphere points on each shell.
-# Used in: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
-#   `starwinds_analysis/analysis/shells.py`
 def sample_spherical_shells_fibonacci(
     smart_ds,
     radii,
@@ -293,10 +281,8 @@ def sample_spherical_shells_fibonacci(
 ):
     """
     Resample fields onto equal-area Fibonacci sphere points on each shell.
-
-    Returns a NEW structured `SmartDs` whose arrays have shape `(nr, n_points, 1)`.
-    As with the grid sampler, no shell-specific custom container is created; callers
-    should request fields directly from the returned structured `SmartDs`.
+    Used by: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
+      `starwinds_analysis/analysis/shells.py`
     """
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
@@ -358,9 +344,6 @@ def sample_spherical_shells_fibonacci(
     )
     return shell_ds
 
-# Sample spherical shells using either the structured grid or Fibonacci sampler.
-# Used in: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
-#   `starwinds_analysis/physics/torque.py`
 def sample_spherical_shells_by_strategy(
     smart_ds,
     radii,
@@ -377,8 +360,8 @@ def sample_spherical_shells_by_strategy(
 ):
     """
     Sample spherical shells using either the structured grid or Fibonacci sampler.
-
-    This centralizes the sampling dispatch used by shell-based analysis helpers.
+    Used by: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
+      `starwinds_analysis/physics/torque.py`
     """
     common_kwargs = dict(
         smart_ds=smart_ds,
@@ -403,16 +386,12 @@ def sample_spherical_shells_by_strategy(
         )
     raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
-# Integrate scalar values over shell surfaces with NaN-safe area weighting.
-# Used in: `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`,
-#   `examples/smartds_inner_boundary_magnetic_zdi.ipynb`,
-#   `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more)
 def integrate_shell_scalar(values, area):
     """
     Integrate scalar values over shell surfaces with NaN-safe area weighting.
-
-    Returns `(integral, coverage)` for each shell radius, where `coverage` is the
-    finite-area fraction represented by finite values.
+    Used by: `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`,
+      `examples/smartds_inner_boundary_magnetic_zdi.ipynb`,
+      `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more)
     """
     v = np.array(values)
     a = np.array(area)
@@ -434,10 +413,12 @@ def integrate_shell_scalar(values, area):
 
     return sum_val, coverage
 
-# Build standard radius/height profile arrays from a shell SmartDs.
-# Used in: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
-#   `starwinds_analysis/physics/torque.py`
 def shell_profile_radius_height(shells):
+    """
+    Build standard radius/height profile arrays from a shell SmartDs.
+    Used by: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
+      `starwinds_analysis/physics/torque.py`
+    """
     if hasattr(shells, "has_field") and shells.has_field("R [R]"):
         r_field = np.array(shells("R [R]"))
         if r_field.ndim >= 2:

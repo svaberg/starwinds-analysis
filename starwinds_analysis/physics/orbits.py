@@ -11,12 +11,11 @@ import math
 import numpy as np
 from scipy.constants import G as GRAVITATIONAL_CONSTANT
 
-# Keplerian orbital period for a test particle around a point mass.
-# Used in: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
-#   `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`
 def orbital_period(semi_major_axis_m, star_mass_kg):
     """
     Keplerian orbital period for a test particle around a point mass.
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
+      `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`
     """
     a = float(semi_major_axis_m)
     m = float(star_mass_kg)
@@ -26,11 +25,10 @@ def orbital_period(semi_major_axis_m, star_mass_kg):
         raise ValueError("star_mass_kg must be > 0")
     return 2.0 * math.pi * math.sqrt(a**3 / (GRAVITATIONAL_CONSTANT * m))
 
-# Vis-viva orbital speed.
-# Used in: `test/test_orbit_analysis.py`
 def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     """
     Vis-viva orbital speed.
+    Used by: `test/test_orbit_analysis.py`
     """
     r = np.array(radial_distance_m)
     m = float(star_mass_kg)
