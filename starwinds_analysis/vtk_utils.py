@@ -1,3 +1,9 @@
+"""THIS FILE contains the optional VTK/PyVista bridge for 3D conversion and visualization support.
+
+It converts datasets to VTK/PyVista structures and includes related unit-conversion helpers.
+Core analysis code should not depend on this file.
+"""
+
 import pyvista as pv
 import numpy as np
 from collections import defaultdict 
@@ -7,7 +13,7 @@ log = logging.getLogger(__name__)
 from starwinds_readplt.dataset import Dataset
 
 
-def read(file='sample_data/3d__var_1_n00000000.plt', convert_to_si_base=True):
+def read(file='sample_data/3d__var_1_n00060000.plt', convert_to_si_base=True):
 
     dataset = Dataset.from_file(file)
     grid = convert(dataset)

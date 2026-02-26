@@ -1,29 +1,16 @@
 name: starwinds-analysis
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python
-  # - pyvista
+  - python=3.11
   - numpy
   - scipy
   - matplotlib
-  - slugify
+  - pyvista
   - pip
-  - git
-  - pip:
-    - pyvista  # TODO install with conda.
-    - pytest-console-scripts
-    - git+https://github.com/svaberg/starwinds-readplt.git
-    
-  #
-  # These packages are used for testing
-  #
   - pytest
   - pytest-cov
-    
-  #
-  # This package is used for Codacy integration
-  #
-  - codacy-coverage
-  
+  - git
+  - pip:
+      - pytest-console-scripts
+      - git+https://github.com/svaberg/starwinds-readplt.git

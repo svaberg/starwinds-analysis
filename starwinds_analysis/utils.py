@@ -1,3 +1,9 @@
+"""THIS FILE contains small general utilities used across examples and plotting helpers.
+
+It includes 2D slice coordinate detection/triangulation helpers and filename timestep parsing helpers.
+It should stay lightweight and avoid domain-specific analysis logic.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import tri
@@ -46,11 +52,15 @@ def triangles(ds, uname=None, vname=None):
 
 
 def extract_index(p):
+    """Extract the step number from a filename of the form '..._n00060000.dat'."""
+    #TODO fix this so that it is not looking jsut for dat files we onlhy reaally need th n00060000 bit. that is enough for extraction. 
     m = re.search(r"_n(\d+)\.dat$", p.name)
     return int(m.group(1)) if m else -1
 
 
 def sort_key(p):
+    """Sort by the number in the filename, with trailing zeros prioritized."""
+    # TODO this should use extract_index.
     m = re.search(r"_n(\d+)\.dat$", p.name)
     num_str = m.group(1)
     num = int(num_str)
