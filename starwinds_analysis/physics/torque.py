@@ -67,7 +67,7 @@ def torque_vs_radius(
         n_radii = len(radii)
     except TypeError:
         n_radii = None
-    log.info(
+    log.debug(
         "torque_vs_radius start: n_radii=%s, sampling=%s, method=%s",
         n_radii,
         sampling,
@@ -105,7 +105,7 @@ def torque_vs_radius(
     coverage = np.minimum(cov_mag, cov_dyn)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.info(
+    log.debug(
         "torque_vs_radius done: n_shells=%d, finite_total=%d",
         radii_profile.size,
         np.count_nonzero(np.isfinite(total)),

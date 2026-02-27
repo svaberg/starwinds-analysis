@@ -46,7 +46,7 @@ def open_magnetic_flux_vs_radius(
         n_radii = len(radii)
     except TypeError:
         n_radii = None
-    log.info(
+    log.debug(
         "open_magnetic_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
         n_radii,
         sampling,
@@ -96,7 +96,7 @@ def open_magnetic_flux_vs_radius(
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.info(
+    log.debug(
         "open_magnetic_flux_vs_radius done: n_shells=%d, finite_open=%d",
         radii_profile.size,
         np.count_nonzero(np.isfinite(open_flux)),
@@ -127,7 +127,7 @@ def axisymmetric_open_flux_vs_radius(
     Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    log.info(
+    log.debug(
         "axisymmetric_open_flux_vs_radius start: sampling=%s, method=%s",
         sampling,
         method,
@@ -168,7 +168,7 @@ def axisymmetric_open_flux_vs_radius(
     prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux)
     prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction)
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
-    log.info(
+    log.debug(
         "axisymmetric_open_flux_vs_radius done: n_shells=%d",
         np.array(prof["radius [R]"]).size,
     )
@@ -199,7 +199,7 @@ def energy_flux_vs_radius(
         n_radii = len(radii)
     except TypeError:
         n_radii = None
-    log.info(
+    log.debug(
         "energy_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
         n_radii,
         sampling,
@@ -245,7 +245,7 @@ def energy_flux_vs_radius(
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.info(
+    log.debug(
         "energy_flux_vs_radius done: n_shells=%d, finite=%d",
         radii_profile.size,
         np.count_nonzero(np.isfinite(energy_flux)),

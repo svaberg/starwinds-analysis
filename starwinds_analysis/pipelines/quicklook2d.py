@@ -130,7 +130,7 @@ def _pipeline_log(message: str, **fields):
     if fields:
         suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
         text = f"{message} | {suffix}"
-    pipeline_log.info(text)
+    pipeline_log.debug(text)
 
 def _load_slice_styles():
     """
@@ -1661,7 +1661,7 @@ def process_plt_file(file_path: str | Path) -> None:
     """
     path = Path(file_path)
     output_dir = path.parent / "quicklook2d"
-    log.info("%s", path.name)
+    log.debug("%s", path.name)
     smart_ds = SmartDs.from_file(path)
     out = run_quicklook2d(
         smart_ds,
@@ -1695,7 +1695,7 @@ def process_plt_file(file_path: str | Path) -> None:
             idx = np.where(finite)[0][-1]
             r_ref = float(radii[idx])
             m_ref = float(mass_loss[idx])
-            log.info("wind_mass_loss radius=%gR value=%g kg/s", r_ref, m_ref)
+            log.info("wind_mass_loss file=%s radius=%gR value=%g kg/s", path.name, r_ref, m_ref)
             add_record("mass_loss_radius_R %r", r_ref)
             add_record("mass_loss_value_kg_s %r", m_ref)
     add_record(
