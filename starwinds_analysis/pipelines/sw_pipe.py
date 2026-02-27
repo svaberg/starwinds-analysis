@@ -58,6 +58,15 @@ class _SwEmitHandler(logging.Handler):
             return
         key, value = parsed
         self.target[key] = value
+        meta = self.target.setdefault("_emit_meta", {})
+        if isinstance(meta, dict):
+            meta[key] = {
+                "logger": record.name,
+                "function": record.funcName,
+                "line": int(record.lineno),
+                "file": getattr(record, "sw_pipe_file", None),
+                "file_key": getattr(record, "sw_pipe_key", None),
+            }
 
 
 class _SwPipeContextFilter(logging.Filter):
@@ -123,18 +132,7 @@ class _PipelineLogFormatter(logging.Formatter):
         """
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
-        file_name = getattr(record, "sw_pipe_file", None)
-        file_key = getattr(record, "sw_pipe_key", None)
-        context = ""
-        if isinstance(file_name, str) and isinstance(file_key, str):
-            context = f" file={file_name} key={file_key}"
-        if ".pipelines.emit." in record.name:
-            origin = f"{source}.{record.funcName}:{record.lineno}"
-            out = f"[{record.levelname.lower()}] {origin}{context} {message}"
-        elif record.name.startswith("starwinds_analysis.pipelines."):
-            out = f"[{record.levelname.lower()}] {source} {message}"
-        else:
-            out = f"[{record.levelname.lower()}] {source} {message}"
+        out = f"[{record.levelname.lower()}] {source} {message}"
         if record.exc_info:
             out = f"{out}\n{self.formatException(record.exc_info)}"
         return out
@@ -264,14 +262,11 @@ def run_sw_pipe(
         file_results = results.computed_results.setdefault(file_key, {})
         emit_handler = _SwEmitHandler(file_results)
         context_filter = _SwPipeContextFilter(file_name=file_path.name, file_key=file_key)
+        emit_handler.addFilter(context_filter)
         emit_logger.addHandler(emit_handler)
-        for handler in emit_logger.handlers:
-            handler.addFilter(context_filter)
         try:
             process_file(file_path)
         finally:
-            for handler in emit_logger.handlers:
-                handler.removeFilter(context_filter)
             emit_logger.removeHandler(emit_handler)
             emit_handler.close()
         results.processed_files.append(file_path)
