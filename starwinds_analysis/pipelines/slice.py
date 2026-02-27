@@ -54,6 +54,14 @@ from starwinds_analysis.visualisation.histograms import (
     plot_radial_hist2d,
     plot_vs_radius,
 )
+from starwinds_analysis.pipelines.orchestration_helpers import (
+    array_summary as _array_summary,
+    flatten_result_arrays as _flatten_result_arrays,
+    log_pipeline_event,
+    resolve_quicklook_prefix as _resolve_quicklook_prefix,
+    slug_key as _slug_key,
+    summarize_result_object as _summarize_result_object,
+)
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -159,17 +167,6 @@ def _is_slice_input_2d(smart_ds) -> bool:
     if constant_axes == 0 and not hasattr(smart_ds, "corners"):
         return True
     return False
-
-def _pipeline_log(message: str, **fields):
-    """
-    Emit pipeline progress messages on the quicklook pipeline child logger.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    text = message
-    if fields:
-        suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
-        text = f"{message} | {suffix}"
-    pipeline_log.debug(text)
 
 def _load_slice_styles():
     """
@@ -1146,7 +1143,7 @@ def save_shell_diagnostics_json(
         star_radius_m=star_radius_m,
     )
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    _pipeline_log("quicklook.saved", kind="shells_json", file=str(path))
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(path))
     return path
 
 def save_shell_diagnostics_npz(path, diagnostics):
@@ -1158,7 +1155,7 @@ def save_shell_diagnostics_npz(path, diagnostics):
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_shell_diagnostics_arrays(diagnostics)
     np.savez(path, **arrays)
-    _pipeline_log("quicklook.saved", kind="shells_npz", file=str(path))
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(path))
     return path
 
 def save_orbit_results_json(path, orbit_results):
@@ -1170,7 +1167,7 @@ def save_orbit_results_json(path, orbit_results):
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = summarize_orbit_results(orbit_results)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    _pipeline_log("quicklook.saved", kind="orbits_json", file=str(path))
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(path))
     return path
 
 def save_orbit_results_npz(path, orbit_results):
@@ -1182,31 +1179,8 @@ def save_orbit_results_npz(path, orbit_results):
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_orbit_results_arrays(orbit_results)
     np.savez(path, **arrays)
-    _pipeline_log("quicklook.saved", kind="orbits_npz", file=str(path))
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(path))
     return path
-
-def _quicklook_prefix_from_input_file(input_file) -> str:
-    """
-    Build a filesystem-safe quicklook prefix from an input data filename.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    stem = Path(str(input_file)).name
-    if stem.endswith(".plt"):
-        stem = stem[:-4]
-    else:
-        stem = Path(stem).stem
-    return _slug_key(stem)
-
-def _resolve_quicklook_prefix(*, prefix: str | None, input_file=None) -> str:
-    """
-    Resolve export prefix from explicit value or input filename fallback.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    if prefix is not None and str(prefix).strip():
-        return str(prefix)
-    if input_file is not None:
-        return _quicklook_prefix_from_input_file(input_file)
-    return "quicklook2d"
 
 def save_quicklook2d_summary_json(
     path,
@@ -1239,7 +1213,7 @@ def save_quicklook2d_summary_json(
         "files": dict(exported_files or {}),
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    _pipeline_log("quicklook.saved", kind="quicklook_json", file=str(path))
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(path))
     return path
 
 def save_quicklook2d_bundle(
@@ -1264,7 +1238,7 @@ def save_quicklook2d_bundle(
     outdir = Path(output_dir)
     outdir.mkdir(parents=True, exist_ok=True)
     prefix = _resolve_quicklook_prefix(prefix=prefix, input_file=input_file)
-    _pipeline_log(
+    log_pipeline_event(pipeline_log, 
         "quicklook.bundle.start",
         output_dir=str(outdir),
         prefix=prefix,
@@ -1276,7 +1250,7 @@ def save_quicklook2d_bundle(
         p = outdir / f"{prefix}.shells.png"
         shell_fig.savefig(p)
         saved["figures"]["shells"] = p
-        _pipeline_log("quicklook.saved", kind="shells_png", file=str(p))
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_png", file=str(p))
 
     for group_name, figs in (("slices", slice_figures), ("radius", radius_figures), ("orbits", orbit_figures)):
         if not figs:
@@ -1285,7 +1259,7 @@ def save_quicklook2d_bundle(
             p = outdir / f"{prefix}.{group_name}.{_slug_key(str(key))}.png"
             fig.savefig(p)
             saved["figures"][f"{group_name}:{key}"] = p
-            _pipeline_log("quicklook.saved", kind=f"{group_name}_png", file=str(p))
+            log_pipeline_event(pipeline_log, "quicklook.saved", kind=f"{group_name}_png", file=str(p))
 
     if diagnostics is not None:
         saved["files"]["shells_json"] = save_shell_diagnostics_json(
@@ -1325,96 +1299,13 @@ def save_quicklook2d_bundle(
         star_radius_m=star_radius_m,
         exported_files=exported_files,
     )
-    _pipeline_log(
+    log_pipeline_event(pipeline_log, 
         "quicklook.bundle.done",
         figures=len(saved["figures"]),
         files=len(saved["files"]),
     )
 
     return saved
-
-def _slug_key(s: str) -> str:
-    """
-    Make a filesystem-safe-ish slug for summary/array keys.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    out = []
-    for ch in str(s):
-        if ch.isalnum():
-            out.append(ch.lower())
-        else:
-            out.append("_")
-    slug = "".join(out)
-    while "__" in slug:
-        slug = slug.replace("__", "_")
-    return slug.strip("_") or "item"
-
-def _array_summary(values):
-    """
-    Return small summary stats for an array (shape/finite/min/max etc.).
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    arr = np.array(values)
-    finite = np.isfinite(arr)
-    return {
-        "shape": list(arr.shape),
-        "n": int(arr.size),
-        "n_finite": int(np.count_nonzero(finite)),
-        "min": float(np.nanmin(arr)) if np.any(finite) else np.nan,
-        "max": float(np.nanmax(arr)) if np.any(finite) else np.nan,
-        "mean": float(np.nanmean(arr)) if np.any(finite) else np.nan,
-    }
-
-def _summarize_result_object(value, *, skip_keys):
-    """
-    Recursively summarize nested result dicts into JSON-friendly metadata.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    if isinstance(value, dict):
-        out = {}
-        for key, sub in value.items():
-            if key in skip_keys:
-                continue
-            out[str(key)] = _summarize_result_object(sub, skip_keys=skip_keys)
-        return out
-    try:
-        arr = np.array(value)
-    except Exception:
-        return str(value)
-    if arr.ndim == 0:
-        try:
-            return float(arr)
-        except Exception:
-            return str(value)
-    if np.issubdtype(arr.dtype, np.number):
-        return _array_summary(np.array(arr))
-    return str(value)
-
-def _flatten_result_arrays(value, arrays, *, prefix, skip_keys):
-    """
-    Collect arrays from nested result objects into a flat dict for NPZ export.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    if isinstance(value, dict):
-        for key, sub in value.items():
-            if key in skip_keys:
-                continue
-            _flatten_result_arrays(
-                sub,
-                arrays,
-                prefix=f"{prefix}__{_slug_key(key)}",
-                skip_keys=skip_keys,
-            )
-        return
-    try:
-        arr = np.array(value)
-    except Exception:
-        return
-    if arr.ndim == 0:
-        return
-    if not np.issubdtype(arr.dtype, np.number):
-        return
-    arrays[prefix] = np.array(arr)
 
 def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
     """
@@ -1474,7 +1365,7 @@ def run_quicklook2d(
         n_radii = len(radii)
     except TypeError:
         n_radii = None
-    _pipeline_log(
+    log_pipeline_event(pipeline_log, 
         "quicklook.run.start",
         n_radii=n_radii,
         output_dir=None if output_dir is None else str(output_dir),
@@ -1541,7 +1432,7 @@ def run_quicklook2d(
             slice_input, preset=preset, style=slice_style
         )
         slice_figs[preset] = fig
-    _pipeline_log("quicklook.run.slices", count=len(slice_figs))
+    log_pipeline_event(pipeline_log, "quicklook.run.slices", count=len(slice_figs))
 
     shell_fig, shell_axs, diagnostics = quicklook_shell_figure(
         smart_ds,
@@ -1562,7 +1453,7 @@ def run_quicklook2d(
             mode=mode,
         )
         radius_figs[mode] = fig
-    _pipeline_log("quicklook.run.radius", count=len(radius_figs))
+    log_pipeline_event(pipeline_log, "quicklook.run.radius", count=len(radius_figs))
 
     orbit_figs = {}
     orbit_results = {}
@@ -1640,7 +1531,7 @@ def run_quicklook2d(
             )
             orbit_figs[f"{label}_surface_torque"] = fig
             groups["surface_torque"] = result
-    _pipeline_log("quicklook.run.orbits", figures=len(orbit_figs), result_groups=len(orbit_results))
+    log_pipeline_event(pipeline_log, "quicklook.run.orbits", figures=len(orbit_figs), result_groups=len(orbit_results))
 
     out = {
         "slice_figures": slice_figs,
@@ -1666,7 +1557,7 @@ def run_quicklook2d(
             star_mass_kg=star_mass_kg,
             star_radius_m=body_radius_m,
         )
-    _pipeline_log("quicklook.run.done", saved=output_dir is not None)
+    log_pipeline_event(pipeline_log, "quicklook.run.done", saved=output_dir is not None)
     return out
 
 
