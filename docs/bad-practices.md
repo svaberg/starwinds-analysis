@@ -459,6 +459,30 @@ Rule:
 - Do not pad simple functions with casting/renaming/boxing boilerplate.
 - The signal (actual computation) should dominate the function body.
 
+## 8b. Low-Signal `Used by` Docstring Entries
+
+Bad:
+
+- `Used by: <same file>` entries.
+- `Used by:` entries that list only tests.
+- long `Used by:` lists dominated by local/internal call paths.
+
+Why this is bad:
+
+- hides real integration call sites
+- gives false confidence about runtime usage
+- adds noisy docstring churn with little design value
+
+Preferred pattern:
+
+- `Used by:` should prioritize real external/runtime consumers:
+  - other modules
+  - pipelines
+  - notebooks/scripts that matter for usage
+- avoid listing same-file usage and avoid test-only usage in `Used by:`.
+- if no external/runtime consumer exists, say so explicitly (for example:
+  `Used by: no external runtime call sites found`).
+
 ## 9. Per-Function Custom Data Containers
 
 Bad:
