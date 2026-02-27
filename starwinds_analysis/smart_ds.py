@@ -257,11 +257,7 @@ class SmartDs:
             return True
         if self._computation_graph is None:
             return False
-        try:
-            cost, _tree = self.resolve(name, quiet=True)
-            return np.isfinite(cost)
-        except Exception:
-            return False
+        return name in _graph_field_names(self)
 
     def get(self, name: str, default=None):
         """
@@ -446,7 +442,7 @@ class SmartDs:
             self._cache[name] = value
         return value
 
-    def resolve(self, name: str, *, quiet: bool = False):
+    def resolve(self, name: str):
         # TODO smartds-resolve:
         # This currently means "resolve computation path via griblet". The user-facing
         # field/unit resolution API should likely live on SmartDs too (returning data
@@ -456,7 +452,7 @@ class SmartDs:
         Graph-path resolver (`cost, tree`) used by `has_field` and `explain`.
         Used by: `SmartDs` users and internal methods
         """
-        return _resolve_field(self, name, quiet=quiet)
+        return _resolve_field(self, name)
 
     def explain(self, name: str, *, return_tree: bool = False):
         """

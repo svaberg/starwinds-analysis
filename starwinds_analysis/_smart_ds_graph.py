@@ -6,9 +6,7 @@ It should not contain domain physics formulas or plotting code.
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import importlib
-import logging
 
 def graph_field_names(smart_ds):
     """
@@ -20,24 +18,7 @@ def graph_field_names(smart_ds):
         return ()
     return tuple(graph.fields())
 
-@contextmanager
-def _dependency_solver_logging(*, quiet: bool):
-    """
-    Temporarily suppress DependencySolver warnings for probe-style resolution checks.
-    Used by: `starwinds_analysis/_smart_ds_graph.py`
-    """
-    if not quiet:
-        yield
-        return
-    logger = logging.getLogger("DependencySolver")
-    old_level = logger.level
-    logger.setLevel(logging.ERROR)
-    try:
-        yield
-    finally:
-        logger.setLevel(old_level)
-
-def resolve_field(smart_ds, name: str, *, quiet: bool = False):
+def resolve_field(smart_ds, name: str):
     """
     Resolve a field through the attached griblet computation graph.
     Used by: `starwinds_analysis/_smart_ds_graph.py`
@@ -48,8 +29,7 @@ def resolve_field(smart_ds, name: str, *, quiet: bool = False):
     graph = build_runtime_graph(smart_ds)
     griblet = import_griblet()
     solver = griblet.DependencySolver(graph)
-    with _dependency_solver_logging(quiet=quiet):
-        return solver.resolve_field(name)
+    return solver.resolve_field(name)
 
 def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     """
