@@ -47,7 +47,7 @@ from starwinds_analysis.visualisation.profile_plots import (
 )
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
-from starwinds_analysis.utils import triangles
+from starwinds_analysis.utils import auto_coords, triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
@@ -145,10 +145,25 @@ def _load_slice_styles():
             plot_xz_slice_with_marginal_points,
         )
     except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError(
-            "Slice quicklook plotting requires starwinds_analysis.visualisation.slice "
-            "(missing on this branch/environment)."
-        ) from exc
+        # Fallback for branches/environments without visualisation.slice.
+        def _fallback_tripcolor(ds, *, var, figsize=(7, 6), cmap="viridis", **_kwargs):
+            fig, ax = plt.subplots(figsize=figsize)
+            tri = triangles(ds)
+            img = ax.tripcolor(tri, np.array(ds.variable(var)), shading="flat", cmap=cmap)
+            x_name, y_name = auto_coords(ds)
+            ax.set_aspect("equal")
+            ax.set_xlabel(x_name)
+            ax.set_ylabel(y_name)
+            ax.set_title(var)
+            cbar = fig.colorbar(img, ax=ax, label=var)
+            return fig, (ax,), cbar
+
+        return {
+            "marginals": _fallback_tripcolor,
+            "cross_quantiles": _fallback_tripcolor,
+            "marginal_points": _fallback_tripcolor,
+            "unique_quantiles": _fallback_tripcolor,
+        }
 
     return {
         "marginals": plot_xz_slice_tripcolor_with_marginals,

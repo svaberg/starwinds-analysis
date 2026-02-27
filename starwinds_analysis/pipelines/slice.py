@@ -47,7 +47,7 @@ from starwinds_analysis.visualisation.profile_plots import (
 )
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
-from starwinds_analysis.utils import triangles
+from starwinds_analysis.utils import auto_coords, triangles
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
@@ -71,6 +71,8 @@ class SlicePreset:
 
 SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
     "rho": SlicePreset(("Rho [kg/m^3]",), intent="si_diagnostic"),
+    "u": SlicePreset(("U [m/s]",), intent="si_diagnostic"),
+    "b": SlicePreset(("B [T]",), intent="si_diagnostic"),
     "b_r": SlicePreset(
         ("B_r [T]",),
         overlays=(
@@ -145,10 +147,25 @@ def _load_slice_styles():
             plot_xz_slice_with_marginal_points,
         )
     except ModuleNotFoundError as exc:
-        raise ModuleNotFoundError(
-            "Slice quicklook plotting requires starwinds_analysis.visualisation.slice "
-            "(missing on this branch/environment)."
-        ) from exc
+        # Fallback for branches/environments without visualisation.slice.
+        def _fallback_tripcolor(ds, *, var, figsize=(7, 6), cmap="viridis", **_kwargs):
+            fig, ax = plt.subplots(figsize=figsize)
+            tri = triangles(ds)
+            img = ax.tripcolor(tri, np.array(ds.variable(var)), shading="flat", cmap=cmap)
+            x_name, y_name = auto_coords(ds)
+            ax.set_aspect("equal")
+            ax.set_xlabel(x_name)
+            ax.set_ylabel(y_name)
+            ax.set_title(var)
+            cbar = fig.colorbar(img, ax=ax, label=var)
+            return fig, (ax,), cbar
+
+        return {
+            "marginals": _fallback_tripcolor,
+            "cross_quantiles": _fallback_tripcolor,
+            "marginal_points": _fallback_tripcolor,
+            "unique_quantiles": _fallback_tripcolor,
+        }
 
     return {
         "marginals": plot_xz_slice_tripcolor_with_marginals,
@@ -1666,7 +1683,7 @@ def process_plt_file(file_path: str | Path) -> None:
         smart_ds,
         body_radius_m=DEFAULT_STAR_RADIUS_M,
         radii=DEFAULT_QUICKLOOK_RADII_R,
-        slice_presets=(),
+        slice_presets=("rho", "u", "b"),
         radius_modes=(),
         orbit_radii=(),
         orbit_specs=(),
