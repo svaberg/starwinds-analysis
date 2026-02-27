@@ -208,7 +208,7 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
 
     def process_file(_path):
-        emit_log = logging.getLogger("starwinds_analysis.pipelines.emit.test_pipeline")
+        emit_log = logging.getLogger("emit.test_pipeline")
         emit_log.setLevel(logging.DEBUG)
         emit_log.debug("big_array %r", np.arange(200_000, dtype=np.float64))
 
@@ -222,7 +222,7 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     assert loaded.shape == (200000,)
     assert float(loaded[0]) == 0.0
     assert float(loaded[-1]) == 199999.0
-    assert entry["source"]["module"] == "starwinds_analysis.pipelines.test_pipeline"
+    assert entry["source"]["module"] == "test_pipeline"
 
 
 def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
@@ -259,12 +259,12 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
 
     assert code == 0
     expected_patterns = [
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
-        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
+        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
     ]
     assert len(lines) >= len(expected_patterns)
     assert all(any(re.match(pattern, line) for line in lines) for pattern in expected_patterns)

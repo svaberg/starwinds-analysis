@@ -73,7 +73,7 @@ class _SwEmitHandler(logging.Handler):
         if parsed is None:
             return
         key, value = parsed
-        module_name = record.name.replace(".emit.", ".")
+        module_name = record.name[5:] if record.name.startswith("emit.") else record.name
         normalized = _normalize_emitted_value(
             value,
             file_key=self.file_key,
@@ -228,7 +228,7 @@ class _PipelineLogFormatter(logging.Formatter):
         """
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
-        if record.name.startswith("starwinds_analysis.pipelines.emit."):
+        if record.name.startswith("emit."):
             origin = f"{record.name}.{record.funcName}:{record.lineno}"
         else:
             origin = source
@@ -243,7 +243,7 @@ def configure_emit_logger(level_name: str = "WARNING") -> None:
     Configure the dedicated emit logger with its own stream handler and level.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
+    emit_logger = logging.getLogger("emit")
     emit_logger.setLevel(logging.DEBUG)
     emit_logger.handlers.clear()
     emit_handler = logging.StreamHandler()
@@ -365,7 +365,7 @@ def run_sw_pipe(
         noclobber,
     )
     processed_keys = set(known_processed)
-    emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
+    emit_logger = logging.getLogger("emit")
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)

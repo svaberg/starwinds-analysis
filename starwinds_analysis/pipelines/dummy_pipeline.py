@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 
 log = logging.getLogger(__name__)
-emit_log = logging.getLogger(f"{__name__.rsplit('.', 1)[0]}.emit.{__name__.rsplit('.', 1)[-1]}")
+emit_log = logging.getLogger(f"emit.{__name__}")
 emit_log.setLevel(logging.DEBUG)
 
 
