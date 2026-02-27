@@ -7,6 +7,8 @@ primitives later.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from starwinds_analysis.analysis.shells import (
@@ -15,6 +17,8 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells_by_strategy,
 )
 from starwinds_analysis.physics.constants import MU0
+
+log = logging.getLogger(__name__)
 
 # TODO(debt): This file still carries quantity-specific shell/surface wrappers
 # (`torque_vs_radius`, `surface_torque_vs_radius`) in a deep layer.
@@ -59,6 +63,16 @@ def torque_vs_radius(
     Used by: `test/test_surface_torque_analysis.py`, `test/test_shell_analysis.py`,
       `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
     """
+    try:
+        n_radii = len(radii)
+    except TypeError:
+        n_radii = None
+    log.info(
+        "torque_vs_radius start: n_radii=%s, sampling=%s, method=%s",
+        n_radii,
+        sampling,
+        method,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -90,6 +104,11 @@ def torque_vs_radius(
     coverage = np.minimum(cov_mag, cov_dyn)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+    log.info(
+        "torque_vs_radius done: n_shells=%d, finite_total=%d",
+        radii_profile.size,
+        np.count_nonzero(np.isfinite(total)),
+    )
 
     return {
         "radius [R]": radii_profile,
@@ -276,6 +295,11 @@ def integrate_surface_torque_terms(terms):
         coverages.append(np.array(cov_total))
     if coverages:
         out["coverage [none]"] = np.min(np.stack(coverages, axis=0), axis=0)
+    log.debug(
+        "integrate_surface_torque_terms: components=%d, coverage_shape=%s",
+        len(component_keys),
+        np.shape(out.get("coverage [none]")),
+    )
     return out
 
 
@@ -340,6 +364,17 @@ def surface_torque_vs_radius(
     Explicit-surface torque profile on spherical shells using general T1..T4 terms.
     Used by: `test/test_surface_torque_analysis.py`
     """
+    try:
+        n_radii = len(radii)
+    except TypeError:
+        n_radii = None
+    log.info(
+        "surface_torque_vs_radius start: n_radii=%s, sampling=%s, method=%s, include_pressure=%s",
+        n_radii,
+        sampling,
+        method,
+        include_pressure_term,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -391,6 +426,11 @@ def surface_torque_vs_radius(
     ints = integrate_surface_torque_terms(terms)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+    log.info(
+        "surface_torque_vs_radius done: n_shells=%d, finite_total=%d",
+        radii_profile.size,
+        np.count_nonzero(np.isfinite(ints["total [Nm]"])),
+    )
 
     return {
         "radius [R]": radii_profile,

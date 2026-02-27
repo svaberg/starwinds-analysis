@@ -118,7 +118,7 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
 
 def _pipeline_log(message: str, **fields):
     """
-    Emit pipeline progress messages to a provided logger or module logging fallback.
+    Emit pipeline progress messages on the quicklook pipeline child logger.
     Used by: `starwinds_analysis/pipelines/quicklook2d.py`
     """
     text = message

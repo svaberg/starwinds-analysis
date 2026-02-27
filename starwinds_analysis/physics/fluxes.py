@@ -12,6 +12,8 @@ Flux plotting helpers are implemented in `starwinds_analysis.visualisation.profi
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from starwinds_analysis.analysis.shells import (
@@ -19,6 +21,8 @@ from starwinds_analysis.analysis.shells import (
     integrate_shell_scalar,
     sample_spherical_shells_by_strategy,
 )
+
+log = logging.getLogger(__name__)
 
 def open_magnetic_flux_vs_radius(
     smart_ds,
@@ -38,6 +42,16 @@ def open_magnetic_flux_vs_radius(
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`,
       `starwinds_analysis/physics/fluxes.py`
     """
+    try:
+        n_radii = len(radii)
+    except TypeError:
+        n_radii = None
+    log.info(
+        "open_magnetic_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
+        n_radii,
+        sampling,
+        method,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -81,6 +95,11 @@ def open_magnetic_flux_vs_radius(
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+    log.info(
+        "open_magnetic_flux_vs_radius done: n_shells=%d, finite_open=%d",
+        radii_profile.size,
+        np.count_nonzero(np.isfinite(open_flux)),
+    )
     return {
         "radius [R]": radii_profile,
         "height [R]": radii_profile - 1.0,
@@ -107,6 +126,11 @@ def axisymmetric_open_flux_vs_radius(
     Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    log.info(
+        "axisymmetric_open_flux_vs_radius start: sampling=%s, method=%s",
+        sampling,
+        method,
+    )
     if sampling != "grid":
         raise ValueError("axisymmetric_open_flux_vs_radius currently requires sampling='grid'")
     prof = open_magnetic_flux_vs_radius(
@@ -143,6 +167,10 @@ def axisymmetric_open_flux_vs_radius(
     prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux)
     prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction)
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
+    log.info(
+        "axisymmetric_open_flux_vs_radius done: n_shells=%d",
+        np.array(prof["radius [R]"]).size,
+    )
     return prof
 
 def energy_flux_vs_radius(
@@ -166,6 +194,16 @@ def energy_flux_vs_radius(
     Radial energy flux profile using `E * U_r`.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    try:
+        n_radii = len(radii)
+    except TypeError:
+        n_radii = None
+    log.info(
+        "energy_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
+        n_radii,
+        sampling,
+        method,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     if smart_ds.has_field("E [J/m^3]"):
@@ -205,6 +243,11 @@ def energy_flux_vs_radius(
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+    log.info(
+        "energy_flux_vs_radius done: n_shells=%d, finite=%d",
+        radii_profile.size,
+        np.count_nonzero(np.isfinite(energy_flux)),
+    )
     return {
         "radius [R]": radii_profile,
         "height [R]": radii_profile - 1.0,

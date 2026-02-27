@@ -12,6 +12,8 @@ Pressure formulas themselves belong in pressure.py.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
@@ -22,6 +24,8 @@ from starwinds_analysis.physics.pressure import (
     ram_pressure,
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
+
+log = logging.getLogger(__name__)
 
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
     """
@@ -79,6 +83,11 @@ def pressure_components_from_orbit_sample(
     Assemble orbit-sampled pressure components and standoff proxies from sampled fields.
     Used by: `starwinds_analysis/physics/orbit_pressure.py`
     """
+    log.debug(
+        "pressure_components_from_orbit_sample: n_points=%d, include_relative=%s",
+        len(orbit["Rho [kg/m^3]"]),
+        include_relative_ram,
+    )
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
 
@@ -123,6 +132,7 @@ def pressure_components_from_orbit_sample(
             rel_speed,
             b0_t=standoff_b0_t,
         )
+        log.debug("pressure_components_from_orbit_sample: using relative velocity for standoff")
 
     weights = orbit.get("time_weight [none]")
     return {
@@ -147,6 +157,13 @@ def pressure_components_on_circular_orbit(
     Sample a circular orbit and compute pressure-component diagnostics.
     Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    log.info(
+        "pressure_components_on_circular_orbit start: radius=%s, n_points=%d, method=%s, plane=%s",
+        radius,
+        n_points,
+        method,
+        plane,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -177,6 +194,10 @@ def pressure_components_on_circular_orbit(
     )
     out["radius [R]"] = float(radius)
     out["radius [m]"] = float(radius) * body_radius_m
+    log.info(
+        "pressure_components_on_circular_orbit done: finite_ram=%d",
+        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
+    )
     return out
 
 def pressure_components_on_elliptic_orbit(
@@ -197,6 +218,14 @@ def pressure_components_on_elliptic_orbit(
     Sample an elliptic orbit and compute pressure-component diagnostics.
     Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    log.info(
+        "pressure_components_on_elliptic_orbit start: a=%s, e=%s, n_points=%d, method=%s, plane=%s",
+        semi_major_axis,
+        eccentricity,
+        n_points,
+        method,
+        plane,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -232,4 +261,8 @@ def pressure_components_on_elliptic_orbit(
     out["eccentricity [none]"] = float(eccentricity)
     out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"])))
     out["radius [m]"] = out["radius [R]"] * body_radius_m
+    log.info(
+        "pressure_components_on_elliptic_orbit done: finite_ram=%d",
+        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
+    )
     return out

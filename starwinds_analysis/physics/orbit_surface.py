@@ -12,6 +12,7 @@ It should reuse pressure/torque core functions rather than redefining those quan
 
 from __future__ import annotations
 
+import logging
 import math
 
 import numpy as np
@@ -35,6 +36,8 @@ from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
 )
 from starwinds_analysis.analysis.stats import weighted_quantile
+
+log = logging.getLogger(__name__)
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     """
@@ -192,6 +195,16 @@ def sample_orbit_surface_revolution(
     Sample explicit fields on a surface of revolution generated from an orbit path.
     Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
+    try:
+        n_fields = len(fields)
+    except TypeError:
+        n_fields = None
+    log.info(
+        "sample_orbit_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
+        n_fields,
+        n_longitudes,
+        method,
+    )
     if isinstance(orbit, dict):
         spec = dict(orbit)
         kind = str(spec.pop("kind", "kepler")).lower()
@@ -275,6 +288,11 @@ def sample_orbit_surface_revolution(
         arr = np.array(val)
         if arr.shape == (n_phase * n_lon,):
             sampled[key] = arr.reshape(n_phase, n_lon)
+    log.info(
+        "sample_orbit_surface_revolution done: n_phase=%d, n_lon=%d",
+        n_phase,
+        n_lon,
+    )
     return sampled
 
 def pressure_components_on_orbit_surface(
@@ -293,6 +311,12 @@ def pressure_components_on_orbit_surface(
     Pressure-component analytics on a surface of revolution around an orbit path.
     Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    log.info(
+        "pressure_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_relative=%s",
+        n_longitudes,
+        method,
+        include_relative_ram,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -395,6 +419,10 @@ def pressure_components_on_orbit_surface(
         out["eccentricity [none]"] = float(orbit_meta.get("eccentricity [none]", np.nan))
     elif "radius [R]" in orbit_meta:
         out["radius [R]"] = float(orbit_meta["radius [R]"])
+    log.info(
+        "pressure_components_on_orbit_surface done: finite_ram=%d",
+        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
+    )
     return out
 
 def torque_components_on_orbit_surface(
@@ -412,6 +440,12 @@ def torque_components_on_orbit_surface(
     Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
     Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
+    log.info(
+        "torque_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_pressure=%s",
+        n_longitudes,
+        method,
+        include_pressure_term,
+    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -516,4 +550,8 @@ def torque_components_on_orbit_surface(
         out["eccentricity [none]"] = float(orbit_meta.get("eccentricity [none]", np.nan))
     if "radius [R]" in orbit_meta:
         out["radius [R]"] = float(orbit_meta["radius [R]"])
+    log.info(
+        "torque_components_on_orbit_surface done: total=%s",
+        float(out["total [Nm]"]),
+    )
     return out
