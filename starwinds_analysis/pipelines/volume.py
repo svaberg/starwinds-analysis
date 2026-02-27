@@ -12,6 +12,7 @@ from starwinds_analysis.pipelines.quicklook_core import (
     DEFAULT_QUICKLOOK_RADII_R,
     DEFAULT_STAR_RADIUS_M,
     run_quicklook2d,
+    shell_profile_payload,
     summarize_shell_diagnostics,
 )
 from starwinds_analysis.smart_ds import SmartDs
@@ -87,25 +88,7 @@ def process_plt_file(file_path: str | Path) -> None:
                 add_record("mass_loss_profile_kg_s %r", profile_pairs)
 
     add_record("shell_summary %r", summarize_shell_diagnostics(diagnostics))
-    shell_profiles = {}
-    for name, profile in diagnostics.items():
-        if not isinstance(profile, dict):
-            continue
-        profile_data = {}
-        for key, value in profile.items():
-            if key == "shell_samples":
-                continue
-            arr = np.array(value)
-            if arr.ndim == 0:
-                try:
-                    profile_data[key] = arr.item()
-                except Exception:
-                    profile_data[key] = value
-            elif arr.ndim == 1 and np.issubdtype(arr.dtype, np.number):
-                profile_data[key] = arr
-        if profile_data:
-            shell_profiles[name] = profile_data
-    add_record("shell_profiles %r", shell_profiles)
+    add_record("shell_profiles %r", shell_profile_payload(diagnostics))
 
     if np.isfinite(radius_ref):
         log.info("wind_mass_loss radius=%gR value=%g kg/s", radius_ref, mass_loss_ref)

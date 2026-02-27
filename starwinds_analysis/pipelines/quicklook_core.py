@@ -90,6 +90,28 @@ def _has_field(ds, name: str) -> bool:
         return False
     return True
 
+def _normalize_overlays(ds, overlays):
+    """
+    Convert overlay specs into `(field, level, color)` tuples and drop missing fields.
+
+    Input accepts either:
+    - `(field, level)` -> uses default color `"k"`
+    - `(field, level, color)`
+
+    Only overlays with fields available in `ds` are returned.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    out = []
+    for item in overlays or ():
+        if len(item) == 2:
+            field, level = item
+            color = "k"
+        else:
+            field, level, color = item
+        if _has_field(ds, field):
+            out.append((field, float(level), color))
+    return out
+
 def plot_slice_quicklook(
     ds,
     *,
@@ -174,14 +196,7 @@ def plot_slice_quicklook(
 
     contour_kwargs = dict(contour_kwargs or {})
     tris = triangles(ds)
-    for item in overlays or ():
-        if len(item) == 2:
-            overlay_field, level = item
-            color = "k"
-        else:
-            overlay_field, level, color = item
-        if not _has_field(ds, overlay_field):
-            continue
+    for overlay_field, level, color in _normalize_overlays(ds, overlays):
         values = np.array(ds.variable(overlay_field))
         kwargs = {"levels": [level], "colors": [color], "linewidths": 1.0}
         kwargs.update(contour_kwargs)
@@ -246,6 +261,40 @@ def plot_radius_quicklook(
     for ax in axs[n:]:
         ax.set_visible(False)
     return fig, axs[:n]
+
+def compute_shell_diagnostics(
+    smart_ds,
+    radii,
+    *,
+    body_radius_m: float,
+    n_polar: int = 24,
+    n_azimuth: int = 48,
+    method: str = "nearest",
+    include=("mass_loss", "torque", "open_flux", "energy", "axisymmetric_open_flux"),
+):
+    """
+    Compute a bundle of shell diagnostics used by 2D quicklook summaries.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    include = tuple(include)
+    out = {}
+    common = dict(
+        body_radius_m=body_radius_m,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        method=method,
+    )
+    if "mass_loss" in include:
+        out["mass_loss"] = mass_loss_vs_radius(smart_ds, radii, **common)
+    if "torque" in include:
+        out["torque"] = torque_vs_radius(smart_ds, radii, **common)
+    if "open_flux" in include:
+        out["open_flux"] = open_magnetic_flux_vs_radius(smart_ds, radii, **common)
+    if "energy" in include:
+        out["energy"] = energy_flux_vs_radius(smart_ds, radii, **common)
+    if "axisymmetric_open_flux" in include:
+        out["axisymmetric_open_flux"] = axisymmetric_open_flux_vs_radius(smart_ds, radii, **common)
+    return out
 
 def plot_shell_diagnostics(diagnostics, *, figsize=(12, 8)):
     """
@@ -353,24 +402,15 @@ def quicklook_shell_figure(
     Convenience shell-diagnostics figure builder used by quicklook and tests.
     Used by: `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    include = tuple(include)
-    diagnostics = {}
-    common = dict(
+    diagnostics = compute_shell_diagnostics(
+        smart_ds,
+        radii,
         body_radius_m=body_radius_m,
         n_polar=n_polar,
         n_azimuth=n_azimuth,
         method=method,
+        include=include,
     )
-    if "mass_loss" in include:
-        diagnostics["mass_loss"] = mass_loss_vs_radius(smart_ds, radii, **common)
-    if "torque" in include:
-        diagnostics["torque"] = torque_vs_radius(smart_ds, radii, **common)
-    if "open_flux" in include:
-        diagnostics["open_flux"] = open_magnetic_flux_vs_radius(smart_ds, radii, **common)
-    if "energy" in include:
-        diagnostics["energy"] = energy_flux_vs_radius(smart_ds, radii, **common)
-    if "axisymmetric_open_flux" in include:
-        diagnostics["axisymmetric_open_flux"] = axisymmetric_open_flux_vs_radius(smart_ds, radii, **common)
     if star_mass_kg is not None:
         try:
             phi = np.array(diagnostics["open_flux"]["open_flux [Wb]"])
@@ -392,9 +432,7 @@ def plot_orbit_mass_loss_comparison(ax, result):
     Used by: `starwinds_analysis/pipelines/quicklook2d.py`
     """
     y = np.array(result["local_mass_loss [kg/s]"])
-    phase = np.array(result.get("orbit_samples", {}).get("phase [turns]", []))
-    if phase.shape != (y.size,):
-        phase = np.arange(y.size, dtype=float) / max(1, y.size)
+    phase = _orbit_phase(result, y.size)
     shell_interp = result.get("shell_mass_loss_interp [kg/s]")
     shell = float(result["shell_mass_loss [kg/s]"])
     mean = float(result["summary"]["mean"])
@@ -430,9 +468,7 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
     Used by: `starwinds_analysis/pipelines/quicklook2d.py`
     """
     tot = np.array(result["local_total_torque [Nm]"])
-    phase = np.array(result.get("orbit_samples", {}).get("phase [turns]", []))
-    if phase.shape != (tot.size,):
-        phase = np.arange(tot.size, dtype=float) / max(1, tot.size)
+    phase = _orbit_phase(result, tot.size)
     shell_interp = result.get("shell_total_torque_interp [Nm]")
     shell = float(result["shell_total_torque [Nm]"])
     mean = float(result["summary"]["mean"])
@@ -466,15 +502,25 @@ def plot_orbit_torque_comparison(ax, result, *, show_components: bool = True):
         ax.set_title(f"Torque @ r={float(result['radius [R]']):.3g} R")
     return ax
 
+def _orbit_phase(result, n):
+    """
+    Extract orbit phase array from result bundles with a safe empty fallback.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    try:
+        phase = np.array(result.get("orbit_samples", {}).get("phase [turns]"))
+    except Exception:
+        phase = np.array([])
+    if phase.shape == (n,):
+        return phase
+    return np.arange(n, dtype=float) / max(1, n)
+
 def plot_orbit_pressure_components(ax, result, *, include_relative: bool = True):
     """
     Plot orbit pressure-component series and derived standoff proxy.
     Used by: `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    n_points = len(np.array(result["ram_pressure [Pa]"]))
-    phase = np.array(result.get("orbit_samples", {}).get("phase [turns]", []))
-    if phase.shape != (n_points,):
-        phase = np.arange(n_points, dtype=float) / max(1, n_points)
+    phase = _orbit_phase(result, len(np.array(result["ram_pressure [Pa]"])))
     for key, label, color in (
         ("thermal_pressure [Pa]", "thermal", "C0"),
         ("magnetic_pressure [Pa]", "magnetic", "C1"),
@@ -559,10 +605,7 @@ def orbit_pressure_figure(
 
     fig, axs = plt.subplots(1, 2, figsize=figsize, constrained_layout=True)
     plot_orbit_pressure_components(axs[0], result)
-    n_points = len(np.array(result["standoff_distance [m]"]))
-    phase = np.array(result.get("orbit_samples", {}).get("phase [turns]", []))
-    if phase.shape != (n_points,):
-        phase = np.arange(n_points, dtype=float) / max(1, n_points)
+    phase = _orbit_phase(result, len(np.array(result["standoff_distance [m]"])))
     axs[1].plot(phase, np.array(result["standoff_distance [m]"]), ",", color="C4", alpha=0.7)
     axs[1].set_xlabel("Orbit phase [turns]")
     axs[1].set_ylabel("Stand-off Proxy [m]")
@@ -919,6 +962,50 @@ def summarize_shell_diagnostics(
             pass
     return out
 
+def shell_profile_payload(diagnostics):
+    """
+    JSON/NPZ-friendly shell-profile payload with 1D numeric series.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    out = {}
+    for name, profile in diagnostics.items():
+        if not isinstance(profile, dict):
+            continue
+        pdata = {}
+        for key, value in profile.items():
+            if key == "shell_samples":
+                continue
+            arr = np.array(value)
+            if arr.ndim == 0:
+                try:
+                    pdata[key] = arr.item()
+                except Exception:
+                    pdata[key] = str(value)
+                continue
+            if arr.ndim == 1 and np.issubdtype(arr.dtype, np.number):
+                pdata[key] = arr
+        if pdata:
+            out[name] = pdata
+    return out
+
+def flatten_shell_diagnostics_arrays(diagnostics):
+    """
+    Flatten shell diagnostic arrays for `np.savez`.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    arrays = {}
+    for name, profile in diagnostics.items():
+        if not isinstance(profile, dict):
+            continue
+        for key, value in profile.items():
+            if key == "shell_samples":
+                continue
+            arr = np.array(value)
+            if arr.ndim == 0:
+                continue
+            flat_key = f"{name}__{_slug_key(key)}"
+            arrays[flat_key] = arr
+    return arrays
 
 def summarize_orbit_results(orbit_results):
     """
@@ -946,6 +1033,35 @@ def summarize_orbit_results(orbit_results):
             orbit_out[group_name] = group_out
         out[str(orbit_key)] = orbit_out
     return out
+
+def flatten_orbit_results_arrays(orbit_results):
+    """
+    Flatten selected orbit result arrays for `np.savez`.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    skip_keys = {
+        "orbit_samples",
+        "shell_profile",
+        "orbit_surface",
+        "surface_terms",
+        "surface_points [m]",
+        "surface_normals [none]",
+        "surface_area [m^2]",
+    }
+    arrays = {}
+    for orbit_key, groups in (orbit_results or {}).items():
+        if not isinstance(groups, dict):
+            continue
+        for group_name, result in groups.items():
+            if not isinstance(result, dict):
+                continue
+            _flatten_result_arrays(
+                result,
+                arrays,
+                prefix=f"{_slug_key(orbit_key)}__{_slug_key(group_name)}",
+                skip_keys=skip_keys,
+            )
+    return arrays
 
 def save_quicklook2d_bundle(
     output_dir,
@@ -1005,18 +1121,7 @@ def save_quicklook2d_bundle(
         log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(shells_json_path))
 
         shells_npz_path = outdir / f"{prefix}.shells.npz"
-        shell_arrays = {}
-        for name, profile in diagnostics.items():
-            if not isinstance(profile, dict):
-                continue
-            for key, value in profile.items():
-                if key == "shell_samples":
-                    continue
-                arr = np.array(value)
-                if arr.ndim == 0:
-                    continue
-                shell_arrays[f"{name}__{_slug_key(key)}"] = arr
-        np.savez(shells_npz_path, **shell_arrays)
+        np.savez(shells_npz_path, **flatten_shell_diagnostics_arrays(diagnostics))
         saved["files"]["shells_npz"] = shells_npz_path
         log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(shells_npz_path))
 
@@ -1028,29 +1133,7 @@ def save_quicklook2d_bundle(
         log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(orbits_json_path))
 
         orbits_npz_path = outdir / f"{prefix}.orbits.npz"
-        skip_keys = {
-            "orbit_samples",
-            "shell_profile",
-            "orbit_surface",
-            "surface_terms",
-            "surface_points [m]",
-            "surface_normals [none]",
-            "surface_area [m^2]",
-        }
-        orbit_arrays = {}
-        for orbit_key, groups in (orbit_results or {}).items():
-            if not isinstance(groups, dict):
-                continue
-            for group_name, result in groups.items():
-                if not isinstance(result, dict):
-                    continue
-                _flatten_result_arrays(
-                    result,
-                    orbit_arrays,
-                    prefix=f"{_slug_key(orbit_key)}__{_slug_key(group_name)}",
-                    skip_keys=skip_keys,
-                )
-        np.savez(orbits_npz_path, **orbit_arrays)
+        np.savez(orbits_npz_path, **flatten_orbit_results_arrays(orbit_results))
         saved["files"]["orbits_npz"] = orbits_npz_path
         log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(orbits_npz_path))
 
@@ -1336,3 +1419,4 @@ def run_quicklook2d(
         )
     log_pipeline_event(pipeline_log, "quicklook.run.done", saved=output_dir is not None)
     return out
+
