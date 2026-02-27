@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
+import hashlib
 import json
 import logging
+from pathlib import Path
 import re
 
 from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
@@ -51,24 +54,43 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert results.skipped_files == []
     alpha = results.computed_results["alpha.plt"]
     beta = results.computed_results["beta.plt"]
-    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
-    assert alpha["name_vowel_fraction"] == 0.4
-    assert alpha["name_dominance"] == "consonant-rich"
-    assert alpha["name_shape"] == [5, 2, 3]
-    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
-    assert beta["name_vowel_fraction"] == 0.5
-    assert beta["name_dominance"] == "vowel-rich"
-    assert beta["name_shape"] == [4, 2, 2]
-    alpha_trace = alpha["trace"]
-    beta_trace = beta["trace"]
-    assert alpha_trace["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
-    assert beta_trace["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
-    assert set(alpha_trace["sources"]) == {"letter_counts", "name_vowel_fraction", "name_dominance", "name_shape"}
-    assert set(beta_trace["sources"]) == {"letter_counts", "name_vowel_fraction", "name_dominance", "name_shape"}
-    assert re.match(r"^name_letter_counts:\d+$", alpha_trace["sources"]["letter_counts"])
-    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_vowel_fraction"])
-    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_dominance"])
-    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_shape"])
+    assert alpha["letter_counts"]["value"] == {"vowels": 2, "consonants": 3}
+    assert alpha["name_vowel_fraction"]["value"] == 0.4
+    assert alpha["name_dominance"]["value"] == "consonant-rich"
+    assert alpha["name_shape"]["value"] == [5, 2, 3]
+    assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
+    assert beta["name_vowel_fraction"]["value"] == 0.5
+    assert beta["name_dominance"]["value"] == "vowel-rich"
+    assert beta["name_shape"]["value"] == [4, 2, 2]
+    alpha_meta = alpha["meta"]
+    beta_meta = beta["meta"]
+    assert Path(alpha_meta["input_file"]).is_absolute()
+    assert Path(beta_meta["input_file"]).is_absolute()
+    assert Path(alpha_meta["input_file"]).name == "alpha.plt"
+    assert Path(beta_meta["input_file"]).name == "beta.plt"
+    assert "file_hash_sha256" not in alpha_meta
+    assert "file_hash_sha256" not in beta_meta
+    alpha_start = datetime.fromisoformat(alpha_meta["start_time_utc"].replace("Z", "+00:00"))
+    alpha_end = datetime.fromisoformat(alpha_meta["end_time_utc"].replace("Z", "+00:00"))
+    beta_start = datetime.fromisoformat(beta_meta["start_time_utc"].replace("Z", "+00:00"))
+    beta_end = datetime.fromisoformat(beta_meta["end_time_utc"].replace("Z", "+00:00"))
+    assert alpha_end >= alpha_start
+    assert beta_end >= beta_start
+    for entry in (
+        alpha["letter_counts"],
+        alpha["name_vowel_fraction"],
+        alpha["name_dominance"],
+        alpha["name_shape"],
+        beta["letter_counts"],
+        beta["name_vowel_fraction"],
+        beta["name_dominance"],
+        beta["name_shape"],
+    ):
+        source = entry["source"]
+        assert source["module"] == "starwinds_analysis.pipelines.dummy_pipeline"
+        assert source["function"] in {"name_letter_counts", "name_profile_payload"}
+        assert isinstance(source["line"], int)
+        assert source["line"] > 0
     messages = [
         record.getMessage()
         for record in caplog.records
@@ -117,16 +139,29 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
     alpha = payload["computed_results"]["alpha.plt"]
     beta = payload["computed_results"]["nested/beta.plt"]
-    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
-    assert alpha["name_vowel_fraction"] == 0.4
-    assert alpha["name_dominance"] == "consonant-rich"
-    assert alpha["name_shape"] == [5, 2, 3]
-    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
-    assert beta["name_vowel_fraction"] == 0.5
-    assert beta["name_dominance"] == "vowel-rich"
-    assert beta["name_shape"] == [4, 2, 2]
-    assert alpha["trace"]["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
-    assert beta["trace"]["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
+    assert alpha["letter_counts"]["value"] == {"vowels": 2, "consonants": 3}
+    assert alpha["name_vowel_fraction"]["value"] == 0.4
+    assert alpha["name_dominance"]["value"] == "consonant-rich"
+    assert alpha["name_shape"]["value"] == [5, 2, 3]
+    assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
+    assert beta["name_vowel_fraction"]["value"] == 0.5
+    assert beta["name_dominance"]["value"] == "vowel-rich"
+    assert beta["name_shape"]["value"] == [4, 2, 2]
+    assert Path(alpha["meta"]["input_file"]).name == "alpha.plt"
+    assert Path(beta["meta"]["input_file"]).name == "beta.plt"
+    assert "start_time_utc" in alpha["meta"]
+    assert "end_time_utc" in alpha["meta"]
+    assert alpha["letter_counts"]["source"]["module"] == "starwinds_analysis.pipelines.dummy_pipeline"
+    assert beta["letter_counts"]["source"]["module"] == "starwinds_analysis.pipelines.dummy_pipeline"
+
+
+def test_run_sw_pipe_can_record_file_hash(tmp_path):
+    file_path = tmp_path / "alpha.plt"
+    file_path.write_text("abc")
+    results = run_sw_pipe(tmp_path, include_file_hash=True)
+    expected_hash = hashlib.sha256(b"abc").hexdigest()
+    alpha = results.computed_results["alpha.plt"]
+    assert alpha["meta"]["file_hash_sha256"] == expected_hash
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):

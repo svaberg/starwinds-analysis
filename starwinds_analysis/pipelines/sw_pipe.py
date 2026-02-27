@@ -7,7 +7,9 @@ handler. The current handler is intentionally a placeholder.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -57,20 +59,15 @@ class _SwEmitHandler(logging.Handler):
         if parsed is None:
             return
         key, value = parsed
-        self.target[key] = value
-        trace = self.target.setdefault("trace", {"module": record.name, "sources": {}})
-        if not isinstance(trace, dict):
-            return
-        module_name = trace.get("module")
-        if not isinstance(module_name, str):
-            trace["module"] = record.name
-        elif module_name != record.name:
-            trace["module"] = "multiple"
-        sources = trace.get("sources")
-        if not isinstance(sources, dict):
-            sources = {}
-            trace["sources"] = sources
-        sources[key] = f"{record.funcName}:{int(record.lineno)}"
+        module_name = record.name.replace(".emit.", ".")
+        self.target[key] = {
+            "value": value,
+            "source": {
+                "module": module_name,
+                "function": record.funcName,
+                "line": int(record.lineno),
+            },
+        }
 
 
 def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
@@ -96,6 +93,29 @@ def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
     if args is None:
         return key, None
     return key, args
+
+
+def _utc_now_iso() -> str:
+    """
+    Return the current UTC time in ISO-8601 format with `Z`.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _sha256_file(path: str | Path) -> str:
+    """
+    Compute SHA-256 for a file.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        while True:
+            chunk = stream.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 class _PipelineLogFormatter(logging.Formatter):
@@ -188,7 +208,7 @@ def _save_state(
         "processed_files": sorted(processed_keys),
         "computed_results": computed_results,
     }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    path.write_text(json.dumps(payload, indent=2))
 
 
 def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
@@ -207,6 +227,7 @@ def run_sw_pipe(
     *,
     recursive: bool = False,
     noclobber: bool = False,
+    include_file_hash: bool = False,
     process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
     """
@@ -242,12 +263,22 @@ def run_sw_pipe(
             results.skipped_files.append(file_path)
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
-        file_results: dict[str, object] = {}
+        file_results: dict[str, object] = {
+            "meta": {
+                "input_file": str(file_path.resolve()),
+                "start_time_utc": _utc_now_iso(),
+            }
+        }
+        if include_file_hash:
+            file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
         emit_handler = _SwEmitHandler(file_results)
         emit_logger.addHandler(emit_handler)
         try:
             process_file(file_path)
         finally:
+            meta = file_results.get("meta")
+            if isinstance(meta, dict):
+                meta["end_time_utc"] = _utc_now_iso()
             emit_logger.removeHandler(emit_handler)
             emit_handler.close()
         if file_results:
@@ -298,6 +329,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip files already listed in the sw-pipe state file.",
     )
+    parser.add_argument(
+        "--file-hash",
+        action="store_true",
+        help="Include SHA-256 hash of each input file in per-file metadata.",
+    )
     return parser
 
 
@@ -320,6 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         args.directory,
         recursive=bool(args.recursive),
         noclobber=bool(args.noclobber),
+        include_file_hash=bool(args.file_hash),
     )
     return 0
 
