@@ -13,16 +13,8 @@ from starwinds_analysis.pipelines.orchestration_helpers import resolve_quicklook
 from starwinds_analysis.pipelines.quicklook_core import (
     DEFAULT_STAR_RADIUS_M,
     _has_field,
-    orbit_local_comparison_figure,
-    orbit_pressure_figure,
-    orbit_surface_pressure_figure,
-    orbit_surface_torque_figure,
-    plot_radius_quicklook,
     plot_slice_quicklook,
     prepare_smartds_for_quicklook,
-    quicklook_shell_figure,
-    run_quicklook2d,
-    save_quicklook2d_bundle,
 )
 from starwinds_analysis.smart_ds import SmartDs
 
