@@ -48,8 +48,8 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert [path.name for path in results.discovered_files] == ["alpha.plt", "beta.plt"]
     assert [path.name for path in results.processed_files] == ["alpha.plt", "beta.plt"]
     assert results.skipped_files == []
-    assert results.computed_results["alpha.plt"] == {"vowels": 2, "consonants": 3}
-    assert results.computed_results["beta.plt"] == {"vowels": 2, "consonants": 2}
+    assert results.computed_results["alpha.plt"] == {"letter_counts": {"vowels": 2, "consonants": 3}}
+    assert results.computed_results["beta.plt"] == {"letter_counts": {"vowels": 2, "consonants": 2}}
     messages = [
         record.getMessage()
         for record in caplog.records
@@ -104,8 +104,8 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
-    assert payload["computed_results"]["alpha.plt"] == {"vowels": 2, "consonants": 3}
-    assert payload["computed_results"]["nested/beta.plt"] == {"vowels": 2, "consonants": 2}
+    assert payload["computed_results"]["alpha.plt"] == {"letter_counts": {"vowels": 2, "consonants": 3}}
+    assert payload["computed_results"]["nested/beta.plt"] == {"letter_counts": {"vowels": 2, "consonants": 2}}
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):

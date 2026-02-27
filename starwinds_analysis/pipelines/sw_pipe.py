@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
-from functools import partial
 import json
 import logging
 from pathlib import Path
@@ -29,32 +28,8 @@ class SwPipeResults:
     discovered_files: list[Path] = field(default_factory=list)
     processed_files: list[Path] = field(default_factory=list)
     skipped_files: list[Path] = field(default_factory=list)
-    computed_results: dict[str, dict[str, int]] = field(default_factory=dict)
+    computed_results: dict[str, dict[str, object]] = field(default_factory=dict)
     state_file: Path | None = None
-
-    def add_processed_file(self, file_path: str | Path) -> None:
-        """
-        Record a processed file path in the run results.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        self.processed_files.append(Path(file_path))
-
-    def add_skipped_file(self, file_path: str | Path) -> None:
-        """
-        Record a skipped file path in the run results.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        self.skipped_files.append(Path(file_path))
-
-    def add_computed_result(self, file_key: str, *, vowels: int, consonants: int) -> None:
-        """
-        Store computed per-file demo results.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        self.computed_results[str(file_key)] = {
-            "vowels": int(vowels),
-            "consonants": int(consonants),
-        }
 
 
 def _state_file_path(directory: str | Path) -> Path:
@@ -73,21 +48,7 @@ def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
     return Path(file_path).resolve().relative_to(Path(base_dir).resolve()).as_posix()
 
 
-def _capture_letter_counts(results: SwPipeResults, file_key: str, key: str, value: dict[str, int]) -> None:
-    """
-    Capture dummy-pipeline letter counts into run results for the current file.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    if key != "letter_counts":
-        return
-    results.add_computed_result(
-        file_key,
-        vowels=value["vowels"],
-        consonants=value["consonants"],
-    )
-
-
-def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, int]]]:
+def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, object]]]:
     """
     Load processed-file keys and computed results from state file.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
@@ -102,24 +63,16 @@ def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, i
     files = payload.get("processed_files", [])
     processed_keys = {str(item) for item in files} if isinstance(files, list) else set()
     computed = payload.get("computed_results", {})
-    if not isinstance(computed, dict):
-        computed = {}
-    out_computed: dict[str, dict[str, int]] = {}
-    for key, value in computed.items():
-        if not isinstance(value, dict):
-            continue
-        vowels = value.get("vowels")
-        consonants = value.get("consonants")
-        if isinstance(vowels, int) and isinstance(consonants, int):
-            out_computed[str(key)] = {"vowels": vowels, "consonants": consonants}
-    return processed_keys, out_computed
+    if isinstance(computed, dict):
+        return processed_keys, {str(key): value for key, value in computed.items() if isinstance(value, dict)}
+    return processed_keys, {}
 
 
 def _save_state(
     state_file: str | Path,
     *,
     processed_keys: set[str],
-    computed_results: dict[str, dict[str, int]],
+    computed_results: dict[str, dict[str, object]],
 ) -> None:
     """
     Save processed keys and computed results to state file.
@@ -183,15 +136,16 @@ def run_sw_pipe(
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)
         if noclobber and file_key in known_processed:
-            results.add_skipped_file(file_path)
+            results.skipped_files.append(file_path)
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
-        token = set_result_sink(partial(_capture_letter_counts, results, file_key))
+        file_results = results.computed_results.setdefault(file_key, {})
+        token = set_result_sink(file_results.__setitem__)
         try:
             process_file(file_path)
         finally:
             reset_result_sink(token)
-        results.add_processed_file(file_path)
+        results.processed_files.append(file_path)
         processed_keys.add(file_key)
     _save_state(
         state_file,
