@@ -2,7 +2,6 @@ from pathlib import Path
 import json
 import importlib.util
 import logging
-import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +25,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-EXAMPLE_2D_PLT = Path("sample_data/z=0_var_3_n00060000.plt")
 SUN_RADIUS_M = 6.957e8
 SLICE_PLOTTING_AVAILABLE = importlib.util.find_spec("starwinds_analysis.visualisation.slice") is not None
 
@@ -374,22 +372,57 @@ def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
     plt.close(fig)
 
 
-@pytest.mark.skipif(not EXAMPLE_2D_PLT.exists(), reason="example 2D BATSRUS file not present")
-def test_process_plt_file_runs_per_file_quicklook(tmp_path):
+def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, monkeypatch):
     file_path = tmp_path / "alpha.plt"
-    shutil.copy(EXAMPLE_2D_PLT, file_path)
+    file_path.write_text("")
+    from_file_calls: list[Path] = []
+    plot_calls: list[str] = []
+    sentinel_ds = type("Fake2DSmartDs", (), {"corners": np.zeros((1, 4), dtype=int)})()
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, path):
+            from_file_calls.append(Path(path))
+            return sentinel_ds
+
+    created_figs: list[plt.Figure] = []
+
+    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+        fig, ax = plt.subplots()
+        ax.plot([0.0, 1.0], [0.0, 1.0], ",")
+        created_figs.append(fig)
+        plot_calls.append(str(preset))
+        return fig, (ax,), None
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
+    monkeypatch.setattr(
+        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
+        fake_plot_slice_quicklook,
+    )
     process_plt_file(file_path)
 
+    assert from_file_calls == [file_path]
+    assert plot_calls == ["rho", "u", "b"]
     assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
     assert (tmp_path / "slice" / "alpha.slices.u.png").exists()
     assert (tmp_path / "slice" / "alpha.slices.b.png").exists()
+    assert all(not plt.fignum_exists(fig.number) for fig in created_figs)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example 3D BATSRUS file not present")
-def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, caplog):
+def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, caplog):
     file_path = tmp_path / "alpha.plt"
-    shutil.copy(EXAMPLE_PLT, file_path)
+    file_path.write_text("")
 
+    class Fake3DDataset:
+        corners = np.zeros((1, 8), dtype=int)
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, _path):
+            return Fake3DDataset()
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.slice"):
         process_plt_file(file_path)
 
@@ -397,15 +430,35 @@ def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, caplog):
     assert any("skip file=alpha.plt reason=3d_input" in message for message in messages)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example 3D BATSRUS file not present")
-def test_process_plt_file_can_force_3d_inputs(tmp_path, caplog):
+def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
     file_path = tmp_path / "alpha.plt"
-    shutil.copy(EXAMPLE_PLT, file_path)
-    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.slice"):
-        with pytest.raises(ValueError):
-            process_plt_file(file_path, force_3d=True)
-    messages = [record.getMessage() for record in caplog.records]
-    assert not any("skip file=alpha.plt reason=3d_input" in message for message in messages)
+    file_path.write_text("")
+    calls: list[str] = []
+
+    class Fake3DDataset:
+        corners = np.zeros((1, 8), dtype=int)
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, _path):
+            return Fake3DDataset()
+
+    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+        fig, ax = plt.subplots()
+        ax.plot([0.0, 1.0], [0.0, 1.0], ",")
+        calls.append(str(preset))
+        return fig, (ax,), None
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
+    monkeypatch.setattr(
+        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
+        fake_plot_slice_quicklook,
+    )
+    process_plt_file(file_path, force_3d=True)
+
+    assert calls == ["rho", "u", "b"]
+    assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
