@@ -1731,7 +1731,7 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
     """
     path = Path(file_path)
     output_dir = path.parent / "slice"
-    log.debug("%s", path.name)
+    log.info("%s", path.name)
     if force_3d is None:
         force_3d = _env_truthy(SLICE_FORCE_3D_ENV)
     smart_ds = SmartDs.from_file(path)
@@ -1739,95 +1739,23 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
         log.info("skip file=%s reason=3d_input", path.name)
         add_record("slice_status %r", "skipped_3d")
         return
-    out = run_quicklook2d(
-        smart_ds,
-        body_radius_m=DEFAULT_STAR_RADIUS_M,
-        radii=DEFAULT_QUICKLOOK_RADII_R,
-        slice_presets=("rho", "u", "b"),
-        radius_modes=(),
-        orbit_radii=(),
-        orbit_specs=(),
-        orbit_planets=(),
-        orbit_surface_specs=(),
-        orbit_surface_planets=(),
-        output_dir=output_dir,
-        input_file=path.name,
-    )
-    diagnostics = out.get("shell_diagnostics", {})
-    mass_loss_profile = diagnostics.get("mass_loss", {})
-    radii = np.array(mass_loss_profile.get("radius [R]", []))
-    mass_loss = np.array(mass_loss_profile.get("mass_loss [kg/s]", []))
-    mass_loss_ref = np.nan
-    radius_ref = np.nan
-    if radii.ndim == 1 and mass_loss.ndim == 1 and radii.shape == mass_loss.shape and radii.size > 0:
-        add_record(
-            "mass_loss_profile_kg_s %r",
-            [
-                {"radius_R": float(r), "mass_loss_kg_s": float(m)}
-                for r, m in zip(radii, mass_loss)
-            ],
-        )
-        finite = np.isfinite(radii) & np.isfinite(mass_loss)
-        if np.any(finite):
-            idx = np.where(finite)[0][-1]
-            r_ref = float(radii[idx])
-            m_ref = float(mass_loss[idx])
-            add_record("mass_loss_radius_R %r", r_ref)
-            add_record("mass_loss_value_kg_s %r", m_ref)
-            radius_ref = r_ref
-            mass_loss_ref = m_ref
-    total_torque_ref = np.nan
-    total_torque = np.array(diagnostics.get("torque", {}).get("total_torque [Nm]", []))
-    if radii.ndim == 1 and total_torque.ndim == 1 and radii.shape == total_torque.shape and radii.size > 0:
-        finite = np.isfinite(radii) & np.isfinite(total_torque)
-        if np.any(finite):
-            idx = np.where(finite)[0][-1]
-            add_record("total_torque_radius_R %r", float(radii[idx]))
-            total_torque_ref = float(total_torque[idx])
-            add_record("total_torque_value_nm %r", total_torque_ref)
-    open_flux_ref = np.nan
-    open_flux = np.array(diagnostics.get("open_flux", {}).get("open_flux [Wb]", []))
-    if radii.ndim == 1 and open_flux.ndim == 1 and radii.shape == open_flux.shape and radii.size > 0:
-        finite = np.isfinite(radii) & np.isfinite(open_flux)
-        if np.any(finite):
-            idx = np.where(finite)[0][-1]
-            add_record("open_flux_radius_R %r", float(radii[idx]))
-            open_flux_ref = float(open_flux[idx])
-            add_record("open_flux_value_wb %r", open_flux_ref)
-    energy_flux_ref = np.nan
-    energy_flux = np.array(diagnostics.get("energy", {}).get("energy_flux [W]", []))
-    if radii.ndim == 1 and energy_flux.ndim == 1 and radii.shape == energy_flux.shape and radii.size > 0:
-        finite = np.isfinite(radii) & np.isfinite(energy_flux)
-        if np.any(finite):
-            idx = np.where(finite)[0][-1]
-            add_record("energy_flux_radius_R %r", float(radii[idx]))
-            energy_flux_ref = float(energy_flux[idx])
-            add_record("energy_flux_value_w %r", energy_flux_ref)
-    if np.isfinite(radius_ref):
-        log.info(
-            "result file=%s radius=%gR mass_loss_kg_s=%g total_torque_nm=%g open_flux_wb=%g energy_flux_w=%g",
-            path.name,
-            radius_ref,
-            mass_loss_ref,
-            total_torque_ref,
-            open_flux_ref,
-            energy_flux_ref,
-        )
-    add_record(
-        "shell_summary %r",
-        summarize_shell_diagnostics(diagnostics),
-    )
-    add_record(
-        "shell_profiles %r",
-        shell_profile_payload(diagnostics),
-    )
+    prepare_smartds_for_quicklook(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    prefix = _resolve_quicklook_prefix(prefix=None, input_file=path.name)
 
-    for fig in out.get("slice_figures", {}).values():
+    saved = {}
+    for preset in ("rho", "u", "b"):
+        preset_cfg = SLICE_PRESETS[preset]
+        if not any(_has_field(smart_ds, name) for name in preset_cfg.field_candidates):
+            continue
+        fig, _axes, _cbar = plot_slice_quicklook(smart_ds, preset=preset, style="cross_quantiles")
+        out_path = output_dir / f"{prefix}.slices.{preset}.png"
+        fig.savefig(out_path)
         plt.close(fig)
-    shell_fig = out.get("shell_figure")
-    if shell_fig is not None:
-        plt.close(shell_fig)
-    for fig in out.get("radius_figures", {}).values():
-        plt.close(fig)
-    for fig in out.get("orbit_figures", {}).values():
-        plt.close(fig)
+        saved[preset] = str(out_path.relative_to(path.parent))
+        add_record(f"slice_{preset}_png %r", saved[preset])
+
+    add_record("slice_status %r", "processed")
+    add_record("slice_figure_count %r", len(saved))
+    add_record("slice_output_dir %r", str(output_dir.relative_to(path.parent)))
+    log.info("result file=%s figures=%d", path.name, len(saved))

@@ -381,8 +381,8 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("")
     from_file_calls: list[Path] = []
-    run_kwargs: dict[str, object] = {}
-    sentinel_ds = object()
+    plot_calls: list[str] = []
+    sentinel_ds = type("Fake2DSmartDs", (), {"corners": np.zeros((1, 4), dtype=int)})()
 
     class FakeSmartDs:
         @classmethod
@@ -390,37 +390,29 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
             from_file_calls.append(Path(path))
             return sentinel_ds
 
-    shell_fig = plt.figure()
-    slice_fig = plt.figure()
-    radius_fig = plt.figure()
-    orbit_fig = plt.figure()
+    created_figs: list[plt.Figure] = []
 
-    def fake_run_quicklook2d(smart_ds, **kwargs):
-        run_kwargs.update(kwargs)
-        return {
-            "slice_figures": {"rho": slice_fig},
-            "shell_figure": shell_fig,
-            "radius_figures": {"binned": radius_fig},
-            "orbit_figures": {"orbit": orbit_fig},
-            "saved": {
-                "figures": {"shells": kwargs["output_dir"] / "alpha.shells.png"},
-                "files": {"quicklook_json": kwargs["output_dir"] / "alpha.quicklook2d.json"},
-            },
-        }
+    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+        fig, ax = plt.subplots()
+        ax.plot([0.0, 1.0], [0.0, 1.0], ",")
+        created_figs.append(fig)
+        plot_calls.append(str(preset))
+        return fig, (ax,), None
 
     monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
+    monkeypatch.setattr(
+        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
+        fake_plot_slice_quicklook,
+    )
     process_plt_file(file_path)
 
     assert from_file_calls == [file_path]
-    assert run_kwargs["body_radius_m"] == 6.957e8
-    assert tuple(run_kwargs["radii"]) == (2.0, 4.0, 8.0, 16.0)
-    assert run_kwargs["output_dir"] == (tmp_path / "slice")
-    assert run_kwargs["input_file"] == "alpha.plt"
-    assert not plt.fignum_exists(shell_fig.number)
-    assert not plt.fignum_exists(slice_fig.number)
-    assert not plt.fignum_exists(radius_fig.number)
-    assert not plt.fignum_exists(orbit_fig.number)
+    assert plot_calls == ["rho", "u", "b"]
+    assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
+    assert (tmp_path / "slice" / "alpha.slices.u.png").exists()
+    assert (tmp_path / "slice" / "alpha.slices.b.png").exists()
+    assert all(not plt.fignum_exists(fig.number) for fig in created_figs)
 
 
 def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, caplog):
@@ -453,7 +445,7 @@ def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, capl
 def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("")
-    calls: list[dict[str, object]] = []
+    calls: list[str] = []
 
     class Fake3DDataset:
         corners = np.zeros((1, 8), dtype=int)
@@ -463,17 +455,22 @@ def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
         def from_file(cls, _path):
             return Fake3DDataset()
 
-    def fake_run_quicklook2d(_smart_ds, **kwargs):
-        calls.append(kwargs)
-        return {}
+    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+        fig, ax = plt.subplots()
+        ax.plot([0.0, 1.0], [0.0, 1.0], ",")
+        calls.append(str(preset))
+        return fig, (ax,), None
 
     monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
+    monkeypatch.setattr(
+        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
+        fake_plot_slice_quicklook,
+    )
     process_plt_file(file_path, force_3d=True)
 
-    assert len(calls) == 1
-    assert calls[0]["output_dir"] == (tmp_path / "slice")
-    assert calls[0]["input_file"] == "alpha.plt"
+    assert calls == ["rho", "u", "b"]
+    assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
