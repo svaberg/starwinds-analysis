@@ -40,15 +40,13 @@ class _SwEmitHandler(logging.Handler):
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
 
-    def __init__(self, target: dict[str, object], *, file_name: str, file_key: str):
+    def __init__(self, target: dict[str, object]):
         """
         Initialize a handler that writes captured emit payloads into `target`.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         super().__init__(level=logging.NOTSET)
         self.target = target
-        self.file_name = file_name
-        self.file_key = file_key
 
     def emit(self, record: logging.LogRecord) -> None:
         """
@@ -60,15 +58,6 @@ class _SwEmitHandler(logging.Handler):
             return
         key, value = parsed
         self.target[key] = value
-        meta = self.target.setdefault("_emit_meta", {})
-        if isinstance(meta, dict):
-            meta[key] = {
-                "logger": record.name,
-                "function": record.funcName,
-                "line": int(record.lineno),
-                "file": self.file_name,
-                "file_key": self.file_key,
-            }
 
 
 def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
@@ -237,7 +226,7 @@ def run_sw_pipe(
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
         file_results: dict[str, object] = {}
-        emit_handler = _SwEmitHandler(file_results, file_name=file_path.name, file_key=file_key)
+        emit_handler = _SwEmitHandler(file_results)
         emit_logger.addHandler(emit_handler)
         try:
             process_file(file_path)
