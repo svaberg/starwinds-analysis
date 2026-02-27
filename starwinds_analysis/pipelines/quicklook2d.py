@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -53,6 +54,9 @@ from starwinds_analysis.visualisation.histograms import (
     plot_radial_hist2d,
     plot_vs_radius,
 )
+
+log = logging.getLogger(__name__)
+pipeline_log = log.getChild("pipeline")
 
 @dataclass(frozen=True)
 class SlicePreset:
@@ -111,6 +115,17 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
     **SLICE_PRESETS_SI_DIAGNOSTIC,
     **SLICE_PRESETS_RAW_DISPLAY,
 }
+
+def _pipeline_log(message: str, **fields):
+    """
+    Emit pipeline progress messages to a provided logger or module logging fallback.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    text = message
+    if fields:
+        suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        text = f"{message} | {suffix}"
+    pipeline_log.info(text)
 
 def _load_slice_styles():
     """
@@ -1083,6 +1098,7 @@ def save_shell_diagnostics_json(
         star_radius_m=star_radius_m,
     )
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    _pipeline_log("quicklook.saved", kind="shells_json", file=str(path))
     return path
 
 def save_shell_diagnostics_npz(path, diagnostics):
@@ -1094,6 +1110,7 @@ def save_shell_diagnostics_npz(path, diagnostics):
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_shell_diagnostics_arrays(diagnostics)
     np.savez(path, **arrays)
+    _pipeline_log("quicklook.saved", kind="shells_npz", file=str(path))
     return path
 
 def save_orbit_results_json(path, orbit_results):
@@ -1105,6 +1122,7 @@ def save_orbit_results_json(path, orbit_results):
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = summarize_orbit_results(orbit_results)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    _pipeline_log("quicklook.saved", kind="orbits_json", file=str(path))
     return path
 
 def save_orbit_results_npz(path, orbit_results):
@@ -1116,6 +1134,7 @@ def save_orbit_results_npz(path, orbit_results):
     path.parent.mkdir(parents=True, exist_ok=True)
     arrays = flatten_orbit_results_arrays(orbit_results)
     np.savez(path, **arrays)
+    _pipeline_log("quicklook.saved", kind="orbits_npz", file=str(path))
     return path
 
 def _quicklook_prefix_from_input_file(input_file) -> str:
@@ -1172,6 +1191,7 @@ def save_quicklook2d_summary_json(
         "files": dict(exported_files or {}),
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    _pipeline_log("quicklook.saved", kind="quicklook_json", file=str(path))
     return path
 
 def save_quicklook2d_bundle(
@@ -1196,12 +1216,19 @@ def save_quicklook2d_bundle(
     outdir = Path(output_dir)
     outdir.mkdir(parents=True, exist_ok=True)
     prefix = _resolve_quicklook_prefix(prefix=prefix, input_file=input_file)
+    _pipeline_log(
+        "quicklook.bundle.start",
+        output_dir=str(outdir),
+        prefix=prefix,
+        input_file=None if input_file is None else str(input_file),
+    )
     saved = {"figures": {}, "files": {}}
 
     if shell_fig is not None:
         p = outdir / f"{prefix}.shells.png"
         shell_fig.savefig(p)
         saved["figures"]["shells"] = p
+        _pipeline_log("quicklook.saved", kind="shells_png", file=str(p))
 
     for group_name, figs in (("slices", slice_figures), ("radius", radius_figures), ("orbits", orbit_figures)):
         if not figs:
@@ -1210,6 +1237,7 @@ def save_quicklook2d_bundle(
             p = outdir / f"{prefix}.{group_name}.{_slug_key(str(key))}.png"
             fig.savefig(p)
             saved["figures"][f"{group_name}:{key}"] = p
+            _pipeline_log("quicklook.saved", kind=f"{group_name}_png", file=str(p))
 
     if diagnostics is not None:
         saved["files"]["shells_json"] = save_shell_diagnostics_json(
@@ -1220,15 +1248,18 @@ def save_quicklook2d_bundle(
             star_radius_m=star_radius_m,
         )
         saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
-            outdir / f"{prefix}.shells.npz", diagnostics
+            outdir / f"{prefix}.shells.npz",
+            diagnostics,
         )
 
     if orbit_results:
         saved["files"]["orbits_json"] = save_orbit_results_json(
-            outdir / f"{prefix}.orbits.json", orbit_results
+            outdir / f"{prefix}.orbits.json",
+            orbit_results,
         )
         saved["files"]["orbits_npz"] = save_orbit_results_npz(
-            outdir / f"{prefix}.orbits.npz", orbit_results
+            outdir / f"{prefix}.orbits.npz",
+            orbit_results,
         )
 
     exported_files = {}
@@ -1245,6 +1276,11 @@ def save_quicklook2d_bundle(
         star_mass_kg=star_mass_kg,
         star_radius_m=star_radius_m,
         exported_files=exported_files,
+    )
+    _pipeline_log(
+        "quicklook.bundle.done",
+        figures=len(saved["figures"]),
+        files=len(saved["files"]),
     )
 
     return saved
@@ -1386,6 +1422,16 @@ def run_quicklook2d(
     End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save).
     Used by: `test/test_quicklook2d.py`
     """
+    try:
+        n_radii = len(radii)
+    except TypeError:
+        n_radii = None
+    _pipeline_log(
+        "quicklook.run.start",
+        n_radii=n_radii,
+        output_dir=None if output_dir is None else str(output_dir),
+        prefix=_resolve_quicklook_prefix(prefix=prefix, input_file=input_file),
+    )
     prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
 
     if orbit_planets:
@@ -1447,6 +1493,7 @@ def run_quicklook2d(
             slice_input, preset=preset, style=slice_style
         )
         slice_figs[preset] = fig
+    _pipeline_log("quicklook.run.slices", count=len(slice_figs))
 
     shell_fig, shell_axs, diagnostics = quicklook_shell_figure(
         smart_ds,
@@ -1467,6 +1514,7 @@ def run_quicklook2d(
             mode=mode,
         )
         radius_figs[mode] = fig
+    _pipeline_log("quicklook.run.radius", count=len(radius_figs))
 
     orbit_figs = {}
     orbit_results = {}
@@ -1544,6 +1592,7 @@ def run_quicklook2d(
             )
             orbit_figs[f"{label}_surface_torque"] = fig
             groups["surface_torque"] = result
+    _pipeline_log("quicklook.run.orbits", figures=len(orbit_figs), result_groups=len(orbit_results))
 
     out = {
         "slice_figures": slice_figs,
@@ -1570,4 +1619,5 @@ def run_quicklook2d(
             star_mass_kg=star_mass_kg,
             star_radius_m=body_radius_m,
         )
+    _pipeline_log("quicklook.run.done", saved=output_dir is not None)
     return out

@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import importlib.util
+import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -357,6 +358,21 @@ def test_save_quicklook2d_bundle_uses_input_filename_prefix_when_prefix_missing(
     assert (tmp_path / "z_0_var_3_n00060000.shells.png").exists()
     assert (tmp_path / "z_0_var_3_n00060000.quicklook2d.json").exists()
     assert "quicklook_json" in saved["files"]
+    plt.close(fig)
+
+def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
+    fig, ax = plt.subplots()
+    ax.plot([0.0, 1.0], [1.0, 0.0], ",")
+    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.quicklook2d.pipeline"):
+        save_quicklook2d_bundle(
+            tmp_path,
+            shell_fig=fig,
+            input_file="x=0_var_2_n00060000.plt",
+        )
+    messages = [record.getMessage() for record in caplog.records]
+    assert any("quicklook.bundle.start" in message for message in messages)
+    assert any("quicklook.saved" in message and "quicklook_json" in message for message in messages)
+    assert any("quicklook.bundle.done" in message for message in messages)
     plt.close(fig)
 
 
