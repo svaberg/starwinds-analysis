@@ -8,7 +8,6 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 emit_log = logging.getLogger(f"emit.{__name__}")
-emit_log.setLevel(logging.DEBUG)
 
 
 def name_letter_counts(name: str) -> tuple[int, int]:

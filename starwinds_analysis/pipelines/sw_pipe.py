@@ -366,6 +366,7 @@ def run_sw_pipe(
     )
     processed_keys = set(known_processed)
     emit_logger = logging.getLogger("emit")
+    emit_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)
