@@ -1007,6 +1007,32 @@ def summarize_shell_diagnostics(
             pass
     return out
 
+def shell_profile_payload(diagnostics):
+    """
+    JSON/NPZ-friendly shell-profile payload with 1D numeric series.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    out = {}
+    for name, profile in diagnostics.items():
+        if not isinstance(profile, dict):
+            continue
+        pdata = {}
+        for key, value in profile.items():
+            if key == "shell_samples":
+                continue
+            arr = np.array(value)
+            if arr.ndim == 0:
+                try:
+                    pdata[key] = arr.item()
+                except Exception:
+                    pdata[key] = str(value)
+                continue
+            if arr.ndim == 1 and np.issubdtype(arr.dtype, np.number):
+                pdata[key] = arr
+        if pdata:
+            out[name] = pdata
+    return out
+
 def flatten_shell_diagnostics_arrays(diagnostics):
     """
     Flatten shell diagnostic arrays for `np.savez`.
@@ -1654,10 +1680,23 @@ def process_plt_file(file_path: str | Path) -> None:
     saved = out.get("saved", {})
     files = saved.get("files", {})
     quicklook_json = files.get("quicklook_json")
-    add_record("quicklook2d_output_dir %r", str(output_dir))
+    diagnostics = out.get("diagnostics", {})
     add_record("quicklook2d_summary_file %r", None if quicklook_json is None else str(quicklook_json))
-    add_record("quicklook2d_file_count %r", len(files))
-    add_record("quicklook2d_figure_count %r", len(saved.get("figures", {})))
+    add_record(
+        "quicklook2d_saved_files %r",
+        {
+            **{f"figure:{key}": str(value) for key, value in saved.get("figures", {}).items()},
+            **{f"file:{key}": str(value) for key, value in files.items()},
+        },
+    )
+    add_record(
+        "quicklook2d_shell_summary %r",
+        summarize_shell_diagnostics(diagnostics),
+    )
+    add_record(
+        "quicklook2d_shell_profiles %r",
+        shell_profile_payload(diagnostics),
+    )
 
     for fig in out.get("slice_figures", {}).values():
         plt.close(fig)
