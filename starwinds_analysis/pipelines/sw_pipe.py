@@ -11,9 +11,11 @@ from dataclasses import dataclass, field
 import json
 import logging
 from pathlib import Path
+import re
 from typing import Callable
 
 log = logging.getLogger(__name__)
+_EMIT_PATTERN = re.compile(r"^emit\s+([A-Za-z0-9_]+)\b")
 
 
 @dataclass
@@ -48,13 +50,39 @@ class _SwEmitHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         """
-        Pull `record.sw_emit_*` payloads and store them into the target mapping.
+        Pull emit payloads from logger template/args and store them by key.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
-        key = getattr(record, "sw_emit_key", None)
-        if not isinstance(key, str):
+        parsed = _parse_emit_record(record)
+        if parsed is None:
             return
-        self.target[key] = getattr(record, "sw_emit_value", None)
+        key, value = parsed
+        self.target[key] = value
+
+
+def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
+    """
+    Parse `emit <key> ...` logger template and args into a key/value payload.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    if not isinstance(record.msg, str):
+        return None
+    match = _EMIT_PATTERN.match(record.msg)
+    if match is None:
+        return None
+    key = match.group(1)
+    args = record.args
+    if isinstance(args, tuple):
+        if len(args) == 0:
+            return key, None
+        if len(args) == 1:
+            return key, args[0]
+        return key, list(args)
+    if isinstance(args, dict):
+        return key, dict(args)
+    if args is None:
+        return key, None
+    return key, args
 
 
 class _PipelineLogFormatter(logging.Formatter):

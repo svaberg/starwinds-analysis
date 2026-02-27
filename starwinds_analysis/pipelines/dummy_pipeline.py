@@ -17,10 +17,7 @@ def name_letter_counts(name: str) -> tuple[int, int]:
     """
     vowels = sum(ch.lower() in {"a", "e", "i", "o", "u"} for ch in name if ch.isalpha())
     consonants = sum(ch.lower() not in {"a", "e", "i", "o", "u"} for ch in name if ch.isalpha())
-    emit_log.debug(
-        "emit letter_counts",
-        extra={"sw_emit_key": "letter_counts", "sw_emit_value": {"vowels": vowels, "consonants": consonants}},
-    )
+    emit_log.debug("emit letter_counts %r", {"vowels": vowels, "consonants": consonants})
     log.info("%s vowels=%d consonants=%d", name, vowels, consonants)
     return vowels, consonants
 
@@ -37,9 +34,9 @@ def name_profile_payload(name: str) -> tuple[float, str, list[int]]:
     vowel_fraction = float(vowel_count / letter_count) if letter_count else 0.0
     dominance = "vowel-rich" if vowel_count >= consonant_count else "consonant-rich"
     shape = [letter_count, vowel_count, consonant_count]
-    emit_log.debug("emit name_vowel_fraction", extra={"sw_emit_key": "name_vowel_fraction", "sw_emit_value": vowel_fraction})
-    emit_log.debug("emit name_dominance", extra={"sw_emit_key": "name_dominance", "sw_emit_value": dominance})
-    emit_log.debug("emit name_shape", extra={"sw_emit_key": "name_shape", "sw_emit_value": shape})
+    emit_log.debug("emit name_vowel_fraction %r", vowel_fraction)
+    emit_log.debug("emit name_dominance %r", dominance)
+    emit_log.debug("emit name_shape %r", shape)
     return vowel_fraction, dominance, shape
 
 

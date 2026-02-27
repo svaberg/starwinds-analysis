@@ -99,7 +99,34 @@ class _RuleVisitor(ast.NodeVisitor):
                 if isinstance(kw.value, ast.Name) and kw.value.id == "float":
                     self._add("BAN_NP_ARRAY_DTYPE_FLOAT", node.lineno)
 
+        msg_node = _logging_message_node(node, func_name)
+        if isinstance(msg_node, ast.JoinedStr):
+            self._add("BAN_LOGGING_FSTRING", node.lineno, func_name or "")
+
         self.generic_visit(node)
+
+
+def _logging_message_node(node: ast.Call, func_name: str | None):
+    if not isinstance(func_name, str):
+        return None
+
+    method = func_name.rsplit(".", 1)[-1]
+    if method in {"debug", "info", "warning", "error", "critical", "exception"}:
+        if node.args:
+            return node.args[0]
+        for kw in node.keywords:
+            if kw.arg == "msg":
+                return kw.value
+        return None
+
+    if method == "log":
+        if len(node.args) >= 2:
+            return node.args[1]
+        for kw in node.keywords:
+            if kw.arg == "msg":
+                return kw.value
+
+    return None
 
 
 def _scan_python_source(source: str):

@@ -78,16 +78,18 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         and record.levelno == logging.DEBUG
         and record.getMessage().startswith("emit ")
     ]
-    assert emitted == [
-        "emit letter_counts",
-        "emit name_vowel_fraction",
-        "emit name_dominance",
-        "emit name_shape",
-        "emit letter_counts",
-        "emit name_vowel_fraction",
-        "emit name_dominance",
-        "emit name_shape",
+    expected_prefixes = [
+        "emit letter_counts ",
+        "emit name_vowel_fraction ",
+        "emit name_dominance ",
+        "emit name_shape ",
+        "emit letter_counts ",
+        "emit name_vowel_fraction ",
+        "emit name_dominance ",
+        "emit name_shape ",
     ]
+    assert len(emitted) == len(expected_prefixes)
+    assert all(message.startswith(prefix) for message, prefix in zip(emitted, expected_prefixes))
 
 
 def test_run_sw_pipe_noclobber_skips_already_processed_files(tmp_path):
@@ -163,9 +165,11 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
-    assert lines == [
-        "[debug] dummy_pipeline emit letter_counts",
-        "[debug] dummy_pipeline emit name_vowel_fraction",
-        "[debug] dummy_pipeline emit name_dominance",
-        "[debug] dummy_pipeline emit name_shape",
+    expected_prefixes = [
+        "[debug] dummy_pipeline emit letter_counts ",
+        "[debug] dummy_pipeline emit name_vowel_fraction ",
+        "[debug] dummy_pipeline emit name_dominance ",
+        "[debug] dummy_pipeline emit name_shape ",
     ]
+    assert len(lines) == len(expected_prefixes)
+    assert all(line.startswith(prefix) for line, prefix in zip(lines, expected_prefixes))
