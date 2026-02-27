@@ -1410,105 +1410,114 @@ def run_quicklook2d(
         )
         slice_figs[preset] = fig
     log_pipeline_event(pipeline_log, "quicklook.run.slices", count=len(slice_figs))
+    corners = getattr(smart_ds.raw, "corners", None)
+    can_shell = bool(getattr(corners, "ndim", 0) == 2 and corners.shape[1] >= 8)
 
-    shell_fig, shell_axs, diagnostics = quicklook_shell_figure(
-        smart_ds,
-        radii,
-        body_radius_m=body_radius_m,
-        n_polar=n_polar,
-        n_azimuth=n_azimuth,
-        method=method,
-        star_mass_kg=star_mass_kg,
-    )
-
+    shell_fig = None
+    diagnostics = {}
     radius_figs = {}
-    for mode in radius_modes:
-        fig, _axs = plot_radius_quicklook(
-            smart_ds,
-            fields=radius_fields,
-            preset=None if radius_fields is not None else radius_preset,
-            mode=mode,
-        )
-        radius_figs[mode] = fig
-    log_pipeline_event(pipeline_log, "quicklook.run.radius", count=len(radius_figs))
-
     orbit_figs = {}
     orbit_results = {}
-    for radius in orbit_radii:
-        fig, _axs, result = orbit_local_comparison_figure(
+    if can_shell:
+        shell_fig, _shell_axs, diagnostics = quicklook_shell_figure(
             smart_ds,
-            radius,
+            radii,
             body_radius_m=body_radius_m,
-            n_points=orbit_n_points,
-            plane=orbit_plane,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
             method=method,
-            shell_n_polar=n_polar,
-            shell_n_azimuth=n_azimuth,
+            star_mass_kg=star_mass_kg,
         )
-        key = f"r{float(radius):g}_{orbit_plane}"
-        orbit_figs[key] = fig
-        orbit_results[key] = result
-    for spec in orbit_specs:
-        fig, _axs, result = orbit_local_comparison_figure(
-            smart_ds,
-            spec,
-            body_radius_m=body_radius_m,
-            n_points=orbit_n_points,
-            plane=orbit_plane,
-            method=method,
-            shell_n_polar=n_polar,
-            shell_n_azimuth=n_azimuth,
-        )
-        if isinstance(spec, dict):
-            label = spec.get("label")
-            if label:
-                key = str(label)
-            else:
-                a = float(spec.get("semi_major_axis", spec.get("a", np.nan)))
-                e = float(spec.get("eccentricity", 0.0))
-                p = str(spec.get("plane", orbit_plane))
-                key = f"a{a:g}_e{e:g}_{p}"
-        else:
-            key = f"orbit_{len(orbit_figs)}"
-        orbit_figs[key] = fig
-        orbit_results[key] = result
-    for spec in orbit_surface_specs:
-        if isinstance(spec, dict):
-            spec_dict = dict(spec)
-            label = spec_dict.pop("label", None)
-        else:
-            spec_dict = spec
-            label = None
-        if label is None:
+
+        for mode in radius_modes:
+            fig, _axs = plot_radius_quicklook(
+                smart_ds,
+                fields=radius_fields,
+                preset=None if radius_fields is not None else radius_preset,
+                mode=mode,
+            )
+            radius_figs[mode] = fig
+        log_pipeline_event(pipeline_log, "quicklook.run.radius", count=len(radius_figs))
+
+        for radius in orbit_radii:
+            fig, _axs, result = orbit_local_comparison_figure(
+                smart_ds,
+                radius,
+                body_radius_m=body_radius_m,
+                n_points=orbit_n_points,
+                plane=orbit_plane,
+                method=method,
+                shell_n_polar=n_polar,
+                shell_n_azimuth=n_azimuth,
+            )
+            key = f"r{float(radius):g}_{orbit_plane}"
+            orbit_figs[key] = fig
+            orbit_results[key] = result
+        for spec in orbit_specs:
+            fig, _axs, result = orbit_local_comparison_figure(
+                smart_ds,
+                spec,
+                body_radius_m=body_radius_m,
+                n_points=orbit_n_points,
+                plane=orbit_plane,
+                method=method,
+                shell_n_polar=n_polar,
+                shell_n_azimuth=n_azimuth,
+            )
             if isinstance(spec, dict):
-                a = float(spec.get("semi_major_axis", spec.get("a", np.nan)))
-                e = float(spec.get("eccentricity", 0.0))
-                label = f"a{a:g}_e{e:g}_surface"
+                label = spec.get("label")
+                if label:
+                    key = str(label)
+                else:
+                    a = float(spec.get("semi_major_axis", spec.get("a", np.nan)))
+                    e = float(spec.get("eccentricity", 0.0))
+                    p = str(spec.get("plane", orbit_plane))
+                    key = f"a{a:g}_e{e:g}_{p}"
             else:
-                label = f"r{float(spec):g}_surface"
-        groups = orbit_results.setdefault(str(label), {})
-        if "pressure" in orbit_surface_modes:
-            fig, _axs, result = orbit_surface_pressure_figure(
-                smart_ds,
-                spec_dict,
-                body_radius_m=body_radius_m,
-                n_longitudes=orbit_surface_n_longitudes,
-                method=method,
-                star_mass_kg=star_mass_kg,
-            )
-            orbit_figs[f"{label}_surface_pressure"] = fig
-            groups["surface_pressure"] = result
-        if "torque" in orbit_surface_modes:
-            fig, _axs, result = orbit_surface_torque_figure(
-                smart_ds,
-                spec_dict,
-                body_radius_m=body_radius_m,
-                n_longitudes=orbit_surface_n_longitudes,
-                method=method,
-            )
-            orbit_figs[f"{label}_surface_torque"] = fig
-            groups["surface_torque"] = result
-    log_pipeline_event(pipeline_log, "quicklook.run.orbits", figures=len(orbit_figs), result_groups=len(orbit_results))
+                key = f"orbit_{len(orbit_figs)}"
+            orbit_figs[key] = fig
+            orbit_results[key] = result
+        for spec in orbit_surface_specs:
+            if isinstance(spec, dict):
+                spec_dict = dict(spec)
+                label = spec_dict.pop("label", None)
+            else:
+                spec_dict = spec
+                label = None
+            if label is None:
+                if isinstance(spec, dict):
+                    a = float(spec.get("semi_major_axis", spec.get("a", np.nan)))
+                    e = float(spec.get("eccentricity", 0.0))
+                    label = f"a{a:g}_e{e:g}_surface"
+                else:
+                    label = f"r{float(spec):g}_surface"
+            groups = orbit_results.setdefault(str(label), {})
+            if "pressure" in orbit_surface_modes:
+                fig, _axs, result = orbit_surface_pressure_figure(
+                    smart_ds,
+                    spec_dict,
+                    body_radius_m=body_radius_m,
+                    n_longitudes=orbit_surface_n_longitudes,
+                    method=method,
+                    star_mass_kg=star_mass_kg,
+                )
+                orbit_figs[f"{label}_surface_pressure"] = fig
+                groups["surface_pressure"] = result
+            if "torque" in orbit_surface_modes:
+                fig, _axs, result = orbit_surface_torque_figure(
+                    smart_ds,
+                    spec_dict,
+                    body_radius_m=body_radius_m,
+                    n_longitudes=orbit_surface_n_longitudes,
+                    method=method,
+                )
+                orbit_figs[f"{label}_surface_torque"] = fig
+                groups["surface_torque"] = result
+        log_pipeline_event(pipeline_log, "quicklook.run.orbits", figures=len(orbit_figs), result_groups=len(orbit_results))
+    else:
+        log_pipeline_event(pipeline_log, "quicklook.run.shells_skipped", reason="non_3d_input")
+        log_pipeline_event(pipeline_log, "quicklook.run.radius", count=0)
+        log_pipeline_event(pipeline_log, "quicklook.run.orbits", figures=0, result_groups=0)
 
     out = {
         "slice_figures": slice_figs,
@@ -1523,7 +1532,7 @@ def run_quicklook2d(
         out["saved"] = save_quicklook2d_bundle(
             output_dir,
             shell_fig=shell_fig,
-            diagnostics=diagnostics,
+            diagnostics=diagnostics if can_shell else None,
             orbit_results=orbit_results,
             slice_figures=slice_figs,
             radius_figures=radius_figs,
@@ -1545,8 +1554,13 @@ def process_plt_file(file_path: str | Path) -> None:
     """
     path = Path(file_path)
     output_dir = path.parent / "volume"
-    log.debug("%s", path.name)
+    log.info("%s", path.name)
     smart_ds = SmartDs.from_file(path)
+    corners = getattr(smart_ds, "corners", None)
+    if not (getattr(corners, "ndim", 0) == 2 and corners.shape[1] >= 8):
+        log.info("skip file=%s reason=non_3d_input", path.name)
+        add_record("volume_status %r", "skipped_non_3d")
+        return
     out = run_quicklook2d(
         smart_ds,
         body_radius_m=DEFAULT_STAR_RADIUS_M,

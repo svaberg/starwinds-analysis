@@ -468,6 +468,33 @@ def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
     assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
 
 
+def test_run_quicklook2d_skips_shell_orbit_on_2d_input():
+    sds = SmartDs(make_slice_dataset())
+    sds.add_batsrus_graph()
+
+    out = run_quicklook2d(
+        sds,
+        body_radius_m=SUN_RADIUS_M,
+        radii=[2.0, 4.0],
+        slice_presets=("rho",),
+        radius_modes=("binned",),
+        orbit_radii=(10.0,),
+        orbit_n_points=48,
+        n_polar=8,
+        n_azimuth=16,
+        method="nearest",
+        output_dir=None,
+    )
+
+    assert out["shell_figure"] is None
+    assert out["shell_diagnostics"] == {}
+    assert out["radius_figures"] == {}
+    assert out["orbit_figures"] == {}
+
+    for fig in out["slice_figures"].values():
+        plt.close(fig)
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 @pytest.mark.skipif(not SLICE_PLOTTING_AVAILABLE, reason="slice plotting module not available on this branch")
 def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
