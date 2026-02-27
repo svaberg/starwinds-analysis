@@ -98,7 +98,11 @@ class _PipelineLogFormatter(logging.Formatter):
         """
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
-        out = f"[{record.levelname.lower()}] {source} {message}"
+        if record.name.startswith("starwinds_analysis.pipelines.emit."):
+            origin = f"{source}.{record.funcName}:{record.lineno}"
+        else:
+            origin = source
+        out = f"[{record.levelname.lower()}] {origin} {message}"
         if record.exc_info:
             out = f"{out}\n{self.formatException(record.exc_info)}"
         return out
