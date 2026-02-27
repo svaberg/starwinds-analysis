@@ -119,8 +119,8 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     assert code == 0
     assert lines == [
+        "emit letter_counts",
         "one.plt vowels=2 consonants=1",
         "emit letter_counts",
         "two.PLT vowels=1 consonants=2",
-        "emit letter_counts",
     ]
