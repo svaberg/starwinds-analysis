@@ -24,6 +24,26 @@ Implication:
 - Write the math/operation directly when it is simple.
 - Split code only for real reuse, real boundaries, or real complexity.
 
+## Logging (Good and Bad)
+
+Logging is required for workflow visibility, especially in pipeline and analysis entry points.
+
+Good:
+
+- Add `log.info(...)` at workflow start/end with key context (`n_radii`, `method`, sampling mode, output path).
+- Add `log.debug(...)` for intermediate diagnostics that help debugging but are too verbose for normal runs.
+- Use module loggers (`logging.getLogger(__name__)`) and logger hierarchy (for example child loggers in pipelines).
+- Keep logging focused on boundaries and major steps, not every line.
+- When implementing a TODO in workflow code, add appropriate logging as part of the implementation.
+
+Bad:
+
+- No logging in long-running workflows (hard to debug, no progress visibility).
+- Logging inside hot inner loops or per-point/per-cell operations (log spam and slowdowns).
+- `print(...)` instead of logger usage in library code.
+- Logging large raw arrays directly.
+- Swallowing exceptions without logging context.
+
 ## 0. Library Purity (Hard Boundary)
 
 Rule:
