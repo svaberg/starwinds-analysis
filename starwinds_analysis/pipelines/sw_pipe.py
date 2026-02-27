@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 _EMIT_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
 _SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
 _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
+_DEFAULT_JSON_WARN_BYTES = 10_000_000
 
 
 @dataclass
@@ -298,6 +299,7 @@ def _save_state(
     *,
     processed_keys: set[str],
     computed_results: dict[str, dict[str, object]],
+    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
 ) -> None:
     """
     Save processed keys and computed results to state file.
@@ -309,7 +311,16 @@ def _save_state(
         "processed_files": sorted(processed_keys),
         "computed_results": computed_results,
     }
-    path.write_text(json.dumps(payload, indent=2))
+    payload_text = json.dumps(payload, indent=2)
+    payload_size_bytes = len(payload_text.encode("utf-8"))
+    if int(json_warn_bytes) > 0 and payload_size_bytes >= int(json_warn_bytes):
+        log.warning(
+            "sw-pipe state file is large: %d bytes (threshold=%d bytes) at %s",
+            payload_size_bytes,
+            int(json_warn_bytes),
+            path,
+        )
+    path.write_text(payload_text)
 
 
 def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
@@ -330,6 +341,7 @@ def run_sw_pipe(
     noclobber: bool = False,
     include_file_hash: bool = False,
     array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
     process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
     """
@@ -399,6 +411,7 @@ def run_sw_pipe(
         state_file,
         processed_keys=processed_keys,
         computed_results=results.computed_results,
+        json_warn_bytes=int(json_warn_bytes),
     )
     return results
 
@@ -448,6 +461,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
         help="Offload emitted NumPy arrays at or above this byte size to .npy artifacts.",
     )
+    parser.add_argument(
+        "--json-warn-bytes",
+        type=int,
+        default=_DEFAULT_JSON_WARN_BYTES,
+        help="Warn if .sw-pipe.processed.json is at or above this byte size (0 disables).",
+    )
     return parser
 
 
@@ -472,6 +491,7 @@ def main(argv: list[str] | None = None) -> int:
         noclobber=bool(args.noclobber),
         include_file_hash=bool(args.file_hash),
         array_offload_min_bytes=int(args.array_offload_min_bytes),
+        json_warn_bytes=int(args.json_warn_bytes),
     )
     return 0
 

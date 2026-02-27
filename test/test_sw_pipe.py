@@ -188,6 +188,14 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     assert entry["source"]["module"] == "starwinds_analysis.pipelines.test_pipeline"
 
 
+def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
+    (tmp_path / "alpha.plt").write_text("")
+    with caplog.at_level(logging.WARNING, logger="starwinds_analysis.pipelines.sw_pipe"):
+        run_sw_pipe(tmp_path, json_warn_bytes=1)
+    warnings = [record.getMessage() for record in caplog.records if record.levelno == logging.WARNING]
+    assert any("state file is large" in message for message in warnings)
+
+
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     (tmp_path / "two.PLT").write_text("")
