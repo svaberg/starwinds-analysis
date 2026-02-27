@@ -28,6 +28,7 @@ class SwPipeResults:
     discovered_files: list[Path] = field(default_factory=list)
     processed_files: list[Path] = field(default_factory=list)
     skipped_files: list[Path] = field(default_factory=list)
+    computed_results: dict[str, dict[str, int]] = field(default_factory=dict)
     state_file: Path | None = None
 
     def add_processed_file(self, file_path: str | Path) -> None:
@@ -43,6 +44,16 @@ class SwPipeResults:
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         self.skipped_files.append(Path(file_path))
+
+    def add_computed_result(self, file_key: str, *, vowels: int, consonants: int) -> None:
+        """
+        Store computed per-file demo results.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        self.computed_results[str(file_key)] = {
+            "vowels": int(vowels),
+            "consonants": int(consonants),
+        }
 
 
 def _state_file_path(directory: str | Path) -> Path:
@@ -61,32 +72,67 @@ def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
     return Path(file_path).resolve().relative_to(Path(base_dir).resolve()).as_posix()
 
 
-def _load_processed_keys(state_file: str | Path) -> set[str]:
+def _name_letter_counts(name: str) -> tuple[int, int]:
     """
-    Load processed file keys from state file.
+    Count vowels and consonants in a name string (alphabetic characters only).
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
+    """
+    vowels = 0
+    consonants = 0
+    for ch in str(name).lower():
+        if not ch.isalpha():
+            continue
+        if ch in {"a", "e", "i", "o", "u"}:
+            vowels += 1
+        else:
+            consonants += 1
+    return vowels, consonants
+
+
+def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, int]]]:
+    """
+    Load processed-file keys and computed results from state file.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     path = Path(state_file)
     if not path.exists():
-        return set()
+        return set(), {}
     try:
         payload = json.loads(path.read_text())
     except Exception:
-        return set()
+        return set(), {}
     files = payload.get("processed_files", [])
-    if not isinstance(files, list):
-        return set()
-    return {str(item) for item in files}
+    processed_keys = {str(item) for item in files} if isinstance(files, list) else set()
+    computed = payload.get("computed_results", {})
+    if not isinstance(computed, dict):
+        computed = {}
+    out_computed: dict[str, dict[str, int]] = {}
+    for key, value in computed.items():
+        if not isinstance(value, dict):
+            continue
+        vowels = value.get("vowels")
+        consonants = value.get("consonants")
+        if isinstance(vowels, int) and isinstance(consonants, int):
+            out_computed[str(key)] = {"vowels": vowels, "consonants": consonants}
+    return processed_keys, out_computed
 
 
-def _save_processed_keys(state_file: str | Path, processed_keys: set[str]) -> None:
+def _save_state(
+    state_file: str | Path,
+    *,
+    processed_keys: set[str],
+    computed_results: dict[str, dict[str, int]],
+) -> None:
     """
-    Save processed file keys to state file.
+    Save processed keys and computed results to state file.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     path = Path(state_file)
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"processed_files": sorted(processed_keys)}
+    payload = {
+        "processed_files": sorted(processed_keys),
+        "computed_results": computed_results,
+    }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
 
 
@@ -103,12 +149,15 @@ def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) 
 
 def process_plt_file(file_path: str | Path, results: SwPipeResults) -> None:
     """
-    Placeholder per-file pipeline step; logs only the file name.
+    Placeholder per-file pipeline step with demo computed filename metrics.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     path = Path(file_path)
-    log.info("%s", path.name)
+    vowels, consonants = _name_letter_counts(path.stem)
+    log.info("%s vowels=%d consonants=%d", path.name, vowels, consonants)
     results.add_processed_file(path)
+    file_key = _relative_file_key(path, base_dir=results.directory)
+    results.add_computed_result(file_key, vowels=vowels, consonants=consonants)
 
 
 def run_sw_pipe(
@@ -123,13 +172,14 @@ def run_sw_pipe(
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     state_file = _state_file_path(directory)
-    known_processed = _load_processed_keys(state_file)
+    known_processed, known_computed = _load_state(state_file)
     files = discover_plt_files(directory, recursive=recursive)
     results = SwPipeResults(
         directory=Path(directory),
         recursive=recursive,
         noclobber=noclobber,
         discovered_files=list(files),
+        computed_results=dict(known_computed),
         state_file=state_file,
     )
     log.debug(
@@ -148,7 +198,11 @@ def run_sw_pipe(
             continue
         process_file(file_path, results)
         processed_keys.add(file_key)
-    _save_processed_keys(state_file, processed_keys)
+    _save_state(
+        state_file,
+        processed_keys=processed_keys,
+        computed_results=results.computed_results,
+    )
     return results
 
 
