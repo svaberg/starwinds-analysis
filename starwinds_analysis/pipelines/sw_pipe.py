@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from dataclasses import dataclass, field
 import hashlib
 import json
+from json.encoder import INFINITY, _make_iterencode, encode_basestring, encode_basestring_ascii
 import logging
+import math
 import numpy as np
 from pathlib import Path
 import re
@@ -22,6 +24,64 @@ _RECORD_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
 _SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
 _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
 _DEFAULT_JSON_WARN_BYTES = 10_000_000
+
+
+class _ScientificFloatEncoder(json.JSONEncoder):
+    """
+    JSON encoder that writes finite floats in scientific notation.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+
+    def iterencode(self, o, _one_shot=False):
+        """
+        Encode JSON while formatting finite floats as scientific literals.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        markers = {} if self.check_circular else None
+        _encoder = encode_basestring_ascii if self.ensure_ascii else encode_basestring
+
+        def floatstr(
+            value,
+            allow_nan=self.allow_nan,
+            _inf=INFINITY,
+            _neginf=-INFINITY,
+        ):
+            if math.isnan(value):
+                text = "NaN"
+            elif value == _inf:
+                text = "Infinity"
+            elif value == _neginf:
+                text = "-Infinity"
+            else:
+                return format(value, ".16e")
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: "
+                    + repr(value)
+                )
+            return text
+
+        _iterencode = _make_iterencode(
+            markers,
+            self.default,
+            _encoder,
+            self.indent,
+            floatstr,
+            self.key_separator,
+            self.item_separator,
+            self.sort_keys,
+            self.skipkeys,
+            _one_shot,
+        )
+        return _iterencode(o, 0)
+
+
+def _dumps_json_scientific(payload: object, *, indent: int = 2) -> str:
+    """
+    Dump JSON text with scientific float formatting.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    return json.dumps(payload, indent=indent, cls=_ScientificFloatEncoder)
 
 
 @dataclass
@@ -306,7 +366,7 @@ def _save_state(
         "processed_files": sorted(processed_keys),
         "computed_results": computed_results,
     }
-    payload_text = json.dumps(payload, indent=2)
+    payload_text = _dumps_json_scientific(payload, indent=2)
     payload_size_bytes = len(payload_text.encode("utf-8"))
     if int(json_warn_bytes) > 0 and payload_size_bytes >= int(json_warn_bytes):
         log.warning(
