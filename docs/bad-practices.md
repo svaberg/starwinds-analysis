@@ -44,6 +44,30 @@ Bad:
 - Logging large raw arrays directly.
 - Swallowing exceptions without logging context.
 
+## Pipeline Rule: Keep Pipelines Clean And Simple
+
+Rule:
+
+- Pipeline modules are thin orchestration layers, not implementation layers.
+- Pipelines should mostly call reusable functions from `physics/` and `visualisation/`.
+- Pipeline `process_plt_file(...)` should stay short and user-serviceable:
+  - load input
+  - call reusable compute/plot functions
+  - save outputs
+  - log/record key results
+
+Bad:
+
+- putting physics formulas directly in `pipelines/`
+- putting plotting implementation details directly in `pipelines/`
+- large nested control flow and dict plumbing inside pipeline entry points
+
+Preferred pattern:
+
+- move reusable computations to `physics/`
+- move reusable plotting primitives to `visualisation/`
+- keep pipeline code as composition/orchestration only
+
 ## 0. Library Purity (Hard Boundary)
 
 Rule:
@@ -590,6 +614,7 @@ Rule:
 - Am I sprinkling `rcParams` changes or using unnecessary ALL_CAPS names in a notebook?
 - Am I inventing a one-off data container instead of reusing a shared abstraction?
 - Am I bypassing `SmartDs.resample(...)` without a specific documented reason?
+- Is this pipeline file doing implementation work that belongs in `physics/` or `visualisation/`?
 - Is this function mostly boilerplate around 1-3 lines of actual computation?
 - Am I adding a shim/re-export module instead of fixing internal imports?
 - Am I returning a dict where a clearer return shape should exist?
