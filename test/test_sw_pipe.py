@@ -49,18 +49,26 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert [path.name for path in results.discovered_files] == ["alpha.plt", "beta.plt"]
     assert [path.name for path in results.processed_files] == ["alpha.plt", "beta.plt"]
     assert results.skipped_files == []
-    assert results.computed_results["alpha.plt"] == {
-        "letter_counts": {"vowels": 2, "consonants": 3},
-        "name_vowel_fraction": 0.4,
-        "name_dominance": "consonant-rich",
-        "name_shape": [5, 2, 3],
-    }
-    assert results.computed_results["beta.plt"] == {
-        "letter_counts": {"vowels": 2, "consonants": 2},
-        "name_vowel_fraction": 0.5,
-        "name_dominance": "vowel-rich",
-        "name_shape": [4, 2, 2],
-    }
+    alpha = results.computed_results["alpha.plt"]
+    beta = results.computed_results["beta.plt"]
+    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
+    assert alpha["name_vowel_fraction"] == 0.4
+    assert alpha["name_dominance"] == "consonant-rich"
+    assert alpha["name_shape"] == [5, 2, 3]
+    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
+    assert beta["name_vowel_fraction"] == 0.5
+    assert beta["name_dominance"] == "vowel-rich"
+    assert beta["name_shape"] == [4, 2, 2]
+    alpha_trace = alpha["trace"]
+    beta_trace = beta["trace"]
+    assert alpha_trace["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
+    assert beta_trace["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
+    assert set(alpha_trace["sources"]) == {"letter_counts", "name_vowel_fraction", "name_dominance", "name_shape"}
+    assert set(beta_trace["sources"]) == {"letter_counts", "name_vowel_fraction", "name_dominance", "name_shape"}
+    assert re.match(r"^name_letter_counts:\d+$", alpha_trace["sources"]["letter_counts"])
+    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_vowel_fraction"])
+    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_dominance"])
+    assert re.match(r"^name_profile_payload:\d+$", alpha_trace["sources"]["name_shape"])
     messages = [
         record.getMessage()
         for record in caplog.records
@@ -107,18 +115,18 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
-    assert payload["computed_results"]["alpha.plt"] == {
-        "letter_counts": {"vowels": 2, "consonants": 3},
-        "name_vowel_fraction": 0.4,
-        "name_dominance": "consonant-rich",
-        "name_shape": [5, 2, 3],
-    }
-    assert payload["computed_results"]["nested/beta.plt"] == {
-        "letter_counts": {"vowels": 2, "consonants": 2},
-        "name_vowel_fraction": 0.5,
-        "name_dominance": "vowel-rich",
-        "name_shape": [4, 2, 2],
-    }
+    alpha = payload["computed_results"]["alpha.plt"]
+    beta = payload["computed_results"]["nested/beta.plt"]
+    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
+    assert alpha["name_vowel_fraction"] == 0.4
+    assert alpha["name_dominance"] == "consonant-rich"
+    assert alpha["name_shape"] == [5, 2, 3]
+    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
+    assert beta["name_vowel_fraction"] == 0.5
+    assert beta["name_dominance"] == "vowel-rich"
+    assert beta["name_shape"] == [4, 2, 2]
+    assert alpha["trace"]["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
+    assert beta["trace"]["module"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):

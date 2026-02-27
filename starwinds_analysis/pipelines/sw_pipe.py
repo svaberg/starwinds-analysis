@@ -58,6 +58,19 @@ class _SwEmitHandler(logging.Handler):
             return
         key, value = parsed
         self.target[key] = value
+        trace = self.target.setdefault("trace", {"module": record.name, "sources": {}})
+        if not isinstance(trace, dict):
+            return
+        module_name = trace.get("module")
+        if not isinstance(module_name, str):
+            trace["module"] = record.name
+        elif module_name != record.name:
+            trace["module"] = "multiple"
+        sources = trace.get("sources")
+        if not isinstance(sources, dict):
+            sources = {}
+            trace["sources"] = sources
+        sources[key] = f"{record.funcName}:{int(record.lineno)}"
 
 
 def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
