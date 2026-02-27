@@ -269,6 +269,32 @@ def test_run_sw_pipe_supports_slice_force_3d_flag(tmp_path, monkeypatch):
     assert called == [("alpha.plt", True)]
 
 
+def test_volume_process_skips_non_3d_input(tmp_path, monkeypatch):
+    file_path = tmp_path / "alpha.plt"
+    file_path.write_text("")
+    calls = []
+
+    class Fake2DDataset:
+        corners = np.zeros((1, 4), dtype=int)
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, _path):
+            return Fake2DDataset()
+
+    def fake_run_quicklook2d(*_args, **_kwargs):
+        calls.append(object())
+        return {}
+
+    import starwinds_analysis.pipelines.volume as volume_pipeline
+
+    monkeypatch.setattr(volume_pipeline, "SmartDs", FakeSmartDs)
+    monkeypatch.setattr(volume_pipeline, "run_quicklook2d", fake_run_quicklook2d)
+    volume_pipeline.process_plt_file(file_path)
+
+    assert calls == []
+
+
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     (tmp_path / "two.PLT").write_text("")

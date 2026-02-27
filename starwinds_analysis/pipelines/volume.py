@@ -1545,8 +1545,13 @@ def process_plt_file(file_path: str | Path) -> None:
     """
     path = Path(file_path)
     output_dir = path.parent / "volume"
-    log.debug("%s", path.name)
+    log.info("%s", path.name)
     smart_ds = SmartDs.from_file(path)
+    corners = getattr(smart_ds, "corners", None)
+    if not (getattr(corners, "ndim", 0) == 2 and corners.shape[1] >= 8):
+        log.info("skip file=%s reason=non_3d_input", path.name)
+        add_record("volume_status %r", "skipped_non_3d")
+        return
     out = run_quicklook2d(
         smart_ds,
         body_radius_m=DEFAULT_STAR_RADIUS_M,
