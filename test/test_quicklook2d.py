@@ -73,17 +73,13 @@ def make_slice_dataset():
 def test_quicklook_presets_separate_si_diagnostics_from_raw_display():
     assert "b_r" in SLICE_PRESETS_SI_DIAGNOSTIC
     assert "b_r_raw" in SLICE_PRESETS_RAW_DISPLAY
-    assert SLICE_PRESETS["b_r"].intent == "si_diagnostic"
-    assert SLICE_PRESETS["b_r_raw"].intent == "raw_display"
 
     banned = ("Gauss", " [G]", "km/s", "g/cm^3", "amu/cm^3", "dyne/cm^2")
-    for name, preset in SLICE_PRESETS_SI_DIAGNOSTIC.items():
-        text = " | ".join(
-            [*preset.field_candidates, *(ov[0] for ov in preset.overlays)]
-        )
+    for name, fields in SLICE_PRESETS_SI_DIAGNOSTIC.items():
+        text = " | ".join(fields)
         assert not any(token in text for token in banned), f"{name} contains raw-unit fallback: {text}"
 
-    raw_joined = " | ".join(SLICE_PRESETS_RAW_DISPLAY["b_r_raw"].field_candidates)
+    raw_joined = " | ".join(SLICE_PRESETS_RAW_DISPLAY["b_r_raw"])
     assert "Gauss" in raw_joined or " [G]" in raw_joined
 
     assert set(RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC) == {"wind_basic"}

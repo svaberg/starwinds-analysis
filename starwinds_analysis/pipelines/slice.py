@@ -10,7 +10,6 @@ Core quantity definitions and sampling primitives should live in analysis module
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
 import os
@@ -65,62 +64,46 @@ DEFAULT_STAR_RADIUS_M = 6.957e8
 DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 SLICE_FORCE_3D_ENV = "STARWINDS_SLICE_FORCE_3D"
 
-@dataclass(frozen=True)
-class SlicePreset:
-    field_candidates: tuple[str, ...]
-    overlays: tuple[tuple[str, float, str], ...] = ()
-    intent: str = "si_diagnostic"
-
-SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, SlicePreset] = {
-    "rho": SlicePreset(("Rho [kg/m^3]",), intent="si_diagnostic"),
-    "u": SlicePreset(("U [m/s]",), intent="si_diagnostic"),
-    "b": SlicePreset(("B [T]",), intent="si_diagnostic"),
-    "b_r": SlicePreset(
-        ("B_r [T]",),
-        overlays=(
-            ("B_r [T]", 0.0, "k"),
-            ("Ma [none]", 1.0, "C0"),
-            ("M_A [none]", 1.0, "C2"),
-            ("beta [none]", 1.0, "C3"),
-        ),
-        intent="si_diagnostic",
-    ),
-    "u_r": SlicePreset(
-        ("U_r [m/s]",),
-        overlays=(
-            ("U_r [m/s]", 0.0, "C3"),
-            ("B_r [T]", 0.0, "C2"),
-            ("M_A [none]", 1.0, "C0"),
-            ("beta [none]", 1.0, "C4"),
-        ),
-        intent="si_diagnostic",
-    ),
-    "ti": SlicePreset(("ti [K]",), intent="si_diagnostic"),
-    "te": SlicePreset(("te [K]",), intent="si_diagnostic"),
-    "ma": SlicePreset(("Ma [none]",), overlays=(("Ma [none]", 1.0, "k"),), intent="si_diagnostic"),
-    "m_a": SlicePreset(
-        ("M_A [none]",),
-        overlays=(("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3")),
-        intent="si_diagnostic",
-    ),
-    "beta": SlicePreset(("beta [none]",), overlays=(("beta [none]", 1.0, "k"),), intent="si_diagnostic"),
+SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, tuple[str, ...]] = {
+    "rho": ("Rho [kg/m^3]",),
+    "u": ("U [m/s]",),
+    "b": ("B [T]",),
+    "b_r": ("B_r [T]",),
+    "u_r": ("U_r [m/s]",),
+    "ti": ("ti [K]",),
+    "te": ("te [K]",),
+    "ma": ("Ma [none]",),
+    "m_a": ("M_A [none]",),
+    "beta": ("beta [none]",),
 }
 
-SLICE_PRESETS_RAW_DISPLAY: dict[str, SlicePreset] = {
-    "rho_raw": SlicePreset(("Rho [g/cm^3]", "Rho [amu/cm^3]"), intent="raw_display"),
-    "b_r_raw": SlicePreset(
-        ("B_r [Gauss]", "B_r [G]"),
-        overlays=(("B_r [Gauss]", 0.0, "k"), ("B_r [G]", 0.0, "k")),
-        intent="raw_display",
-    ),
-    "u_r_raw": SlicePreset(
-        ("U_r [km/s]",),
-        overlays=(("U_r [km/s]", 0.0, "C3"), ("B_r [Gauss]", 0.0, "C2"), ("B_r [G]", 0.0, "C2")),
-        intent="raw_display",
-    ),
+SLICE_PRESETS_RAW_DISPLAY: dict[str, tuple[str, ...]] = {
+    "rho_raw": ("Rho [g/cm^3]", "Rho [amu/cm^3]"),
+    "b_r_raw": ("B_r [Gauss]", "B_r [G]"),
+    "u_r_raw": ("U_r [km/s]",),
 }
 
-SLICE_PRESETS: dict[str, SlicePreset] = {
+SLICE_PRESET_OVERLAYS: dict[str, tuple[tuple[str, float, str], ...]] = {
+    "b_r": (
+        ("B_r [T]", 0.0, "k"),
+        ("Ma [none]", 1.0, "C0"),
+        ("M_A [none]", 1.0, "C2"),
+        ("beta [none]", 1.0, "C3"),
+    ),
+    "u_r": (
+        ("U_r [m/s]", 0.0, "C3"),
+        ("B_r [T]", 0.0, "C2"),
+        ("M_A [none]", 1.0, "C0"),
+        ("beta [none]", 1.0, "C4"),
+    ),
+    "ma": (("Ma [none]", 1.0, "k"),),
+    "m_a": (("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3")),
+    "beta": (("beta [none]", 1.0, "k"),),
+    "b_r_raw": (("B_r [Gauss]", 0.0, "k"), ("B_r [G]", 0.0, "k")),
+    "u_r_raw": (("U_r [km/s]", 0.0, "C3"), ("B_r [Gauss]", 0.0, "C2"), ("B_r [G]", 0.0, "C2")),
+}
+
+SLICE_PRESETS: dict[str, tuple[str, ...]] = {
     **SLICE_PRESETS_SI_DIAGNOSTIC,
     **SLICE_PRESETS_RAW_DISPLAY,
 }
@@ -207,28 +190,12 @@ def _load_slice_styles():
         "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
     }
 
-RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC: dict[str, tuple[str, ...]] = {
-    "wind_basic": (
-        "Rho [kg/m^3]",
-        "U [m/s]",
-        "B [T]",
-        "P [Pa]",
-    ),
-}
-
-RADIAL_SUMMARY_PRESETS_RAW_DISPLAY: dict[str, tuple[str, ...]] = {
-    "wind_raw": (
-        "Rho [g/cm^3]",
-        "U_x [km/s]",
-        "B_x [Gauss]",
-        "P [dyne/cm^2]",
-    ),
-}
-
 RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
-    **RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,
-    **RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
+    "wind_basic": ("Rho [kg/m^3]", "U [m/s]", "B [T]", "P [Pa]"),
+    "wind_raw": ("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]"),
 }
+RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC = {"wind_basic": RADIAL_SUMMARY_PRESETS["wind_basic"]}
+RADIAL_SUMMARY_PRESETS_RAW_DISPLAY = {"wind_raw": RADIAL_SUMMARY_PRESETS["wind_raw"]}
 
 def _has_field(ds, name: str) -> bool:
     """
@@ -283,13 +250,13 @@ def plot_slice_quicklook(
             raise ValueError("Provide either field=... or preset=...")
         if preset not in SLICE_PRESETS:
             raise KeyError(f"Unknown preset '{preset}'")
-        preset_cfg = SLICE_PRESETS[preset]
-        field = next((name for name in preset_cfg.field_candidates if _has_field(ds, name)), None)
+        candidates = SLICE_PRESETS[preset]
+        field = next((name for name in candidates if _has_field(ds, name)), None)
         if field is None:
-            joined = ", ".join(preset_cfg.field_candidates)
+            joined = ", ".join(candidates)
             raise KeyError(f"None of the preset fields are available for '{preset}': {joined}")
         if overlays is None:
-            overlays = preset_cfg.overlays
+            overlays = SLICE_PRESET_OVERLAYS.get(preset, ())
 
     if style not in slice_styles:
         raise KeyError(f"Unknown style '{style}'. Valid styles: {sorted(slice_styles)}")
@@ -1724,8 +1691,8 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
 
     saved = {}
     for preset in ("rho", "u", "b"):
-        preset_cfg = SLICE_PRESETS[preset]
-        if not any(_has_field(smart_ds, name) for name in preset_cfg.field_candidates):
+        candidates = SLICE_PRESETS[preset]
+        if not any(_has_field(smart_ds, name) for name in candidates):
             continue
         fig, _axes, _cbar = plot_slice_quicklook(smart_ds, preset=preset, style="cross_quantiles")
         out_path = output_dir / f"{prefix}.slices.{preset}.png"
