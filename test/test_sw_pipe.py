@@ -149,8 +149,8 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     assert code == 0
     assert lines == [
-        "one vowels=2 consonants=1",
-        "two vowels=1 consonants=2",
+        "[info] dummy_pipeline one vowels=2 consonants=1",
+        "[info] dummy_pipeline two vowels=1 consonants=2",
     ]
 
 
@@ -164,8 +164,8 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
 
     assert code == 0
     assert lines == [
-        "emit letter_counts",
-        "emit name_vowel_fraction",
-        "emit name_dominance",
-        "emit name_shape",
+        "[debug] dummy_pipeline emit letter_counts",
+        "[debug] dummy_pipeline emit name_vowel_fraction",
+        "[debug] dummy_pipeline emit name_dominance",
+        "[debug] dummy_pipeline emit name_shape",
     ]

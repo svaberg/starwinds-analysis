@@ -57,6 +57,25 @@ class _SwEmitHandler(logging.Handler):
         self.target[key] = getattr(record, "sw_emit_value", None)
 
 
+class _PipelineLogFormatter(logging.Formatter):
+    """
+    Format pipeline logs as `[level] source message`.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Render one pipeline log record with lowercase level and short source name.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        source = record.name.rsplit(".", 1)[-1]
+        message = record.getMessage()
+        out = f"[{record.levelname.lower()}] {source} {message}"
+        if record.exc_info:
+            out = f"{out}\n{self.formatException(record.exc_info)}"
+        return out
+
+
 def configure_emit_logger(level_name: str = "WARNING") -> None:
     """
     Configure the dedicated emit logger with its own stream handler and level.
@@ -67,7 +86,7 @@ def configure_emit_logger(level_name: str = "WARNING") -> None:
     emit_logger.handlers.clear()
     emit_handler = logging.StreamHandler()
     emit_handler.setLevel(getattr(logging, str(level_name).upper()))
-    emit_handler.setFormatter(logging.Formatter("%(message)s"))
+    emit_handler.setFormatter(_PipelineLogFormatter())
     emit_logger.addHandler(emit_handler)
     emit_logger.propagate = False
 
@@ -242,9 +261,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(
         level=getattr(logging, str(args.log_level).upper()),
-        format="%(message)s",
         force=True,
     )
+    formatter = _PipelineLogFormatter()
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(formatter)
     configure_emit_logger(str(args.emit_log_level))
     run_sw_pipe(
         args.directory,
