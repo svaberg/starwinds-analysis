@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from starwinds_analysis.pipelines.emit_payload import sw_emit_extra
+
 log = logging.getLogger(__name__)
 emit_log = logging.getLogger("starwinds_analysis.pipelines.emit.dummy_pipeline")
 
@@ -16,10 +18,7 @@ def name_letter_counts(name: str) -> tuple[int, int]:
     """
     vowels = sum(ch.lower() in {"a", "e", "i", "o", "u"} for ch in name if ch.isalpha())
     consonants = sum(ch.lower() not in {"a", "e", "i", "o", "u"} for ch in name if ch.isalpha())
-    emit_log.debug(
-        "emit letter_counts",
-        extra={"sw_emit": {"key": "letter_counts", "value": {"vowels": vowels, "consonants": consonants}}},
-    )
+    emit_log.debug("emit letter_counts", extra=sw_emit_extra("letter_counts", {"vowels": vowels, "consonants": consonants}))
     log.info("%s vowels=%d consonants=%d", name, vowels, consonants)
     return vowels, consonants
 
@@ -36,18 +35,9 @@ def name_profile_payload(name: str) -> tuple[float, str, list[int]]:
     vowel_fraction = float(vowel_count / letter_count) if letter_count else 0.0
     dominance = "vowel-rich" if vowel_count >= consonant_count else "consonant-rich"
     shape = [letter_count, vowel_count, consonant_count]
-    emit_log.debug(
-        "emit name_vowel_fraction",
-        extra={"sw_emit": {"key": "name_vowel_fraction", "value": vowel_fraction}},
-    )
-    emit_log.debug(
-        "emit name_dominance",
-        extra={"sw_emit": {"key": "name_dominance", "value": dominance}},
-    )
-    emit_log.debug(
-        "emit name_shape",
-        extra={"sw_emit": {"key": "name_shape", "value": shape}},
-    )
+    emit_log.debug("emit name_vowel_fraction", extra=sw_emit_extra("name_vowel_fraction", vowel_fraction))
+    emit_log.debug("emit name_dominance", extra=sw_emit_extra("name_dominance", dominance))
+    emit_log.debug("emit name_shape", extra=sw_emit_extra("name_shape", shape))
     return vowel_fraction, dominance, shape
 
 
