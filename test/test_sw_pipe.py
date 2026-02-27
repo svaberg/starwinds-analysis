@@ -208,9 +208,9 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
 
     def process_file(_path):
-        emit_log = logging.getLogger("emit.test_pipeline")
-        emit_log.setLevel(logging.DEBUG)
-        emit_log.debug("big_array %r", np.arange(200_000, dtype=np.float64))
+        recorder_log = logging.getLogger("recorder.test_pipeline")
+        recorder_log.setLevel(logging.DEBUG)
+        recorder_log.debug("big_array %r", np.arange(200_000, dtype=np.float64))
 
     results = run_sw_pipe(tmp_path, process_file=process_file, array_offload_min_bytes=1_000_000)
     entry = results.computed_results["alpha.plt"]["big_array"]
@@ -249,22 +249,22 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     ]
 
 
-def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, capsys):
+def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     monkeypatch.chdir(tmp_path)
 
-    code = main(["--log-level", "WARNING", "--emit-log-level", "DEBUG"])
+    code = main(["--log-level", "WARNING", "--record-log-level", "DEBUG"])
     captured = capsys.readouterr()
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
     expected_patterns = [
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
-        r"^\[debug\] emit\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
+        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
     ]
     assert len(lines) >= len(expected_patterns)
     assert all(any(re.match(pattern, line) for line in lines) for pattern in expected_patterns)

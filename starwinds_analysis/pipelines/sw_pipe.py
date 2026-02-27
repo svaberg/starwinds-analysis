@@ -18,7 +18,7 @@ import re
 from typing import Callable
 
 log = logging.getLogger(__name__)
-_EMIT_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
+_RECORD_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
 _SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
 _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
 _DEFAULT_JSON_WARN_BYTES = 10_000_000
@@ -40,9 +40,9 @@ class SwPipeResults:
     state_file: Path | None = None
 
 
-class _SwEmitHandler(logging.Handler):
+class _SwRecordHandler(logging.Handler):
     """
-    Capture `sw_emit` payloads from log records into a per-file results mapping.
+    Capture `sw_record` payloads from log records into a per-file results mapping.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
 
@@ -55,7 +55,7 @@ class _SwEmitHandler(logging.Handler):
         array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
     ):
         """
-        Initialize a handler that writes captured emit payloads into `target`.
+        Initialize a handler that writes captured record payloads into `target`.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         super().__init__(level=logging.NOTSET)
@@ -66,15 +66,15 @@ class _SwEmitHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         """
-        Pull emit payloads from logger template/args and store them by key.
+        Pull record payloads from logger template/args and store them by key.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
-        parsed = _parse_emit_record(record)
+        parsed = _parse_record_payload(record)
         if parsed is None:
             return
         key, value = parsed
-        module_name = record.name[5:] if record.name.startswith("emit.") else record.name
-        normalized = _normalize_emitted_value(
+        module_name = record.name[len("recorder.") :] if record.name.startswith("recorder.") else record.name
+        normalized = _normalize_recorded_value(
             value,
             file_key=self.file_key,
             field_key=key,
@@ -91,14 +91,14 @@ class _SwEmitHandler(logging.Handler):
         }
 
 
-def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
+def _parse_record_payload(record: logging.LogRecord) -> tuple[str, object] | None:
     """
     Parse `<key> ...` logger template and args into a key/value payload.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     if not isinstance(record.msg, str):
         return None
-    match = _EMIT_PATTERN.match(record.msg)
+    match = _RECORD_PATTERN.match(record.msg)
     if match is None:
         return None
     key = match.group(1)
@@ -134,7 +134,7 @@ def _safe_name(text: str) -> str:
 
 def _array_artifact_relpath(file_key: str, field_key: str) -> str:
     """
-    Relative artifact path for one emitted array payload.
+    Relative artifact path for one recorded array payload.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     file_token = _safe_name(str(file_key).replace("/", "__"))
@@ -142,7 +142,7 @@ def _array_artifact_relpath(file_key: str, field_key: str) -> str:
     return f"sw-pipe.artifacts/{file_token}__{field_token}.npy"
 
 
-def _normalize_emitted_value(
+def _normalize_recorded_value(
     value: object,
     *,
     file_key: str,
@@ -151,7 +151,7 @@ def _normalize_emitted_value(
     array_offload_min_bytes: int,
 ) -> object:
     """
-    Convert emitted values into JSON-safe payloads with array offloading support.
+    Convert recorded values into JSON-safe payloads with array offloading support.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     if isinstance(value, np.ndarray):
@@ -166,7 +166,7 @@ def _normalize_emitted_value(
         return value.item()
     if isinstance(value, list):
         return [
-            _normalize_emitted_value(
+            _normalize_recorded_value(
                 item,
                 file_key=file_key,
                 field_key=field_key,
@@ -177,7 +177,7 @@ def _normalize_emitted_value(
         ]
     if isinstance(value, tuple):
         return [
-            _normalize_emitted_value(
+            _normalize_recorded_value(
                 item,
                 file_key=file_key,
                 field_key=field_key,
@@ -188,7 +188,7 @@ def _normalize_emitted_value(
         ]
     if isinstance(value, dict):
         return {
-            str(k): _normalize_emitted_value(
+            str(k): _normalize_recorded_value(
                 v,
                 file_key=file_key,
                 field_key=field_key,
@@ -228,7 +228,7 @@ class _PipelineLogFormatter(logging.Formatter):
         """
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
-        if record.name.startswith("emit."):
+        if record.name.startswith("recorder."):
             origin = f"{record.name}.{record.funcName}:{record.lineno}"
         else:
             origin = source
@@ -238,19 +238,19 @@ class _PipelineLogFormatter(logging.Formatter):
         return out
 
 
-def configure_emit_logger(level_name: str = "WARNING") -> None:
+def configure_recorder_logger(level_name: str = "WARNING") -> None:
     """
-    Configure the dedicated emit logger with its own stream handler and level.
+    Configure the dedicated recorder logger with its own stream handler and level.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    emit_logger = logging.getLogger("emit")
-    emit_logger.setLevel(logging.DEBUG)
-    emit_logger.handlers.clear()
-    emit_handler = logging.StreamHandler()
-    emit_handler.setLevel(getattr(logging, str(level_name).upper()))
-    emit_handler.setFormatter(_PipelineLogFormatter())
-    emit_logger.addHandler(emit_handler)
-    emit_logger.propagate = False
+    recorder_logger = logging.getLogger("recorder")
+    recorder_logger.setLevel(logging.DEBUG)
+    recorder_logger.handlers.clear()
+    recorder_handler = logging.StreamHandler()
+    recorder_handler.setLevel(getattr(logging, str(level_name).upper()))
+    recorder_handler.setFormatter(_PipelineLogFormatter())
+    recorder_logger.addHandler(recorder_handler)
+    recorder_logger.propagate = False
 
 
 def _state_file_path(directory: str | Path) -> Path:
@@ -365,8 +365,8 @@ def run_sw_pipe(
         noclobber,
     )
     processed_keys = set(known_processed)
-    emit_logger = logging.getLogger("emit")
-    emit_logger.setLevel(logging.DEBUG)
+    recorder_logger = logging.getLogger("recorder")
+    recorder_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)
@@ -382,21 +382,21 @@ def run_sw_pipe(
         }
         if include_file_hash:
             file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
-        emit_handler = _SwEmitHandler(
+        recorder_handler = _SwRecordHandler(
             file_results,
             file_key=file_key,
             artifacts_root=artifacts_root,
             array_offload_min_bytes=array_offload_min_bytes,
         )
-        emit_logger.addHandler(emit_handler)
+        recorder_logger.addHandler(recorder_handler)
         try:
             process_file(file_path)
         finally:
             meta = file_results.get("meta")
             if isinstance(meta, dict):
                 meta["end_time_utc"] = _utc_now_iso()
-            emit_logger.removeHandler(emit_handler)
-            emit_handler.close()
+            recorder_logger.removeHandler(recorder_handler)
+            recorder_handler.close()
         if file_results:
             results.computed_results[file_key] = file_results
         else:
@@ -436,10 +436,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Logging level (default: INFO).",
     )
     parser.add_argument(
-        "--emit-log-level",
+        "--record-log-level",
         default="WARNING",
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
-        help="Emit logger level for stdout/stderr stream output (default: WARNING).",
+        help="Recorder logger level for stdout/stderr stream output (default: WARNING).",
     )
     parser.add_argument(
         "--noclobber",
@@ -455,7 +455,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--array-offload-min-bytes",
         type=int,
         default=_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
-        help="Offload emitted NumPy arrays at or above this byte size to .npy artifacts.",
+        help="Offload recorded NumPy arrays at or above this byte size to .npy artifacts.",
     )
     parser.add_argument(
         "--json-warn-bytes",
@@ -480,7 +480,7 @@ def main(argv: list[str] | None = None) -> int:
     formatter = _PipelineLogFormatter()
     for handler in logging.getLogger().handlers:
         handler.setFormatter(formatter)
-    configure_emit_logger(str(args.emit_log_level))
+    configure_recorder_logger(str(args.record_log_level))
     run_sw_pipe(
         args.directory,
         recursive=bool(args.recursive),
