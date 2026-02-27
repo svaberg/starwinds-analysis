@@ -40,7 +40,7 @@ def open_magnetic_flux_vs_radius(
 ):
     """
     Signed/unsigned magnetic flux on spherical shells.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`,
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`,
       `starwinds_analysis/physics/fluxes.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
@@ -120,7 +120,7 @@ def axisymmetric_open_flux_vs_radius(
 ):
     """
     Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     if sampling != "grid":
         raise ValueError("axisymmetric_open_flux_vs_radius currently requires sampling='grid'")
@@ -190,7 +190,7 @@ def energy_flux_vs_radius(
 ):
     """
     Radial energy flux profile using `E * U_r`.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

@@ -201,7 +201,7 @@ def local_mass_loss_on_circular_orbit(
 ):
     """
     Sample a circular orbit and compute local-vs-shell mass-loss comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -242,7 +242,7 @@ def local_torque_on_circular_orbit(
 ):
     """
     Sample a circular orbit and compute local-vs-shell torque comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -293,7 +293,7 @@ def local_mass_loss_on_elliptic_orbit(
 ):
     """
     Sample an elliptic orbit and compute local-vs-shell mass-loss comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
@@ -348,7 +348,7 @@ def local_torque_on_elliptic_orbit(
 ):
     """
     Sample an elliptic orbit and compute local-vs-shell torque comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

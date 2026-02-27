@@ -155,7 +155,7 @@ def pressure_components_on_circular_orbit(
 ):
     """
     Sample a circular orbit and compute pressure-component diagnostics.
-    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     log.info(
         "pressure_components_on_circular_orbit start: radius=%s, n_points=%d, method=%s, plane=%s",
@@ -216,7 +216,7 @@ def pressure_components_on_elliptic_orbit(
 ):
     """
     Sample an elliptic orbit and compute pressure-component diagnostics.
-    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     log.info(
         "pressure_components_on_elliptic_orbit start: a=%s, e=%s, n_points=%d, method=%s, plane=%s",

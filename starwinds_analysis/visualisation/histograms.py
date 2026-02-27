@@ -25,7 +25,7 @@ def plot_cumulative_hists(
     """
     Cumulative histogram (CDF line) for each field on the provided axes.
     Used by: `examples/smartds_radial_histograms.ipynb`, `examples/planet.py`,
-      `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+      `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
@@ -77,7 +77,7 @@ def plot_vs_radius(
     """
     Scatter raw samples vs radius for one or more fields.
     Used by: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
-      `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+      `examples/planet.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `examples/earth-xuv-neutrals/earth-
       xuv-neutrals.py`
     """
     axes = np.array(axes).ravel()
@@ -122,7 +122,7 @@ def plot_binned_vs_radius(
     """
     Plot binned radial summaries (mean/median/sum) for one or more fields.
     Used by: `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`,
-      `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-
+      `examples/planet.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `examples/earth-xuv-neutrals/earth-
       xuv-neutrals.py`
     """
     axes = np.array(axes).ravel()
@@ -202,7 +202,7 @@ def plot_radial_hist2d(
 ):
     """
     2D histogram (radius vs field value) as a compact replacement for old "monster" plots.
-    Used by: `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     from matplotlib.colors import LogNorm
 

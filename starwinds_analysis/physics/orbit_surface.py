@@ -309,7 +309,7 @@ def pressure_components_on_orbit_surface(
 ):
     """
     Pressure-component analytics on a surface of revolution around an orbit path.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     log.info(
         "pressure_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_relative=%s",
@@ -438,7 +438,7 @@ def torque_components_on_orbit_surface(
 ):
     """
     Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     log.info(
         "torque_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_pressure=%s",

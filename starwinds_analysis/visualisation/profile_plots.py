@@ -16,7 +16,7 @@ SHELL_HEIGHT_XLABEL = "Height over surface [R]"
 def shell_profile_height(profile) -> np.ndarray:
     """
     Return `height [R]` from a shell-profile dict (fallback from radius).
-    Used by: `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/quicklook2d.py`,
+    Used by: `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`,
       `starwinds_analysis/visualisation/profile_plots.py`
     """
     if "height [R]" in profile:
@@ -37,7 +37,7 @@ def plot_shell_height_series(
 ):
     """
     Generic shell-profile line plot primitive (height on x, chosen quantity on y).
-    Used by: `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/quicklook2d.py`
+    Used by: `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     x = shell_profile_height(profile)
     y = np.array(profile[y_key])
