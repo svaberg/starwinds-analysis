@@ -20,6 +20,8 @@ from pathlib import Path
 import re
 from typing import Callable
 
+from starwinds_analysis.pipelines.orchestration_helpers import log_pipeline_event
+
 log = logging.getLogger(__name__)
 _RECORD_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
 _SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
@@ -451,12 +453,13 @@ def run_sw_pipe(
         computed_results=dict(known_computed),
         state_file=state_file,
     )
-    log.debug(
-        "sw-pipe discovered %d .plt files in %s (recursive=%s, noclobber=%s)",
-        len(files),
-        Path(directory),
-        recursive,
-        noclobber,
+    log_pipeline_event(
+        log,
+        "sw_pipe.discovered",
+        count=len(files),
+        directory=Path(directory),
+        recursive=recursive,
+        noclobber=noclobber,
     )
     processed_keys = set(known_processed)
     recorder_logger = logging.getLogger("recorder")
@@ -466,7 +469,7 @@ def run_sw_pipe(
         file_key = _relative_file_key(file_path, base_dir=directory)
         if noclobber and file_key in known_processed:
             results.skipped_files.append(file_path)
-            log.debug("sw-pipe skipping already processed file %s", file_path.name)
+            log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
             continue
         file_results: dict[str, object] = {
             "meta": {
