@@ -9,14 +9,14 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.pipelines.slice import (
+from starwinds_analysis.pipelines.slice import process_plt_file
+from starwinds_analysis.pipelines.volume import (
     orbit_local_comparison_figure,
     orbit_pressure_figure,
     orbit_surface_pressure_figure,
     orbit_surface_torque_figure,
     plot_radius_quicklook,
     plot_slice_quicklook,
-    process_plt_file,
     quicklook_shell_figure,
     run_quicklook2d,
     save_quicklook2d_bundle,
@@ -359,7 +359,7 @@ def test_save_quicklook2d_bundle_uses_input_filename_prefix_when_prefix_missing(
 def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
     fig, ax = plt.subplots()
     ax.plot([0.0, 1.0], [1.0, 0.0], ",")
-    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.slice.pipeline"):
+    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.volume.pipeline"):
         save_quicklook2d_bundle(
             tmp_path,
             shell_fig=fig,
@@ -413,7 +413,6 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
 def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, caplog):
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("")
-    calls: list[object] = []
 
     class Fake3DDataset:
         corners = np.zeros((1, 8), dtype=int)
@@ -423,16 +422,10 @@ def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, capl
         def from_file(cls, _path):
             return Fake3DDataset()
 
-    def fake_run_quicklook2d(_smart_ds, **_kwargs):
-        calls.append(object())
-        return {}
-
     monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.slice"):
         process_plt_file(file_path)
 
-    assert calls == []
     messages = [record.getMessage() for record in caplog.records]
     assert any("skip file=alpha.plt reason=3d_input" in message for message in messages)
 
