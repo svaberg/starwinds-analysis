@@ -40,13 +40,15 @@ class _SwEmitHandler(logging.Handler):
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
 
-    def __init__(self, target: dict[str, object]):
+    def __init__(self, target: dict[str, object], *, file_name: str, file_key: str):
         """
         Initialize a handler that writes captured emit payloads into `target`.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         super().__init__(level=logging.NOTSET)
         self.target = target
+        self.file_name = file_name
+        self.file_key = file_key
 
     def emit(self, record: logging.LogRecord) -> None:
         """
@@ -64,34 +66,9 @@ class _SwEmitHandler(logging.Handler):
                 "logger": record.name,
                 "function": record.funcName,
                 "line": int(record.lineno),
-                "file": getattr(record, "sw_pipe_file", None),
-                "file_key": getattr(record, "sw_pipe_key", None),
+                "file": self.file_name,
+                "file_key": self.file_key,
             }
-
-
-class _SwPipeContextFilter(logging.Filter):
-    """
-    Attach current file context to emit log records during per-file processing.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-
-    def __init__(self, *, file_name: str, file_key: str):
-        """
-        Initialize static context attached to each matching log record.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        super().__init__()
-        self.file_name = file_name
-        self.file_key = file_key
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        """
-        Add file-name and file-key context fields to the log record.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        record.sw_pipe_file = self.file_name
-        record.sw_pipe_key = self.file_key
-        return True
 
 
 def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
@@ -260,9 +237,7 @@ def run_sw_pipe(
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
         file_results = results.computed_results.setdefault(file_key, {})
-        emit_handler = _SwEmitHandler(file_results)
-        context_filter = _SwPipeContextFilter(file_name=file_path.name, file_key=file_key)
-        emit_handler.addFilter(context_filter)
+        emit_handler = _SwEmitHandler(file_results, file_name=file_path.name, file_key=file_key)
         emit_logger.addHandler(emit_handler)
         try:
             process_file(file_path)
