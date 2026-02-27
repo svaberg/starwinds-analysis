@@ -8,7 +8,12 @@ import numpy as np
 from pathlib import Path
 import re
 
-from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
+from starwinds_analysis.pipelines.dummy_pipeline import (
+    name_codepoints_payload,
+    name_letter_counts,
+    name_profile_payload,
+    process_plt_file,
+)
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
@@ -30,6 +35,11 @@ def test_name_letter_counts_counts_alpha_only():
 def test_name_profile_payload_outputs_float_string_array():
     value = name_profile_payload("alpha")
     assert value == (0.4, "consonant-rich", [5, 2, 3])
+
+
+def test_name_codepoints_payload_outputs_numpy_array():
+    value = name_codepoints_payload("ab")
+    assert np.array_equal(value, np.array([97, 98], dtype=np.int32))
 
 
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
@@ -59,10 +69,12 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert alpha["name_vowel_fraction"]["value"] == 0.4
     assert alpha["name_dominance"]["value"] == "consonant-rich"
     assert alpha["name_shape"]["value"] == [5, 2, 3]
+    assert alpha["name_codepoints"]["value"] == [97, 108, 112, 104, 97]
     assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
     assert beta["name_vowel_fraction"]["value"] == 0.5
     assert beta["name_dominance"]["value"] == "vowel-rich"
     assert beta["name_shape"]["value"] == [4, 2, 2]
+    assert beta["name_codepoints"]["value"] == [98, 101, 116, 97]
     alpha_meta = alpha["meta"]
     beta_meta = beta["meta"]
     assert Path(alpha_meta["input_file"]).is_absolute()
@@ -82,14 +94,16 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         alpha["name_vowel_fraction"],
         alpha["name_dominance"],
         alpha["name_shape"],
+        alpha["name_codepoints"],
         beta["letter_counts"],
         beta["name_vowel_fraction"],
         beta["name_dominance"],
         beta["name_shape"],
+        beta["name_codepoints"],
     ):
         source = entry["source"]
         assert source["module"] == "starwinds_analysis.pipelines.dummy_pipeline"
-        assert source["function"] in {"name_letter_counts", "name_profile_payload"}
+        assert source["function"] in {"name_letter_counts", "name_profile_payload", "name_codepoints_payload"}
         assert isinstance(source["line"], int)
         assert source["line"] > 0
     messages = [
@@ -144,10 +158,12 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert alpha["name_vowel_fraction"]["value"] == 0.4
     assert alpha["name_dominance"]["value"] == "consonant-rich"
     assert alpha["name_shape"]["value"] == [5, 2, 3]
+    assert alpha["name_codepoints"]["value"] == [97, 108, 112, 104, 97]
     assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
     assert beta["name_vowel_fraction"]["value"] == 0.5
     assert beta["name_dominance"]["value"] == "vowel-rich"
     assert beta["name_shape"]["value"] == [4, 2, 2]
+    assert beta["name_codepoints"]["value"] == [98, 101, 116, 97]
     assert Path(alpha["meta"]["input_file"]).name == "alpha.plt"
     assert Path(beta["meta"]["input_file"]).name == "beta.plt"
     assert "start_time_utc" in alpha["meta"]
@@ -226,6 +242,7 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
+        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
     ]
     assert len(lines) == len(expected_patterns)
     assert all(re.match(pattern, line) for line, pattern in zip(lines, expected_patterns))

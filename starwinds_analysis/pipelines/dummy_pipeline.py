@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import numpy as np
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -39,6 +40,16 @@ def name_profile_payload(name: str) -> tuple[float, str, list[int]]:
     return vowel_fraction, dominance, shape
 
 
+def name_codepoints_payload(name: str) -> np.ndarray:
+    """
+    Compute and emit filename code points as a NumPy array.
+    Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`, `test/test_sw_pipe.py`
+    """
+    codepoints = np.array([ord(ch) for ch in name], dtype=np.int32)
+    emit_log.debug("name_codepoints %r", codepoints)
+    return codepoints
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """
     Demo pipeline step for `.plt` files, separate from orchestration.
@@ -49,3 +60,4 @@ def process_plt_file(file_path: str | Path) -> None:
     name = path.stem
     name_letter_counts(name)
     name_profile_payload(name)
+    name_codepoints_payload(name)
