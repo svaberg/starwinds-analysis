@@ -235,10 +235,10 @@ def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
 
 def test_run_sw_pipe_supports_slice_pipeline(tmp_path, monkeypatch):
     (tmp_path / "alpha.plt").write_text("")
-    called: list[str] = []
+    called: list[tuple[str, bool]] = []
 
-    def fake_quicklook_process(path):
-        called.append(Path(path).name)
+    def fake_quicklook_process(path, *, force_3d=False):
+        called.append((Path(path).name, bool(force_3d)))
         recorder = logging.getLogger("recorder.starwinds_analysis.pipelines.slice")
         recorder.debug("quicklook_marker %r", "ok")
 
@@ -247,11 +247,26 @@ def test_run_sw_pipe_supports_slice_pipeline(tmp_path, monkeypatch):
     monkeypatch.setattr(slice_pipeline, "process_plt_file", fake_quicklook_process)
     results = run_sw_pipe(tmp_path, pipeline="slice")
 
-    assert called == ["alpha.plt"]
+    assert called == [("alpha.plt", False)]
     payload = results.computed_results["alpha.plt"]
     assert payload["meta"]["pipeline"] == "slice"
     assert payload["quicklook_marker"]["value"] == "ok"
     assert payload["quicklook_marker"]["source"]["module"] == "starwinds_analysis.pipelines.slice"
+
+
+def test_run_sw_pipe_supports_slice_force_3d_flag(tmp_path, monkeypatch):
+    (tmp_path / "alpha.plt").write_text("")
+    called: list[tuple[str, bool]] = []
+
+    def fake_quicklook_process(path, *, force_3d=False):
+        called.append((Path(path).name, bool(force_3d)))
+
+    import starwinds_analysis.pipelines.slice as slice_pipeline
+
+    monkeypatch.setattr(slice_pipeline, "process_plt_file", fake_quicklook_process)
+    run_sw_pipe(tmp_path, pipeline="slice", force_slice_3d=True)
+
+    assert called == [("alpha.plt", True)]
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):

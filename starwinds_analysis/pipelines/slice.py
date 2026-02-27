@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import logging
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -62,6 +63,7 @@ pipeline_log = log.getChild("pipeline")
 add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
 DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
+SLICE_FORCE_3D_ENV = "STARWINDS_SLICE_FORCE_3D"
 
 @dataclass(frozen=True)
 class SlicePreset:
@@ -122,6 +124,58 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
     **SLICE_PRESETS_SI_DIAGNOSTIC,
     **SLICE_PRESETS_RAW_DISPLAY,
 }
+
+
+def _env_truthy(name: str) -> bool:
+    """
+    Return True when an environment variable is set to a truthy value.
+    Used by: `starwinds_analysis/pipelines/slice.py`
+    """
+    text = os.getenv(name, "").strip().lower()
+    return text in {"1", "true", "yes", "on"}
+
+
+def _is_effectively_constant(values, *, rtol: float = 1.0e-10, atol: float = 1.0e-12) -> bool:
+    """
+    Return True if finite values have negligible span compared with magnitude.
+    Used by: `starwinds_analysis/pipelines/slice.py`
+    """
+    arr = np.ravel(values)
+    finite = np.isfinite(arr)
+    if not np.any(finite):
+        return True
+    finite_values = arr[finite]
+    vmin = np.min(finite_values)
+    vmax = np.max(finite_values)
+    scale = max(abs(vmin), abs(vmax), 1.0)
+    return abs(vmax - vmin) <= (atol + rtol * scale)
+
+
+def _is_slice_input_2d(smart_ds) -> bool:
+    """
+    Detect whether a dataset is effectively planar (2D) for the slice pipeline.
+    Used by: `starwinds_analysis/pipelines/slice.py`
+    """
+    corners = getattr(smart_ds, "corners", None)
+    if getattr(corners, "ndim", 0) == 2:
+        if corners.shape[1] == 4:
+            return True
+        if corners.shape[1] >= 8:
+            return False
+
+    constant_axes = 0
+    for name in ("X [R]", "Y [R]", "Z [R]"):
+        try:
+            values = smart_ds(name)
+        except Exception:
+            continue
+        if _is_effectively_constant(values):
+            constant_axes += 1
+    if constant_axes >= 1:
+        return True
+    if constant_axes == 0 and not hasattr(smart_ds, "corners"):
+        return True
+    return False
 
 def _pipeline_log(message: str, **fields):
     """
@@ -1670,7 +1724,7 @@ def run_quicklook2d(
     return out
 
 
-def process_plt_file(file_path: str | Path) -> None:
+def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> None:
     """
     Per-file slice pipeline step for `sw-pipe`.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_quicklook2d.py`
@@ -1678,7 +1732,13 @@ def process_plt_file(file_path: str | Path) -> None:
     path = Path(file_path)
     output_dir = path.parent / "slice"
     log.debug("%s", path.name)
+    if force_3d is None:
+        force_3d = _env_truthy(SLICE_FORCE_3D_ENV)
     smart_ds = SmartDs.from_file(path)
+    if not _is_slice_input_2d(smart_ds) and not force_3d:
+        log.info("skip file=%s reason=3d_input", path.name)
+        add_record("slice_status %r", "skipped_3d")
+        return
     out = run_quicklook2d(
         smart_ds,
         body_radius_m=DEFAULT_STAR_RADIUS_M,

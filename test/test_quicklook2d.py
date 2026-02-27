@@ -423,6 +423,59 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
     assert not plt.fignum_exists(orbit_fig.number)
 
 
+def test_process_plt_file_skips_3d_inputs_by_default(tmp_path, monkeypatch, caplog):
+    file_path = tmp_path / "alpha.plt"
+    file_path.write_text("")
+    calls: list[object] = []
+
+    class Fake3DDataset:
+        corners = np.zeros((1, 8), dtype=int)
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, _path):
+            return Fake3DDataset()
+
+    def fake_run_quicklook2d(_smart_ds, **_kwargs):
+        calls.append(object())
+        return {}
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
+    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.slice"):
+        process_plt_file(file_path)
+
+    assert calls == []
+    messages = [record.getMessage() for record in caplog.records]
+    assert any("skip file=alpha.plt reason=3d_input" in message for message in messages)
+
+
+def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
+    file_path = tmp_path / "alpha.plt"
+    file_path.write_text("")
+    calls: list[dict[str, object]] = []
+
+    class Fake3DDataset:
+        corners = np.zeros((1, 8), dtype=int)
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, _path):
+            return Fake3DDataset()
+
+    def fake_run_quicklook2d(_smart_ds, **kwargs):
+        calls.append(kwargs)
+        return {}
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
+    process_plt_file(file_path, force_3d=True)
+
+    assert len(calls) == 1
+    assert calls[0]["output_dir"] == (tmp_path / "slice")
+    assert calls[0]["input_file"] == "alpha.plt"
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 @pytest.mark.skipif(not SLICE_PLOTTING_AVAILABLE, reason="slice plotting module not available on this branch")
 def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
