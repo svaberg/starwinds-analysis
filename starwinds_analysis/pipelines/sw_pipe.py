@@ -13,8 +13,6 @@ import logging
 from pathlib import Path
 from typing import Callable
 
-from starwinds_analysis.pipelines.emit_payload import read_sw_emit
-
 log = logging.getLogger(__name__)
 
 
@@ -50,13 +48,13 @@ class _SwEmitHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         """
-        Pull `record.sw_emit` payloads and store them into the target mapping.
+        Pull `record.sw_emit_*` payloads and store them into the target mapping.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
-        payload = read_sw_emit(record)
-        if payload is None:
+        key = getattr(record, "sw_emit_key", None)
+        if not isinstance(key, str):
             return
-        self.target[payload["key"]] = payload["value"]
+        self.target[key] = getattr(record, "sw_emit_value", None)
 
 
 def configure_emit_logger(level_name: str = "WARNING") -> None:
