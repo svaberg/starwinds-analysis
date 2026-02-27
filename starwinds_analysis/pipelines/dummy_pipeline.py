@@ -9,6 +9,7 @@ from starwinds_analysis.pipelines.emit_payload import sw_emit_extra
 
 log = logging.getLogger(__name__)
 emit_log = logging.getLogger("starwinds_analysis.pipelines.emit.dummy_pipeline")
+emit_log.setLevel(logging.DEBUG)
 
 
 def name_letter_counts(name: str) -> tuple[int, int]:

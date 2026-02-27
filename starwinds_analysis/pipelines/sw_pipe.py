@@ -174,28 +174,22 @@ def run_sw_pipe(
     )
     processed_keys = set(known_processed)
     emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
-    original_level = emit_logger.level
-    if emit_logger.getEffectiveLevel() > logging.DEBUG:
-        emit_logger.setLevel(logging.DEBUG)
-    try:
-        for file_path in files:
-            file_key = _relative_file_key(file_path, base_dir=directory)
-            if noclobber and file_key in known_processed:
-                results.skipped_files.append(file_path)
-                log.debug("sw-pipe skipping already processed file %s", file_path.name)
-                continue
-            file_results = results.computed_results.setdefault(file_key, {})
-            emit_handler = _SwEmitHandler(file_results)
-            emit_logger.addHandler(emit_handler)
-            try:
-                process_file(file_path)
-            finally:
-                emit_logger.removeHandler(emit_handler)
-                emit_handler.close()
-            results.processed_files.append(file_path)
-            processed_keys.add(file_key)
-    finally:
-        emit_logger.setLevel(original_level)
+    for file_path in files:
+        file_key = _relative_file_key(file_path, base_dir=directory)
+        if noclobber and file_key in known_processed:
+            results.skipped_files.append(file_path)
+            log.debug("sw-pipe skipping already processed file %s", file_path.name)
+            continue
+        file_results = results.computed_results.setdefault(file_key, {})
+        emit_handler = _SwEmitHandler(file_results)
+        emit_logger.addHandler(emit_handler)
+        try:
+            process_file(file_path)
+        finally:
+            emit_logger.removeHandler(emit_handler)
+            emit_handler.close()
+        results.processed_files.append(file_path)
+        processed_keys.add(file_key)
     _save_state(
         state_file,
         processed_keys=processed_keys,
