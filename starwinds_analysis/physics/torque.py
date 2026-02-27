@@ -93,6 +93,7 @@ def torque_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     area = np.array(shells(area_name))
     magnetic_density = np.array(shells("magnetic_torque_density [N/m]"))
@@ -400,6 +401,7 @@ def surface_torque_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     rho = np.array(shells(rho_name))
     u_xyz = np.stack(

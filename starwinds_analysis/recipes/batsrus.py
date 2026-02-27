@@ -56,18 +56,35 @@ def build_griblet_batsrus_graph(
             build_griblet_spherical_geometry_graph,
         )
 
+        derived_input_names: set[str] = set()
+        for raw_name in vars_list:
+            parsed = _parse_var_name(raw_name)
+            if parsed is None:
+                continue
+            base, unit = parsed
+            match = _UNIT_FACTORS.get(unit)
+            if match is None:
+                derived_input_names.add(raw_name)
+            else:
+                si_unit, _factor = match
+                derived_input_names.add(f"{base} [{si_unit}]")
+        if hasattr(graph, "fields"):
+            derived_input_names.update(graph.fields())
+
         # Include spherical geometry/components in the BATSRUS graph from the start so
         # pointwise recipes can depend on U_r/B_r/U_phi/B_phi without extra setup.
         graph.merge(build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]")))
         graph.merge(
             build_griblet_auto_vector_spherical_components_graph(
-                list(graph.fields()) if hasattr(graph, "fields") else vars_list,
+                sorted(derived_input_names),
                 coord_fields=("X [R]", "Y [R]", "Z [R]"),
                 prefixes=None,
                 components=("r", "theta", "phi"),
             )
         )
-        derived_names = set(graph.fields()) if hasattr(graph, "fields") else set(vars_list)
+        derived_names = set(derived_input_names)
+        if hasattr(graph, "fields"):
+            derived_names.update(graph.fields())
         graph.merge(build_griblet_common_derived_graph(derived_names))
 
     return graph

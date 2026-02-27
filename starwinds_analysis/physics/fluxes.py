@@ -71,6 +71,7 @@ def open_magnetic_flux_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     bx = np.array(shells(bx_name))
     by = np.array(shells(by_name))
@@ -236,6 +237,7 @@ def energy_flux_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     area = np.array(shells(area_name))
 

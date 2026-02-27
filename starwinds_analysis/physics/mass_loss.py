@@ -70,6 +70,7 @@ def mass_loss_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     area = np.array(shells(area_name))
 
