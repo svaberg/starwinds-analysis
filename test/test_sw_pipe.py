@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from starwinds_analysis.pipelines.sw_pipe import discover_plt_files, main, run_sw_pipe
+from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
 def test_discover_plt_files_finds_only_current_directory(tmp_path):
@@ -21,9 +21,11 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     (tmp_path / "beta.plt").write_text("")
 
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.sw_pipe"):
-        files = run_sw_pipe(tmp_path)
+        results = run_sw_pipe(tmp_path)
 
-    assert [path.name for path in files] == ["alpha.plt", "beta.plt"]
+    assert isinstance(results, SwPipeResults)
+    assert [path.name for path in results.discovered_files] == ["alpha.plt", "beta.plt"]
+    assert [path.name for path in results.processed_files] == ["alpha.plt", "beta.plt"]
     messages = [
         record.getMessage()
         for record in caplog.records

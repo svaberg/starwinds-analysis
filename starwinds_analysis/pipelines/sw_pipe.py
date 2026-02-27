@@ -7,11 +7,31 @@ handler. The current handler is intentionally a placeholder.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 from typing import Callable
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class SwPipeResults:
+    """
+    Minimal results container for one `sw-pipe` run.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
+    """
+    directory: Path
+    recursive: bool
+    discovered_files: list[Path] = field(default_factory=list)
+    processed_files: list[Path] = field(default_factory=list)
+
+    def add_processed_file(self, file_path: str | Path) -> None:
+        """
+        Record a processed file path in the run results.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        self.processed_files.append(Path(file_path))
 
 
 def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
@@ -25,25 +45,32 @@ def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) 
     return sorted(files)
 
 
-def process_plt_file(file_path: str | Path) -> None:
+def process_plt_file(file_path: str | Path, results: SwPipeResults) -> None:
     """
     Placeholder per-file pipeline step; logs only the file name.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
-    log.info("%s", Path(file_path).name)
+    path = Path(file_path)
+    log.info("%s", path.name)
+    results.add_processed_file(path)
 
 
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
     recursive: bool = False,
-    process_file: Callable[[Path], None] = process_plt_file,
-) -> list[Path]:
+    process_file: Callable[[Path, SwPipeResults], None] = process_plt_file,
+) -> SwPipeResults:
     """
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     files = discover_plt_files(directory, recursive=recursive)
+    results = SwPipeResults(
+        directory=Path(directory),
+        recursive=recursive,
+        discovered_files=list(files),
+    )
     log.debug(
         "sw-pipe discovered %d .plt files in %s (recursive=%s)",
         len(files),
@@ -51,8 +78,8 @@ def run_sw_pipe(
         recursive,
     )
     for file_path in files:
-        process_file(file_path)
-    return files
+        process_file(file_path, results)
+    return results
 
 
 def build_parser() -> argparse.ArgumentParser:
