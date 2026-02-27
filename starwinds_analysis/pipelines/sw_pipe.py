@@ -1,7 +1,7 @@
 """THIS FILE contains the generic `sw-pipe` orchestration CLI.
 
 It discovers `.plt` files in a working directory and runs a per-file pipeline
-handler. Built-in handlers are `dummy` and `quicklook2d`.
+handler. Built-in handlers are `dummy`, `slice`, and `volume`.
 """
 
 from __future__ import annotations
@@ -399,8 +399,12 @@ def _resolve_pipeline_process_file(pipeline: str) -> Callable[[Path], None]:
         from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
 
         return process_plt_file
-    if key == "quicklook2d":
-        from starwinds_analysis.pipelines.quicklook2d import process_plt_file
+    if key == "slice":
+        from starwinds_analysis.pipelines.slice import process_plt_file
+
+        return process_plt_file
+    if key == "volume":
+        from starwinds_analysis.pipelines.volume import process_plt_file
 
         return process_plt_file
     raise KeyError(f"Unknown pipeline '{pipeline}'")
@@ -514,7 +518,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--pipeline",
         default="dummy",
-        choices=("dummy", "quicklook2d"),
+        choices=("dummy", "slice", "volume"),
         help="Built-in per-file pipeline to run (default: dummy).",
     )
     parser.add_argument(

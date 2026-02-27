@@ -9,7 +9,7 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.pipelines.quicklook2d import (
+from starwinds_analysis.pipelines.slice import (
     RADIAL_SUMMARY_PRESETS,
     RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
     RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,
@@ -364,7 +364,7 @@ def test_save_quicklook2d_bundle_uses_input_filename_prefix_when_prefix_missing(
 def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
     fig, ax = plt.subplots()
     ax.plot([0.0, 1.0], [1.0, 0.0], ",")
-    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.quicklook2d.pipeline"):
+    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.slice.pipeline"):
         save_quicklook2d_bundle(
             tmp_path,
             shell_fig=fig,
@@ -408,14 +408,14 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
             },
         }
 
-    monkeypatch.setattr("starwinds_analysis.pipelines.quicklook2d.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.quicklook2d.run_quicklook2d", fake_run_quicklook2d)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.slice.run_quicklook2d", fake_run_quicklook2d)
     process_plt_file(file_path)
 
     assert from_file_calls == [file_path]
     assert run_kwargs["body_radius_m"] == 6.957e8
     assert tuple(run_kwargs["radii"]) == (2.0, 4.0, 8.0, 16.0)
-    assert run_kwargs["output_dir"] == (tmp_path / "quicklook2d")
+    assert run_kwargs["output_dir"] == (tmp_path / "slice")
     assert run_kwargs["input_file"] == "alpha.plt"
     assert not plt.fignum_exists(shell_fig.number)
     assert not plt.fignum_exists(slice_fig.number)

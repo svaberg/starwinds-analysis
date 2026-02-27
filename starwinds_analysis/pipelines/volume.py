@@ -1655,11 +1655,11 @@ def run_quicklook2d(
 
 def process_plt_file(file_path: str | Path) -> None:
     """
-    Per-file quicklook2d pipeline step for `sw-pipe`.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_quicklook2d.py`
+    Per-file volume pipeline step for `sw-pipe`.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     path = Path(file_path)
-    output_dir = path.parent / "quicklook2d"
+    output_dir = path.parent / "volume"
     log.debug("%s", path.name)
     smart_ds = SmartDs.from_file(path)
     out = run_quicklook2d(
