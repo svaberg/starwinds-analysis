@@ -59,6 +59,21 @@ class _SwEmitHandler(logging.Handler):
             self.target[key] = payload.get("value")
 
 
+def configure_emit_logger(level_name: str = "WARNING") -> None:
+    """
+    Configure the dedicated emit logger with its own stream handler and level.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
+    emit_logger.setLevel(logging.DEBUG)
+    emit_logger.handlers.clear()
+    emit_handler = logging.StreamHandler()
+    emit_handler.setLevel(getattr(logging, str(level_name).upper()))
+    emit_handler.setFormatter(logging.Formatter("%(message)s"))
+    emit_logger.addHandler(emit_handler)
+    emit_logger.propagate = False
+
+
 def _state_file_path(directory: str | Path) -> Path:
     """
     Default state-file path for processed `.plt` tracking.
@@ -158,10 +173,10 @@ def run_sw_pipe(
         noclobber,
     )
     processed_keys = set(known_processed)
-    capture_logger = logging.getLogger("starwinds_analysis")
-    original_level = capture_logger.level
-    if capture_logger.getEffectiveLevel() > logging.INFO:
-        capture_logger.setLevel(logging.INFO)
+    emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
+    original_level = emit_logger.level
+    if emit_logger.getEffectiveLevel() > logging.DEBUG:
+        emit_logger.setLevel(logging.DEBUG)
     try:
         for file_path in files:
             file_key = _relative_file_key(file_path, base_dir=directory)
@@ -171,16 +186,16 @@ def run_sw_pipe(
                 continue
             file_results = results.computed_results.setdefault(file_key, {})
             emit_handler = _SwEmitHandler(file_results)
-            capture_logger.addHandler(emit_handler)
+            emit_logger.addHandler(emit_handler)
             try:
                 process_file(file_path)
             finally:
-                capture_logger.removeHandler(emit_handler)
+                emit_logger.removeHandler(emit_handler)
                 emit_handler.close()
             results.processed_files.append(file_path)
             processed_keys.add(file_key)
     finally:
-        capture_logger.setLevel(original_level)
+        emit_logger.setLevel(original_level)
     _save_state(
         state_file,
         processed_keys=processed_keys,
@@ -213,6 +228,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Logging level (default: INFO).",
     )
     parser.add_argument(
+        "--emit-log-level",
+        default="WARNING",
+        choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
+        help="Emit logger level for stdout/stderr stream output (default: WARNING).",
+    )
+    parser.add_argument(
         "--noclobber",
         action="store_true",
         help="Skip files already listed in the sw-pipe state file.",
@@ -232,6 +253,7 @@ def main(argv: list[str] | None = None) -> int:
         format="%(message)s",
         force=True,
     )
+    configure_emit_logger(str(args.emit_log_level))
     run_sw_pipe(
         args.directory,
         recursive=bool(args.recursive),

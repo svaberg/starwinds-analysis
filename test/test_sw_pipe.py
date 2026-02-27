@@ -33,11 +33,7 @@ def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.dummy_pipeline"):
         process_plt_file(file_path)
     assert [record.getMessage() for record in caplog.records] == [
-        "emit letter_counts",
         "gamma vowels=2 consonants=3",
-        "emit name_vowel_fraction",
-        "emit name_dominance",
-        "emit name_shape",
     ]
 
 
@@ -45,7 +41,7 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
 
-    with caplog.at_level(logging.INFO):
+    with caplog.at_level(logging.DEBUG):
         results = run_sw_pipe(tmp_path)
 
     assert isinstance(results, SwPipeResults)
@@ -78,8 +74,8 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     emitted = [
         record.getMessage()
         for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.dummy_pipeline"
-        and record.levelno == logging.INFO
+        if record.name == "starwinds_analysis.pipelines.emit"
+        and record.levelno == logging.DEBUG
         and record.getMessage().startswith("emit ")
     ]
     assert emitted == [
@@ -153,13 +149,22 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     assert code == 0
     assert lines == [
-        "emit letter_counts",
         "one vowels=2 consonants=1",
-        "emit name_vowel_fraction",
-        "emit name_dominance",
-        "emit name_shape",
-        "emit letter_counts",
         "two vowels=1 consonants=2",
+    ]
+
+
+def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, capsys):
+    (tmp_path / "one.plt").write_text("")
+    monkeypatch.chdir(tmp_path)
+
+    code = main(["--log-level", "WARNING", "--emit-log-level", "DEBUG"])
+    captured = capsys.readouterr()
+    lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
+
+    assert code == 0
+    assert lines == [
+        "emit letter_counts",
         "emit name_vowel_fraction",
         "emit name_dominance",
         "emit name_shape",
