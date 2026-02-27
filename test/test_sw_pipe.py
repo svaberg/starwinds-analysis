@@ -169,7 +169,7 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     (tmp_path / "nested" / "beta.plt").write_text("")
 
     run_sw_pipe(tmp_path, recursive=True)
-    state_file = tmp_path / ".sw-pipe.processed.json"
+    state_file = tmp_path / "sw-pipe.processed.json"
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]

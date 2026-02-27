@@ -49,7 +49,7 @@ def _write_state(tmp_path):
             },
         },
     }
-    path = tmp_path / ".sw-pipe.processed.json"
+    path = tmp_path / "sw-pipe.processed.json"
     path.write_text(json.dumps(payload, indent=2))
     return path
 

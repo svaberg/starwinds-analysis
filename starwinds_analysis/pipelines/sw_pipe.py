@@ -139,7 +139,7 @@ def _array_artifact_relpath(file_key: str, field_key: str) -> str:
     """
     file_token = _safe_name(str(file_key).replace("/", "__"))
     field_token = _safe_name(field_key)
-    return f".sw-pipe.artifacts/{file_token}__{field_token}.npy"
+    return f"sw-pipe.artifacts/{file_token}__{field_token}.npy"
 
 
 def _normalize_emitted_value(
@@ -160,12 +160,7 @@ def _normalize_emitted_value(
             out_path = Path(artifacts_root).parent / rel_path
             out_path.parent.mkdir(parents=True, exist_ok=True)
             np.save(out_path, value)
-            return {
-                "storage": "npy",
-                "path": rel_path,
-                "dtype": str(value.dtype),
-                "shape": list(value.shape),
-            }
+            return {"path": rel_path}
         return value.tolist()
     if isinstance(value, np.generic):
         return value.item()
@@ -263,7 +258,7 @@ def _state_file_path(directory: str | Path) -> Path:
     Default state-file path for processed `.plt` tracking.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    return Path(directory) / ".sw-pipe.processed.json"
+    return Path(directory) / "sw-pipe.processed.json"
 
 
 def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
@@ -371,7 +366,7 @@ def run_sw_pipe(
     )
     processed_keys = set(known_processed)
     emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
-    artifacts_root = Path(directory) / ".sw-pipe.artifacts"
+    artifacts_root = Path(directory) / "sw-pipe.artifacts"
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)
         if noclobber and file_key in known_processed:
@@ -465,7 +460,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--json-warn-bytes",
         type=int,
         default=_DEFAULT_JSON_WARN_BYTES,
-        help="Warn if .sw-pipe.processed.json is at or above this byte size (0 disables).",
+        help="Warn if sw-pipe.processed.json is at or above this byte size (0 disables).",
     )
     return parser
 
