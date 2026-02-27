@@ -359,7 +359,7 @@ def test_save_quicklook2d_bundle_uses_input_filename_prefix_when_prefix_missing(
 def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
     fig, ax = plt.subplots()
     ax.plot([0.0, 1.0], [1.0, 0.0], ",")
-    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.quicklook_core.pipeline"):
+    with caplog.at_level(logging.DEBUG, logger="starwinds_analysis.pipelines.slice.pipeline"):
         save_quicklook2d_bundle(
             tmp_path,
             shell_fig=fig,
