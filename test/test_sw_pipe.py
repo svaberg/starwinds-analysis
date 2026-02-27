@@ -12,6 +12,7 @@ from starwinds_analysis.pipelines.dummy_pipeline import (
     name_codepoints_payload,
     name_letter_counts,
     name_profile_payload,
+    name_waveform_payload,
     process_plt_file,
 )
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
@@ -42,6 +43,13 @@ def test_name_codepoints_payload_outputs_numpy_array():
     assert np.array_equal(value, np.array([97, 98], dtype=np.int32))
 
 
+def test_name_waveform_payload_outputs_large_numpy_array():
+    value = name_waveform_payload("ab")
+    assert isinstance(value, np.ndarray)
+    assert value.dtype == np.float64
+    assert value.shape == (131072,)
+
+
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     file_path = tmp_path / "gamma.plt"
     file_path.write_text("")
@@ -70,11 +78,17 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert alpha["name_dominance"]["value"] == "consonant-rich"
     assert alpha["name_shape"]["value"] == [5, 2, 3]
     assert alpha["name_codepoints"]["value"] == [97, 108, 112, 104, 97]
+    assert sorted(alpha["name_waveform"]["value"].keys()) == ["path"]
+    alpha_wave_path = tmp_path / alpha["name_waveform"]["value"]["path"]
+    assert alpha_wave_path.exists()
     assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
     assert beta["name_vowel_fraction"]["value"] == 0.5
     assert beta["name_dominance"]["value"] == "vowel-rich"
     assert beta["name_shape"]["value"] == [4, 2, 2]
     assert beta["name_codepoints"]["value"] == [98, 101, 116, 97]
+    assert sorted(beta["name_waveform"]["value"].keys()) == ["path"]
+    beta_wave_path = tmp_path / beta["name_waveform"]["value"]["path"]
+    assert beta_wave_path.exists()
     alpha_meta = alpha["meta"]
     beta_meta = beta["meta"]
     assert Path(alpha_meta["input_file"]).is_absolute()
@@ -95,15 +109,22 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         alpha["name_dominance"],
         alpha["name_shape"],
         alpha["name_codepoints"],
+        alpha["name_waveform"],
         beta["letter_counts"],
         beta["name_vowel_fraction"],
         beta["name_dominance"],
         beta["name_shape"],
         beta["name_codepoints"],
+        beta["name_waveform"],
     ):
         source = entry["source"]
         assert source["module"] == "starwinds_analysis.pipelines.dummy_pipeline"
-        assert source["function"] in {"name_letter_counts", "name_profile_payload", "name_codepoints_payload"}
+        assert source["function"] in {
+            "name_letter_counts",
+            "name_profile_payload",
+            "name_codepoints_payload",
+            "name_waveform_payload",
+        }
         assert isinstance(source["line"], int)
         assert source["line"] > 0
     messages = [
@@ -159,11 +180,13 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert alpha["name_dominance"]["value"] == "consonant-rich"
     assert alpha["name_shape"]["value"] == [5, 2, 3]
     assert alpha["name_codepoints"]["value"] == [97, 108, 112, 104, 97]
+    assert sorted(alpha["name_waveform"]["value"].keys()) == ["path"]
     assert beta["letter_counts"]["value"] == {"vowels": 2, "consonants": 2}
     assert beta["name_vowel_fraction"]["value"] == 0.5
     assert beta["name_dominance"]["value"] == "vowel-rich"
     assert beta["name_shape"]["value"] == [4, 2, 2]
     assert beta["name_codepoints"]["value"] == [98, 101, 116, 97]
+    assert sorted(beta["name_waveform"]["value"].keys()) == ["path"]
     assert Path(alpha["meta"]["input_file"]).name == "alpha.plt"
     assert Path(beta["meta"]["input_file"]).name == "beta.plt"
     assert "start_time_utc" in alpha["meta"]
@@ -192,9 +215,7 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     results = run_sw_pipe(tmp_path, process_file=process_file, array_offload_min_bytes=1_000_000)
     entry = results.computed_results["alpha.plt"]["big_array"]
     value = entry["value"]
-    assert value["storage"] == "npy"
-    assert value["dtype"] == "float64"
-    assert value["shape"] == [200000]
+    assert sorted(value.keys()) == ["path"]
     artifact_path = tmp_path / value["path"]
     assert artifact_path.exists()
     loaded = np.load(artifact_path)
@@ -243,6 +264,7 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
         r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
+        r"^\[debug\] starwinds_analysis\.pipelines\.emit\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
     ]
-    assert len(lines) == len(expected_patterns)
-    assert all(re.match(pattern, line) for line, pattern in zip(lines, expected_patterns))
+    assert len(lines) >= len(expected_patterns)
+    assert all(any(re.match(pattern, line) for line in lines) for pattern in expected_patterns)

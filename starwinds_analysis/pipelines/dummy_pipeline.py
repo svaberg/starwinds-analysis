@@ -50,6 +50,17 @@ def name_codepoints_payload(name: str) -> np.ndarray:
     return codepoints
 
 
+def name_waveform_payload(name: str) -> np.ndarray:
+    """
+    Compute and emit a large NumPy waveform payload to exercise sidecar output.
+    Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`, `test/test_sw_pipe.py`
+    """
+    phase = float(len(name))
+    waveform = np.linspace(0.0, 2.0 * np.pi, 131_072, dtype=np.float64) + phase
+    emit_log.debug("name_waveform %r", waveform)
+    return waveform
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """
     Demo pipeline step for `.plt` files, separate from orchestration.
@@ -61,3 +72,4 @@ def process_plt_file(file_path: str | Path) -> None:
     name_letter_counts(name)
     name_profile_payload(name)
     name_codepoints_payload(name)
+    name_waveform_payload(name)
