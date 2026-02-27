@@ -62,8 +62,6 @@ This is a heuristic audit, not an automatic delete list. The point is to spot pl
 | `starwinds_analysis/analysis/shells.py` | 15 | `_resample_shell_points` | 2 | 27 |  |
 | `starwinds_analysis/data/samples.py` | 11 | `sample_data_dir` | 1 | 6 | strong-smell |
 | `starwinds_analysis/physics/local_estimates.py` | 14 | `local_mass_loss_estimates` | 1 | 8 |  |
-| `starwinds_analysis/physics/planetary_orbits.py` | 33 | `get_planet_orbit_elements` | 1 | 9 |  |
-| `starwinds_analysis/physics/planetary_orbits.py` | 73 | `planet_orbit_period` | 2 | 7 |  |
 | `starwinds_analysis/physics/pressure.py` | 13 | `magnetic_pressure` | 1 | 6 |  |
 | `starwinds_analysis/physics/pressure.py` | 20 | `ram_pressure` | 1 | 7 |  |
 | `starwinds_analysis/pipelines/quicklook2d.py` | 131 | `_load_slice_styles` | 2 | 24 |  |

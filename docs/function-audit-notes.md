@@ -109,10 +109,8 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 - `orbital_velocity`: Vis-viva orbital speed. Used in `test/test_orbit_analysis.py`.
 
 ## `starwinds_analysis/physics/planetary_orbits.py`
-- `PlanetOrbitElements` (class): PlanetOrbitElements class. Used by planet orbit preset helpers and quicklook orbit setup.
-- `get_planet_orbit_elements`: Return named planet orbital elements from the built-in preset table. Used in `test/test_planetary_orbits.py`, `starwinds_analysis/physics/planetary_orbits.py`.
-- `planet_orbit_spec`: Build a `run_quicklook2d` orbit spec dict for a named planet, in stellar radii. Used in `test/test_planetary_orbits.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `planet_orbit_period`: Keplerian period for a named planet around a star of mass `star_mass_kg`. Used in `test/test_planetary_orbits.py`.
+- `PlanetOrbitElements` (class): Typed container for orbital constants in the built-in table. Used in `test/test_planetary_orbits.py`, `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+- `SOLAR_SYSTEM_PLANETS` (constant): Built-in orbital constant table used directly by quicklook and tests.
 
 ## `starwinds_analysis/physics/pressure.py`
 - `magnetic_pressure`: Magnetic pressure `B^2 / (2 mu0)` in Pa. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`.

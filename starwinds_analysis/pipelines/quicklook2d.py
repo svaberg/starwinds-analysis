@@ -17,7 +17,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.physics.planetary_orbits import planet_orbit_spec
+from starwinds_analysis.physics.planetary_orbits import SOLAR_SYSTEM_PLANETS
 from starwinds_analysis.physics.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
@@ -1314,26 +1314,42 @@ def run_quicklook2d(
     prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
 
     if orbit_planets:
-        planet_specs = [
-            planet_orbit_spec(
-                name,
-                star_radius_m=body_radius_m,
-                n_points=orbit_n_points,
-                plane=orbit_plane,
+        planet_specs = []
+        for name in orbit_planets:
+            if name not in SOLAR_SYSTEM_PLANETS:
+                raise KeyError(
+                    f"Unknown planet '{name}'. Available: {sorted(SOLAR_SYSTEM_PLANETS)}"
+                )
+            elem = SOLAR_SYSTEM_PLANETS[name]
+            planet_specs.append(
+                {
+                    "label": str(name),
+                    "semi_major_axis": float(elem.semi_major_axis_m / float(body_radius_m)),
+                    "eccentricity": float(elem.eccentricity),
+                    "n_points": int(orbit_n_points),
+                    "sample": "eccentric_anomaly",
+                    "plane": str(orbit_plane),
+                }
             )
-            for name in orbit_planets
-        ]
         orbit_specs = tuple(orbit_specs) + tuple(planet_specs)
     if orbit_surface_planets:
-        planet_surface_specs = [
-            planet_orbit_spec(
-                name,
-                star_radius_m=body_radius_m,
-                n_points=orbit_n_points,
-                plane=orbit_plane,
+        planet_surface_specs = []
+        for name in orbit_surface_planets:
+            if name not in SOLAR_SYSTEM_PLANETS:
+                raise KeyError(
+                    f"Unknown planet '{name}'. Available: {sorted(SOLAR_SYSTEM_PLANETS)}"
+                )
+            elem = SOLAR_SYSTEM_PLANETS[name]
+            planet_surface_specs.append(
+                {
+                    "label": str(name),
+                    "semi_major_axis": float(elem.semi_major_axis_m / float(body_radius_m)),
+                    "eccentricity": float(elem.eccentricity),
+                    "n_points": int(orbit_n_points),
+                    "sample": "eccentric_anomaly",
+                    "plane": str(orbit_plane),
+                }
             )
-            for name in orbit_surface_planets
-        ]
         orbit_surface_specs = tuple(orbit_surface_specs) + tuple(planet_surface_specs)
 
     if slice_ds is None and slice_presets:
