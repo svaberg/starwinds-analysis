@@ -4,7 +4,6 @@ import json
 import logging
 
 from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
-from starwinds_analysis.pipelines.result_context import emit_result
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
@@ -33,13 +32,13 @@ def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     file_path.write_text("")
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.dummy_pipeline"):
         process_plt_file(file_path)
-    assert [record.getMessage() for record in caplog.records] == ["gamma vowels=2 consonants=3"]
-
-
-def test_emit_result_logs_when_no_sink(caplog):
-    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.result_context"):
-        emit_result("unit_test", 1)
-    assert [record.getMessage() for record in caplog.records] == ["emit unit_test (no sink)"]
+    assert [record.getMessage() for record in caplog.records] == [
+        "emit letter_counts",
+        "gamma vowels=2 consonants=3",
+        "emit name_vowel_fraction",
+        "emit name_dominance",
+        "emit name_shape",
+    ]
 
 
 def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
@@ -68,7 +67,9 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     messages = [
         record.getMessage()
         for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.dummy_pipeline" and record.levelno == logging.INFO
+        if record.name == "starwinds_analysis.pipelines.dummy_pipeline"
+        and record.levelno == logging.INFO
+        and "vowels=" in record.getMessage()
     ]
     assert messages == [
         "alpha vowels=2 consonants=3",
@@ -77,7 +78,9 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     emitted = [
         record.getMessage()
         for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.result_context" and record.levelno == logging.INFO
+        if record.name == "starwinds_analysis.pipelines.dummy_pipeline"
+        and record.levelno == logging.INFO
+        and record.getMessage().startswith("emit ")
     ]
     assert emitted == [
         "emit letter_counts",

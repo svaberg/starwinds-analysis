@@ -32,6 +32,33 @@ class SwPipeResults:
     state_file: Path | None = None
 
 
+class _SwEmitHandler(logging.Handler):
+    """
+    Capture `sw_emit` payloads from log records into a per-file results mapping.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+
+    def __init__(self, target: dict[str, object]):
+        """
+        Initialize a handler that writes captured emit payloads into `target`.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        super().__init__(level=logging.NOTSET)
+        self.target = target
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """
+        Pull `record.sw_emit` payloads and store them into the target mapping.
+        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+        """
+        payload = getattr(record, "sw_emit", None)
+        if not isinstance(payload, dict):
+            return
+        key = payload.get("key")
+        if isinstance(key, str):
+            self.target[key] = payload.get("value")
+
+
 def _state_file_path(directory: str | Path) -> Path:
     """
     Default state-file path for processed `.plt` tracking.
@@ -109,8 +136,6 @@ def run_sw_pipe(
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
-    from starwinds_analysis.pipelines.result_context import reset_result_sink, set_result_sink
-
     if process_file is None:
         from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as process_file
 
@@ -133,20 +158,29 @@ def run_sw_pipe(
         noclobber,
     )
     processed_keys = set(known_processed)
-    for file_path in files:
-        file_key = _relative_file_key(file_path, base_dir=directory)
-        if noclobber and file_key in known_processed:
-            results.skipped_files.append(file_path)
-            log.debug("sw-pipe skipping already processed file %s", file_path.name)
-            continue
-        file_results = results.computed_results.setdefault(file_key, {})
-        token = set_result_sink(file_results.__setitem__)
-        try:
-            process_file(file_path)
-        finally:
-            reset_result_sink(token)
-        results.processed_files.append(file_path)
-        processed_keys.add(file_key)
+    capture_logger = logging.getLogger("starwinds_analysis")
+    original_level = capture_logger.level
+    if capture_logger.getEffectiveLevel() > logging.INFO:
+        capture_logger.setLevel(logging.INFO)
+    try:
+        for file_path in files:
+            file_key = _relative_file_key(file_path, base_dir=directory)
+            if noclobber and file_key in known_processed:
+                results.skipped_files.append(file_path)
+                log.debug("sw-pipe skipping already processed file %s", file_path.name)
+                continue
+            file_results = results.computed_results.setdefault(file_key, {})
+            emit_handler = _SwEmitHandler(file_results)
+            capture_logger.addHandler(emit_handler)
+            try:
+                process_file(file_path)
+            finally:
+                capture_logger.removeHandler(emit_handler)
+                emit_handler.close()
+            results.processed_files.append(file_path)
+            processed_keys.add(file_key)
+    finally:
+        capture_logger.setLevel(original_level)
     _save_state(
         state_file,
         processed_keys=processed_keys,
