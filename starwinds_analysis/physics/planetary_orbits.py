@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
 from scipy.constants import au as AU_M
 
 from starwinds_analysis.physics.orbits import orbital_period
@@ -67,7 +68,7 @@ def planet_orbit_spec(
         "plane": str(plane),
     }
     if include_orientation:
-        spec["angle0"] = float(elem.argument_of_periapsis_deg) * 3.141592653589793 / 180.0
+        spec["angle0"] = float(np.deg2rad(elem.argument_of_periapsis_deg))
     return spec
 
 def planet_orbit_period(name: str, *, star_mass_kg: float):
@@ -77,4 +78,3 @@ def planet_orbit_period(name: str, *, star_mass_kg: float):
     """
     elem = get_planet_orbit_elements(name)
     return orbital_period(elem.semi_major_axis_m, star_mass_kg)
-
