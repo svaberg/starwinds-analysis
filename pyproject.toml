@@ -40,6 +40,9 @@ dev = [
 Repository = "https://github.com/yourorg/starwinds-analysis"
 Issues = "https://github.com/yourorg/starwinds-analysis/issues"
 
+[project.scripts]
+sw-pipe = "starwinds_analysis.pipelines.sw_pipe:main"
+
 [tool.setuptools.packages.find]
 include = ["starwinds_analysis*"]
 namespaces = true
