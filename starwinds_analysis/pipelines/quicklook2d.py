@@ -1678,8 +1678,6 @@ def process_plt_file(file_path: str | Path) -> None:
         input_file=path.name,
     )
     saved = out.get("saved", {})
-    files = saved.get("files", {})
-    quicklook_json = files.get("quicklook_json")
     diagnostics = out.get("shell_diagnostics", {})
     mass_loss_profile = diagnostics.get("mass_loss", {})
     radii = np.array(mass_loss_profile.get("radius [R]", []))
@@ -1700,20 +1698,12 @@ def process_plt_file(file_path: str | Path) -> None:
             log.info("wind_mass_loss radius=%gR value=%g kg/s", r_ref, m_ref)
             add_record("mass_loss_radius_R %r", r_ref)
             add_record("mass_loss_value_kg_s %r", m_ref)
-    add_record("quicklook2d_summary_file %r", None if quicklook_json is None else str(quicklook_json))
     add_record(
-        "quicklook2d_saved_files %r",
-        {
-            **{f"figure:{key}": str(value) for key, value in saved.get("figures", {}).items()},
-            **{f"file:{key}": str(value) for key, value in files.items()},
-        },
-    )
-    add_record(
-        "quicklook2d_shell_summary %r",
+        "shell_summary %r",
         summarize_shell_diagnostics(diagnostics),
     )
     add_record(
-        "quicklook2d_shell_profiles %r",
+        "shell_profiles %r",
         shell_profile_payload(diagnostics),
     )
 
