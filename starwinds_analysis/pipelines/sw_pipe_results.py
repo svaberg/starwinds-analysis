@@ -122,16 +122,16 @@ def main(argv: list[str] | None = None) -> int:
         try:
             resolved = _resolve_field_name(str(args.field), available_fields)
         except KeyError:
-            parser.error(f"field '{args.field}' not found")
+            parser.error("field '%s' not found" % args.field)
             return 2
 
         if args.file_key:
             file_entry = computed.get(str(args.file_key))
             if file_entry is None:
-                parser.error(f"file key '{args.file_key}' not found")
+                parser.error("file key '%s' not found" % args.file_key)
                 return 2
             if resolved not in file_entry:
-                parser.error(f"field '{resolved}' not found in file '{args.file_key}'")
+                parser.error("field '%s' not found in file '%s'" % (resolved, args.file_key))
                 return 2
             print(json.dumps(_extract_field_value(file_entry[resolved], with_source=bool(args.with_source)), indent=2))
             return 0
@@ -146,7 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.file_key:
         file_entry = computed.get(str(args.file_key))
         if file_entry is None:
-            parser.error(f"file key '{args.file_key}' not found")
+            parser.error("file key '%s' not found" % args.file_key)
             return 2
         print(json.dumps(file_entry, indent=2))
         return 0
