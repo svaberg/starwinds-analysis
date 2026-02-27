@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
-from starwinds_analysis.pipelines.dummy_pipeline import count_and_emit_letter_counts, process_plt_file
+from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, process_plt_file
 from starwinds_analysis.pipelines.result_context import emit_result
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
@@ -19,8 +19,8 @@ def test_discover_plt_files_finds_only_current_directory(tmp_path):
     assert [path.name for path in files] == ["a.plt", "b.PLT"]
 
 
-def test_count_and_emit_letter_counts_counts_alpha_only():
-    assert count_and_emit_letter_counts("a1-b2") == (1, 1)
+def test_name_letter_counts_counts_alpha_only():
+    assert name_letter_counts("a1-b2") == (1, 1)
 
 
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
@@ -28,7 +28,7 @@ def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     file_path.write_text("")
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.dummy_pipeline"):
         process_plt_file(file_path)
-    assert [record.getMessage() for record in caplog.records] == ["gamma.plt vowels=2 consonants=3"]
+    assert [record.getMessage() for record in caplog.records] == ["gamma vowels=2 consonants=3"]
 
 
 def test_emit_result_logs_when_no_sink(caplog):
@@ -56,8 +56,8 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         if record.name == "starwinds_analysis.pipelines.dummy_pipeline" and record.levelno == logging.INFO
     ]
     assert messages == [
-        "alpha.plt vowels=2 consonants=3",
-        "beta.plt vowels=2 consonants=2",
+        "alpha vowels=2 consonants=3",
+        "beta vowels=2 consonants=2",
     ]
     emitted = [
         record.getMessage()
@@ -120,7 +120,7 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     assert code == 0
     assert lines == [
         "emit letter_counts",
-        "one.plt vowels=2 consonants=1",
+        "one vowels=2 consonants=1",
         "emit letter_counts",
-        "two.PLT vowels=1 consonants=2",
+        "two vowels=1 consonants=2",
     ]
