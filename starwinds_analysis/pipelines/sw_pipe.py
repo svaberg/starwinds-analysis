@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+from functools import partial
 import json
 import logging
 from pathlib import Path
@@ -70,6 +71,20 @@ def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     return Path(file_path).resolve().relative_to(Path(base_dir).resolve()).as_posix()
+
+
+def _capture_letter_counts(results: SwPipeResults, file_key: str, key: str, value: dict[str, int]) -> None:
+    """
+    Capture dummy-pipeline letter counts into run results for the current file.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    if key != "letter_counts":
+        return
+    results.add_computed_result(
+        file_key,
+        vowels=value["vowels"],
+        consonants=value["consonants"],
+    )
 
 
 def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, int]]]:
@@ -135,12 +150,14 @@ def run_sw_pipe(
     *,
     recursive: bool = False,
     noclobber: bool = False,
-    process_file: Callable[[Path, SwPipeResults], None] | None = None,
+    process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
     """
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
+    from starwinds_analysis.pipelines.dummy_pipeline import reset_result_sink, set_result_sink
+
     if process_file is None:
         from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as process_file
 
@@ -169,7 +186,12 @@ def run_sw_pipe(
             results.add_skipped_file(file_path)
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
-        process_file(file_path, results)
+        token = set_result_sink(partial(_capture_letter_counts, results, file_key))
+        try:
+            process_file(file_path)
+        finally:
+            reset_result_sink(token)
+        results.add_processed_file(file_path)
         processed_keys.add(file_key)
     _save_state(
         state_file,
