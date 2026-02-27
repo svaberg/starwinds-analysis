@@ -54,9 +54,14 @@ from starwinds_analysis.visualisation.histograms import (
     plot_radial_hist2d,
     plot_vs_radius,
 )
+from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
 pipeline_log = log.getChild("pipeline")
+# Method for recording structured, machine-ingested pipeline payloads.
+add_record = logging.getLogger(f"recorder.{__name__}").debug
+DEFAULT_STAR_RADIUS_M = 6.957e8
+DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 
 @dataclass(frozen=True)
 class SlicePreset:
@@ -1621,3 +1626,45 @@ def run_quicklook2d(
         )
     _pipeline_log("quicklook.run.done", saved=output_dir is not None)
     return out
+
+
+def process_plt_file(file_path: str | Path) -> None:
+    """
+    Per-file quicklook2d pipeline step for `sw-pipe`.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_quicklook2d.py`
+    """
+    path = Path(file_path)
+    output_dir = path.parent / "quicklook2d"
+    log.info("%s", path.name)
+    smart_ds = SmartDs.from_file(path)
+    out = run_quicklook2d(
+        smart_ds,
+        body_radius_m=DEFAULT_STAR_RADIUS_M,
+        radii=DEFAULT_QUICKLOOK_RADII_R,
+        slice_presets=(),
+        radius_modes=(),
+        orbit_radii=(),
+        orbit_specs=(),
+        orbit_planets=(),
+        orbit_surface_specs=(),
+        orbit_surface_planets=(),
+        output_dir=output_dir,
+        input_file=path.name,
+    )
+    saved = out.get("saved", {})
+    files = saved.get("files", {})
+    quicklook_json = files.get("quicklook_json")
+    add_record("quicklook2d_output_dir %r", str(output_dir))
+    add_record("quicklook2d_summary_file %r", None if quicklook_json is None else str(quicklook_json))
+    add_record("quicklook2d_file_count %r", len(files))
+    add_record("quicklook2d_figure_count %r", len(saved.get("figures", {})))
+
+    for fig in out.get("slice_figures", {}).values():
+        plt.close(fig)
+    shell_fig = out.get("shell_figure")
+    if shell_fig is not None:
+        plt.close(shell_fig)
+    for fig in out.get("radius_figures", {}).values():
+        plt.close(fig)
+    for fig in out.get("orbit_figures", {}).values():
+        plt.close(fig)

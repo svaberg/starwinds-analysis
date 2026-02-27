@@ -1,7 +1,7 @@
 """THIS FILE contains the generic `sw-pipe` orchestration CLI.
 
 It discovers `.plt` files in a working directory and runs a per-file pipeline
-handler. The current handler is intentionally a placeholder.
+handler. Built-in handlers are `dummy` and `quicklook2d`.
 """
 
 from __future__ import annotations
@@ -329,9 +329,27 @@ def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) 
     return sorted(files)
 
 
+def _resolve_pipeline_process_file(pipeline: str) -> Callable[[Path], None]:
+    """
+    Resolve a named built-in pipeline to its per-file process function.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    key = str(pipeline).strip().lower()
+    if key == "dummy":
+        from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
+
+        return process_plt_file
+    if key == "quicklook2d":
+        from starwinds_analysis.pipelines.quicklook2d import process_plt_file
+
+        return process_plt_file
+    raise KeyError(f"Unknown pipeline '{pipeline}'")
+
+
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
+    pipeline: str = "dummy",
     recursive: bool = False,
     noclobber: bool = False,
     include_file_hash: bool = False,
@@ -344,7 +362,10 @@ def run_sw_pipe(
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     if process_file is None:
-        from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as process_file
+        process_file = _resolve_pipeline_process_file(pipeline)
+        process_label = str(pipeline)
+    else:
+        process_label = f"{process_file.__module__}.{process_file.__name__}"
 
     state_file = _state_file_path(directory)
     known_processed, known_computed = _load_state(state_file)
@@ -377,6 +398,7 @@ def run_sw_pipe(
         file_results: dict[str, object] = {
             "meta": {
                 "input_file": str(file_path.resolve()),
+                "pipeline": process_label,
                 "start_time_utc": _utc_now_iso(),
             }
         }
@@ -428,6 +450,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--recursive",
         action="store_true",
         help="Recursively search subdirectories for .plt files.",
+    )
+    parser.add_argument(
+        "--pipeline",
+        default="dummy",
+        choices=("dummy", "quicklook2d"),
+        help="Built-in per-file pipeline to run (default: dummy).",
     )
     parser.add_argument(
         "--log-level",
@@ -483,6 +511,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_recorder_logger(str(args.record_log_level))
     run_sw_pipe(
         args.directory,
+        pipeline=str(args.pipeline),
         recursive=bool(args.recursive),
         noclobber=bool(args.noclobber),
         include_file_hash=bool(args.file_hash),

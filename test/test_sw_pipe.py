@@ -233,6 +233,27 @@ def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
     assert any("state file is large" in message for message in warnings)
 
 
+def test_run_sw_pipe_supports_quicklook2d_pipeline(tmp_path, monkeypatch):
+    (tmp_path / "alpha.plt").write_text("")
+    called: list[str] = []
+
+    def fake_quicklook_process(path):
+        called.append(Path(path).name)
+        recorder = logging.getLogger("recorder.starwinds_analysis.pipelines.quicklook2d")
+        recorder.debug("quicklook_marker %r", "ok")
+
+    import starwinds_analysis.pipelines.quicklook2d as quicklook2d
+
+    monkeypatch.setattr(quicklook2d, "process_plt_file", fake_quicklook_process)
+    results = run_sw_pipe(tmp_path, pipeline="quicklook2d")
+
+    assert called == ["alpha.plt"]
+    payload = results.computed_results["alpha.plt"]
+    assert payload["meta"]["pipeline"] == "quicklook2d"
+    assert payload["quicklook_marker"]["value"] == "ok"
+    assert payload["quicklook_marker"]["source"]["module"] == "starwinds_analysis.pipelines.quicklook2d"
+
+
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     (tmp_path / "two.PLT").write_text("")

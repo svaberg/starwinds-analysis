@@ -22,6 +22,7 @@ from starwinds_analysis.pipelines.quicklook2d import (
     orbit_surface_torque_figure,
     plot_radius_quicklook,
     plot_slice_quicklook,
+    process_plt_file,
     quicklook_shell_figure,
     run_quicklook2d,
     save_quicklook2d_bundle,
@@ -374,6 +375,52 @@ def test_save_quicklook2d_bundle_logs_to_pipeline_logger(tmp_path, caplog):
     assert any("quicklook.saved" in message and "quicklook_json" in message for message in messages)
     assert any("quicklook.bundle.done" in message for message in messages)
     plt.close(fig)
+
+
+def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, monkeypatch):
+    file_path = tmp_path / "alpha.plt"
+    file_path.write_text("")
+    from_file_calls: list[Path] = []
+    run_kwargs: dict[str, object] = {}
+    sentinel_ds = object()
+
+    class FakeSmartDs:
+        @classmethod
+        def from_file(cls, path):
+            from_file_calls.append(Path(path))
+            return sentinel_ds
+
+    shell_fig = plt.figure()
+    slice_fig = plt.figure()
+    radius_fig = plt.figure()
+    orbit_fig = plt.figure()
+
+    def fake_run_quicklook2d(smart_ds, **kwargs):
+        run_kwargs.update(kwargs)
+        return {
+            "slice_figures": {"rho": slice_fig},
+            "shell_figure": shell_fig,
+            "radius_figures": {"binned": radius_fig},
+            "orbit_figures": {"orbit": orbit_fig},
+            "saved": {
+                "figures": {"shells": kwargs["output_dir"] / "alpha.shells.png"},
+                "files": {"quicklook_json": kwargs["output_dir"] / "alpha.quicklook2d.json"},
+            },
+        }
+
+    monkeypatch.setattr("starwinds_analysis.pipelines.quicklook2d.SmartDs", FakeSmartDs)
+    monkeypatch.setattr("starwinds_analysis.pipelines.quicklook2d.run_quicklook2d", fake_run_quicklook2d)
+    process_plt_file(file_path)
+
+    assert from_file_calls == [file_path]
+    assert run_kwargs["body_radius_m"] == 6.957e8
+    assert tuple(run_kwargs["radii"]) == (2.0, 4.0, 8.0, 16.0)
+    assert run_kwargs["output_dir"] == (tmp_path / "quicklook2d")
+    assert run_kwargs["input_file"] == "alpha.plt"
+    assert not plt.fignum_exists(shell_fig.number)
+    assert not plt.fignum_exists(slice_fig.number)
+    assert not plt.fignum_exists(radius_fig.number)
+    assert not plt.fignum_exists(orbit_fig.number)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
