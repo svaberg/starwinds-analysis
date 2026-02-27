@@ -147,10 +147,10 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
 
     assert code == 0
     expected_patterns = [
-        r"^\[debug\] dummy_pipeline emit letter_counts .+",
-        r"^\[debug\] dummy_pipeline emit name_vowel_fraction .+",
-        r"^\[debug\] dummy_pipeline emit name_dominance .+",
-        r"^\[debug\] dummy_pipeline emit name_shape .+",
+        r"^\[debug\] dummy_pipeline letter_counts .+",
+        r"^\[debug\] dummy_pipeline name_vowel_fraction .+",
+        r"^\[debug\] dummy_pipeline name_dominance .+",
+        r"^\[debug\] dummy_pipeline name_shape .+",
     ]
     assert len(lines) == len(expected_patterns)
     assert all(re.match(pattern, line) for line, pattern in zip(lines, expected_patterns))

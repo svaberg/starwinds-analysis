@@ -15,7 +15,7 @@ import re
 from typing import Callable
 
 log = logging.getLogger(__name__)
-_EMIT_PATTERN = re.compile(r"^emit\s+([A-Za-z0-9_]+)\b")
+_EMIT_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
 
 
 @dataclass
@@ -62,7 +62,7 @@ class _SwEmitHandler(logging.Handler):
 
 def _parse_emit_record(record: logging.LogRecord) -> tuple[str, object] | None:
     """
-    Parse `emit <key> ...` logger template and args into a key/value payload.
+    Parse `<key> ...` logger template and args into a key/value payload.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     if not isinstance(record.msg, str):
