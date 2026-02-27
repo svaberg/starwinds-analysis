@@ -1629,7 +1629,7 @@ def run_quicklook2d(
         "slice_figures": slice_figs,
         "shell_figure": shell_fig,
         "shell_axes": shell_axs,
-        "diagnostics": diagnostics,
+        "shell_diagnostics": diagnostics,
         "radius_figures": radius_figs,
         "orbit_figures": orbit_figs,
         "orbit_results": orbit_results,
@@ -1680,7 +1680,7 @@ def process_plt_file(file_path: str | Path) -> None:
     saved = out.get("saved", {})
     files = saved.get("files", {})
     quicklook_json = files.get("quicklook_json")
-    diagnostics = out.get("diagnostics", {})
+    diagnostics = out.get("shell_diagnostics", {})
     mass_loss_profile = diagnostics.get("mass_loss", {})
     radii = np.array(mass_loss_profile.get("radius [R]", []))
     mass_loss = np.array(mass_loss_profile.get("mass_loss [kg/s]", []))

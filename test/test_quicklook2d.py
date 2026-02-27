@@ -444,7 +444,7 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
         star_mass_kg=1.98847e30,
     )
 
-    assert "diagnostics" in out
+    assert "shell_diagnostics" in out
     assert "saved" in out
     assert "slice_figures" in out and len(out["slice_figures"]) == 2
     assert "radius_figures" in out and "binned" in out["radius_figures"]
