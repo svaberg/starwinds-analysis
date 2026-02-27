@@ -48,6 +48,12 @@ from starwinds_analysis.visualisation.profile_plots import (
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.utils import triangles
+from starwinds_analysis.visualisation.slice import (
+    plot_xz_slice_tripcolor_with_cross_quantiles,
+    plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+    plot_xz_slice_tripcolor_with_marginals,
+    plot_xz_slice_with_marginal_points,
+)
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
@@ -71,77 +77,6 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
 DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 SLICE_FORCE_3D_ENV = "STARWINDS_SLICE_FORCE_3D"
-
-
-def _env_truthy(name: str) -> bool:
-    """
-    Return True when an environment variable is set to a truthy value.
-    Used by: `starwinds_analysis/pipelines/slice.py`
-    """
-    text = os.getenv(name, "").strip().lower()
-    return text in {"1", "true", "yes", "on"}
-
-
-def _is_effectively_constant(values, *, rtol: float = 1.0e-10, atol: float = 1.0e-12) -> bool:
-    """
-    Return True if finite values have negligible span compared with magnitude.
-    Used by: `starwinds_analysis/pipelines/slice.py`
-    """
-    arr = np.ravel(values)
-    finite = np.isfinite(arr)
-    if not np.any(finite):
-        return True
-    finite_values = arr[finite]
-    vmin = np.min(finite_values)
-    vmax = np.max(finite_values)
-    scale = max(abs(vmin), abs(vmax), 1.0)
-    return abs(vmax - vmin) <= (atol + rtol * scale)
-
-
-def _is_slice_input_2d(smart_ds) -> bool:
-    """
-    Detect whether a dataset is effectively planar (2D) for the slice pipeline.
-    Used by: `starwinds_analysis/pipelines/slice.py`
-    """
-    corners = getattr(smart_ds, "corners", None)
-    if getattr(corners, "ndim", 0) == 2:
-        if corners.shape[1] == 4:
-            return True
-        if corners.shape[1] >= 8:
-            return False
-
-    constant_axes = 0
-    for name in ("X [R]", "Y [R]", "Z [R]"):
-        try:
-            values = smart_ds(name)
-        except Exception:
-            continue
-        if _is_effectively_constant(values):
-            constant_axes += 1
-    if constant_axes >= 1:
-        return True
-    if constant_axes == 0 and not hasattr(smart_ds, "corners"):
-        return True
-    return False
-
-def _load_slice_styles():
-    """
-    Lazy-import slice plotting styles/helpers only when slice quicklooks are used.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    from starwinds_analysis.visualisation.slice import (
-        plot_xz_slice_tripcolor_with_cross_quantiles,
-        plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-        plot_xz_slice_tripcolor_with_marginals,
-        plot_xz_slice_with_marginal_points,
-    )
-
-    return {
-        "marginals": plot_xz_slice_tripcolor_with_marginals,
-        "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
-        "marginal_points": plot_xz_slice_with_marginal_points,
-        "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-    }
 
 def _has_field(ds, name: str) -> bool:
     """
@@ -189,7 +124,12 @@ def plot_slice_quicklook(
     Thin 2D quicklook wrapper over existing slice plotting helpers.
     Used by: `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    slice_styles = _load_slice_styles()
+    slice_styles = {
+        "marginals": plot_xz_slice_tripcolor_with_marginals,
+        "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
+        "marginal_points": plot_xz_slice_with_marginal_points,
+        "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+    }
 
     if field is None:
         if preset is None:
@@ -1569,9 +1509,37 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
     output_dir = path.parent / "slice"
     log.info("%s", path.name)
     if force_3d is None:
-        force_3d = _env_truthy(SLICE_FORCE_3D_ENV)
+        text = os.getenv(SLICE_FORCE_3D_ENV, "").strip().lower()
+        force_3d = text in {"1", "true", "yes", "on"}
     smart_ds = SmartDs.from_file(path)
-    if not _is_slice_input_2d(smart_ds) and not force_3d:
+
+    corners = getattr(smart_ds, "corners", None)
+    is_2d = None
+    if getattr(corners, "ndim", 0) == 2:
+        if corners.shape[1] == 4:
+            is_2d = True
+        elif corners.shape[1] >= 8:
+            is_2d = False
+    if is_2d is None:
+        constant_axes = 0
+        for name in ("X [R]", "Y [R]", "Z [R]"):
+            try:
+                values = np.ravel(smart_ds(name))
+            except Exception:
+                continue
+            finite = np.isfinite(values)
+            if not np.any(finite):
+                constant_axes += 1
+                continue
+            finite_values = values[finite]
+            vmin = np.min(finite_values)
+            vmax = np.max(finite_values)
+            scale = max(abs(vmin), abs(vmax), 1.0)
+            if abs(vmax - vmin) <= (1.0e-12 + 1.0e-10 * scale):
+                constant_axes += 1
+        is_2d = constant_axes >= 1 or (constant_axes == 0 and not hasattr(smart_ds, "corners"))
+
+    if not is_2d and not force_3d:
         log.info("skip file=%s reason=3d_input", path.name)
         add_record("slice_status %r", "skipped_3d")
         return
