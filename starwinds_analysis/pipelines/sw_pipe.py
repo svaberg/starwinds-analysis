@@ -123,14 +123,16 @@ class _PipelineLogFormatter(logging.Formatter):
         """
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
+        file_name = getattr(record, "sw_pipe_file", None)
+        file_key = getattr(record, "sw_pipe_key", None)
+        context = ""
+        if isinstance(file_name, str) and isinstance(file_key, str):
+            context = f" file={file_name} key={file_key}"
         if ".pipelines.emit." in record.name:
             origin = f"{source}.{record.funcName}:{record.lineno}"
-            file_name = getattr(record, "sw_pipe_file", None)
-            file_key = getattr(record, "sw_pipe_key", None)
-            context = ""
-            if isinstance(file_name, str) and isinstance(file_key, str):
-                context = f" file={file_name} key={file_key}"
             out = f"[{record.levelname.lower()}] {origin}{context} {message}"
+        elif record.name.startswith("starwinds_analysis.pipelines."):
+            out = f"[{record.levelname.lower()}] {source} {message}"
         else:
             out = f"[{record.levelname.lower()}] {source} {message}"
         if record.exc_info:
