@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 log = logging.getLogger(__name__)
-emit_log = logging.getLogger("starwinds_analysis.pipelines.emit")
+emit_log = logging.getLogger("starwinds_analysis.pipelines.emit.dummy_pipeline")
 
 
 def name_letter_counts(name: str) -> tuple[int, int]:

@@ -74,7 +74,7 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     emitted = [
         record.getMessage()
         for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.emit"
+        if record.name == "starwinds_analysis.pipelines.emit.dummy_pipeline"
         and record.levelno == logging.DEBUG
         and record.getMessage().startswith("emit ")
     ]
