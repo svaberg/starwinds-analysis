@@ -8,9 +8,12 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import importlib
+import logging
 import re
 
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 
 def cartesian_to_spherical_angles(x, y, z):
@@ -179,7 +182,7 @@ def register_spherical_geometry_fields(
         lambda ds: np.degrees(np.array(ds.variable(longitude_name))),
         overwrite=True,
     )
-    return {
+    registered = {
         "r": r_name,
         "theta": theta_name,
         "phi": phi_name,
@@ -188,6 +191,7 @@ def register_spherical_geometry_fields(
         "latitude_deg": latitude_deg_name,
         "longitude_deg": longitude_deg_name,
     }
+    log.debug("registered_spherical_geometry_fields %r", registered)
 
 
 def register_vector_spherical_components(
@@ -267,7 +271,7 @@ def auto_register_vector_spherical_components(
             continue
         slot[comp] = name
 
-    created = {}
+    created_prefixes = []
     wanted = set(prefixes) if prefixes is not None else None
     for prefix, info in sorted(by_prefix.items()):
         if wanted is not None and prefix not in wanted:
@@ -275,14 +279,15 @@ def auto_register_vector_spherical_components(
         if not {"x", "y", "z"}.issubset(info):
             continue
         unit = info["unit"]
-        created[prefix] = register_vector_spherical_components(
+        register_vector_spherical_components(
             smart_ds,
             prefix=prefix,
             unit=unit,
             coord_fields=coord_fields,
             register_components=components,
         )
-    return created
+        created_prefixes.append(prefix)
+    log.debug("auto_registered_vector_spherical_components %r", created_prefixes)
 
 
 def build_griblet_spherical_geometry_graph(
