@@ -96,7 +96,13 @@ def _has_field(ds, name: str) -> bool:
 
 def _normalize_overlays(ds, overlays):
     """
-    Normalize overlay specs into a list for quicklook plotting.
+    Convert overlay specs into `(field, level, color)` tuples and drop missing fields.
+
+    Input accepts either:
+    - `(field, level)` -> uses default color `"k"`
+    - `(field, level, color)`
+
+    Only overlays with fields available in `ds` are returned.
     Used by: `starwinds_analysis/pipelines/quicklook2d.py`
     """
     out = []
