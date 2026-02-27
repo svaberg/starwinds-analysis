@@ -72,50 +72,6 @@ DEFAULT_STAR_RADIUS_M = 6.957e8
 DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 SLICE_FORCE_3D_ENV = "STARWINDS_SLICE_FORCE_3D"
 
-SLICE_PRESETS_SI_DIAGNOSTIC: dict[str, tuple[str, ...]] = {
-    "rho": ("Rho [kg/m^3]",),
-    "u": ("U [m/s]",),
-    "b": ("B [T]",),
-    "b_r": ("B_r [T]",),
-    "u_r": ("U_r [m/s]",),
-    "ti": ("ti [K]",),
-    "te": ("te [K]",),
-    "ma": ("Ma [none]",),
-    "m_a": ("M_A [none]",),
-    "beta": ("beta [none]",),
-}
-
-SLICE_PRESETS_RAW_DISPLAY: dict[str, tuple[str, ...]] = {
-    "rho_raw": ("Rho [g/cm^3]", "Rho [amu/cm^3]"),
-    "b_r_raw": ("B_r [Gauss]", "B_r [G]"),
-    "u_r_raw": ("U_r [km/s]",),
-}
-
-SLICE_PRESET_OVERLAYS: dict[str, tuple[tuple[str, float, str], ...]] = {
-    "b_r": (
-        ("B_r [T]", 0.0, "k"),
-        ("Ma [none]", 1.0, "C0"),
-        ("M_A [none]", 1.0, "C2"),
-        ("beta [none]", 1.0, "C3"),
-    ),
-    "u_r": (
-        ("U_r [m/s]", 0.0, "C3"),
-        ("B_r [T]", 0.0, "C2"),
-        ("M_A [none]", 1.0, "C0"),
-        ("beta [none]", 1.0, "C4"),
-    ),
-    "ma": (("Ma [none]", 1.0, "k"),),
-    "m_a": (("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3")),
-    "beta": (("beta [none]", 1.0, "k"),),
-    "b_r_raw": (("B_r [Gauss]", 0.0, "k"), ("B_r [G]", 0.0, "k")),
-    "u_r_raw": (("U_r [km/s]", 0.0, "C3"), ("B_r [Gauss]", 0.0, "C2"), ("B_r [G]", 0.0, "C2")),
-}
-
-SLICE_PRESETS: dict[str, tuple[str, ...]] = {
-    **SLICE_PRESETS_SI_DIAGNOSTIC,
-    **SLICE_PRESETS_RAW_DISPLAY,
-}
-
 
 def _env_truthy(name: str) -> bool:
     """
@@ -187,13 +143,6 @@ def _load_slice_styles():
         "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
     }
 
-RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
-    "wind_basic": ("Rho [kg/m^3]", "U [m/s]", "B [T]", "P [Pa]"),
-    "wind_raw": ("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]"),
-}
-RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC = {"wind_basic": RADIAL_SUMMARY_PRESETS["wind_basic"]}
-RADIAL_SUMMARY_PRESETS_RAW_DISPLAY = {"wind_raw": RADIAL_SUMMARY_PRESETS["wind_raw"]}
-
 def _has_field(ds, name: str) -> bool:
     """
     Check if a SmartDs has a field without raising in quicklook field selection.
@@ -245,15 +194,57 @@ def plot_slice_quicklook(
     if field is None:
         if preset is None:
             raise ValueError("Provide either field=... or preset=...")
-        if preset not in SLICE_PRESETS:
+        candidates = None
+        local_overlays = ()
+        for name, candidate_fields, candidate_overlays in (
+            ("rho", ("Rho [kg/m^3]",), ()),
+            ("u", ("U [m/s]",), ()),
+            ("b", ("B [T]",), ()),
+            (
+                "b_r",
+                ("B_r [T]",),
+                (
+                    ("B_r [T]", 0.0, "k"),
+                    ("Ma [none]", 1.0, "C0"),
+                    ("M_A [none]", 1.0, "C2"),
+                    ("beta [none]", 1.0, "C3"),
+                ),
+            ),
+            (
+                "u_r",
+                ("U_r [m/s]",),
+                (
+                    ("U_r [m/s]", 0.0, "C3"),
+                    ("B_r [T]", 0.0, "C2"),
+                    ("M_A [none]", 1.0, "C0"),
+                    ("beta [none]", 1.0, "C4"),
+                ),
+            ),
+            ("ti", ("ti [K]",), ()),
+            ("te", ("te [K]",), ()),
+            ("ma", ("Ma [none]",), (("Ma [none]", 1.0, "k"),)),
+            ("m_a", ("M_A [none]",), (("M_A [none]", 1.0, "k"), ("beta [none]", 1.0, "C3"))),
+            ("beta", ("beta [none]",), (("beta [none]", 1.0, "k"),)),
+            ("rho_raw", ("Rho [g/cm^3]", "Rho [amu/cm^3]"), ()),
+            ("b_r_raw", ("B_r [Gauss]", "B_r [G]"), (("B_r [Gauss]", 0.0, "k"), ("B_r [G]", 0.0, "k"))),
+            (
+                "u_r_raw",
+                ("U_r [km/s]",),
+                (("U_r [km/s]", 0.0, "C3"), ("B_r [Gauss]", 0.0, "C2"), ("B_r [G]", 0.0, "C2")),
+            ),
+        ):
+            if preset == name:
+                candidates = candidate_fields
+                local_overlays = candidate_overlays
+                break
+        if candidates is None:
             raise KeyError(f"Unknown preset '{preset}'")
-        candidates = SLICE_PRESETS[preset]
         field = next((name for name in candidates if _has_field(ds, name)), None)
         if field is None:
             joined = ", ".join(candidates)
             raise KeyError(f"None of the preset fields are available for '{preset}': {joined}")
         if overlays is None:
-            overlays = SLICE_PRESET_OVERLAYS.get(preset, ())
+            overlays = local_overlays
 
     if style not in slice_styles:
         raise KeyError(f"Unknown style '{style}'. Valid styles: {sorted(slice_styles)}")
@@ -288,9 +279,17 @@ def plot_radius_quicklook(
     if fields is None:
         if preset is None:
             raise ValueError("Provide either fields=... or preset=...")
-        if preset not in RADIAL_SUMMARY_PRESETS:
+        candidates = None
+        for name, candidate_fields in (
+            ("wind_basic", ("Rho [kg/m^3]", "U [m/s]", "B [T]", "P [Pa]")),
+            ("wind_raw", ("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]", "P [dyne/cm^2]")),
+        ):
+            if preset == name:
+                candidates = candidate_fields
+                break
+        if candidates is None:
             raise KeyError(f"Unknown radial preset '{preset}'")
-        fields = tuple(f for f in RADIAL_SUMMARY_PRESETS[preset] if _has_field(ds, f))
+        fields = tuple(f for f in candidates if _has_field(ds, f))
         if not fields:
             raise KeyError(f"No fields from preset '{preset}' are available")
     else:
@@ -1581,8 +1580,11 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
     prefix = _resolve_quicklook_prefix(prefix=None, input_file=path.name)
 
     saved = {}
-    for preset in ("rho", "u", "b"):
-        candidates = SLICE_PRESETS[preset]
+    for preset, candidates in (
+        ("rho", ("Rho [kg/m^3]",)),
+        ("u", ("U [m/s]",)),
+        ("b", ("B [T]",)),
+    ):
         if not any(_has_field(smart_ds, name) for name in candidates):
             continue
         fig, _axes, _cbar = plot_slice_quicklook(smart_ds, preset=preset, style="cross_quantiles")

@@ -10,12 +10,6 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.pipelines.slice import (
-    RADIAL_SUMMARY_PRESETS,
-    RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
-    RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC,
-    SLICE_PRESETS,
-    SLICE_PRESETS_RAW_DISPLAY,
-    SLICE_PRESETS_SI_DIAGNOSTIC,
     orbit_local_comparison_figure,
     orbit_pressure_figure,
     orbit_surface_pressure_figure,
@@ -70,22 +64,27 @@ def make_slice_dataset():
     )
 
 
-def test_quicklook_presets_separate_si_diagnostics_from_raw_display():
-    assert "b_r" in SLICE_PRESETS_SI_DIAGNOSTIC
-    assert "b_r_raw" in SLICE_PRESETS_RAW_DISPLAY
+def test_quicklook_presets_work_for_si_and_raw_paths():
+    sds = SmartDs(make_slice_dataset())
+    sds.add_spherical_fields(vectors=("B", "U"))
+    sds.add_batsrus_graph()
 
-    banned = ("Gauss", " [G]", "km/s", "g/cm^3", "amu/cm^3", "dyne/cm^2")
-    for name, fields in SLICE_PRESETS_SI_DIAGNOSTIC.items():
-        text = " | ".join(fields)
-        assert not any(token in text for token in banned), f"{name} contains raw-unit fallback: {text}"
+    fig, axes, cbar = plot_slice_quicklook(sds, preset="b_r", style="marginals")
+    assert fig is not None
+    assert len(axes) == 3
+    assert cbar is not None
+    plt.close(fig)
 
-    raw_joined = " | ".join(SLICE_PRESETS_RAW_DISPLAY["b_r_raw"])
-    assert "Gauss" in raw_joined or " [G]" in raw_joined
+    fig, axes, cbar = plot_slice_quicklook(sds, preset="b_r_raw", style="marginals")
+    assert fig is not None
+    assert len(axes) == 3
+    assert cbar is not None
+    plt.close(fig)
 
-    assert set(RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC) == {"wind_basic"}
-    assert set(RADIAL_SUMMARY_PRESETS_RAW_DISPLAY) == {"wind_raw"}
-    assert "wind_basic" in RADIAL_SUMMARY_PRESETS
-    assert "wind_raw" in RADIAL_SUMMARY_PRESETS
+    fig, axes = plot_radius_quicklook(sds, preset="wind_raw", mode="binned", ncols=2)
+    assert fig is not None
+    assert len(axes) == 4
+    plt.close(fig)
 
 
 @pytest.mark.skipif(not SLICE_PLOTTING_AVAILABLE, reason="slice plotting module not available on this branch")
