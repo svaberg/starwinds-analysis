@@ -236,7 +236,7 @@ def run_sw_pipe(
             results.skipped_files.append(file_path)
             log.debug("sw-pipe skipping already processed file %s", file_path.name)
             continue
-        file_results = results.computed_results.setdefault(file_key, {})
+        file_results: dict[str, object] = {}
         emit_handler = _SwEmitHandler(file_results, file_name=file_path.name, file_key=file_key)
         emit_logger.addHandler(emit_handler)
         try:
@@ -244,6 +244,10 @@ def run_sw_pipe(
         finally:
             emit_logger.removeHandler(emit_handler)
             emit_handler.close()
+        if file_results:
+            results.computed_results[file_key] = file_results
+        else:
+            results.computed_results.pop(file_key, None)
         results.processed_files.append(file_path)
         processed_keys.add(file_key)
     _save_state(

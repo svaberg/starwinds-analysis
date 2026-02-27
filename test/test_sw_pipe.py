@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 
-from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
+from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
@@ -19,22 +18,13 @@ def test_discover_plt_files_finds_only_current_directory(tmp_path):
     assert [path.name for path in files] == ["a.plt", "b.PLT"]
 
 
-def test_name_letter_counts_counts_alpha_only():
-    assert name_letter_counts("a1-b2") == (1, 1)
-
-
-def test_name_profile_payload_outputs_float_string_array():
-    value = name_profile_payload("alpha")
-    assert value == (0.4, "consonant-rich", [5, 2, 3])
-
-
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     file_path = tmp_path / "gamma.plt"
     file_path.write_text("")
     with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.dummy_pipeline"):
         process_plt_file(file_path)
     assert [record.getMessage() for record in caplog.records] == [
-        "gamma vowels=2 consonants=3",
+        "gamma.plt",
     ]
 
 
@@ -49,68 +39,17 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert [path.name for path in results.discovered_files] == ["alpha.plt", "beta.plt"]
     assert [path.name for path in results.processed_files] == ["alpha.plt", "beta.plt"]
     assert results.skipped_files == []
-    alpha = results.computed_results["alpha.plt"]
-    beta = results.computed_results["beta.plt"]
-    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
-    assert alpha["name_vowel_fraction"] == 0.4
-    assert alpha["name_dominance"] == "consonant-rich"
-    assert alpha["name_shape"] == [5, 2, 3]
-    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
-    assert beta["name_vowel_fraction"] == 0.5
-    assert beta["name_dominance"] == "vowel-rich"
-    assert beta["name_shape"] == [4, 2, 2]
-    for file_key, file_name in (("alpha.plt", "alpha.plt"), ("beta.plt", "beta.plt")):
-        meta = results.computed_results[file_key]["_emit_meta"]
-        assert sorted(meta) == ["letter_counts", "name_dominance", "name_shape", "name_vowel_fraction"]
-        assert meta["letter_counts"]["logger"] == "starwinds_analysis.pipelines.emit.dummy_pipeline"
-        assert meta["letter_counts"]["function"] == "name_letter_counts"
-        assert meta["name_vowel_fraction"]["function"] == "name_profile_payload"
-        assert meta["name_dominance"]["function"] == "name_profile_payload"
-        assert meta["name_shape"]["function"] == "name_profile_payload"
-        assert meta["letter_counts"]["file"] == file_name
-        assert meta["letter_counts"]["file_key"] == file_key
-        assert isinstance(meta["letter_counts"]["line"], int)
+    assert results.computed_results == {}
     messages = [
         record.getMessage()
         for record in caplog.records
         if record.name == "starwinds_analysis.pipelines.dummy_pipeline"
         and record.levelno == logging.INFO
-        and "vowels=" in record.getMessage()
     ]
     assert messages == [
-        "alpha vowels=2 consonants=3",
-        "beta vowels=2 consonants=2",
+        "alpha.plt",
+        "beta.plt",
     ]
-    emitted = [
-        record
-        for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.emit.dummy_pipeline"
-        and record.levelno == logging.DEBUG
-        and record.getMessage().startswith("emit ")
-    ]
-    expected_messages = [
-        "emit letter_counts ",
-        "emit name_vowel_fraction ",
-        "emit name_dominance ",
-        "emit name_shape ",
-        "emit letter_counts ",
-        "emit name_vowel_fraction ",
-        "emit name_dominance ",
-        "emit name_shape ",
-    ]
-    expected_funcs = [
-        "name_letter_counts",
-        "name_profile_payload",
-        "name_profile_payload",
-        "name_profile_payload",
-        "name_letter_counts",
-        "name_profile_payload",
-        "name_profile_payload",
-        "name_profile_payload",
-    ]
-    assert len(emitted) == len(expected_messages)
-    assert all(record.getMessage().startswith(prefix) for record, prefix in zip(emitted, expected_messages))
-    assert [record.funcName for record in emitted] == expected_funcs
 
 
 def test_run_sw_pipe_noclobber_skips_already_processed_files(tmp_path):
@@ -147,25 +86,7 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
-    alpha = payload["computed_results"]["alpha.plt"]
-    beta = payload["computed_results"]["nested/beta.plt"]
-    assert alpha["letter_counts"] == {"vowels": 2, "consonants": 3}
-    assert alpha["name_vowel_fraction"] == 0.4
-    assert alpha["name_dominance"] == "consonant-rich"
-    assert alpha["name_shape"] == [5, 2, 3]
-    assert beta["letter_counts"] == {"vowels": 2, "consonants": 2}
-    assert beta["name_vowel_fraction"] == 0.5
-    assert beta["name_dominance"] == "vowel-rich"
-    assert beta["name_shape"] == [4, 2, 2]
-    alpha_meta = alpha["_emit_meta"]
-    beta_meta = beta["_emit_meta"]
-    assert alpha_meta["letter_counts"]["function"] == "name_letter_counts"
-    assert alpha_meta["name_shape"]["function"] == "name_profile_payload"
-    assert alpha_meta["letter_counts"]["file"] == "alpha.plt"
-    assert alpha_meta["letter_counts"]["file_key"] == "alpha.plt"
-    assert beta_meta["letter_counts"]["file"] == "beta.plt"
-    assert beta_meta["letter_counts"]["file_key"] == "nested/beta.plt"
-    assert isinstance(alpha_meta["letter_counts"]["line"], int)
+    assert payload["computed_results"] == {}
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
@@ -179,8 +100,8 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     assert code == 0
     assert lines == [
-        "[info] dummy_pipeline one vowels=2 consonants=1",
-        "[info] dummy_pipeline two vowels=1 consonants=2",
+        "[info] dummy_pipeline one.plt",
+        "[info] dummy_pipeline two.PLT",
     ]
 
 
@@ -193,11 +114,4 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
-    expected_patterns = [
-        r"^\[debug\] dummy_pipeline emit letter_counts .+",
-        r"^\[debug\] dummy_pipeline emit name_vowel_fraction .+",
-        r"^\[debug\] dummy_pipeline emit name_dominance .+",
-        r"^\[debug\] dummy_pipeline emit name_shape .+",
-    ]
-    assert len(lines) == len(expected_patterns)
-    assert all(re.match(pattern, line) for line, pattern in zip(lines, expected_patterns))
+    assert lines == []
