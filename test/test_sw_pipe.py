@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
+from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
@@ -17,11 +18,15 @@ def test_discover_plt_files_finds_only_current_directory(tmp_path):
     assert [path.name for path in files] == ["a.plt", "b.PLT"]
 
 
+def test_name_letter_counts_counts_alpha_only():
+    assert name_letter_counts("a1-b2") == (1, 1)
+
+
 def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
 
-    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.sw_pipe"):
+    with caplog.at_level(logging.INFO):
         results = run_sw_pipe(tmp_path)
 
     assert isinstance(results, SwPipeResults)
@@ -33,7 +38,7 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     messages = [
         record.getMessage()
         for record in caplog.records
-        if record.name == "starwinds_analysis.pipelines.sw_pipe" and record.levelno == logging.INFO
+        if record.name == "starwinds_analysis.pipelines.dummy_pipeline" and record.levelno == logging.INFO
     ]
     assert messages == [
         "alpha.plt vowels=2 consonants=3",

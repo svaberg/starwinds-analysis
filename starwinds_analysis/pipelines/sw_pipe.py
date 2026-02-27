@@ -72,23 +72,6 @@ def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
     return Path(file_path).resolve().relative_to(Path(base_dir).resolve()).as_posix()
 
 
-def _name_letter_counts(name: str) -> tuple[int, int]:
-    """
-    Count vowels and consonants in a name string (alphabetic characters only).
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
-    """
-    vowels = 0
-    consonants = 0
-    for ch in str(name).lower():
-        if not ch.isalpha():
-            continue
-        if ch in {"a", "e", "i", "o", "u"}:
-            vowels += 1
-        else:
-            consonants += 1
-    return vowels, consonants
-
-
 def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, int]]]:
     """
     Load processed-file keys and computed results from state file.
@@ -147,30 +130,20 @@ def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) 
     return sorted(files)
 
 
-def process_plt_file(file_path: str | Path, results: SwPipeResults) -> None:
-    """
-    Placeholder per-file pipeline step with demo computed filename metrics.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
-    """
-    path = Path(file_path)
-    vowels, consonants = _name_letter_counts(path.stem)
-    log.info("%s vowels=%d consonants=%d", path.name, vowels, consonants)
-    results.add_processed_file(path)
-    file_key = _relative_file_key(path, base_dir=results.directory)
-    results.add_computed_result(file_key, vowels=vowels, consonants=consonants)
-
-
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
     recursive: bool = False,
     noclobber: bool = False,
-    process_file: Callable[[Path, SwPipeResults], None] = process_plt_file,
+    process_file: Callable[[Path, SwPipeResults], None] | None = None,
 ) -> SwPipeResults:
     """
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
+    if process_file is None:
+        from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as process_file
+
     state_file = _state_file_path(directory)
     known_processed, known_computed = _load_state(state_file)
     files = discover_plt_files(directory, recursive=recursive)
