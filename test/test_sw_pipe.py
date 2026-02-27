@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
@@ -72,13 +73,13 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         "beta vowels=2 consonants=2",
     ]
     emitted = [
-        record.getMessage()
+        record
         for record in caplog.records
         if record.name == "starwinds_analysis.pipelines.emit.dummy_pipeline"
         and record.levelno == logging.DEBUG
         and record.getMessage().startswith("emit ")
     ]
-    expected_prefixes = [
+    expected_messages = [
         "emit letter_counts ",
         "emit name_vowel_fraction ",
         "emit name_dominance ",
@@ -88,8 +89,19 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
         "emit name_dominance ",
         "emit name_shape ",
     ]
-    assert len(emitted) == len(expected_prefixes)
-    assert all(message.startswith(prefix) for message, prefix in zip(emitted, expected_prefixes))
+    expected_funcs = [
+        "name_letter_counts",
+        "name_profile_payload",
+        "name_profile_payload",
+        "name_profile_payload",
+        "name_letter_counts",
+        "name_profile_payload",
+        "name_profile_payload",
+        "name_profile_payload",
+    ]
+    assert len(emitted) == len(expected_messages)
+    assert all(record.getMessage().startswith(prefix) for record, prefix in zip(emitted, expected_messages))
+    assert [record.funcName for record in emitted] == expected_funcs
 
 
 def test_run_sw_pipe_noclobber_skips_already_processed_files(tmp_path):
@@ -165,11 +177,11 @@ def test_sw_pipe_main_emit_logger_level_is_independent(tmp_path, monkeypatch, ca
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
-    expected_prefixes = [
-        "[debug] dummy_pipeline emit letter_counts ",
-        "[debug] dummy_pipeline emit name_vowel_fraction ",
-        "[debug] dummy_pipeline emit name_dominance ",
-        "[debug] dummy_pipeline emit name_shape ",
+    expected_patterns = [
+        r"^\[debug\] dummy_pipeline\.name_letter_counts:\d+ file=one\.plt key=one\.plt emit letter_counts .+",
+        r"^\[debug\] dummy_pipeline\.name_profile_payload:\d+ file=one\.plt key=one\.plt emit name_vowel_fraction .+",
+        r"^\[debug\] dummy_pipeline\.name_profile_payload:\d+ file=one\.plt key=one\.plt emit name_dominance .+",
+        r"^\[debug\] dummy_pipeline\.name_profile_payload:\d+ file=one\.plt key=one\.plt emit name_shape .+",
     ]
-    assert len(lines) == len(expected_prefixes)
-    assert all(line.startswith(prefix) for line, prefix in zip(lines, expected_prefixes))
+    assert len(lines) == len(expected_patterns)
+    assert all(re.match(pattern, line) for line, pattern in zip(lines, expected_patterns))
