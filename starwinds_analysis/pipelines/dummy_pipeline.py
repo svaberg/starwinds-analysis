@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+# Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
 
 

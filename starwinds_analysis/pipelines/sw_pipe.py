@@ -501,6 +501,8 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    # Configure the logger that writes to stdout (for human consumption).
     logging.basicConfig(
         level=getattr(logging, str(args.log_level).upper()),
         force=True,
@@ -508,6 +510,8 @@ def main(argv: list[str] | None = None) -> int:
     formatter = _PipelineLogFormatter()
     for handler in logging.getLogger().handlers:
         handler.setFormatter(formatter)
+
+    # Configure the recorder logger that writes machine-readable data.
     configure_recorder_logger(str(args.record_log_level))
     run_sw_pipe(
         args.directory,
