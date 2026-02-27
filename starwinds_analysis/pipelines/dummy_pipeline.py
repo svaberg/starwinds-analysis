@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from contextvars import ContextVar, Token
 import logging
 from pathlib import Path
-from typing import Any, Callable
+
+from starwinds_analysis.pipelines.result_context import emit_result
 
 log = logging.getLogger(__name__)
-_result_sink: ContextVar[Callable[[str, Any], None] | None] = ContextVar("sw_pipe_result_sink", default=None)
 
 
 def name_letter_counts(name: str) -> tuple[int, int]:
@@ -19,33 +18,6 @@ def name_letter_counts(name: str) -> tuple[int, int]:
     vowels = sum(ch.lower() in {"a", "e", "i", "o", "u"} for ch in str(name) if ch.isalpha())
     consonants = sum(ch.lower() not in {"a", "e", "i", "o", "u"} for ch in str(name) if ch.isalpha())
     return vowels, consonants
-
-
-def set_result_sink(sink: Callable[[str, Any], None]) -> Token:
-    """
-    Set the current `sw-pipe` result sink for the active context.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return _result_sink.set(sink)
-
-
-def reset_result_sink(token: Token) -> None:
-    """
-    Reset the current `sw-pipe` result sink to the previous context value.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    _result_sink.reset(token)
-
-
-def emit_result(key: str, value: Any) -> None:
-    """
-    Emit a pipeline result to the active sink when one is configured.
-    Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`
-    """
-    sink = _result_sink.get()
-    if sink is None:
-        return
-    sink(key, value)
 
 
 def process_plt_file(file_path: str | Path) -> None:

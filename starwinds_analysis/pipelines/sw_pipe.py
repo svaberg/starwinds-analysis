@@ -156,7 +156,7 @@ def run_sw_pipe(
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
-    from starwinds_analysis.pipelines.dummy_pipeline import reset_result_sink, set_result_sink
+    from starwinds_analysis.pipelines.result_context import reset_result_sink, set_result_sink
 
     if process_file is None:
         from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as process_file
