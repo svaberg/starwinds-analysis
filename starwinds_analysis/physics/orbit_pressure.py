@@ -23,19 +23,6 @@ from starwinds_analysis.physics.pressure import (
 )
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
-def _pressure_field_name_and_scale(smart_ds):
-    """
-    Choose a thermal-pressure field name and conversion scale from available orbit/surface
-      sample fields.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    if smart_ds.has_field("P [Pa]"):
-        return "P [Pa]", 1.0
-    if smart_ds.has_field("P [dyne/cm^2]"):
-        return "P [dyne/cm^2]", 0.1
-    raise KeyError("Could not find pressure field in SI or cgs form")
-
 def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
     """
     Compute periodic orbit-frame velocity components from sampled points/phase for relative-
@@ -80,7 +67,6 @@ def _summaries_from_arrays(data, *, weights=None):
     return out
 
 def pressure_components_from_orbit_sample(
-    smart_ds,
     orbit,
     *,
     body_radius_m: float,
@@ -95,11 +81,9 @@ def pressure_components_from_orbit_sample(
     """
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
 
     rho = np.array(orbit[rho_name])
     u_xyz = np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
-    p_therm = p_scale * np.array(orbit[p_name])
 
     object_velocity = None
     if (
@@ -121,7 +105,8 @@ def pressure_components_from_orbit_sample(
         "B [T]": np.array(orbit["B [T]"]),
         "magnetic_pressure [Pa]": np.array(orbit["magnetic_pressure [Pa]"]),
         "ram_pressure [Pa]": np.array(orbit["ram_pressure [Pa]"]),
-        "thermal_pressure [Pa]": p_therm,
+        "thermal_pressure [Pa]": np.array(orbit["thermal_pressure [Pa]"]),
+        "standoff_distance [m]": np.array(orbit["standoff_distance [m]"]),
     }
 
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
@@ -133,13 +118,11 @@ def pressure_components_from_orbit_sample(
         comps["object_speed [m/s]"] = np.sqrt(np.sum(v_obj * v_obj, axis=-1))
         comps["relative_speed [m/s]"] = rel_speed
         comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
-
-    speed_for_standoff = comps.get("relative_speed [m/s]", comps["U [m/s]"])
-    comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
-        rho,
-        speed_for_standoff,
-        b0_t=standoff_b0_t,
-    )
+        comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
+            rho,
+            rel_speed,
+            b0_t=standoff_b0_t,
+        )
 
     weights = orbit.get("time_weight [none]")
     return {
@@ -167,20 +150,25 @@ def pressure_components_on_circular_orbit(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
-    p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
-    derived = ("U [m/s]", "B [T]", "magnetic_pressure [Pa]", "ram_pressure [Pa]")
+    derived = (
+        "U [m/s]",
+        "B [T]",
+        "magnetic_pressure [Pa]",
+        "ram_pressure [Pa]",
+        "thermal_pressure [Pa]",
+        "standoff_distance [m]",
+    )
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
-        fields=(rho_name, *u_xyz, *b_xyz, *derived, p_name),
+        fields=(rho_name, *u_xyz, *b_xyz, *derived),
         n_points=n_points,
         plane=plane,
         method=method,
     )
     out = pressure_components_from_orbit_sample(
-        smart_ds,
         orbit,
         body_radius_m=body_radius_m,
         star_mass_kg=star_mass_kg,
@@ -212,15 +200,21 @@ def pressure_components_on_elliptic_orbit(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
-    p_name = _pressure_field_name_and_scale(smart_ds)[0]
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
-    derived = ("U [m/s]", "B [T]", "magnetic_pressure [Pa]", "ram_pressure [Pa]")
+    derived = (
+        "U [m/s]",
+        "B [T]",
+        "magnetic_pressure [Pa]",
+        "ram_pressure [Pa]",
+        "thermal_pressure [Pa]",
+        "standoff_distance [m]",
+    )
     orbit = sample_elliptic_orbit(
         smart_ds,
         semi_major_axis,
         eccentricity=eccentricity,
-        fields=(rho_name, *u_xyz, *b_xyz, *derived, p_name),
+        fields=(rho_name, *u_xyz, *b_xyz, *derived),
         n_points=n_points,
         plane=plane,
         angle0=angle0,
@@ -228,7 +222,6 @@ def pressure_components_on_elliptic_orbit(
         method=method,
     )
     out = pressure_components_from_orbit_sample(
-        smart_ds,
         orbit,
         body_radius_m=body_radius_m,
         star_mass_kg=star_mass_kg,

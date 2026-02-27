@@ -25,7 +25,7 @@ from starwinds_analysis.analysis.orbits import (
 )
 from starwinds_analysis.physics.pressure import (
     magnetospheric_standoff_distance,
-    pressure_components,
+    ram_pressure,
 )
 from starwinds_analysis.physics.torque import (
     integrate_surface_torque_terms,
@@ -35,19 +35,6 @@ from starwinds_analysis.analysis.shells import (
     infer_body_radius_m,
 )
 from starwinds_analysis.analysis.stats import weighted_quantile
-
-def _pressure_field_name_and_scale(smart_ds):
-    """
-    Choose a thermal-pressure field name and conversion scale from available orbit/surface
-      sample fields.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    if smart_ds.has_field("P [Pa]"):
-        return "P [Pa]", 1.0
-    if smart_ds.has_field("P [dyne/cm^2]"):
-        return "P [dyne/cm^2]", 0.1
-    raise KeyError("Could not find pressure field in SI or cgs form")
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     """
@@ -311,11 +298,18 @@ def pressure_components_on_orbit_surface(
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-    p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
+    derived = (
+        "U [m/s]",
+        "B [T]",
+        "magnetic_pressure [Pa]",
+        "ram_pressure [Pa]",
+        "thermal_pressure [Pa]",
+        "standoff_distance [m]",
+    )
 
     sampled = sample_orbit_surface_revolution(
         smart_ds,
-        fields=(rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name, p_name),
+        fields=(rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name, *derived),
         orbit=orbit,
         method=method,
         n_longitudes=n_longitudes,
@@ -325,10 +319,12 @@ def pressure_components_on_orbit_surface(
     u_xyz = np.stack(
         [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
     )
-    b_xyz = np.stack(
-        [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
-    )
-    p_therm = p_scale * np.array(sampled[p_name])
+    u = np.array(sampled["U [m/s]"])
+    b = np.array(sampled["B [T]"])
+    magnetic_pressure = np.array(sampled["magnetic_pressure [Pa]"])
+    ram = np.array(sampled["ram_pressure [Pa]"])
+    thermal_pressure = np.array(sampled["thermal_pressure [Pa]"])
+    standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
     orbit_meta = sampled["orbit_meta"]
@@ -348,20 +344,28 @@ def pressure_components_on_orbit_surface(
             v_path = _periodic_orbit_velocity(path_points, phase, period_s, body_radius_m)
             object_velocity = np.repeat(v_path[:, None, :], sampled["X [surface]"].shape[1], axis=1)
 
-    comps = pressure_components(
-        rho.reshape(-1),
-        u_xyz.reshape(-1, 3),
-        b_xyz.reshape(-1, 3),
-        thermal_pressure_pa=p_therm.reshape(-1),
-        object_velocity_xyz_m_s=None if object_velocity is None else object_velocity.reshape(-1, 3),
-    )
-    comps = {k: np.array(v).reshape(rho.shape) for k, v in comps.items()}
-    speed_for_standoff = comps.get("relative_speed [m/s]", comps["U [m/s]"])
-    comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
-        rho,
-        speed_for_standoff,
-        b0_t=standoff_b0_t,
-    )
+    comps = {
+        "U [m/s]": u,
+        "B [T]": b,
+        "magnetic_pressure [Pa]": magnetic_pressure,
+        "ram_pressure [Pa]": ram,
+        "thermal_pressure [Pa]": thermal_pressure,
+        "standoff_distance [m]": standoff,
+    }
+
+    # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
+    # local workflow logic because they depend on the orbit-derived object velocity.
+    if object_velocity is not None:
+        rel = u_xyz - object_velocity
+        rel_speed = np.sqrt(np.sum(rel * rel, axis=-1))
+        comps["object_speed [m/s]"] = np.sqrt(np.sum(object_velocity * object_velocity, axis=-1))
+        comps["relative_speed [m/s]"] = rel_speed
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
+        comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
+            rho,
+            rel_speed,
+            b0_t=standoff_b0_t,
+        )
 
     weights = _make_surface_sample_weights(
         rho.shape[0], rho.shape[1], time_weight=sampled["time_weight [none]"]
@@ -415,13 +419,10 @@ def torque_components_on_orbit_surface(
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
-    p_name = p_scale = None
+    p_name = None
     if include_pressure_term:
-        try:
-            p_name, p_scale = _pressure_field_name_and_scale(smart_ds)
-            fields.append(p_name)
-        except Exception:
-            p_name = p_scale = None
+        p_name = "thermal_pressure [Pa]"
+        fields.append(p_name)
 
     sampled = sample_orbit_surface_revolution(
         smart_ds,
@@ -438,7 +439,7 @@ def torque_components_on_orbit_surface(
     b_xyz = np.stack(
         [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
     )
-    p = None if p_name is None else p_scale * np.array(sampled[p_name])
+    p = None if p_name is None else np.array(sampled[p_name])
 
     points_m = np.array(sampled["surface_points"]) * float(body_radius_m)
     normals, area = surface_point_normals_and_areas(points_m)

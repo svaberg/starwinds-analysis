@@ -347,13 +347,10 @@ def surface_torque_vs_radius(
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
 
     fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
-    p_name = p_scale = None
+    p_name = None
     if include_pressure_term:
-        for cand_name, cand_scale in (("P [Pa]", 1.0), ("P [dyne/cm^2]", 0.1)):
-            if smart_ds.has_field(cand_name):
-                p_name, p_scale = cand_name, float(cand_scale)
-                fields.append(p_name)
-                break
+        p_name = "thermal_pressure [Pa]"
+        fields.append(p_name)
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -378,7 +375,7 @@ def surface_torque_vs_radius(
         [np.array(shells(bx_name)), np.array(shells(by_name)), np.array(shells(bz_name))],
         axis=-1,
     )
-    p = None if p_name is None else p_scale * np.array(shells(p_name))
+    p = None if p_name is None else np.array(shells(p_name))
 
     terms = surface_torque_terms_on_shell_samples(
         shells,

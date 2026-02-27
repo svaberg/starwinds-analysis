@@ -234,11 +234,28 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         metadata={"description": "Magnetic pressure alias"},
     )
     graph.add_recipe(
+        "thermal_pressure [Pa]",
+        lambda p: np.array(p),
+        deps=["P [Pa]"],
+        cost=0.01,
+        metadata={"description": "Thermal pressure alias"},
+    )
+    graph.add_recipe(
         "ram_pressure [Pa]",
         lambda rho, U: np.array(rho) * (np.array(U) ** 2),
         deps=["Rho [kg/m^3]", "U [m/s]"],
         cost=0.12,
         metadata={"description": "Ram pressure"},
+    )
+    graph.add_recipe(
+        "standoff_distance [m]",
+        lambda rho, U: np.power(
+            ((0.7e-4) ** 2 / (2.0 * _MU0)) / (np.array(rho) * (np.array(U) ** 2)),
+            1.0 / 6.0,
+        ),
+        deps=["Rho [kg/m^3]", "U [m/s]"],
+        cost=0.2,
+        metadata={"description": "Magnetospheric stand-off proxy from inertial ram pressure"},
     )
     graph.add_recipe(
         "beta [none]",
