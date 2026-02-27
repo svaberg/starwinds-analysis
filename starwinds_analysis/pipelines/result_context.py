@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from contextvars import ContextVar, Token
+import logging
 from typing import Any, Callable
 
 _result_sink: ContextVar[Callable[[str, Any], None] | None] = ContextVar("sw_pipe_result_sink", default=None)
+log = logging.getLogger(__name__)
 
 
 def set_result_sink(sink: Callable[[str, Any], None]) -> Token:
@@ -31,5 +33,7 @@ def emit_result(key: str, value: Any) -> None:
     """
     sink = _result_sink.get()
     if sink is None:
+        log.info("emit %s (no sink)", key)
         return
     sink(key, value)
+    log.info("emit %s", key)

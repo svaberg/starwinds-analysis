@@ -20,6 +20,14 @@ def name_letter_counts(name: str) -> tuple[int, int]:
     return vowels, consonants
 
 
+def emit_letter_counts(vowels: int, consonants: int) -> None:
+    """
+    Emit letter-count payload for pipeline collection in deeper processing code.
+    Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`
+    """
+    emit_result("letter_counts", {"vowels": vowels, "consonants": consonants})
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """
     Demo pipeline step for `.plt` files, separate from orchestration.
@@ -28,4 +36,4 @@ def process_plt_file(file_path: str | Path) -> None:
     path = Path(file_path)
     vowels, consonants = name_letter_counts(path.stem)
     log.info("%s vowels=%d consonants=%d", path.name, vowels, consonants)
-    emit_result("letter_counts", {"vowels": vowels, "consonants": consonants})
+    emit_letter_counts(vowels, consonants)

@@ -4,6 +4,7 @@ import json
 import logging
 
 from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, process_plt_file
+from starwinds_analysis.pipelines.result_context import emit_result
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
 
@@ -30,6 +31,12 @@ def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     assert [record.getMessage() for record in caplog.records] == ["gamma.plt vowels=2 consonants=3"]
 
 
+def test_emit_result_logs_when_no_sink(caplog):
+    with caplog.at_level(logging.INFO, logger="starwinds_analysis.pipelines.result_context"):
+        emit_result("unit_test", 1)
+    assert [record.getMessage() for record in caplog.records] == ["emit unit_test (no sink)"]
+
+
 def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
@@ -51,6 +58,15 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert messages == [
         "alpha.plt vowels=2 consonants=3",
         "beta.plt vowels=2 consonants=2",
+    ]
+    emitted = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "starwinds_analysis.pipelines.result_context" and record.levelno == logging.INFO
+    ]
+    assert emitted == [
+        "emit letter_counts",
+        "emit letter_counts",
     ]
 
 
@@ -104,5 +120,7 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     assert code == 0
     assert lines == [
         "one.plt vowels=2 consonants=1",
+        "emit letter_counts",
         "two.PLT vowels=1 consonants=2",
+        "emit letter_counts",
     ]
