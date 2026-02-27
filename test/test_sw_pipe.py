@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from functools import partial
 import hashlib
 import json
 import logging
 import numpy as np
+import os
 from pathlib import Path
+import pytest
 import re
+import shutil
 
 from starwinds_analysis.pipelines.dummy_pipeline import (
     name_codepoints_payload,
@@ -15,7 +19,16 @@ from starwinds_analysis.pipelines.dummy_pipeline import (
     name_waveform_payload,
     process_plt_file,
 )
-from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
+from starwinds_analysis.pipelines.sw_pipe import (
+    SwPipeResults,
+    _resolve_pipeline_process_file,
+    discover_plt_files,
+    main,
+    run_sw_pipe,
+)
+
+EXAMPLE_3D = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_2D = Path("sample_data/z=0_var_3_n00060000.plt")
 
 
 def test_discover_plt_files_finds_only_current_directory(tmp_path):
@@ -233,75 +246,41 @@ def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
     assert any("state file is large" in message for message in warnings)
 
 
-def test_run_sw_pipe_supports_slice_pipeline(tmp_path, monkeypatch):
-    (tmp_path / "alpha.plt").write_text("")
-    called: list[tuple[str, bool]] = []
-
-    def fake_quicklook_process(path, *, force_3d=False):
-        called.append((Path(path).name, bool(force_3d)))
-        recorder = logging.getLogger("recorder.starwinds_analysis.pipelines.slice")
-        recorder.debug("quicklook_marker %r", "ok")
-
-    import starwinds_analysis.pipelines.slice as slice_pipeline
-
-    monkeypatch.setattr(slice_pipeline, "process_plt_file", fake_quicklook_process)
+@pytest.mark.skipif(not EXAMPLE_2D.exists(), reason="example 2D BATSRUS file not present")
+def test_run_sw_pipe_supports_slice_pipeline(tmp_path):
+    shutil.copy(EXAMPLE_2D, tmp_path / "alpha.plt")
     results = run_sw_pipe(tmp_path, pipeline="slice")
 
-    assert called == [("alpha.plt", False)]
     payload = results.computed_results["alpha.plt"]
     assert payload["meta"]["pipeline"] == "slice"
-    assert payload["quicklook_marker"]["value"] == "ok"
-    assert payload["quicklook_marker"]["source"]["module"] == "starwinds_analysis.pipelines.slice"
+    assert payload["slice_status"]["value"] == "processed"
+    assert payload["slice_figure_count"]["value"] >= 1
 
 
-def test_run_sw_pipe_supports_slice_force_3d_flag(tmp_path, monkeypatch):
-    (tmp_path / "alpha.plt").write_text("")
-    called: list[tuple[str, bool]] = []
-
-    def fake_quicklook_process(path, *, force_3d=False):
-        called.append((Path(path).name, bool(force_3d)))
-
-    import starwinds_analysis.pipelines.slice as slice_pipeline
-
-    monkeypatch.setattr(slice_pipeline, "process_plt_file", fake_quicklook_process)
-    run_sw_pipe(tmp_path, pipeline="slice", force_slice_3d=True)
-
-    assert called == [("alpha.plt", True)]
+def test_run_sw_pipe_supports_slice_force_3d_flag():
+    func = _resolve_pipeline_process_file("slice", force_slice_3d=True)
+    assert isinstance(func, partial)
+    assert func.keywords == {"force_3d": True}
 
 
-def test_volume_process_skips_non_3d_input(tmp_path, monkeypatch):
-    file_path = tmp_path / "alpha.plt"
-    file_path.write_text("")
-    calls = []
-
-    class Fake2DDataset:
-        corners = np.zeros((1, 4), dtype=int)
-
-    class FakeSmartDs:
-        @classmethod
-        def from_file(cls, _path):
-            return Fake2DDataset()
-
-    def fake_run_quicklook2d(*_args, **_kwargs):
-        calls.append(object())
-        return {}
-
-    import starwinds_analysis.pipelines.volume as volume_pipeline
-
-    monkeypatch.setattr(volume_pipeline, "SmartDs", FakeSmartDs)
-    monkeypatch.setattr(volume_pipeline, "run_quicklook2d", fake_run_quicklook2d)
-    volume_pipeline.process_plt_file(file_path)
-
-    assert calls == []
+@pytest.mark.skipif(not EXAMPLE_2D.exists(), reason="example 2D BATSRUS file not present")
+def test_volume_process_skips_non_3d_input(tmp_path):
+    shutil.copy(EXAMPLE_2D, tmp_path / "alpha.plt")
+    results = run_sw_pipe(tmp_path, pipeline="volume")
+    payload = results.computed_results["alpha.plt"]
+    assert payload["volume_status"]["value"] == "skipped_non_3d"
 
 
-def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
+def test_sw_pipe_main_scans_current_directory(tmp_path, capsys):
     (tmp_path / "one.plt").write_text("")
     (tmp_path / "two.PLT").write_text("")
-    monkeypatch.chdir(tmp_path)
-
-    code = main([])
-    captured = capsys.readouterr()
+    old_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        code = main([])
+        captured = capsys.readouterr()
+    finally:
+        os.chdir(old_cwd)
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
@@ -311,12 +290,15 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     ]
 
 
-def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, monkeypatch, capsys):
+def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, capsys):
     (tmp_path / "one.plt").write_text("")
-    monkeypatch.chdir(tmp_path)
-
-    code = main(["--log-level", "WARNING", "--record-log-level", "DEBUG"])
-    captured = capsys.readouterr()
+    old_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        code = main(["--log-level", "WARNING", "--record-log-level", "DEBUG"])
+        captured = capsys.readouterr()
+    finally:
+        os.chdir(old_cwd)
     lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
 
     assert code == 0
