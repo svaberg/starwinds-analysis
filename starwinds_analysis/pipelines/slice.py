@@ -1067,100 +1067,6 @@ def flatten_orbit_results_arrays(orbit_results):
             )
     return arrays
 
-def save_shell_diagnostics_json(
-    path,
-    diagnostics,
-    *,
-    band_radius_range=None,
-    star_mass_kg: float | None = None,
-    star_radius_m: float | None = None,
-):
-    """
-    Save shell diagnostics summary JSON to disk.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = summarize_shell_diagnostics(
-        diagnostics,
-        band_radius_range=band_radius_range,
-        star_mass_kg=star_mass_kg,
-        star_radius_m=star_radius_m,
-    )
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(path))
-    return path
-
-def save_shell_diagnostics_npz(path, diagnostics):
-    """
-    Save shell diagnostics arrays to NPZ.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = flatten_shell_diagnostics_arrays(diagnostics)
-    np.savez(path, **arrays)
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(path))
-    return path
-
-def save_orbit_results_json(path, orbit_results):
-    """
-    Save orbit-result summaries to JSON.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = summarize_orbit_results(orbit_results)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(path))
-    return path
-
-def save_orbit_results_npz(path, orbit_results):
-    """
-    Save orbit-result arrays to NPZ.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = flatten_orbit_results_arrays(orbit_results)
-    np.savez(path, **arrays)
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(path))
-    return path
-
-def save_quicklook2d_summary_json(
-    path,
-    *,
-    input_file=None,
-    diagnostics=None,
-    orbit_results=None,
-    band_radius_range=None,
-    star_mass_kg: float | None = None,
-    star_radius_m: float | None = None,
-    exported_files: dict[str, str] | None = None,
-):
-    """
-    Save one canonical quicklook summary file intended for easy ingestion.
-    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "input_file": None if input_file is None else str(input_file),
-        "shells": None
-        if diagnostics is None
-        else summarize_shell_diagnostics(
-            diagnostics,
-            band_radius_range=band_radius_range,
-            star_mass_kg=star_mass_kg,
-            star_radius_m=star_radius_m,
-        ),
-        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
-        "files": dict(exported_files or {}),
-    }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(path))
-    return path
-
 def save_quicklook2d_bundle(
     output_dir,
     *,
@@ -1207,43 +1113,56 @@ def save_quicklook2d_bundle(
             log_pipeline_event(pipeline_log, "quicklook.saved", kind=f"{group_name}_png", file=str(p))
 
     if diagnostics is not None:
-        saved["files"]["shells_json"] = save_shell_diagnostics_json(
-            outdir / f"{prefix}.shells.json",
+        shells_json_path = outdir / f"{prefix}.shells.json"
+        shells_payload = summarize_shell_diagnostics(
             diagnostics,
             band_radius_range=band_radius_range,
             star_mass_kg=star_mass_kg,
             star_radius_m=star_radius_m,
         )
-        saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
-            outdir / f"{prefix}.shells.npz",
-            diagnostics,
-        )
+        shells_json_path.write_text(json.dumps(shells_payload, indent=2, sort_keys=True))
+        saved["files"]["shells_json"] = shells_json_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(shells_json_path))
+
+        shells_npz_path = outdir / f"{prefix}.shells.npz"
+        np.savez(shells_npz_path, **flatten_shell_diagnostics_arrays(diagnostics))
+        saved["files"]["shells_npz"] = shells_npz_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(shells_npz_path))
 
     if orbit_results:
-        saved["files"]["orbits_json"] = save_orbit_results_json(
-            outdir / f"{prefix}.orbits.json",
-            orbit_results,
-        )
-        saved["files"]["orbits_npz"] = save_orbit_results_npz(
-            outdir / f"{prefix}.orbits.npz",
-            orbit_results,
-        )
+        orbits_json_path = outdir / f"{prefix}.orbits.json"
+        orbits_payload = summarize_orbit_results(orbit_results)
+        orbits_json_path.write_text(json.dumps(orbits_payload, indent=2, sort_keys=True))
+        saved["files"]["orbits_json"] = orbits_json_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(orbits_json_path))
+
+        orbits_npz_path = outdir / f"{prefix}.orbits.npz"
+        np.savez(orbits_npz_path, **flatten_orbit_results_arrays(orbit_results))
+        saved["files"]["orbits_npz"] = orbits_npz_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(orbits_npz_path))
 
     exported_files = {}
     for key, path in saved["figures"].items():
         exported_files[f"figure:{key}"] = str(path)
     for key, path in saved["files"].items():
         exported_files[f"file:{key}"] = str(path)
-    saved["files"]["quicklook_json"] = save_quicklook2d_summary_json(
-        outdir / f"{prefix}.quicklook2d.json",
-        input_file=input_file,
-        diagnostics=diagnostics,
-        orbit_results=orbit_results,
-        band_radius_range=band_radius_range,
-        star_mass_kg=star_mass_kg,
-        star_radius_m=star_radius_m,
-        exported_files=exported_files,
-    )
+    quicklook_json_path = outdir / f"{prefix}.quicklook2d.json"
+    quicklook_payload = {
+        "input_file": None if input_file is None else str(input_file),
+        "shells": None
+        if diagnostics is None
+        else summarize_shell_diagnostics(
+            diagnostics,
+            band_radius_range=band_radius_range,
+            star_mass_kg=star_mass_kg,
+            star_radius_m=star_radius_m,
+        ),
+        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
+        "files": dict(exported_files or {}),
+    }
+    quicklook_json_path.write_text(json.dumps(quicklook_payload, indent=2, sort_keys=True))
+    saved["files"]["quicklook_json"] = quicklook_json_path
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(quicklook_json_path))
     log_pipeline_event(pipeline_log, 
         "quicklook.bundle.done",
         figures=len(saved["figures"]),
