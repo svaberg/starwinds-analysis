@@ -4,6 +4,7 @@ from datetime import datetime
 import hashlib
 import json
 import logging
+import numpy as np
 from pathlib import Path
 import re
 
@@ -162,6 +163,29 @@ def test_run_sw_pipe_can_record_file_hash(tmp_path):
     expected_hash = hashlib.sha256(b"abc").hexdigest()
     alpha = results.computed_results["alpha.plt"]
     assert alpha["meta"]["file_hash_sha256"] == expected_hash
+
+
+def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
+    (tmp_path / "alpha.plt").write_text("")
+
+    def process_file(_path):
+        emit_log = logging.getLogger("starwinds_analysis.pipelines.emit.test_pipeline")
+        emit_log.setLevel(logging.DEBUG)
+        emit_log.debug("big_array %r", np.arange(200_000, dtype=np.float64))
+
+    results = run_sw_pipe(tmp_path, process_file=process_file, array_offload_min_bytes=1_000_000)
+    entry = results.computed_results["alpha.plt"]["big_array"]
+    value = entry["value"]
+    assert value["storage"] == "npy"
+    assert value["dtype"] == "float64"
+    assert value["shape"] == [200000]
+    artifact_path = tmp_path / value["path"]
+    assert artifact_path.exists()
+    loaded = np.load(artifact_path)
+    assert loaded.shape == (200000,)
+    assert float(loaded[0]) == 0.0
+    assert float(loaded[-1]) == 199999.0
+    assert entry["source"]["module"] == "starwinds_analysis.pipelines.test_pipeline"
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):

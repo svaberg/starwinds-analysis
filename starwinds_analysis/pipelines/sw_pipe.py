@@ -12,12 +12,15 @@ from dataclasses import dataclass, field
 import hashlib
 import json
 import logging
+import numpy as np
 from pathlib import Path
 import re
 from typing import Callable
 
 log = logging.getLogger(__name__)
 _EMIT_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
+_SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
+_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
 
 
 @dataclass
@@ -42,13 +45,23 @@ class _SwEmitHandler(logging.Handler):
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
 
-    def __init__(self, target: dict[str, object]):
+    def __init__(
+        self,
+        target: dict[str, object],
+        *,
+        file_key: str,
+        artifacts_root: str | Path,
+        array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+    ):
         """
         Initialize a handler that writes captured emit payloads into `target`.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         super().__init__(level=logging.NOTSET)
         self.target = target
+        self.file_key = file_key
+        self.artifacts_root = Path(artifacts_root)
+        self.array_offload_min_bytes = int(array_offload_min_bytes)
 
     def emit(self, record: logging.LogRecord) -> None:
         """
@@ -60,8 +73,15 @@ class _SwEmitHandler(logging.Handler):
             return
         key, value = parsed
         module_name = record.name.replace(".emit.", ".")
+        normalized = _normalize_emitted_value(
+            value,
+            file_key=self.file_key,
+            field_key=key,
+            artifacts_root=self.artifacts_root,
+            array_offload_min_bytes=self.array_offload_min_bytes,
+        )
         self.target[key] = {
-            "value": value,
+            "value": normalized,
             "source": {
                 "module": module_name,
                 "function": record.funcName,
@@ -101,6 +121,87 @@ def _utc_now_iso() -> str:
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _safe_name(text: str) -> str:
+    """
+    Convert arbitrary text to a filesystem-safe token.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    return _SAFE_NAME_PATTERN.sub("_", str(text)).strip("._") or "value"
+
+
+def _array_artifact_relpath(file_key: str, field_key: str) -> str:
+    """
+    Relative artifact path for one emitted array payload.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    file_token = _safe_name(str(file_key).replace("/", "__"))
+    field_token = _safe_name(field_key)
+    return f".sw-pipe.artifacts/{file_token}__{field_token}.npy"
+
+
+def _normalize_emitted_value(
+    value: object,
+    *,
+    file_key: str,
+    field_key: str,
+    artifacts_root: str | Path,
+    array_offload_min_bytes: int,
+) -> object:
+    """
+    Convert emitted values into JSON-safe payloads with array offloading support.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    if isinstance(value, np.ndarray):
+        if value.nbytes >= int(array_offload_min_bytes):
+            rel_path = _array_artifact_relpath(file_key, field_key)
+            out_path = Path(artifacts_root).parent / rel_path
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            np.save(out_path, value)
+            return {
+                "storage": "npy",
+                "path": rel_path,
+                "dtype": str(value.dtype),
+                "shape": list(value.shape),
+            }
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, list):
+        return [
+            _normalize_emitted_value(
+                item,
+                file_key=file_key,
+                field_key=field_key,
+                artifacts_root=artifacts_root,
+                array_offload_min_bytes=array_offload_min_bytes,
+            )
+            for item in value
+        ]
+    if isinstance(value, tuple):
+        return [
+            _normalize_emitted_value(
+                item,
+                file_key=file_key,
+                field_key=field_key,
+                artifacts_root=artifacts_root,
+                array_offload_min_bytes=array_offload_min_bytes,
+            )
+            for item in value
+        ]
+    if isinstance(value, dict):
+        return {
+            str(k): _normalize_emitted_value(
+                v,
+                file_key=file_key,
+                field_key=field_key,
+                artifacts_root=artifacts_root,
+                array_offload_min_bytes=array_offload_min_bytes,
+            )
+            for k, v in value.items()
+        }
+    return value
 
 
 def _sha256_file(path: str | Path) -> str:
@@ -228,6 +329,7 @@ def run_sw_pipe(
     recursive: bool = False,
     noclobber: bool = False,
     include_file_hash: bool = False,
+    array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
     process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
     """
@@ -257,6 +359,7 @@ def run_sw_pipe(
     )
     processed_keys = set(known_processed)
     emit_logger = logging.getLogger("starwinds_analysis.pipelines.emit")
+    artifacts_root = Path(directory) / ".sw-pipe.artifacts"
     for file_path in files:
         file_key = _relative_file_key(file_path, base_dir=directory)
         if noclobber and file_key in known_processed:
@@ -271,7 +374,12 @@ def run_sw_pipe(
         }
         if include_file_hash:
             file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
-        emit_handler = _SwEmitHandler(file_results)
+        emit_handler = _SwEmitHandler(
+            file_results,
+            file_key=file_key,
+            artifacts_root=artifacts_root,
+            array_offload_min_bytes=array_offload_min_bytes,
+        )
         emit_logger.addHandler(emit_handler)
         try:
             process_file(file_path)
@@ -334,6 +442,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Include SHA-256 hash of each input file in per-file metadata.",
     )
+    parser.add_argument(
+        "--array-offload-min-bytes",
+        type=int,
+        default=_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+        help="Offload emitted NumPy arrays at or above this byte size to .npy artifacts.",
+    )
     return parser
 
 
@@ -357,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
         recursive=bool(args.recursive),
         noclobber=bool(args.noclobber),
         include_file_hash=bool(args.file_hash),
+        array_offload_min_bytes=int(args.array_offload_min_bytes),
     )
     return 0
 
