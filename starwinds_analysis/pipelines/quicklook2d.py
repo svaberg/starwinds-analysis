@@ -1118,6 +1118,62 @@ def save_orbit_results_npz(path, orbit_results):
     np.savez(path, **arrays)
     return path
 
+def _quicklook_prefix_from_input_file(input_file) -> str:
+    """
+    Build a filesystem-safe quicklook prefix from an input data filename.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    stem = Path(str(input_file)).name
+    if stem.endswith(".plt"):
+        stem = stem[:-4]
+    else:
+        stem = Path(stem).stem
+    return _slug_key(stem)
+
+def _resolve_quicklook_prefix(*, prefix: str | None, input_file=None) -> str:
+    """
+    Resolve export prefix from explicit value or input filename fallback.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    if prefix is not None and str(prefix).strip():
+        return str(prefix)
+    if input_file is not None:
+        return _quicklook_prefix_from_input_file(input_file)
+    return "quicklook2d"
+
+def save_quicklook2d_summary_json(
+    path,
+    *,
+    input_file=None,
+    diagnostics=None,
+    orbit_results=None,
+    band_radius_range=None,
+    star_mass_kg: float | None = None,
+    star_radius_m: float | None = None,
+    exported_files: dict[str, str] | None = None,
+):
+    """
+    Save one canonical quicklook summary file intended for easy ingestion.
+    Used by: `starwinds_analysis/pipelines/quicklook2d.py`
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "input_file": None if input_file is None else str(input_file),
+        "shells": None
+        if diagnostics is None
+        else summarize_shell_diagnostics(
+            diagnostics,
+            band_radius_range=band_radius_range,
+            star_mass_kg=star_mass_kg,
+            star_radius_m=star_radius_m,
+        ),
+        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
+        "files": dict(exported_files or {}),
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    return path
+
 def save_quicklook2d_bundle(
     output_dir,
     *,
@@ -1127,7 +1183,8 @@ def save_quicklook2d_bundle(
     slice_figures=None,
     radius_figures=None,
     orbit_figures=None,
-    prefix: str = "quicklook2d",
+    prefix: str | None = None,
+    input_file=None,
     band_radius_range=None,
     star_mass_kg: float | None = None,
     star_radius_m: float | None = None,
@@ -1138,6 +1195,7 @@ def save_quicklook2d_bundle(
     """
     outdir = Path(output_dir)
     outdir.mkdir(parents=True, exist_ok=True)
+    prefix = _resolve_quicklook_prefix(prefix=prefix, input_file=input_file)
     saved = {"figures": {}, "files": {}}
 
     if shell_fig is not None:
@@ -1172,6 +1230,22 @@ def save_quicklook2d_bundle(
         saved["files"]["orbits_npz"] = save_orbit_results_npz(
             outdir / f"{prefix}.orbits.npz", orbit_results
         )
+
+    exported_files = {}
+    for key, path in saved["figures"].items():
+        exported_files[f"figure:{key}"] = str(path)
+    for key, path in saved["files"].items():
+        exported_files[f"file:{key}"] = str(path)
+    saved["files"]["quicklook_json"] = save_quicklook2d_summary_json(
+        outdir / f"{prefix}.quicklook2d.json",
+        input_file=input_file,
+        diagnostics=diagnostics,
+        orbit_results=orbit_results,
+        band_radius_range=band_radius_range,
+        star_mass_kg=star_mass_kg,
+        star_radius_m=star_radius_m,
+        exported_files=exported_files,
+    )
 
     return saved
 
@@ -1303,7 +1377,8 @@ def run_quicklook2d(
     n_azimuth: int = 48,
     method: str = "nearest",
     output_dir=None,
-    prefix: str = "quicklook2d",
+    prefix: str | None = None,
+    input_file=None,
     band_radius_range=None,
     star_mass_kg: float | None = None,
 ):
@@ -1490,6 +1565,7 @@ def run_quicklook2d(
             radius_figures=radius_figs,
             orbit_figures=orbit_figs,
             prefix=prefix,
+            input_file=input_file,
             band_radius_range=band_radius_range,
             star_mass_kg=star_mass_kg,
             star_radius_m=body_radius_m,

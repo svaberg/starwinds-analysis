@@ -47,6 +47,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - generic explicit-surface torque integrator core (points/normals/areas; non-VTK), validated against spherical-shell torque
 - modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
 - shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
+- canonical pipeline summary export (`*.quicklook2d.json`) for easy ingestion
 - one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
@@ -105,7 +106,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Implemented (v3) | Local-path and orbit-surface (surface-of-revolution) thermal/magnetic/ram (+relative ram) and stand-off proxy, plus named-planet preset support, no Tecplot/VTK |
 | Orbit-surface torque diagnostics (new non-VTK workflow) | Implemented (v1) | Surface-of-revolution torque terms (`T1..T4` + total) via explicit surface points/normals/areas, plus quicklook plotting wrappers |
-| Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ |
+| Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ and a canonical `*.quicklook2d.json` ingest file; when no prefix is provided, output basenames are derived from the input `.plt` filename |
 
 ## High-Priority Feature Plan
 

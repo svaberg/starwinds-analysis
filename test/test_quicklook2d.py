@@ -300,6 +300,7 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     npz_path = tmp_path / "demo.shells.npz"
     orbits_json_path = tmp_path / "demo.orbits.json"
     orbits_npz_path = tmp_path / "demo.orbits.npz"
+    quicklook_json_path = tmp_path / "demo.quicklook2d.json"
     radius_png = tmp_path / "demo.radius.binned.png"
     orbit_png = tmp_path / "demo.orbits.r10_xy.png"
 
@@ -308,6 +309,7 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     assert npz_path.exists()
     assert orbits_json_path.exists()
     assert orbits_npz_path.exists()
+    assert quicklook_json_path.exists()
     assert radius_png.exists()
     assert orbit_png.exists()
     assert "figures" in saved and "files" in saved
@@ -334,9 +336,28 @@ def test_save_quicklook2d_bundle_writes_figures_and_summaries(tmp_path):
     assert any("mass_loss" in k for k in orbit_keys)
     assert any("torque" in k for k in orbit_keys)
 
+    quicklook_payload = json.loads(quicklook_json_path.read_text())
+    assert "shells" in quicklook_payload
+    assert "orbits" in quicklook_payload
+    assert "files" in quicklook_payload
+
     plt.close(shell_fig)
     plt.close(radius_fig)
     plt.close(orbit_fig)
+
+
+def test_save_quicklook2d_bundle_uses_input_filename_prefix_when_prefix_missing(tmp_path):
+    fig, ax = plt.subplots()
+    ax.plot([0.0, 1.0], [0.0, 1.0], ",")
+    saved = save_quicklook2d_bundle(
+        tmp_path,
+        shell_fig=fig,
+        input_file="z=0_var_3_n00060000.plt",
+    )
+    assert (tmp_path / "z_0_var_3_n00060000.shells.png").exists()
+    assert (tmp_path / "z_0_var_3_n00060000.quicklook2d.json").exists()
+    assert "quicklook_json" in saved["files"]
+    plt.close(fig)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
