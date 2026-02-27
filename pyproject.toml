@@ -42,6 +42,7 @@ Issues = "https://github.com/yourorg/starwinds-analysis/issues"
 
 [project.scripts]
 sw-pipe = "starwinds_analysis.pipelines.sw_pipe:main"
+sw-pipe-results = "starwinds_analysis.pipelines.sw_pipe_results:main"
 
 [tool.setuptools.packages.find]
 include = ["starwinds_analysis*"]
