@@ -499,7 +499,7 @@ def test_run_quicklook2d_end_to_end_writes_bundle(tmp_path):
     assert "slice_figures" in out and len(out["slice_figures"]) == 2
     assert "radius_figures" in out and "binned" in out["radius_figures"]
     assert "orbit_figures" in out and len(out["orbit_figures"]) == 1
-    assert "wind_scaling" in out["diagnostics"]
+    assert "wind_scaling" in out["shell_diagnostics"]
 
     assert (tmp_path / "e2e.shells.png").exists()
     assert (tmp_path / "e2e.shells.json").exists()
