@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
-from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, process_plt_file
+from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, name_profile_payload, process_plt_file
 from starwinds_analysis.pipelines.result_context import emit_result
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
@@ -21,6 +21,11 @@ def test_discover_plt_files_finds_only_current_directory(tmp_path):
 
 def test_name_letter_counts_counts_alpha_only():
     assert name_letter_counts("a1-b2") == (1, 1)
+
+
+def test_name_profile_payload_outputs_float_string_array():
+    value = name_profile_payload("alpha")
+    assert value == (0.4, "consonant-rich", [5, 2, 3])
 
 
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
@@ -48,8 +53,18 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     assert [path.name for path in results.discovered_files] == ["alpha.plt", "beta.plt"]
     assert [path.name for path in results.processed_files] == ["alpha.plt", "beta.plt"]
     assert results.skipped_files == []
-    assert results.computed_results["alpha.plt"] == {"letter_counts": {"vowels": 2, "consonants": 3}}
-    assert results.computed_results["beta.plt"] == {"letter_counts": {"vowels": 2, "consonants": 2}}
+    assert results.computed_results["alpha.plt"] == {
+        "letter_counts": {"vowels": 2, "consonants": 3},
+        "name_vowel_fraction": 0.4,
+        "name_dominance": "consonant-rich",
+        "name_shape": [5, 2, 3],
+    }
+    assert results.computed_results["beta.plt"] == {
+        "letter_counts": {"vowels": 2, "consonants": 2},
+        "name_vowel_fraction": 0.5,
+        "name_dominance": "vowel-rich",
+        "name_shape": [4, 2, 2],
+    }
     messages = [
         record.getMessage()
         for record in caplog.records
@@ -66,7 +81,13 @@ def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     ]
     assert emitted == [
         "emit letter_counts",
+        "emit name_vowel_fraction",
+        "emit name_dominance",
+        "emit name_shape",
         "emit letter_counts",
+        "emit name_vowel_fraction",
+        "emit name_dominance",
+        "emit name_shape",
     ]
 
 
@@ -104,8 +125,18 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
     assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
-    assert payload["computed_results"]["alpha.plt"] == {"letter_counts": {"vowels": 2, "consonants": 3}}
-    assert payload["computed_results"]["nested/beta.plt"] == {"letter_counts": {"vowels": 2, "consonants": 2}}
+    assert payload["computed_results"]["alpha.plt"] == {
+        "letter_counts": {"vowels": 2, "consonants": 3},
+        "name_vowel_fraction": 0.4,
+        "name_dominance": "consonant-rich",
+        "name_shape": [5, 2, 3],
+    }
+    assert payload["computed_results"]["nested/beta.plt"] == {
+        "letter_counts": {"vowels": 2, "consonants": 2},
+        "name_vowel_fraction": 0.5,
+        "name_dominance": "vowel-rich",
+        "name_shape": [4, 2, 2],
+    }
 
 
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
@@ -121,6 +152,12 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     assert lines == [
         "emit letter_counts",
         "one vowels=2 consonants=1",
+        "emit name_vowel_fraction",
+        "emit name_dominance",
+        "emit name_shape",
         "emit letter_counts",
         "two vowels=1 consonants=2",
+        "emit name_vowel_fraction",
+        "emit name_dominance",
+        "emit name_shape",
     ]

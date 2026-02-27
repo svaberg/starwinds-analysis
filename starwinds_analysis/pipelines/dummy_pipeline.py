@@ -22,10 +22,30 @@ def name_letter_counts(name: str) -> tuple[int, int]:
     return vowels, consonants
 
 
+def name_profile_payload(name: str) -> tuple[float, str, list[int]]:
+    """
+    Compute and emit additional filename payload values (float/string/array).
+    Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`, `test/test_sw_pipe.py`
+    """
+    letters = [ch.lower() for ch in name if ch.isalpha()]
+    letter_count = len(letters)
+    vowel_count = sum(ch in {"a", "e", "i", "o", "u"} for ch in letters)
+    consonant_count = letter_count - vowel_count
+    vowel_fraction = float(vowel_count / letter_count) if letter_count else 0.0
+    dominance = "vowel-rich" if vowel_count >= consonant_count else "consonant-rich"
+    shape = [letter_count, vowel_count, consonant_count]
+    emit_result("name_vowel_fraction", vowel_fraction)
+    emit_result("name_dominance", dominance)
+    emit_result("name_shape", shape)
+    return vowel_fraction, dominance, shape
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """
     Demo pipeline step for `.plt` files, separate from orchestration.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     path = Path(file_path)
-    name_letter_counts(path.stem)
+    name = path.stem
+    name_letter_counts(name)
+    name_profile_payload(name)
