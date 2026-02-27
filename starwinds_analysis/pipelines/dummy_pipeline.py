@@ -10,13 +10,14 @@ from starwinds_analysis.pipelines.result_context import emit_result
 log = logging.getLogger(__name__)
 
 
-def name_letter_counts(name: str) -> tuple[int, int]:
+def count_and_emit_letter_counts(name: str) -> tuple[int, int]:
     """
-    Count vowels and consonants in a name string.
+    Count vowels and consonants in a name string, then emit the payload.
     Used by: `starwinds_analysis/pipelines/dummy_pipeline.py`, `test/test_sw_pipe.py`
     """
     vowels = sum(ch.lower() in {"a", "e", "i", "o", "u"} for ch in str(name) if ch.isalpha())
     consonants = sum(ch.lower() not in {"a", "e", "i", "o", "u"} for ch in str(name) if ch.isalpha())
+    emit_result("letter_counts", {"vowels": vowels, "consonants": consonants})
     return vowels, consonants
 
 
@@ -26,6 +27,5 @@ def process_plt_file(file_path: str | Path) -> None:
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     path = Path(file_path)
-    vowels, consonants = name_letter_counts(path.stem)
-    emit_result("letter_counts", {"vowels": vowels, "consonants": consonants})
+    vowels, consonants = count_and_emit_letter_counts(path.stem)
     log.info("%s vowels=%d consonants=%d", path.name, vowels, consonants)

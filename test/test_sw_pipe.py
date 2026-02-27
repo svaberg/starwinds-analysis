@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
-from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts, process_plt_file
+from starwinds_analysis.pipelines.dummy_pipeline import count_and_emit_letter_counts, process_plt_file
 from starwinds_analysis.pipelines.result_context import emit_result
 from starwinds_analysis.pipelines.sw_pipe import SwPipeResults, discover_plt_files, main, run_sw_pipe
 
@@ -19,8 +19,8 @@ def test_discover_plt_files_finds_only_current_directory(tmp_path):
     assert [path.name for path in files] == ["a.plt", "b.PLT"]
 
 
-def test_name_letter_counts_counts_alpha_only():
-    assert name_letter_counts("a1-b2") == (1, 1)
+def test_count_and_emit_letter_counts_counts_alpha_only():
+    assert count_and_emit_letter_counts("a1-b2") == (1, 1)
 
 
 def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
