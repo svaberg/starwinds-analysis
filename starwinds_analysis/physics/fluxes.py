@@ -36,22 +36,13 @@ def open_magnetic_flux_vs_radius(
     fibonacci_randomize: bool = False,
     method: str = "nearest",
     fill_value: float = np.nan,
+    log_result: bool = True,
 ):
     """
     Signed/unsigned magnetic flux on spherical shells.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`,
       `starwinds_analysis/physics/fluxes.py`
     """
-    try:
-        n_radii = len(radii)
-    except TypeError:
-        n_radii = None
-    log.debug(
-        "open_magnetic_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
-        n_radii,
-        sampling,
-        method,
-    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -96,11 +87,15 @@ def open_magnetic_flux_vs_radius(
     coverage = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.debug(
-        "open_magnetic_flux_vs_radius done: n_shells=%d, finite_open=%d",
-        radii_profile.size,
-        np.count_nonzero(np.isfinite(open_flux)),
-    )
+    if log_result:
+        finite = np.isfinite(radii_profile) & np.isfinite(open_flux)
+        if np.any(finite):
+            idx = np.where(finite)[0][-1]
+            log.info(
+                "open_flux_wb radius=%g value=%g",
+                float(radii_profile[idx]),
+                float(open_flux[idx]),
+            )
     return {
         "radius [R]": radii_profile,
         "height [R]": radii_profile - 1.0,
@@ -127,11 +122,6 @@ def axisymmetric_open_flux_vs_radius(
     Axisymmetric open magnetic flux and fraction using shell-sampled B_r.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    log.debug(
-        "axisymmetric_open_flux_vs_radius start: sampling=%s, method=%s",
-        sampling,
-        method,
-    )
     if sampling != "grid":
         raise ValueError("axisymmetric_open_flux_vs_radius currently requires sampling='grid'")
     prof = open_magnetic_flux_vs_radius(
@@ -144,6 +134,7 @@ def axisymmetric_open_flux_vs_radius(
         sampling="grid",
         method=method,
         fill_value=fill_value,
+        log_result=False,
     )
     shells = prof["shell_samples"]
     # Reconstruct B_r from the cached shell samples in SI.
@@ -168,10 +159,16 @@ def axisymmetric_open_flux_vs_radius(
     prof["axisymmetric_open_flux [Wb]"] = np.array(axi_open_flux)
     prof["axisymmetric_open_flux_fraction [none]"] = np.array(fraction)
     prof["coverage [none]"] = np.minimum(np.array(prof["coverage [none]"]), cov_axi)
-    log.debug(
-        "axisymmetric_open_flux_vs_radius done: n_shells=%d",
-        np.array(prof["radius [R]"]).size,
-    )
+    radii_profile = np.array(prof["radius [R]"])
+    frac_profile = np.array(prof["axisymmetric_open_flux_fraction [none]"])
+    finite = np.isfinite(radii_profile) & np.isfinite(frac_profile)
+    if np.any(finite):
+        idx = np.where(finite)[0][-1]
+        log.info(
+            "axisymmetric_open_flux_fraction radius=%g value=%g",
+            float(radii_profile[idx]),
+            float(frac_profile[idx]),
+        )
     return prof
 
 def energy_flux_vs_radius(
@@ -195,16 +192,6 @@ def energy_flux_vs_radius(
     Radial energy flux profile using `E * U_r`.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`
     """
-    try:
-        n_radii = len(radii)
-    except TypeError:
-        n_radii = None
-    log.debug(
-        "energy_flux_vs_radius start: n_radii=%s, sampling=%s, method=%s",
-        n_radii,
-        sampling,
-        method,
-    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     if smart_ds.has_field("E [J/m^3]"):
@@ -245,11 +232,14 @@ def energy_flux_vs_radius(
     energy_flux, coverage = integrate_shell_scalar(energy_flux_density, area)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.debug(
-        "energy_flux_vs_radius done: n_shells=%d, finite=%d",
-        radii_profile.size,
-        np.count_nonzero(np.isfinite(energy_flux)),
-    )
+    finite = np.isfinite(radii_profile) & np.isfinite(energy_flux)
+    if np.any(finite):
+        idx = np.where(finite)[0][-1]
+        log.info(
+            "energy_flux_w radius=%g value=%g",
+            float(radii_profile[idx]),
+            float(energy_flux[idx]),
+        )
     return {
         "radius [R]": radii_profile,
         "height [R]": radii_profile - 1.0,

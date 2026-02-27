@@ -63,16 +63,6 @@ def torque_vs_radius(
     Used by: `test/test_surface_torque_analysis.py`, `test/test_shell_analysis.py`,
       `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
     """
-    try:
-        n_radii = len(radii)
-    except TypeError:
-        n_radii = None
-    log.debug(
-        "torque_vs_radius start: n_radii=%s, sampling=%s, method=%s",
-        n_radii,
-        sampling,
-        method,
-    )
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
@@ -105,11 +95,14 @@ def torque_vs_radius(
     coverage = np.minimum(cov_mag, cov_dyn)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.debug(
-        "torque_vs_radius done: n_shells=%d, finite_total=%d",
-        radii_profile.size,
-        np.count_nonzero(np.isfinite(total)),
-    )
+    finite = np.isfinite(radii_profile) & np.isfinite(total)
+    if np.any(finite):
+        idx = np.where(finite)[0][-1]
+        log.info(
+            "total_torque_nm radius=%g value=%g",
+            float(radii_profile[idx]),
+            float(total[idx]),
+        )
 
     return {
         "radius [R]": radii_profile,

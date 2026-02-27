@@ -18,7 +18,6 @@ def fibonacci_sphere(num_points, randomize=False):
     Generate approximately uniformly distributed points on the unit sphere
     Used by: `test/test_surface_torque_analysis.py`, `starwinds_analysis/analysis/shells.py`
     """
-    log.debug("Using Fibonacci sphere algorithm.")
     points = np.empty((num_points, 3))
 
     rnd = 1.

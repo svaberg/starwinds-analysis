@@ -1682,6 +1682,8 @@ def process_plt_file(file_path: str | Path) -> None:
     mass_loss_profile = diagnostics.get("mass_loss", {})
     radii = np.array(mass_loss_profile.get("radius [R]", []))
     mass_loss = np.array(mass_loss_profile.get("mass_loss [kg/s]", []))
+    mass_loss_ref = np.nan
+    radius_ref = np.nan
     if radii.ndim == 1 and mass_loss.ndim == 1 and radii.shape == mass_loss.shape and radii.size > 0:
         add_record(
             "mass_loss_profile_kg_s %r",
@@ -1695,9 +1697,47 @@ def process_plt_file(file_path: str | Path) -> None:
             idx = np.where(finite)[0][-1]
             r_ref = float(radii[idx])
             m_ref = float(mass_loss[idx])
-            log.info("wind_mass_loss file=%s radius=%gR value=%g kg/s", path.name, r_ref, m_ref)
             add_record("mass_loss_radius_R %r", r_ref)
             add_record("mass_loss_value_kg_s %r", m_ref)
+            radius_ref = r_ref
+            mass_loss_ref = m_ref
+    total_torque_ref = np.nan
+    total_torque = np.array(diagnostics.get("torque", {}).get("total_torque [Nm]", []))
+    if radii.ndim == 1 and total_torque.ndim == 1 and radii.shape == total_torque.shape and radii.size > 0:
+        finite = np.isfinite(radii) & np.isfinite(total_torque)
+        if np.any(finite):
+            idx = np.where(finite)[0][-1]
+            add_record("total_torque_radius_R %r", float(radii[idx]))
+            total_torque_ref = float(total_torque[idx])
+            add_record("total_torque_value_nm %r", total_torque_ref)
+    open_flux_ref = np.nan
+    open_flux = np.array(diagnostics.get("open_flux", {}).get("open_flux [Wb]", []))
+    if radii.ndim == 1 and open_flux.ndim == 1 and radii.shape == open_flux.shape and radii.size > 0:
+        finite = np.isfinite(radii) & np.isfinite(open_flux)
+        if np.any(finite):
+            idx = np.where(finite)[0][-1]
+            add_record("open_flux_radius_R %r", float(radii[idx]))
+            open_flux_ref = float(open_flux[idx])
+            add_record("open_flux_value_wb %r", open_flux_ref)
+    energy_flux_ref = np.nan
+    energy_flux = np.array(diagnostics.get("energy", {}).get("energy_flux [W]", []))
+    if radii.ndim == 1 and energy_flux.ndim == 1 and radii.shape == energy_flux.shape and radii.size > 0:
+        finite = np.isfinite(radii) & np.isfinite(energy_flux)
+        if np.any(finite):
+            idx = np.where(finite)[0][-1]
+            add_record("energy_flux_radius_R %r", float(radii[idx]))
+            energy_flux_ref = float(energy_flux[idx])
+            add_record("energy_flux_value_w %r", energy_flux_ref)
+    if np.isfinite(radius_ref):
+        log.info(
+            "result file=%s radius=%gR mass_loss_kg_s=%g total_torque_nm=%g open_flux_wb=%g energy_flux_w=%g",
+            path.name,
+            radius_ref,
+            mass_loss_ref,
+            total_torque_ref,
+            open_flux_ref,
+            energy_flux_ref,
+        )
     add_record(
         "shell_summary %r",
         summarize_shell_diagnostics(diagnostics),

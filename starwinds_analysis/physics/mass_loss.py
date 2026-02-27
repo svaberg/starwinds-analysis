@@ -35,16 +35,6 @@ def mass_loss_vs_radius(
     Used by: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
       `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`
     """
-    try:
-        n_radii = len(radii)
-    except TypeError:
-        n_radii = None
-    log.debug(
-        "mass_loss_vs_radius start: n_radii=%s, sampling=%s, method=%s",
-        n_radii,
-        sampling,
-        method,
-    )
     from starwinds_analysis.analysis.shells import (
         infer_body_radius_m,
         integrate_shell_scalar,
@@ -79,11 +69,14 @@ def mass_loss_vs_radius(
     mass_loss, coverage = integrate_shell_scalar(mass_flux, area)
     r_field = np.array(shells("R [R]"))
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.debug(
-        "mass_loss_vs_radius done: n_shells=%d, finite=%d",
-        radii_profile.size,
-        np.count_nonzero(np.isfinite(mass_loss)),
-    )
+    finite = np.isfinite(radii_profile) & np.isfinite(mass_loss)
+    if np.any(finite):
+        idx = np.where(finite)[0][-1]
+        log.info(
+            "mass_loss_kg_s radius=%g value=%g",
+            float(radii_profile[idx]),
+            float(mass_loss[idx]),
+        )
     return {
         "radius [R]": radii_profile,
         "height [R]": radii_profile - 1.0,
