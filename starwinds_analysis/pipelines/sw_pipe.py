@@ -99,7 +99,7 @@ class _PipelineLogFormatter(logging.Formatter):
         source = record.name.rsplit(".", 1)[-1]
         message = record.getMessage()
         if record.name.startswith("starwinds_analysis.pipelines.emit."):
-            origin = f"{source}.{record.funcName}:{record.lineno}"
+            origin = f"{record.name}.{record.funcName}:{record.lineno}"
         else:
             origin = source
         out = f"[{record.levelname.lower()}] {origin} {message}"
