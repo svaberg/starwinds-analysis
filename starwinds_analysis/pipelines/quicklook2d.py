@@ -1681,6 +1681,25 @@ def process_plt_file(file_path: str | Path) -> None:
     files = saved.get("files", {})
     quicklook_json = files.get("quicklook_json")
     diagnostics = out.get("diagnostics", {})
+    mass_loss_profile = diagnostics.get("mass_loss", {})
+    radii = np.array(mass_loss_profile.get("radius [R]", []))
+    mass_loss = np.array(mass_loss_profile.get("mass_loss [kg/s]", []))
+    if radii.ndim == 1 and mass_loss.ndim == 1 and radii.shape == mass_loss.shape and radii.size > 0:
+        add_record(
+            "mass_loss_profile_kg_s %r",
+            [
+                {"radius_R": float(r), "mass_loss_kg_s": float(m)}
+                for r, m in zip(radii, mass_loss)
+            ],
+        )
+        finite = np.isfinite(radii) & np.isfinite(mass_loss)
+        if np.any(finite):
+            idx = np.where(finite)[0][-1]
+            r_ref = float(radii[idx])
+            m_ref = float(mass_loss[idx])
+            log.info("wind_mass_loss radius=%gR value=%g kg/s", r_ref, m_ref)
+            add_record("mass_loss_radius_R %r", r_ref)
+            add_record("mass_loss_value_kg_s %r", m_ref)
     add_record("quicklook2d_summary_file %r", None if quicklook_json is None else str(quicklook_json))
     add_record(
         "quicklook2d_saved_files %r",
