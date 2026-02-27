@@ -506,6 +506,53 @@ class SmartDs:
             zone=zone,
         )
 
+    def append_fields(
+        self,
+        extra_fields: Mapping[str, np.ndarray],
+        *,
+        zone_suffix: str = "derived fields",
+    ) -> "SmartDs":
+        """
+        Return a new SmartDs with extra point-shaped fields appended to the raw dataset.
+        Used by: `starwinds_analysis/analysis/shells.py`
+        """
+        if not extra_fields:
+            return self
+
+        base_points = np.array(self.raw.points)
+        if base_points.ndim < 2:
+            raise ValueError("Expected raw points to have shape (..., nvars)")
+        base_shape = base_points.shape[:-1]
+
+        arrays = []
+        names = []
+        for name, values in extra_fields.items():
+            arr = np.array(values)
+            if arr.shape != base_shape:
+                raise ValueError(
+                    f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
+                )
+            arrays.append(arr[..., None])
+            names.append(name)
+
+        new_points = np.concatenate([base_points, *arrays], axis=-1)
+        new_dataset = Dataset(
+            new_points,
+            self.raw.corners,
+            self.raw.aux,
+            self.raw.title,
+            list(self.raw.variables) + names,
+            f"{self.raw.zone} ({zone_suffix})",
+        )
+        return type(self)(
+            new_dataset,
+            field_functions=self._field_functions,
+            aliases=self._aliases,
+            cache_enabled=self._cache_enabled,
+            computation_graph=self._computation_graph,
+            include_aux_in_loader=self._include_aux_in_loader,
+        )
+
     def _resolve_raw_name(self, name: str) -> str | None:
         """
         Resolve a requested name to an existing raw dataset field (via aliases).

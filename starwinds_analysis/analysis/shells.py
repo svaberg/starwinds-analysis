@@ -8,9 +8,11 @@ from __future__ import annotations
 import math
 
 import numpy as np
-from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
+from starwinds_analysis.utils import field_unit_from_brackets
+
+_SOLAR_RADIUS_M = 6.957e8
 
 def _resample_shell_points(
     smart_ds,
@@ -40,64 +42,18 @@ def _resample_shell_points(
         zone="shell-samples",
     )
 
-def _field_unit_from_brackets(name: str) -> str | None:
+def _to_float(value) -> float | None:
     """
-    Extract the unit substring from a bracketed field name like `X [R]`.
+    Parse an aux value into float, returning None on parse failure.
     Used by: `starwinds_analysis/analysis/shells.py`
     """
-    text = str(name)
-    i = text.rfind("[")
-    j = text.rfind("]")
-    if i == -1 or j == -1 or j <= i:
+    try:
+        return float(value)
+    except Exception:
         return None
-    return text[i + 1 : j].strip() or None
-
-def _append_fields_to_smart_ds(smart_ds, extra_fields: dict[str, np.ndarray], *, zone_suffix: str):
-    """
-    Attach derived arrays (free coords/areas/etc.) to a resampled shell SmartDs.
-    Used by: `starwinds_analysis/analysis/shells.py`
-    """
-    if not extra_fields:
-        return smart_ds
-
-    base_points = np.array(smart_ds.raw.points)
-    if base_points.ndim < 2:
-        raise ValueError("Expected SmartDs raw points to have shape (..., nvars)")
-    base_shape = base_points.shape[:-1]
-
-    arrays = []
-    names = []
-    for name, values in extra_fields.items():
-        arr = np.array(values)
-        if arr.shape != base_shape:
-            raise ValueError(
-                f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
-            )
-        arrays.append(arr[..., None])
-        names.append(name)
-
-    new_points = np.concatenate([base_points, *arrays], axis=-1)
-    new_dataset = Dataset(
-        new_points,
-        smart_ds.raw.corners,
-        smart_ds.raw.aux,
-        smart_ds.raw.title,
-        list(smart_ds.raw.variables) + names,
-        f"{smart_ds.raw.zone} ({zone_suffix})",
-    )
-    return type(smart_ds)(
-        new_dataset,
-        field_functions=smart_ds._field_functions,
-        aliases=smart_ds._aliases,
-        cache_enabled=smart_ds._cache_enabled,
-        computation_graph=smart_ds._computation_graph,
-        include_aux_in_loader=smart_ds._include_aux_in_loader,
-    )
 
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     """
-    TODO this is too permissive and hacky.
-    TODO if RBODY exists, which it often does, it is in solar units, same as X [R], etc.
     Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI.
     Used by: `starwinds_analysis/physics/orbit_local.py`,
       `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`,
@@ -107,17 +63,31 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
         return float(body_radius_m)
 
     aux = getattr(smart_ds, "aux", {})
-    for key in ("Star_radius_m", "Planet_radius_m", "BODY_RADIUS_M", "RBODY [m]", "RBODY_M"):
+    for key in (
+        "Star_radius_m",
+        "Planet_radius_m",
+        "BODY_RADIUS_M",
+        "RBODY [m]",
+        "RBODY_M",
+        "RSTAR [m]",
+        "RPLANET [m]",
+    ):
         if key in aux:
-            try:
-                return float(aux[key])
-            except Exception:
-                pass
-    
+            value = _to_float(aux[key])
+            if value is not None and np.isfinite(value) and value > 0:
+                return value
+
+    for key in ("RBODY", "RBODY [R]", "BODY_RADIUS_R", "RSTAR [R]", "RPLANET [R]"):
+        if key in aux:
+            value = _to_float(aux[key])
+            if value is not None and np.isfinite(value) and value > 0:
+                return value * _SOLAR_RADIUS_M
 
     # If a graph exposes RBODY [m], use it.
     try:
-        return float(smart_ds.variable("RBODY [m]"))
+        value = float(smart_ds.variable("RBODY [m]"))
+        if np.isfinite(value) and value > 0:
+            return value
     except Exception:
         pass
 
@@ -242,7 +212,7 @@ def sample_spherical_shells(
         area = area * float(length_unit_to_m) ** 2
 
     x_name, y_name, z_name = coordinate_fields
-    length_unit = _field_unit_from_brackets(x_name) or "R"
+    length_unit = field_unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
     theta_name = "theta [rad]"
     phi_name = "phi [rad]"
@@ -254,8 +224,7 @@ def sample_spherical_shells(
     phi_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
     area_field = np.array(area)
 
-    shell_ds = _append_fields_to_smart_ds(
-        resampled,
+    shell_ds = resampled.append_fields(
         {
             r_name: r_field,
             theta_name: theta_field,
@@ -320,7 +289,7 @@ def sample_spherical_shells_fibonacci(
         area = area * float(length_unit_to_m) ** 2
 
     x_name, y_name, z_name = coordinate_fields
-    length_unit = _field_unit_from_brackets(x_name) or "R"
+    length_unit = field_unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
     theta_name = "theta [rad]"
     phi_name = "phi [rad]"
@@ -332,8 +301,7 @@ def sample_spherical_shells_fibonacci(
     phi_field = np.broadcast_to(phi[None, :, :], (radii.size, n_points, 1)).copy()
     area_field = np.broadcast_to(area, (radii.size, n_points, 1)).copy()
 
-    shell_ds = _append_fields_to_smart_ds(
-        resampled,
+    shell_ds = resampled.append_fields(
         {
             r_name: r_field,
             theta_name: theta_field,
@@ -386,9 +354,9 @@ def sample_spherical_shells_by_strategy(
         )
     raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
-def integrate_shell_scalar(values, area):
+def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
     """
-    Integrate scalar values over shell surfaces with NaN-safe area weighting.
+    Integrate scalar values over shell surfaces and return sum + coverage.
     Used by: `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`,
       `examples/smartds_inner_boundary_magnetic_zdi.ipynb`,
       `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more)
@@ -397,6 +365,13 @@ def integrate_shell_scalar(values, area):
     a = np.array(area)
     if v.shape != a.shape:
         a = np.broadcast_to(a, v.shape)
+
+    if not ignore_nan:
+        if not np.all(np.isfinite(v)) or not np.all(np.isfinite(a)):
+            raise ValueError("Non-finite values found; pass ignore_nan=True to ignore them")
+        sum_val = np.sum(v * a, axis=(-2, -1))
+        coverage = np.ones_like(sum_val, dtype=float)
+        return sum_val, coverage
 
     mask = np.isfinite(v) & np.isfinite(a)
     sum_val = np.sum(np.where(mask, v * a, 0.0), axis=(-2, -1))
@@ -412,4 +387,3 @@ def integrate_shell_scalar(values, area):
         )
 
     return sum_val, coverage
-
