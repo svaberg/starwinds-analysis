@@ -376,7 +376,6 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("")
     from_file_calls: list[Path] = []
-    plot_calls: list[str] = []
     sentinel_ds = type("Fake2DSmartDs", (), {"corners": np.zeros((1, 4), dtype=int)})()
 
     class FakeSmartDs:
@@ -387,23 +386,24 @@ def test_process_plt_file_runs_per_file_quicklook_and_closes_figures(tmp_path, m
 
     created_figs: list[plt.Figure] = []
 
-    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+    plot_calls: list[str] = []
+
+    def fake_plot_xz(_smart_ds, *, var=None, **_kwargs):
         fig, ax = plt.subplots()
         ax.plot([0.0, 1.0], [0.0, 1.0], ",")
         created_figs.append(fig)
-        plot_calls.append(str(preset))
+        plot_calls.append(str(var))
         return fig, (ax,), None
 
     monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
     monkeypatch.setattr(
-        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
-        fake_plot_slice_quicklook,
+        "starwinds_analysis.pipelines.slice.plot_xz_slice_tripcolor_with_cross_quantiles",
+        fake_plot_xz,
     )
     process_plt_file(file_path)
 
     assert from_file_calls == [file_path]
-    assert plot_calls == ["rho", "u", "b"]
+    assert plot_calls == ["Rho [kg/m^3]", "U [m/s]", "B [T]"]
     assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
     assert (tmp_path / "slice" / "alpha.slices.u.png").exists()
     assert (tmp_path / "slice" / "alpha.slices.b.png").exists()
@@ -443,21 +443,20 @@ def test_process_plt_file_can_force_3d_inputs(tmp_path, monkeypatch):
         def from_file(cls, _path):
             return Fake3DDataset()
 
-    def fake_plot_slice_quicklook(_smart_ds, *, preset=None, style=None):
+    def fake_plot_xz(_smart_ds, *, var=None, **_kwargs):
         fig, ax = plt.subplots()
         ax.plot([0.0, 1.0], [0.0, 1.0], ",")
-        calls.append(str(preset))
+        calls.append(str(var))
         return fig, (ax,), None
 
     monkeypatch.setattr("starwinds_analysis.pipelines.slice.SmartDs", FakeSmartDs)
-    monkeypatch.setattr("starwinds_analysis.pipelines.slice._has_field", lambda _ds, _name: True)
     monkeypatch.setattr(
-        "starwinds_analysis.pipelines.slice.plot_slice_quicklook",
-        fake_plot_slice_quicklook,
+        "starwinds_analysis.pipelines.slice.plot_xz_slice_tripcolor_with_cross_quantiles",
+        fake_plot_xz,
     )
     process_plt_file(file_path, force_3d=True)
 
-    assert calls == ["rho", "u", "b"]
+    assert calls == ["Rho [kg/m^3]", "U [m/s]", "B [T]"]
     assert (tmp_path / "slice" / "alpha.slices.rho.png").exists()
 
 

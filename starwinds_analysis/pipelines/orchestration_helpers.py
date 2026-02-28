@@ -65,6 +65,60 @@ def resolve_quicklook_prefix(*, prefix: str | None, input_file=None) -> str:
     return "quicklook2d"
 
 
+def prepare_smartds(smart_ds, *, body_radius_m: float) -> None:
+    """
+    Best-effort SmartDs graph setup for pipeline entrypoints.
+    Used by: `starwinds_analysis/pipelines/slice.py`
+    """
+    if hasattr(smart_ds, "add_batsrus_graph"):
+        try:
+            smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+        except Exception:
+            pass
+    if hasattr(smart_ds, "add_spherical_graph"):
+        try:
+            smart_ds.add_spherical_graph(vectors=("B", "U"))
+            return
+        except Exception:
+            pass
+    if hasattr(smart_ds, "add_spherical_fields"):
+        try:
+            smart_ds.add_spherical_fields(vectors=("B", "U"))
+        except Exception:
+            pass
+
+
+def is_2d_input(smart_ds) -> bool:
+    """
+    Detect whether a dataset behaves like a 2D slice input.
+    Used by: `starwinds_analysis/pipelines/slice.py`
+    """
+    corners = getattr(smart_ds, "corners", None)
+    if getattr(corners, "ndim", 0) == 2:
+        if corners.shape[1] == 4:
+            return True
+        if corners.shape[1] >= 8:
+            return False
+
+    constant_axes = 0
+    for name in ("X [R]", "Y [R]", "Z [R]"):
+        try:
+            values = np.ravel(smart_ds(name))
+        except Exception:
+            continue
+        finite = np.isfinite(values)
+        if not np.any(finite):
+            constant_axes += 1
+            continue
+        finite_values = values[finite]
+        vmin = np.min(finite_values)
+        vmax = np.max(finite_values)
+        scale = max(abs(vmin), abs(vmax), 1.0)
+        if abs(vmax - vmin) <= (1.0e-12 + 1.0e-10 * scale):
+            constant_axes += 1
+    return constant_axes >= 1 or (constant_axes == 0 and not hasattr(smart_ds, "corners"))
+
+
 def array_summary(values):
     """
     Compute compact summary statistics for a numeric array-like value.
