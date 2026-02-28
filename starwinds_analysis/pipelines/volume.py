@@ -48,6 +48,12 @@ from starwinds_analysis.visualisation.profile_plots import (
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.utils import triangles
+from starwinds_analysis.visualisation.slice import (
+    plot_xz_slice_tripcolor_with_cross_quantiles,
+    plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
+    plot_xz_slice_tripcolor_with_marginals,
+    plot_xz_slice_with_marginal_points,
+)
 from starwinds_analysis.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
@@ -131,25 +137,6 @@ SLICE_PRESETS: dict[str, SlicePreset] = {
     **SLICE_PRESETS_RAW_DISPLAY,
 }
 
-def _load_slice_styles():
-    """
-    Lazy-import slice plotting styles/helpers only when slice quicklooks are used.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    from starwinds_analysis.visualisation.slice import (
-        plot_xz_slice_tripcolor_with_cross_quantiles,
-        plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-        plot_xz_slice_tripcolor_with_marginals,
-        plot_xz_slice_with_marginal_points,
-    )
-
-    return {
-        "marginals": plot_xz_slice_tripcolor_with_marginals,
-        "cross_quantiles": plot_xz_slice_tripcolor_with_cross_quantiles,
-        "marginal_points": plot_xz_slice_with_marginal_points,
-        "unique_quantiles": plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-    }
-
 RADIAL_SUMMARY_PRESETS_SI_DIAGNOSTIC: dict[str, tuple[str, ...]] = {
     "wind_basic": (
         "Rho [kg/m^3]",
@@ -173,38 +160,6 @@ RADIAL_SUMMARY_PRESETS: dict[str, tuple[str, ...]] = {
     **RADIAL_SUMMARY_PRESETS_RAW_DISPLAY,
 }
 
-def _has_field(ds, name: str) -> bool:
-    """
-    Check if a SmartDs has a field without raising in quicklook field selection.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    if hasattr(ds, "has_field"):
-        try:
-            return bool(ds.has_field(name))
-        except Exception:
-            return False
-    try:
-        ds.variable(name)
-    except Exception:
-        return False
-    return True
-
-def _normalize_overlays(ds, overlays):
-    """
-    Normalize overlay specs into a list for quicklook plotting.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    out = []
-    for item in overlays or ():
-        if len(item) == 2:
-            field, level = item
-            color = "k"
-        else:
-            field, level, color = item
-        if _has_field(ds, field):
-            out.append((field, float(level), color))
-    return out
-
 def plot_slice_quicklook(
     ds,
     *,
@@ -219,33 +174,51 @@ def plot_slice_quicklook(
     Thin 2D quicklook wrapper over existing slice plotting helpers.
     Used by: `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    slice_styles = _load_slice_styles()
-
     if field is None:
         if preset is None:
             raise ValueError("Provide either field=... or preset=...")
         if preset not in SLICE_PRESETS:
             raise KeyError(f"Unknown preset '{preset}'")
         preset_cfg = SLICE_PRESETS[preset]
-        field = next((name for name in preset_cfg.field_candidates if _has_field(ds, name)), None)
+        field = None
+        for name in preset_cfg.field_candidates:
+            try:
+                ds.variable(name)
+            except Exception:
+                continue
+            field = name
+            break
         if field is None:
             joined = ", ".join(preset_cfg.field_candidates)
             raise KeyError(f"None of the preset fields are available for '{preset}': {joined}")
         if overlays is None:
             overlays = preset_cfg.overlays
 
-    if style not in slice_styles:
-        raise KeyError(f"Unknown style '{style}'. Valid styles: {sorted(slice_styles)}")
-
-    fig, axes, cbar = slice_styles[style](ds, var=field, **slice_kwargs)
+    if style == "marginals":
+        fig, axes, cbar = plot_xz_slice_tripcolor_with_marginals(ds, var=field, **slice_kwargs)
+    elif style == "cross_quantiles":
+        fig, axes, cbar = plot_xz_slice_tripcolor_with_cross_quantiles(ds, var=field, **slice_kwargs)
+    elif style == "marginal_points":
+        fig, axes, cbar = plot_xz_slice_with_marginal_points(ds, var=field, **slice_kwargs)
+    elif style == "unique_quantiles":
+        fig, axes, cbar = plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(ds, var=field, **slice_kwargs)
+    else:
+        raise KeyError("Unknown style '%s'. Valid styles: %s" % (style, ["cross_quantiles", "marginal_points", "marginals", "unique_quantiles"]))
     ax_main = axes[0]
-
-    contour_kwargs = dict(contour_kwargs or {})
     tris = triangles(ds)
-    for overlay_field, level, color in _normalize_overlays(ds, overlays):
-        values = np.array(ds.variable(overlay_field))
+    for item in overlays or ():
+        if len(item) == 2:
+            overlay_field, level = item
+            color = "k"
+        else:
+            overlay_field, level, color = item
+        try:
+            values = np.array(ds.variable(overlay_field))
+        except Exception:
+            continue
         kwargs = {"levels": [level], "colors": [color], "linewidths": 1.0}
-        kwargs.update(contour_kwargs)
+        if contour_kwargs:
+            kwargs.update(contour_kwargs)
         ax_main.tricontour(tris, values, **kwargs)
 
     return fig, axes, cbar
@@ -269,7 +242,14 @@ def plot_radius_quicklook(
             raise ValueError("Provide either fields=... or preset=...")
         if preset not in RADIAL_SUMMARY_PRESETS:
             raise KeyError(f"Unknown radial preset '{preset}'")
-        fields = tuple(f for f in RADIAL_SUMMARY_PRESETS[preset] if _has_field(ds, f))
+        resolved_fields = []
+        for candidate in RADIAL_SUMMARY_PRESETS[preset]:
+            try:
+                ds.variable(candidate)
+            except Exception:
+                continue
+            resolved_fields.append(candidate)
+        fields = tuple(resolved_fields)
         if not fields:
             raise KeyError(f"No fields from preset '{preset}' are available")
     else:
@@ -1101,100 +1081,6 @@ def flatten_orbit_results_arrays(orbit_results):
             )
     return arrays
 
-def save_shell_diagnostics_json(
-    path,
-    diagnostics,
-    *,
-    band_radius_range=None,
-    star_mass_kg: float | None = None,
-    star_radius_m: float | None = None,
-):
-    """
-    Save shell diagnostics summary JSON to disk.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = summarize_shell_diagnostics(
-        diagnostics,
-        band_radius_range=band_radius_range,
-        star_mass_kg=star_mass_kg,
-        star_radius_m=star_radius_m,
-    )
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(path))
-    return path
-
-def save_shell_diagnostics_npz(path, diagnostics):
-    """
-    Save shell diagnostics arrays to NPZ.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = flatten_shell_diagnostics_arrays(diagnostics)
-    np.savez(path, **arrays)
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(path))
-    return path
-
-def save_orbit_results_json(path, orbit_results):
-    """
-    Save orbit-result summaries to JSON.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = summarize_orbit_results(orbit_results)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(path))
-    return path
-
-def save_orbit_results_npz(path, orbit_results):
-    """
-    Save orbit-result arrays to NPZ.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    arrays = flatten_orbit_results_arrays(orbit_results)
-    np.savez(path, **arrays)
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(path))
-    return path
-
-def save_quicklook2d_summary_json(
-    path,
-    *,
-    input_file=None,
-    diagnostics=None,
-    orbit_results=None,
-    band_radius_range=None,
-    star_mass_kg: float | None = None,
-    star_radius_m: float | None = None,
-    exported_files: dict[str, str] | None = None,
-):
-    """
-    Save one canonical quicklook summary file intended for easy ingestion.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "input_file": None if input_file is None else str(input_file),
-        "shells": None
-        if diagnostics is None
-        else summarize_shell_diagnostics(
-            diagnostics,
-            band_radius_range=band_radius_range,
-            star_mass_kg=star_mass_kg,
-            star_radius_m=star_radius_m,
-        ),
-        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
-        "files": dict(exported_files or {}),
-    }
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(path))
-    return path
-
 def save_quicklook2d_bundle(
     output_dir,
     *,
@@ -1241,43 +1127,56 @@ def save_quicklook2d_bundle(
             log_pipeline_event(pipeline_log, "quicklook.saved", kind=f"{group_name}_png", file=str(p))
 
     if diagnostics is not None:
-        saved["files"]["shells_json"] = save_shell_diagnostics_json(
-            outdir / f"{prefix}.shells.json",
+        shells_json_path = outdir / f"{prefix}.shells.json"
+        shells_payload = summarize_shell_diagnostics(
             diagnostics,
             band_radius_range=band_radius_range,
             star_mass_kg=star_mass_kg,
             star_radius_m=star_radius_m,
         )
-        saved["files"]["shells_npz"] = save_shell_diagnostics_npz(
-            outdir / f"{prefix}.shells.npz",
-            diagnostics,
-        )
+        shells_json_path.write_text(json.dumps(shells_payload, indent=2, sort_keys=True))
+        saved["files"]["shells_json"] = shells_json_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(shells_json_path))
+
+        shells_npz_path = outdir / f"{prefix}.shells.npz"
+        np.savez(shells_npz_path, **flatten_shell_diagnostics_arrays(diagnostics))
+        saved["files"]["shells_npz"] = shells_npz_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(shells_npz_path))
 
     if orbit_results:
-        saved["files"]["orbits_json"] = save_orbit_results_json(
-            outdir / f"{prefix}.orbits.json",
-            orbit_results,
-        )
-        saved["files"]["orbits_npz"] = save_orbit_results_npz(
-            outdir / f"{prefix}.orbits.npz",
-            orbit_results,
-        )
+        orbits_json_path = outdir / f"{prefix}.orbits.json"
+        orbits_payload = summarize_orbit_results(orbit_results)
+        orbits_json_path.write_text(json.dumps(orbits_payload, indent=2, sort_keys=True))
+        saved["files"]["orbits_json"] = orbits_json_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(orbits_json_path))
+
+        orbits_npz_path = outdir / f"{prefix}.orbits.npz"
+        np.savez(orbits_npz_path, **flatten_orbit_results_arrays(orbit_results))
+        saved["files"]["orbits_npz"] = orbits_npz_path
+        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(orbits_npz_path))
 
     exported_files = {}
     for key, path in saved["figures"].items():
         exported_files[f"figure:{key}"] = str(path)
     for key, path in saved["files"].items():
         exported_files[f"file:{key}"] = str(path)
-    saved["files"]["quicklook_json"] = save_quicklook2d_summary_json(
-        outdir / f"{prefix}.quicklook2d.json",
-        input_file=input_file,
-        diagnostics=diagnostics,
-        orbit_results=orbit_results,
-        band_radius_range=band_radius_range,
-        star_mass_kg=star_mass_kg,
-        star_radius_m=star_radius_m,
-        exported_files=exported_files,
-    )
+    quicklook_json_path = outdir / f"{prefix}.quicklook2d.json"
+    quicklook_payload = {
+        "input_file": None if input_file is None else str(input_file),
+        "shells": None
+        if diagnostics is None
+        else summarize_shell_diagnostics(
+            diagnostics,
+            band_radius_range=band_radius_range,
+            star_mass_kg=star_mass_kg,
+            star_radius_m=star_radius_m,
+        ),
+        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
+        "files": dict(exported_files or {}),
+    }
+    quicklook_json_path.write_text(json.dumps(quicklook_payload, indent=2, sort_keys=True))
+    saved["files"]["quicklook_json"] = quicklook_json_path
+    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(quicklook_json_path))
     log_pipeline_event(pipeline_log,
         "quicklook.bundle.done",
         figures=len(saved["figures"]),
@@ -1285,14 +1184,6 @@ def save_quicklook2d_bundle(
     )
 
     return saved
-
-def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = None):
-    """
-    Best-effort setup of common BATSRUS + spherical derived fields.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    prepare_smartds(smart_ds, body_radius_m=body_radius_m)
-    return smart_ds
 
 def run_quicklook2d(
     smart_ds,
@@ -1338,7 +1229,7 @@ def run_quicklook2d(
         output_dir=None if output_dir is None else str(output_dir),
         prefix=_resolve_quicklook_prefix(prefix=prefix, input_file=input_file),
     )
-    prepare_smartds_for_quicklook(smart_ds, body_radius_m=body_radius_m)
+    prepare_smartds(smart_ds, body_radius_m=body_radius_m)
 
     if orbit_planets:
         planet_specs = []
