@@ -12,16 +12,16 @@ out of scope for the current NumPy/SciPy-first quicklook migration.
 ## Snapshot (Current)
 
 - Old `batplotlib` test files: `23`
-- New repo test files: `16`
+- New repo test files: `21`
 - Exact filename overlap: `1` (`test_volumetric.py`)
-- Current full suite in `starwinds-analysis` env: `74 passed, 14 skipped`
+- Current full suite in `starwinds-analysis` env: not re-counted in this pass
 
 Notes:
 
 - Several legacy tests in this repo are currently skipped when the old `reader` API is
   unavailable (it was renamed to `vtk_utils.py`).
 - The new repo has many renamed/split tests that cover old quicklook behavior in a more
-  modular way (shells, orbits, quicklook2d, orbit-surface, surface-torque).
+  modular way (shells, orbits, orbit-surface, surface-torque, and pipeline smoke tests).
 
 ## Status Legend
 
@@ -34,21 +34,21 @@ Notes:
 
 | Old batplotlib test | Quicklook relevance | New equivalent(s) in this repo | Status | Notes |
 | --- | --- | --- | --- | --- |
-| `test_elliptic_orbit.py` | High | `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `test/test_planetary_orbits.py`, `test/test_quicklook2d.py` | Migrated | Split into orbit geometry/sampling, local estimates, pressure, orbit-surface diagnostics, and runner coverage. |
+| `test_elliptic_orbit.py` | High | `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `test/test_planetary_orbits.py` | Migrated | Split into orbit geometry/sampling, local estimates, pressure, and orbit-surface diagnostics. |
 | `test_integral_physical.py` | High | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Physical shell integrals (mass/open flux/torque comparisons) covered; Tecplot integral machinery not ported. |
 | `test_torque.py` | High | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Spherical-shell torque + explicit-surface torque core are covered; automatic surface extraction workflows are deferred. |
-| `test_histograms.py` | High | `test/test_quicklook2d.py` | Partial | Radius scatter/binned/CDF + modernized `hist2d` mode covered; not a byte-for-byte Tecplot-style histogram port. |
+| `test_histograms.py` | High | (none; plotting primitives only) | Deferred | Histogram plotting primitives exist in the library, but dedicated modern tests are still missing. |
 | `test_fibonacci_sphere.py` | Medium | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Fibonacci sampling is exercised via shell area/exactness and torque integration tests; no standalone algorithm-only test yet. |
 | `test_polar_azimuthal_plot.py` | Medium | `test/test_shell_analysis.py` | Partial | Polar/azimuthal grid behavior covered indirectly via shell sampling and axisymmetric flux diagnostics. |
 | `test_geometry.py` | Medium | `test/test_shell_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Shell/orbit-surface geometry checks exist, but no direct port of old geometry utility tests. |
-| `test_quantiles.py` | Medium | `test/test_shell_analysis.py`, `test/test_quicklook2d.py` | Partial | Weighted quantiles/summaries and phase quantile outputs covered in new analytics. |
+| `test_quantiles.py` | Medium | `test/test_shell_analysis.py` | Partial | Weighted quantiles/summaries and phase quantile outputs are covered in analytics tests. |
 | `test_vector_fields.py` | Medium | `test/test_smart_ds.py`, `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Spherical vector usage covered in downstream analytics; no dedicated vector-transform test module yet. |
 | `test_zone_coordinate_transforms.py` | Medium | `test/test_smart_ds.py`, `test/test_shell_analysis.py` | Partial | Spherical-coordinate/derived-component behavior covered functionally, not as direct transform unit tests. |
 | `test_load_file.py` | Medium | `test/test_smart_ds.py`, `test/test_read_plt.py` (legacy) | Partial | New `SmartDs`/reader path is tested, but legacy `reader` import compatibility path is currently skipped. |
 | `test_integral.py` | Medium | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | New shell/surface integration formulas tested; old Tecplot integration API tests are not ported. |
-| `test_numpy_save.py` | Medium | `test/test_quicklook2d.py` | Partial | New JSON/NPZ bundle export is tested; old exact save/load patterns not ported 1:1. |
+| `test_numpy_save.py` | Medium | `test/test_sw_pipe.py` | Partial | Recorder-backed `sw-pipe.processed.json` persistence is tested; the removed quicklook bundle export is not part of the current surface. |
 | `test_units.py` | Medium | (none; unit tests deferred) | Deferred | Unit-framework decisions intentionally deferred while pursuing SI gatekeeping at wrapper boundary. |
-| `test_confidence_bands.py` | Low | `test/test_quicklook2d.py` (indirect plotting summaries) | Deferred | Plot utility coverage exists, but confidence-band-specific test logic not ported. |
+| `test_confidence_bands.py` | Low | (none) | Deferred | Plot utility coverage exists, but confidence-band-specific test logic is not ported. |
 | `test_color_maps.py` | Low | (none) | Out of Scope | Tecplot color-map tooling. |
 | `test_cartopy.py` | Low | (none) | Out of Scope | Cartopy mapping workflow not part of current quicklook/core migration. |
 | `test_chiantipy_spectrum.py` | Low | (none) | Out of Scope | Chianti/spectrum-specific functionality not in current scope. |
@@ -65,7 +65,6 @@ These are mostly the modern replacements for old quicklook monolith behavior:
 - `test/test_smart_ds.py`
 - `test/test_shell_analysis.py`
 - `test/test_slices_analysis.py`
-- `test/test_quicklook2d.py`
 - `test/test_orbit_analysis.py`
 - `test/test_orbit_pressure.py`
 - `test/test_orbit_surface_analysis.py`
@@ -78,4 +77,3 @@ These are mostly the modern replacements for old quicklook monolith behavior:
 2. Add dedicated vector/spherical transform tests (instead of only downstream analytic coverage).
 3. Decide whether to migrate legacy `reader` tests via compatibility shim or permanently retire them in favor of `SmartDs` + `vtk_utils` tests.
 4. Revisit `test_units.py` only after the SI/unit-framework direction is finalized.
-

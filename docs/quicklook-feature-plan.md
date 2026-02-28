@@ -35,25 +35,25 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - wind torque profile on spherical shells (magnetic + dynamic + total)
 - open magnetic flux and axisymmetric open-flux fraction profiles
 - energy flux profile on spherical shells
-- a first `quicklook2d` wrapper (slice presets/overlays + shell summary figure)
 - pure local analytical estimate helpers (mass loss / torque formulas + summaries)
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
-- orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy) with quicklook plotting wrappers
+- orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy)
 - orbit-surface (surface-of-revolution) pressure/standoff analytics on 3D files without VTK/PyVista
 - orbit-surface (surface-of-revolution) torque diagnostics (`T1..T4` + total) on 3D files without VTK/PyVista
-- `run_quicklook2d` support for orbit-surface pressure/torque figures and bundle export (JSON/NPZ summaries + PNGs)
-- named-planet orbit presets (Mercury/Venus/Earth/Mars) and direct quicklook runner support for orbit/orbit-surface diagnostics
 - generic explicit-surface torque integrator core (points/normals/areas; non-VTK), validated against spherical-shell torque
 - modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
-- shell summary export helpers (`JSON` + `NPZ`) and radius/scatter quicklook wrappers
-- canonical pipeline summary export (`*.quicklook2d.json`) for easy ingestion
-- one-shot `quicklook2d` runner for batch figure generation and bundle export
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
 - open-wind magnetisation (`Upsilon_open`) scaling helper and quicklook plotting support (old quicklook-style analytical diagnostic)
-- local-vs-shell orbit comparison plots (mass loss and torque) in `quicklook2d`
-- orbit local-vs-shell comparison summary export (`JSON` + `NPZ`) in quicklook bundles
+- `slice` pipeline for simple 2D `rho` / `U` / `B` PNG outputs
+- `volume` pipeline for simple 3D shell-summary PNG output plus recorded shell diagnostics in `sw-pipe.processed.json`
+
+Removed after refactor:
+
+- the temporary `quicklook2d` wrapper/runner layer
+- quicklook-specific JSON/NPZ bundle export helpers
+- `*.quicklook2d.json` output files
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
 
@@ -91,22 +91,49 @@ The table below maps high-use non-3D features from the old script to the new rep
 
 | Old quicklook feature | Status in new repo | Notes |
 | --- | --- | --- |
-| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Implemented (v1 wrapper) | `quicklook2d` preset wrapper + one-shot runner + structured XZ resampling from 3D datasets |
-| 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Implemented (v1 wrapper) | Optional Matplotlib `tricontour` overlays with preset defaults |
-| Scatter plots vs height/radius | Implemented (v1 wrapper) | `quicklook2d` radius quicklook wrapper added (scatter/binned/CDF modes) |
-| Radial “monster” histogram plots | Implemented (modernized v1) | `hist2d` radius-vs-value histogram quicklook mode added; not a byte-for-byte port of the old volume-weighted style |
+| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Partial | Core slice plotting primitives exist and the `slice` pipeline outputs `rho` / `U` / `B`; the old broad preset wrapper is gone |
+| 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Partial | Straightforward with Matplotlib primitives, but not packaged as a current pipeline/helper surface |
+| Scatter plots vs height/radius | Partial | Plotting primitives still exist; no current one-shot quicklook wrapper |
+| Radial “monster” histogram plots | Partial | `hist2d` primitives exist, but there is no active quicklook pipeline around them |
 | Shell mass-loss integral (`add_integral_mass`) | Implemented (v1, Fibonacci default) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
 | Shell torque integral (`add_integral_momentum`) | Implemented (v1, Fibonacci default) | Spherical-shell magnetic/dynamic/total profile API added |
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
 | Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; automatic surface extraction remains deferred |
-| Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles in quicklook JSON export |
+| Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles for analysis and recorded outputs |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
-| Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Implemented (v3) | Local-path and orbit-surface (surface-of-revolution) thermal/magnetic/ram (+relative ram) and stand-off proxy, plus named-planet preset support, no Tecplot/VTK |
-| Orbit-surface torque diagnostics (new non-VTK workflow) | Implemented (v1) | Surface-of-revolution torque terms (`T1..T4` + total) via explicit surface points/normals/areas, plus quicklook plotting wrappers |
-| Shell summary persistence (`.p` pickle aux outputs) | Implemented (redesigned v1) | `quicklook2d` bundle export writes shell summaries to JSON/NPZ and a canonical `*.quicklook2d.json` ingest file; when no prefix is provided, output basenames are derived from the input `.plt` filename |
+| Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Partial | Core analytics exist in `physics/`; the old broad quicklook plotting surface is not present as an active pipeline |
+| Orbit-surface torque diagnostics (new non-VTK workflow) | Partial | Core analytics exist in `physics/`; automatic surface extraction and a thin user-facing workflow are still missing |
+| Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `sw-pipe.processed.json` recorder entries; the old-style per-run bundle export was removed |
+
+## Current Converted vs Missing Snapshot
+
+Converted and usable now:
+
+- shell mass loss
+- shell torque
+- shell open magnetic flux
+- shell energy flux
+- axisymmetric open-flux fraction
+- shell-band weighted summaries
+- local orbit/path mass-loss and torque estimates
+- orbit pressure analytics
+- orbit-surface pressure analytics
+- orbit-surface torque analytics
+- direct 2D slice plotting primitives
+- minimal `slice` and `volume` pipelines
+
+Still missing or intentionally not rebuilt yet:
+
+- a unified replacement for the old all-in-one `quicklook(...)` entrypoint
+- broad preset-driven 2D quicklook wrappers
+- current pipeline support for radial histogram/scatter quicklooks
+- current pipeline support for orbit comparison plots
+- automatic surface extraction for generic surface torque
+- old-style per-run bundle export (`JSON` / `NPZ` quicklook bundles)
+- 3D VTK/Tecplot workflows (still out of scope here)
 
 ## High-Priority Feature Plan
 
@@ -258,10 +285,12 @@ This keeps physics, sampling, and plotting separate.
 - `starwinds_analysis/analysis/stats.py`
   - weighted mean/std
   - weighted quantiles
-- `starwinds_analysis/pipelines/quicklook2d.py`
+- `starwinds_analysis/pipelines/slice.py`
   - orchestration only
-  - preset plot bundles
-  - saves figures / tabular summaries
+  - direct `rho` / `U` / `B` slice output
+- `starwinds_analysis/pipelines/volume.py`
+  - orchestration only
+  - direct shell-summary output and recorded diagnostics
 
 ## Delivery Phases
 
@@ -284,7 +313,7 @@ This keeps physics, sampling, and plotting separate.
 - open flux
 - axisymmetric flux + fraction
 - energy flux
-- shell summary outputs (JSON/NPZ)
+- shell summary outputs (recorded results / simple plots)
 
 ### Phase 4: 2D Quicklook Presets
 
@@ -294,7 +323,7 @@ This keeps physics, sampling, and plotting separate.
 - one command/function for batch quicklook figure generation (2D only)
 
 Status:
-- Implemented (v1): wrappers for slice presets/overlays, radius summaries, shell summary figure, and a one-shot `quicklook2d` runner with optional bundle export.
+- Partial: slice plotting primitives and the minimal `slice` pipeline exist; the earlier wrapper-heavy `quicklook2d` layer was removed.
 
 ### Phase 5: Analytical Local Estimates
 
@@ -303,7 +332,7 @@ Status:
 - shell-vs-local comparison plots/summary stats
 
 Status:
-- Implemented (v2): pure local formula helpers, circular + Kepler/elliptic orbit sampling wrappers, shell comparison summaries, local-vs-shell comparison plots, and orbit comparison summary export in `quicklook2d`.
+- Partial: pure local formula helpers and orbit/path analytics exist in `physics/`; a thin current user-facing plotting workflow still needs to be rebuilt.
 
 ## Definition of Success for the New "Quicklook" (Non-3D)
 
