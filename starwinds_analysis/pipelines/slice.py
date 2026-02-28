@@ -8,11 +8,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from starwinds_analysis.pipelines.orchestration_helpers import (
-    is_2d_input,
-    prepare_smartds,
-    resolve_quicklook_prefix as _resolve_quicklook_prefix,
-)
+from starwinds_analysis.pipelines.orchestration_helpers import is_2d_input
+from starwinds_analysis.pipelines.orchestration_helpers import prepare_smartds
+from starwinds_analysis.pipelines.orchestration_helpers import resolve_quicklook_prefix as _resolve_quicklook_prefix
 from starwinds_analysis.smart_ds import SmartDs
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
 
@@ -43,29 +41,29 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
     output_dir.mkdir(parents=True, exist_ok=True)
     prefix = _resolve_quicklook_prefix(prefix=None, input_file=path.name)
 
-    saved = {}
+    saved_count = 0
     fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="Rho [kg/m^3]")
     out_path = output_dir / f"{prefix}.slices.rho.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved["rho"] = str(out_path.relative_to(path.parent))
-    add_record("slice_rho_png %r", saved["rho"])
+    saved_count += 1
+    add_record("slice_rho_png %r", str(out_path.relative_to(path.parent)))
 
     fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="U [m/s]")
     out_path = output_dir / f"{prefix}.slices.u.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved["u"] = str(out_path.relative_to(path.parent))
-    add_record("slice_u_png %r", saved["u"])
+    saved_count += 1
+    add_record("slice_u_png %r", str(out_path.relative_to(path.parent)))
 
     fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="B [T]")
     out_path = output_dir / f"{prefix}.slices.b.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved["b"] = str(out_path.relative_to(path.parent))
-    add_record("slice_b_png %r", saved["b"])
+    saved_count += 1
+    add_record("slice_b_png %r", str(out_path.relative_to(path.parent)))
 
     add_record("slice_status %r", "processed")
-    add_record("slice_figure_count %r", len(saved))
+    add_record("slice_figure_count %r", saved_count)
     add_record("slice_output_dir %r", str(output_dir.relative_to(path.parent)))
-    log.info("result file=%s figures=%d", path.name, len(saved))
+    log.info("result file=%s figures=%d", path.name, saved_count)

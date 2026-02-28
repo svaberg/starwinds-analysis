@@ -11,7 +11,6 @@ Core quantity definitions and sampling primitives should live in analysis module
 from __future__ import annotations
 
 from dataclasses import dataclass
-import json
 import logging
 from pathlib import Path
 
@@ -19,57 +18,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from starwinds_analysis.physics.planetary_orbits import SOLAR_SYSTEM_PLANETS
-from starwinds_analysis.physics.orbit_pressure import (
-    pressure_components_on_circular_orbit,
-    pressure_components_on_elliptic_orbit,
-)
-from starwinds_analysis.physics.orbit_surface import (
-    pressure_components_on_orbit_surface,
-    torque_components_on_orbit_surface,
-)
+from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
+from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
+from starwinds_analysis.physics.orbit_surface import pressure_components_on_orbit_surface
+from starwinds_analysis.physics.orbit_surface import torque_components_on_orbit_surface
 from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
 from starwinds_analysis.analysis.slices import resample_structured_xz_slice
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.physics.orbit_local import (
-    local_mass_loss_on_circular_orbit,
-    local_mass_loss_on_elliptic_orbit,
-    local_torque_on_circular_orbit,
-    local_torque_on_elliptic_orbit,
-)
-from starwinds_analysis.physics.fluxes import (
-    axisymmetric_open_flux_vs_radius,
-    energy_flux_vs_radius,
-    open_magnetic_flux_vs_radius,
-)
-from starwinds_analysis.visualisation.profile_plots import (
-    plot_shell_height_series,
-    shell_profile_height,
-)
+from starwinds_analysis.physics.orbit_local import local_mass_loss_on_circular_orbit
+from starwinds_analysis.physics.orbit_local import local_mass_loss_on_elliptic_orbit
+from starwinds_analysis.physics.orbit_local import local_torque_on_circular_orbit
+from starwinds_analysis.physics.orbit_local import local_torque_on_elliptic_orbit
+from starwinds_analysis.physics.fluxes import axisymmetric_open_flux_vs_radius
+from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
+from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
+from starwinds_analysis.visualisation.profile_plots import plot_shell_height_series
+from starwinds_analysis.visualisation.profile_plots import shell_profile_height
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.utils import triangles
-from starwinds_analysis.visualisation.slice import (
-    plot_xz_slice_tripcolor_with_cross_quantiles,
-    plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
-    plot_xz_slice_tripcolor_with_marginals,
-    plot_xz_slice_with_marginal_points,
-)
-from starwinds_analysis.visualisation.histograms import (
-    plot_binned_vs_radius,
-    plot_cumulative_hists,
-    plot_radial_hist2d,
-    plot_vs_radius,
-)
-from starwinds_analysis.pipelines.orchestration_helpers import (
-    array_summary as _array_summary,
-    flatten_result_arrays as _flatten_result_arrays,
-    is_2d_input,
-    log_pipeline_event,
-    prepare_smartds,
-    resolve_quicklook_prefix as _resolve_quicklook_prefix,
-    slug_key as _slug_key,
-    summarize_result_object as _summarize_result_object,
-)
+from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
+from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords
+from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_marginals
+from starwinds_analysis.visualisation.slice import plot_xz_slice_with_marginal_points
+from starwinds_analysis.visualisation.histograms import plot_binned_vs_radius
+from starwinds_analysis.visualisation.histograms import plot_cumulative_hists
+from starwinds_analysis.visualisation.histograms import plot_radial_hist2d
+from starwinds_analysis.visualisation.histograms import plot_vs_radius
+from starwinds_analysis.pipelines.orchestration_helpers import array_summary as _array_summary
+from starwinds_analysis.pipelines.orchestration_helpers import is_2d_input
+from starwinds_analysis.pipelines.orchestration_helpers import log_pipeline_event
+from starwinds_analysis.pipelines.orchestration_helpers import prepare_smartds
+from starwinds_analysis.pipelines.orchestration_helpers import resolve_quicklook_prefix as _resolve_quicklook_prefix
+from starwinds_analysis.pipelines.orchestration_helpers import slug_key as _slug_key
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -1006,185 +987,6 @@ def shell_profile_payload(diagnostics):
             out[name] = pdata
     return out
 
-def flatten_shell_diagnostics_arrays(diagnostics):
-    """
-    Flatten shell diagnostic arrays for `np.savez`.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    arrays = {}
-    for name, profile in diagnostics.items():
-        if not isinstance(profile, dict):
-            continue
-        for key, value in profile.items():
-            if key == "shell_samples":
-                continue
-            arr = np.array(value)
-            if arr.ndim == 0:
-                continue
-            flat_key = f"{name}__{_slug_key(key)}"
-            arrays[flat_key] = arr
-    return arrays
-
-def summarize_orbit_results(orbit_results):
-    """
-    JSON-friendly summary of orbit local-vs-shell comparison results.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    skip_keys = {
-        "orbit_samples",
-        "shell_profile",
-        "orbit_surface",
-        "surface_terms",
-        "surface_points [m]",
-        "surface_normals [none]",
-        "surface_area [m^2]",
-    }
-    out = {}
-    for orbit_key, groups in (orbit_results or {}).items():
-        if not isinstance(groups, dict):
-            continue
-        orbit_out = {}
-        for group_name, result in groups.items():
-            if not isinstance(result, dict):
-                continue
-            group_out = _summarize_result_object(result, skip_keys=skip_keys)
-            orbit_out[group_name] = group_out
-        out[str(orbit_key)] = orbit_out
-    return out
-
-def flatten_orbit_results_arrays(orbit_results):
-    """
-    Flatten selected orbit result arrays for `np.savez`.
-    Used by: `starwinds_analysis/pipelines/volume.py`
-    """
-    skip_keys = {
-        "orbit_samples",
-        "shell_profile",
-        "orbit_surface",
-        "surface_terms",
-        "surface_points [m]",
-        "surface_normals [none]",
-        "surface_area [m^2]",
-    }
-    arrays = {}
-    for orbit_key, groups in (orbit_results or {}).items():
-        if not isinstance(groups, dict):
-            continue
-        for group_name, result in groups.items():
-            if not isinstance(result, dict):
-                continue
-            _flatten_result_arrays(
-                result,
-                arrays,
-                prefix=f"{_slug_key(orbit_key)}__{_slug_key(group_name)}",
-                skip_keys=skip_keys,
-            )
-    return arrays
-
-def save_quicklook2d_bundle(
-    output_dir,
-    *,
-    shell_fig=None,
-    diagnostics=None,
-    orbit_results=None,
-    slice_figures=None,
-    radius_figures=None,
-    orbit_figures=None,
-    prefix: str | None = None,
-    input_file=None,
-    band_radius_range=None,
-    star_mass_kg: float | None = None,
-    star_radius_m: float | None = None,
-):
-    """
-    Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle.
-    Used by: `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    outdir = Path(output_dir)
-    outdir.mkdir(parents=True, exist_ok=True)
-    prefix = _resolve_quicklook_prefix(prefix=prefix, input_file=input_file)
-    log_pipeline_event(pipeline_log,
-        "quicklook.bundle.start",
-        output_dir=str(outdir),
-        prefix=prefix,
-        input_file=None if input_file is None else str(input_file),
-    )
-    saved = {"figures": {}, "files": {}}
-
-    if shell_fig is not None:
-        p = outdir / f"{prefix}.shells.png"
-        shell_fig.savefig(p)
-        saved["figures"]["shells"] = p
-        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_png", file=str(p))
-
-    for group_name, figs in (("slices", slice_figures), ("radius", radius_figures), ("orbits", orbit_figures)):
-        if not figs:
-            continue
-        for key, fig in figs.items():
-            p = outdir / f"{prefix}.{group_name}.{_slug_key(str(key))}.png"
-            fig.savefig(p)
-            saved["figures"][f"{group_name}:{key}"] = p
-            log_pipeline_event(pipeline_log, "quicklook.saved", kind=f"{group_name}_png", file=str(p))
-
-    if diagnostics is not None:
-        shells_json_path = outdir / f"{prefix}.shells.json"
-        shells_payload = summarize_shell_diagnostics(
-            diagnostics,
-            band_radius_range=band_radius_range,
-            star_mass_kg=star_mass_kg,
-            star_radius_m=star_radius_m,
-        )
-        shells_json_path.write_text(json.dumps(shells_payload, indent=2, sort_keys=True))
-        saved["files"]["shells_json"] = shells_json_path
-        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_json", file=str(shells_json_path))
-
-        shells_npz_path = outdir / f"{prefix}.shells.npz"
-        np.savez(shells_npz_path, **flatten_shell_diagnostics_arrays(diagnostics))
-        saved["files"]["shells_npz"] = shells_npz_path
-        log_pipeline_event(pipeline_log, "quicklook.saved", kind="shells_npz", file=str(shells_npz_path))
-
-    if orbit_results:
-        orbits_json_path = outdir / f"{prefix}.orbits.json"
-        orbits_payload = summarize_orbit_results(orbit_results)
-        orbits_json_path.write_text(json.dumps(orbits_payload, indent=2, sort_keys=True))
-        saved["files"]["orbits_json"] = orbits_json_path
-        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_json", file=str(orbits_json_path))
-
-        orbits_npz_path = outdir / f"{prefix}.orbits.npz"
-        np.savez(orbits_npz_path, **flatten_orbit_results_arrays(orbit_results))
-        saved["files"]["orbits_npz"] = orbits_npz_path
-        log_pipeline_event(pipeline_log, "quicklook.saved", kind="orbits_npz", file=str(orbits_npz_path))
-
-    exported_files = {}
-    for key, path in saved["figures"].items():
-        exported_files[f"figure:{key}"] = str(path)
-    for key, path in saved["files"].items():
-        exported_files[f"file:{key}"] = str(path)
-    quicklook_json_path = outdir / f"{prefix}.quicklook2d.json"
-    quicklook_payload = {
-        "input_file": None if input_file is None else str(input_file),
-        "shells": None
-        if diagnostics is None
-        else summarize_shell_diagnostics(
-            diagnostics,
-            band_radius_range=band_radius_range,
-            star_mass_kg=star_mass_kg,
-            star_radius_m=star_radius_m,
-        ),
-        "orbits": None if not orbit_results else summarize_orbit_results(orbit_results),
-        "files": dict(exported_files or {}),
-    }
-    quicklook_json_path.write_text(json.dumps(quicklook_payload, indent=2, sort_keys=True))
-    saved["files"]["quicklook_json"] = quicklook_json_path
-    log_pipeline_event(pipeline_log, "quicklook.saved", kind="quicklook_json", file=str(quicklook_json_path))
-    log_pipeline_event(pipeline_log,
-        "quicklook.bundle.done",
-        figures=len(saved["figures"]),
-        files=len(saved["files"]),
-    )
-
-    return saved
-
 def run_quicklook2d(
     smart_ds,
     *,
@@ -1401,20 +1203,30 @@ def run_quicklook2d(
     }
 
     if output_dir is not None:
-        out["saved"] = save_quicklook2d_bundle(
-            output_dir,
-            shell_fig=shell_fig,
-            diagnostics=diagnostics,
-            orbit_results=orbit_results,
-            slice_figures=slice_figs,
-            radius_figures=radius_figs,
-            orbit_figures=orbit_figs,
-            prefix=prefix,
-            input_file=input_file,
+        outdir = Path(output_dir)
+        outdir.mkdir(parents=True, exist_ok=True)
+        resolved_prefix = _resolve_quicklook_prefix(prefix=prefix, input_file=input_file)
+        saved = []
+        if shell_fig is not None:
+            path = outdir / f"{resolved_prefix}.shells.png"
+            shell_fig.savefig(path)
+            saved.append(path)
+            add_record("quicklook_shell_png %r", str(path))
+        for group_name, figures in (("slices", slice_figs), ("radius", radius_figs), ("orbits", orbit_figs)):
+            for key, fig in figures.items():
+                path = outdir / f"{resolved_prefix}.{group_name}.{_slug_key(str(key))}.png"
+                fig.savefig(path)
+                saved.append(path)
+                add_record("quicklook_png %r", str(path))
+        add_record("shell_summary %r", summarize_shell_diagnostics(
+            diagnostics,
             band_radius_range=band_radius_range,
             star_mass_kg=star_mass_kg,
             star_radius_m=body_radius_m,
-        )
+        ))
+        if orbit_results:
+            add_record("orbit_results %r", orbit_results)
+        out["saved"] = tuple(saved)
     log_pipeline_event(pipeline_log, "quicklook.run.done", saved=output_dir is not None)
     return out
 
