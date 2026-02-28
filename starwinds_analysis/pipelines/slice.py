@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from starwinds_analysis.pipelines.orchestration_helpers import is_2d_input
 from starwinds_analysis.pipelines.orchestration_helpers import prepare_smartds
-from starwinds_analysis.pipelines.orchestration_helpers import resolve_quicklook_prefix as _resolve_quicklook_prefix
+from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
 from starwinds_analysis.smart_ds import SmartDs
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
 
@@ -39,7 +39,7 @@ def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> 
 
     prepare_smartds(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
     output_dir.mkdir(parents=True, exist_ok=True)
-    prefix = _resolve_quicklook_prefix(prefix=None, input_file=path.name)
+    prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
 
     saved_count = 0
     fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="Rho [kg/m^3]")

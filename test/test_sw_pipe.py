@@ -282,14 +282,14 @@ def test_volume_process_skips_non_3d_input(tmp_path, monkeypatch):
         def from_file(cls, _path):
             return Fake2DDataset()
 
-    def fake_run_quicklook2d(*_args, **_kwargs):
+    def fake_mass_loss_vs_radius(*_args, **_kwargs):
         calls.append(object())
         return {}
 
     import starwinds_analysis.pipelines.volume as volume_pipeline
 
     monkeypatch.setattr(volume_pipeline, "SmartDs", FakeSmartDs)
-    monkeypatch.setattr(volume_pipeline, "run_quicklook2d", fake_run_quicklook2d)
+    monkeypatch.setattr(volume_pipeline, "mass_loss_vs_radius", fake_mass_loss_vs_radius)
     volume_pipeline.process_plt_file(file_path)
 
     assert calls == []
