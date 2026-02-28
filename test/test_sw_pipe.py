@@ -302,13 +302,14 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     code = main([])
     captured = capsys.readouterr()
-    lines = [line.strip() for line in captured.err.splitlines() if line.strip()]
+    lines = [line.strip() for line in captured.out.splitlines() if line.strip()]
 
     assert code == 0
     assert lines == [
         "[info] dummy_pipeline one.plt",
         "[info] dummy_pipeline two.PLT",
     ]
+    assert captured.err == ""
 
 
 def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, monkeypatch, capsys):

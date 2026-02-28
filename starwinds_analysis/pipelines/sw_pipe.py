@@ -18,6 +18,7 @@ import math
 import numpy as np
 from pathlib import Path
 import re
+import sys
 from typing import Callable
 
 from starwinds_analysis.pipelines.orchestration_helpers import log_pipeline_event
@@ -299,6 +300,60 @@ class _PipelineLogFormatter(logging.Formatter):
         if record.exc_info:
             out = f"{out}\n{self.formatException(record.exc_info)}"
         return out
+
+
+def _stdout_pipeline_formatter(stream) -> logging.Formatter:
+    """
+    Build the stdout formatter for human pipeline logs, using color when available.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    use_color = bool(getattr(stream, "isatty", lambda: False)())
+    if use_color:
+        for module_name in ("colorlog", "coloredlogs"):
+            try:
+                module = __import__(module_name, fromlist=["ColoredFormatter"])
+                formatter_class = getattr(module, "ColoredFormatter")
+                return formatter_class(
+                    "%(log_color)s[%(levelname_lower)s]%(reset)s %(name_last)s %(message)s",
+                    log_colors={
+                        "DEBUG": "cyan",
+                        "INFO": "green",
+                        "WARNING": "yellow",
+                        "ERROR": "red",
+                        "CRITICAL": "bold_red",
+                    },
+                    secondary_log_colors={},
+                    reset=True,
+                    style="%",
+                )
+            except Exception:
+                continue
+    return _PipelineLogFormatter()
+
+
+def _enrich_pipeline_record(record: logging.LogRecord) -> bool:
+    """
+    Add helper fields used by pipeline log formatters.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    record.name_last = record.name.rsplit(".", 1)[-1]
+    record.levelname_lower = record.levelname.lower()
+    return True
+
+
+def _configure_stdout_logger(level_name: str) -> None:
+    """
+    Configure the root logger for human-readable pipeline logs on stdout.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.setLevel(getattr(logging, str(level_name).upper()))
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(getattr(logging, str(level_name).upper()))
+    handler.addFilter(_enrich_pipeline_record)
+    handler.setFormatter(_stdout_pipeline_formatter(sys.stdout))
+    root_logger.addHandler(handler)
 
 
 def configure_recorder_logger(level_name: str = "WARNING") -> None:
@@ -584,13 +639,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     # Configure the logger that writes to stdout (for human consumption).
-    logging.basicConfig(
-        level=getattr(logging, str(args.log_level).upper()),
-        force=True,
-    )
-    formatter = _PipelineLogFormatter()
-    for handler in logging.getLogger().handlers:
-        handler.setFormatter(formatter)
+    _configure_stdout_logger(str(args.log_level))
 
     # Configure the recorder logger that writes machine-readable data.
     configure_recorder_logger(str(args.record_log_level))
