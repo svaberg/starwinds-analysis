@@ -43,6 +43,11 @@ Bad:
 - `print(...)` instead of logger usage in library code.
 - Logging large raw arrays directly.
 - Swallowing exceptions without logging context.
+- parenthesized multi-import blocks (`from x import (...)`)
+
+Rule:
+
+- Use flat imports only, one import per line.
 
 ## Pipeline Rule: Keep Pipelines Clean And Simple
 
