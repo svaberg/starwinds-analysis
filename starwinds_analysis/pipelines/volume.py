@@ -57,7 +57,9 @@ from starwinds_analysis.visualisation.histograms import (
 from starwinds_analysis.pipelines.orchestration_helpers import (
     array_summary as _array_summary,
     flatten_result_arrays as _flatten_result_arrays,
+    is_2d_input,
     log_pipeline_event,
+    prepare_smartds,
     resolve_quicklook_prefix as _resolve_quicklook_prefix,
     slug_key as _slug_key,
     summarize_result_object as _summarize_result_object,
@@ -1289,19 +1291,7 @@ def prepare_smartds_for_quicklook(smart_ds, *, body_radius_m: float | None = Non
     Best-effort setup of common BATSRUS + spherical derived fields.
     Used by: `starwinds_analysis/pipelines/volume.py`
     """
-    if hasattr(smart_ds, "add_batsrus_graph"):
-        try:
-            smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-        except Exception:
-            pass
-    if hasattr(smart_ds, "add_spherical_graph"):
-        try:
-            smart_ds.add_spherical_graph(vectors=("B", "U"))
-            return smart_ds
-        except Exception:
-            pass
-    if hasattr(smart_ds, "add_spherical_fields"):
-        smart_ds.add_spherical_fields(vectors=("B", "U"))
+    prepare_smartds(smart_ds, body_radius_m=body_radius_m)
     return smart_ds
 
 def run_quicklook2d(
@@ -1547,8 +1537,7 @@ def process_plt_file(file_path: str | Path) -> None:
     output_dir = path.parent / "volume"
     log.info("%s", path.name)
     smart_ds = SmartDs.from_file(path)
-    corners = getattr(smart_ds, "corners", None)
-    if not (getattr(corners, "ndim", 0) == 2 and corners.shape[1] >= 8):
+    if is_2d_input(smart_ds):
         log.info("skip file=%s reason=non_3d_input", path.name)
         add_record("volume_status %r", "skipped_non_3d")
         return

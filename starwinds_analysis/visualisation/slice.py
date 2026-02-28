@@ -28,33 +28,22 @@ def _resolve_field(ds, var: str | None) -> str:
     return str(ds.variables[0])
 
 
-def _make_slice_tripcolor_figure(
-    ds,
-    *,
-    var: str | None = None,
-    figsize=(8, 7),
-    cmap: str = "viridis",
-    norm=None,
-    shading: str = "flat",
-):
+def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwargs):
     """
-    Create a 2D tripcolor figure with simple marginal companion axes.
-    Used by: `starwinds_analysis/visualisation/slice.py`
+    Tripcolor slice plot with compact marginal companion axes.
+    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     field = _resolve_field(ds, var)
     x_name, y_name = auto_coords(ds)
     tri = triangles(ds, x_name, y_name)
     c = ds.variable(field)
+    figsize = kwargs.pop("figsize", (8, 7))
+    cmap = kwargs.pop("cmap", "viridis")
+    norm = kwargs.pop("norm", None)
+    shading = kwargs.pop("shading", "flat")
 
     fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(
-        2,
-        2,
-        width_ratios=(1.0, 4.0),
-        height_ratios=(4.0, 1.0),
-        wspace=0.05,
-        hspace=0.05,
-    )
+    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
     ax_main = fig.add_subplot(gs[0, 1])
     ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
     ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
@@ -80,20 +69,45 @@ def _make_slice_tripcolor_figure(
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
-def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwargs):
-    """
-    Tripcolor slice plot with compact marginal companion axes.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    return _make_slice_tripcolor_figure(ds, var=var, **kwargs)
-
-
 def plot_xz_slice_tripcolor_with_cross_quantiles(ds, *, var: str | None = None, **kwargs):
     """
     Tripcolor slice plot in the cross-quantile style.
     Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    return _make_slice_tripcolor_figure(ds, var=var, **kwargs)
+    field = _resolve_field(ds, var)
+    x_name, y_name = auto_coords(ds)
+    tri = triangles(ds, x_name, y_name)
+    c = ds.variable(field)
+    figsize = kwargs.pop("figsize", (8, 7))
+    cmap = kwargs.pop("cmap", "viridis")
+    norm = kwargs.pop("norm", None)
+    shading = kwargs.pop("shading", "flat")
+
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
+    ax_main = fig.add_subplot(gs[0, 1])
+    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
+    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
+    ax_corner = fig.add_subplot(gs[1, 0])
+    ax_corner.axis("off")
+
+    image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
+    ax_main.set_aspect("equal")
+    ax_main.set_xlabel(x_name)
+    ax_main.set_ylabel(y_name)
+    ax_main.set_title(field)
+
+    x = ds.variable(x_name)
+    y = ds.variable(y_name)
+    ax_left.plot(c, y, ",", alpha=0.4)
+    ax_left.set_xlabel(field)
+    ax_left.tick_params(labelleft=False)
+    ax_bottom.plot(x, c, ",", alpha=0.4)
+    ax_bottom.set_xlabel(x_name)
+    ax_bottom.set_ylabel(field)
+
+    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
 def plot_xz_slice_with_marginal_points(ds, *, var: str | None = None, **kwargs):
@@ -101,7 +115,40 @@ def plot_xz_slice_with_marginal_points(ds, *, var: str | None = None, **kwargs):
     Tripcolor slice plot with point-style marginal companions.
     Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
-    return _make_slice_tripcolor_figure(ds, var=var, **kwargs)
+    field = _resolve_field(ds, var)
+    x_name, y_name = auto_coords(ds)
+    tri = triangles(ds, x_name, y_name)
+    c = ds.variable(field)
+    figsize = kwargs.pop("figsize", (8, 7))
+    cmap = kwargs.pop("cmap", "viridis")
+    norm = kwargs.pop("norm", None)
+    shading = kwargs.pop("shading", "flat")
+
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
+    ax_main = fig.add_subplot(gs[0, 1])
+    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
+    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
+    ax_corner = fig.add_subplot(gs[1, 0])
+    ax_corner.axis("off")
+
+    image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
+    ax_main.set_aspect("equal")
+    ax_main.set_xlabel(x_name)
+    ax_main.set_ylabel(y_name)
+    ax_main.set_title(field)
+
+    x = ds.variable(x_name)
+    y = ds.variable(y_name)
+    ax_left.plot(c, y, ",", alpha=0.4)
+    ax_left.set_xlabel(field)
+    ax_left.tick_params(labelleft=False)
+    ax_bottom.plot(x, c, ",", alpha=0.4)
+    ax_bottom.set_xlabel(x_name)
+    ax_bottom.set_ylabel(field)
+
+    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
 def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
@@ -114,4 +161,37 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
     Tripcolor slice plot with unique-coordinate marginal quantile style.
     Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
-    return _make_slice_tripcolor_figure(ds, var=var, **kwargs)
+    field = _resolve_field(ds, var)
+    x_name, y_name = auto_coords(ds)
+    tri = triangles(ds, x_name, y_name)
+    c = ds.variable(field)
+    figsize = kwargs.pop("figsize", (8, 7))
+    cmap = kwargs.pop("cmap", "viridis")
+    norm = kwargs.pop("norm", None)
+    shading = kwargs.pop("shading", "flat")
+
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
+    ax_main = fig.add_subplot(gs[0, 1])
+    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
+    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
+    ax_corner = fig.add_subplot(gs[1, 0])
+    ax_corner.axis("off")
+
+    image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
+    ax_main.set_aspect("equal")
+    ax_main.set_xlabel(x_name)
+    ax_main.set_ylabel(y_name)
+    ax_main.set_title(field)
+
+    x = ds.variable(x_name)
+    y = ds.variable(y_name)
+    ax_left.plot(c, y, ",", alpha=0.4)
+    ax_left.set_xlabel(field)
+    ax_left.tick_params(labelleft=False)
+    ax_bottom.plot(x, c, ",", alpha=0.4)
+    ax_bottom.set_xlabel(x_name)
+    ax_bottom.set_ylabel(field)
+
+    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    return fig, (ax_main, ax_left, ax_bottom), cbar
