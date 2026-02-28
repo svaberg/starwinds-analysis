@@ -26,23 +26,27 @@ DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 
 def process_plt_file(file_path: str | Path) -> None:
     """Process one 3D `.plt` file into a shell-summary PNG and recorded diagnostics."""
+    # Start: resolve input/output paths and log the file being processed.
     path = Path(file_path)
     output_dir = path.parent / "volume"
     prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
     log.info("%s", path.name)
 
+    # Start: load the dataset and reject non-3D inputs.
     smart_ds = SmartDs.from_file(path)
     if is_2d_input(smart_ds):
         log.info("skip file=%s reason=non_3d_input", path.name)
         add_record("volume_status %r", "skipped_non_3d")
         return
 
+    # Start: prepare the dataset and create the output figure canvas.
     prepare_smartds(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
     radii = DEFAULT_QUICKLOOK_RADII_R
 
+    # Start: compute, plot, and record wind mass loss.
     mass_loss_radius_ref = float("nan")
     mass_loss_value_ref = float("nan")
     mass_loss = mass_loss_vs_radius(
@@ -68,6 +72,7 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record("mass_loss_radius_R %r", mass_loss_radius_ref)
         add_record("mass_loss_value_kg_s %r", mass_loss_value_ref)
 
+    # Start: compute, plot, and record wind torque.
     torque_radius_ref = float("nan")
     torque_value_ref = float("nan")
     torque = torque_vs_radius(
@@ -92,6 +97,7 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record("total_torque_radius_R %r", torque_radius_ref)
         add_record("total_torque_value_nm %r", torque_value_ref)
 
+    # Start: compute, plot, and record open magnetic flux.
     open_flux_radius_ref = float("nan")
     open_flux_value_ref = float("nan")
     open_flux = open_magnetic_flux_vs_radius(
@@ -116,6 +122,7 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record("open_flux_radius_R %r", open_flux_radius_ref)
         add_record("open_flux_value_wb %r", open_flux_value_ref)
 
+    # Start: compute, plot, and record energy flux.
     energy_flux_radius_ref = float("nan")
     energy_flux_value_ref = float("nan")
     energy_flux = energy_flux_vs_radius(
@@ -140,10 +147,12 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record("energy_flux_radius_R %r", energy_flux_radius_ref)
         add_record("energy_flux_value_w %r", energy_flux_value_ref)
 
+    # Start: save the figure and record the output artifact.
     shell_png = output_dir / f"{prefix}.shells.png"
     fig.savefig(shell_png)
     plt.close(fig)
 
+    # Start: record the final pipeline summary.
     add_record("volume_status %r", "processed")
     add_record("volume_shell_png %r", str(shell_png.relative_to(path.parent)))
     if isfinite(mass_loss_radius_ref):
