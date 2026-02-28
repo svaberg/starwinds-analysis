@@ -296,7 +296,7 @@ class _PipelineLogFormatter(logging.Formatter):
             origin = f"{record.name}.{record.funcName}:{record.lineno}"
         else:
             origin = source
-        out = f"[{record.levelname.lower()}] {origin} {message}"
+        out = f"[{record.levelname}] {origin} {message}"
         if record.exc_info:
             out = f"{out}\n{self.formatException(record.exc_info)}"
         return out
@@ -314,7 +314,7 @@ def _stdout_pipeline_formatter(stream) -> logging.Formatter:
                 module = __import__(module_name, fromlist=["ColoredFormatter"])
                 formatter_class = getattr(module, "ColoredFormatter")
                 return formatter_class(
-                    "%(log_color)s[%(levelname_lower)s]%(reset)s %(name_last)s %(message)s",
+                    "%(log_color)s[%(levelname)s]%(reset)s %(name_last)s %(message)s",
                     log_colors={
                         "DEBUG": "cyan",
                         "INFO": "green",
@@ -337,7 +337,6 @@ def _enrich_pipeline_record(record: logging.LogRecord) -> bool:
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     record.name_last = record.name.rsplit(".", 1)[-1]
-    record.levelname_lower = record.levelname.lower()
     return True
 
 

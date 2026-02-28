@@ -306,8 +306,8 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
 
     assert code == 0
     assert lines == [
-        "[info] dummy_pipeline one.plt",
-        "[info] dummy_pipeline two.PLT",
+        "[INFO] dummy_pipeline one.plt",
+        "[INFO] dummy_pipeline two.PLT",
     ]
     assert captured.err == ""
 
@@ -322,12 +322,12 @@ def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, monkeypatch, 
 
     assert code == 0
     expected_patterns = [
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
-        r"^\[debug\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_letter_counts:\d+ letter_counts .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_vowel_fraction .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_dominance .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_profile_payload:\d+ name_shape .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_codepoints_payload:\d+ name_codepoints .+",
+        r"^\[DEBUG\] recorder\.starwinds_analysis\.pipelines\.dummy_pipeline\.name_waveform_payload:\d+ name_waveform .+",
     ]
     assert len(lines) >= len(expected_patterns)
     assert all(any(re.match(pattern, line) for line in lines) for pattern in expected_patterns)
