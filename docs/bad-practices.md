@@ -60,18 +60,24 @@ Rule:
   - call reusable compute/plot functions
   - save outputs
   - log/record key results
+- Pipelines should normally need only a single smoke test.
+- Do not keep production code alive just to satisfy pipeline-specific tests.
+- If logic needs detailed tests, that logic belongs in lower reusable layers (`physics/`, `analysis/`, `visualisation/`), not inside `pipelines/`.
 
 Bad:
 
 - putting physics formulas directly in `pipelines/`
 - putting plotting implementation details directly in `pipelines/`
 - large nested control flow and dict plumbing inside pipeline entry points
+- keeping dead wrappers or compatibility layers only because a pipeline test expects them
+- writing detailed behavior tests for pipeline-only glue instead of testing the reusable functions it calls
 
 Preferred pattern:
 
 - move reusable computations to `physics/`
 - move reusable plotting primitives to `visualisation/`
 - keep pipeline code as composition/orchestration only
+- keep one smoke test for the pipeline entrypoint and test the real logic elsewhere
 
 ## 0. Library Purity (Hard Boundary)
 
