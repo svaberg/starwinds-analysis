@@ -7,6 +7,7 @@ import logging
 import numpy as np
 from pathlib import Path
 import re
+import pytest
 
 from starwinds_analysis.pipelines.dummy_pipeline import (
     name_codepoints_payload,
@@ -60,6 +61,7 @@ def test_dummy_pipeline_process_without_sink_does_not_fail(tmp_path, caplog):
     ]
 
 
+@pytest.mark.design_lockin
 def test_run_sw_pipe_logs_placeholder_file_names_only(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
@@ -163,6 +165,7 @@ def test_run_sw_pipe_default_clobber_reprocesses_files(tmp_path):
     assert second.skipped_files == []
 
 
+@pytest.mark.design_lockin
 def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "nested").mkdir()
@@ -233,6 +236,7 @@ def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
     assert any("state file is large" in message for message in warnings)
 
 
+@pytest.mark.design_lockin
 def test_run_sw_pipe_supports_slice_pipeline(tmp_path, monkeypatch):
     (tmp_path / "alpha.plt").write_text("")
     called: list[tuple[str, bool]] = []
@@ -254,6 +258,7 @@ def test_run_sw_pipe_supports_slice_pipeline(tmp_path, monkeypatch):
     assert payload["quicklook_marker"]["source"]["module"] == "starwinds_analysis.pipelines.slice"
 
 
+@pytest.mark.design_lockin
 def test_run_sw_pipe_supports_slice_force_3d_flag(tmp_path, monkeypatch):
     (tmp_path / "alpha.plt").write_text("")
     called: list[tuple[str, bool]] = []
@@ -269,6 +274,7 @@ def test_run_sw_pipe_supports_slice_force_3d_flag(tmp_path, monkeypatch):
     assert called == [("alpha.plt", True)]
 
 
+@pytest.mark.design_lockin
 def test_volume_process_skips_non_3d_input(tmp_path, monkeypatch):
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("")
@@ -295,6 +301,7 @@ def test_volume_process_skips_non_3d_input(tmp_path, monkeypatch):
     assert calls == []
 
 
+@pytest.mark.design_lockin
 def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     (tmp_path / "two.PLT").write_text("")
@@ -312,6 +319,7 @@ def test_sw_pipe_main_scans_current_directory(tmp_path, monkeypatch, capsys):
     assert captured.err == ""
 
 
+@pytest.mark.design_lockin
 def test_sw_pipe_main_record_logger_level_is_independent(tmp_path, monkeypatch, capsys):
     (tmp_path / "one.plt").write_text("")
     monkeypatch.chdir(tmp_path)

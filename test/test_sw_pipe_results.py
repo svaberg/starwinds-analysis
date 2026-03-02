@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 
 from starwinds_analysis.pipelines.sw_pipe_results import main
 
@@ -73,6 +74,7 @@ def test_sw_pipe_results_field_query_value_only(tmp_path, capsys):
     }
 
 
+@pytest.mark.design_lockin
 def test_sw_pipe_results_field_query_with_source(tmp_path, capsys):
     path = _write_state(tmp_path)
     code = main(["--state", str(path), "--field", "letter_counts", "--file", "alpha.plt", "--with-source"])

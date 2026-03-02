@@ -50,5 +50,6 @@ namespaces = true
 
 [tool.pytest.ini_options]
 markers = [
+  "design_lockin: tests that primarily lock in current implementation details or schema/log formatting rather than core functionality",
   "interactive: tests requiring user interaction / graphics",
 ]
