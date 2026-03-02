@@ -52,7 +52,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 Removed after refactor:
 
 - the temporary `quicklook2d` wrapper/runner layer
-- quicklook-specific JSON/NPZ bundle export helpers
+- the temporary JSON/NPZ export helpers that were added during migration and then removed
 - `*.quicklook2d.json` output files
 
 These are first-pass shell implementations intended to be short/readable and easy to extend.
@@ -91,7 +91,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 
 | Old quicklook feature | Status in new repo | Notes |
 | --- | --- | --- |
-| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Partial | Core slice plotting primitives exist and the `slice` pipeline outputs `rho` / `U` / `B`; the old broad preset wrapper is gone |
+| 2D scalar slice plots (`Rho`, `B_r`, `U_r`, `ti`, `te`, `MA`, etc.) | Partial | Core slice plotting primitives exist and the `slice` pipeline outputs `rho` / `U` / `B`; the old monolithic quicklook branch structure is not rebuilt as one wrapper |
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Partial | Straightforward with Matplotlib primitives, but not packaged as a current pipeline/helper surface |
 | Scatter plots vs height/radius | Partial | Plotting primitives still exist; no current one-shot quicklook wrapper |
 | Radial “monster” histogram plots | Partial | `hist2d` primitives exist, but there is no active quicklook pipeline around them |
@@ -100,13 +100,13 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
-| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; automatic surface extraction remains deferred |
+| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; the old Tecplot isosurface-zone path remains deferred |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles for analysis and recorded outputs |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
-| Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Partial | Core analytics exist in `physics/`; the old broad quicklook plotting surface is not present as an active pipeline |
-| Orbit-surface torque diagnostics (new non-VTK workflow) | Partial | Core analytics exist in `physics/`; automatic surface extraction and a thin user-facing workflow are still missing |
-| Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `sw-pipe.processed.json` recorder entries; the old-style per-run bundle export was removed |
+| Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Partial | Core analytics exist in `physics/`; a direct current plotting workflow still needs to be rebuilt |
+| Orbit-surface torque diagnostics (new non-VTK workflow) | Partial | Core analytics exist in `physics/`; the remaining gap is a direct user-facing workflow around them |
+| Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `add_record(...)` into `sw-pipe.processed.json`; plot outputs are saved as normal files |
 
 ## Current Converted vs Missing Snapshot
 
@@ -128,11 +128,10 @@ Converted and usable now:
 Still missing or intentionally not rebuilt yet:
 
 - a unified replacement for the old all-in-one `quicklook(...)` entrypoint
-- broad preset-driven 2D quicklook wrappers
-- current pipeline support for radial histogram/scatter quicklooks
-- current pipeline support for orbit comparison plots
-- automatic surface extraction for generic surface torque
-- old-style per-run bundle export (`JSON` / `NPZ` quicklook bundles)
+- a direct current workflow for scatter plots and radial histograms
+- a direct current workflow for orbit comparison plots
+- a direct current workflow for Tecplot-style isosurface-driven steps
+- a thin replacement for the old monolithic quicklook branching logic
 - 3D VTK/Tecplot workflows (still out of scope here)
 
 ## High-Priority Feature Plan
@@ -199,8 +198,8 @@ Notes:
 
 - The old quicklook also computed a four-component generic surface torque (`surface_torque` / `integrate_surface_torque`).
 - For this plan, implement spherical-shell torque first.
-- Generic-surface torque surface-extraction workflows can be a later extension after the shell path is stable.
-  - The non-VTK explicit-surface torque integrator is implemented; remaining work is automatic surface extraction (a VTK/Tecplot-adjacent concern).
+- Generic-surface torque workflows driven by Tecplot-style isosurface zones can be a later extension after the shell path is stable.
+  - The non-VTK explicit-surface torque integrator is implemented; remaining work is rebuilding the old isosurface-zone-driven path (a VTK/Tecplot-adjacent concern).
 
 Validation:
 
