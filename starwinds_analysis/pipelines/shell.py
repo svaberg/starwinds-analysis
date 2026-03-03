@@ -19,6 +19,22 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
 
 
+def shell_radial_azimuthal_components(
+    x_component,
+    y_component,
+    z_component,
+    *,
+    cos_lat,
+    sin_lat,
+    cos_lon,
+    sin_lon,
+):
+    """Project Cartesian shell vectors onto radial and azimuthal directions."""
+    radial = x_component * cos_lat * cos_lon + y_component * cos_lat * sin_lon + z_component * sin_lat
+    azimuthal = -x_component * sin_lon + y_component * cos_lon
+    return radial, azimuthal
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """Process one shell-like `.plt` file into shell maps, profiles, and recorded diagnostics."""
     # Start: resolve input/output paths and log the file being processed.
@@ -102,7 +118,15 @@ def process_plt_file(file_path: str | Path) -> None:
     u_x = np.ravel(smart_ds("U_x [m/s]"))
     u_y = np.ravel(smart_ds("U_y [m/s]"))
     u_z = np.ravel(smart_ds("U_z [m/s]"))
-    u_r = u_x * cos_lat * cos_lon + u_y * cos_lat * sin_lon + u_z * sin_lat
+    u_r, u_phi = shell_radial_azimuthal_components(
+        u_x,
+        u_y,
+        u_z,
+        cos_lat=cos_lat,
+        sin_lat=sin_lat,
+        cos_lon=cos_lon,
+        sin_lon=sin_lon,
+    )
     mass_flux = rho * u_r
     mass_loss_kg_s = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
@@ -126,9 +150,15 @@ def process_plt_file(file_path: str | Path) -> None:
     b_x = np.ravel(smart_ds("B_x [T]"))
     b_y = np.ravel(smart_ds("B_y [T]"))
     b_z = np.ravel(smart_ds("B_z [T]"))
-    b_r = b_x * cos_lat * cos_lon + b_y * cos_lat * sin_lon + b_z * sin_lat
-    u_phi = -u_x * sin_lon + u_y * cos_lon
-    b_phi = -b_x * sin_lon + b_y * cos_lon
+    b_r, b_phi = shell_radial_azimuthal_components(
+        b_x,
+        b_y,
+        b_z,
+        cos_lat=cos_lat,
+        sin_lat=sin_lat,
+        cos_lon=cos_lon,
+        sin_lon=sin_lon,
+    )
     varpi_m = r_all * DEFAULT_STAR_RADIUS_M * cos_lat
     torque_density = varpi_m * (rho * u_phi * u_r - (b_phi * b_r / MU0))
     total_torque_nm = []
