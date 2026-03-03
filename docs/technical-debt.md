@@ -49,6 +49,12 @@ Immediate recommendation:
 - enforce the dependency direction above
 - prefer moving or deleting leaky helpers over creating new folders
 
+Pipeline follow-up:
+
+- The 2D `slice` pipeline should add an Alfvén-surface-style plot, matching the
+  demonstrated approach in `examples/smartds_2d_xy_points.ipynb`.
+- The 2D `slice` pipeline should add a wind-pressure plot in the stellar frame.
+
 Coordinate/vector naming note:
 
 - In recipes and SmartDs/griblet-facing field names, use:
