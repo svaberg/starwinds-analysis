@@ -536,6 +536,9 @@ Bad:
 
 - `Used by: <same file>` entries.
 - `Used by:` entries that list only tests.
+- In `Used by:` docstrings, do not list:
+  - tests
+  - the same file the function is defined in
 - long `Used by:` lists dominated by local/internal call paths.
 
 Why this is bad:
