@@ -103,6 +103,8 @@ Coordinate/vector naming note:
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.
 - `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Orbit geometry and 1D-curve sampling primitives live in `analysis`; removed the one-module `sampling/` package.
 - `starwinds_analysis/pipelines/quicklook2d.py` — **Debt**. High-level orchestration/convenience wrappers in library (large API surface, quantity-specific presets/workflows) vs library-purity guideline. Code TODO: added TODO.
+- `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. Still a large mixed-responsibility CLI module (dispatch, recorder schema, state persistence, stdout logging, fail-fast policy) and remains the main monolith in `pipelines/`.
+- `starwinds_analysis/param_in.py` — **Debt**. Still uses `_ensure_component(...)`; this is the same `_ensure*` helper pattern already called out as a bad smell and should be replaced with direct structure population.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
 - `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).
