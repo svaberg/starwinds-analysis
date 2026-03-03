@@ -46,7 +46,7 @@ Notes:
 | `test_zone_coordinate_transforms.py` | Medium | `test/test_smart_ds.py`, `test/test_shell_analysis.py` | Partial | Spherical-coordinate/derived-component behavior covered functionally, not as direct transform unit tests. |
 | `test_load_file.py` | Medium | `test/test_smart_ds.py`, `test/test_read_plt.py` (legacy) | Partial | New `SmartDs`/reader path is tested, but legacy `reader` import compatibility path is currently skipped. |
 | `test_integral.py` | Medium | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | New shell/surface integration formulas tested; old Tecplot integration API tests are not ported. |
-| `test_numpy_save.py` | Medium | `test/test_sw_pipe.py` | Partial | Recorder-backed `sw-pipe.processed.json` persistence is tested; results are recorded via `add_record(...)` and plots are saved as normal files. |
+| `test_numpy_save.py` | Medium | `test/test_sw_pipe.py` | Partial | Recorder-backed `sw-pipe.<pipeline>.processed.json` persistence is tested; results are recorded via `add_record(...)` and plots are saved as normal files. |
 | `test_units.py` | Medium | (none; unit tests deferred) | Deferred | Unit-framework decisions intentionally deferred while pursuing SI gatekeeping at wrapper boundary. |
 | `test_confidence_bands.py` | Low | (none) | Deferred | Plot utility coverage exists, but confidence-band-specific test logic is not ported. |
 | `test_color_maps.py` | Low | (none) | Out of Scope | Tecplot color-map tooling. |

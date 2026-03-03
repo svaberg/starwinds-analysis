@@ -1,7 +1,7 @@
 """THIS FILE contains the generic `sw-pipe` orchestration CLI.
 
 It discovers `.plt` files in a working directory and runs a per-file pipeline
-handler. Built-in handlers are `dummy`, `slice`, and `volume`.
+handler. Built-in handlers are `dummy`, `slice`, `shell`, and `volume`.
 """
 
 from __future__ import annotations
@@ -287,7 +287,7 @@ class _PipelineLogFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """
-        Render one pipeline log record with lowercase level and short source name.
+        Render one pipeline log record with standard level and short source name.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
         source = record.name.rsplit(".", 1)[-1]
@@ -370,12 +370,12 @@ def configure_recorder_logger(level_name: str = "WARNING") -> None:
     recorder_logger.propagate = False
 
 
-def _state_file_path(directory: str | Path) -> Path:
+def _state_file_path(directory: str | Path, *, pipeline_name: str) -> Path:
     """
-    Default state-file path for processed `.plt` tracking.
+    Default per-pipeline state-file path for processed `.plt` tracking.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    return Path(directory) / "sw-pipe.processed.json"
+    return Path(directory) / f"sw-pipe.{_safe_name(pipeline_name)}.processed.json"
 
 
 def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
@@ -464,6 +464,10 @@ def _resolve_pipeline_process_file(
         from starwinds_analysis.pipelines.slice import process_plt_file
 
         return partial(process_plt_file, force_3d=bool(force_slice_3d))
+    if key == "shell":
+        from starwinds_analysis.pipelines.shell import process_plt_file
+
+        return process_plt_file
     if key == "volume":
         from starwinds_analysis.pipelines.volume import process_plt_file
 
@@ -493,10 +497,12 @@ def run_sw_pipe(
             force_slice_3d=force_slice_3d,
         )
         process_label = str(pipeline)
+        state_pipeline_name = str(pipeline)
     else:
         process_label = f"{process_file.__module__}.{process_file.__name__}"
+        state_pipeline_name = "custom"
 
-    state_file = _state_file_path(directory)
+    state_file = _state_file_path(directory, pipeline_name=state_pipeline_name)
     known_processed, known_computed = _load_state(state_file)
     files = discover_plt_files(directory, recursive=recursive)
     results = SwPipeResults(
@@ -584,7 +590,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--pipeline",
         default="dummy",
-        choices=("dummy", "slice", "volume"),
+        choices=("dummy", "slice", "shell", "volume"),
         help="Built-in per-file pipeline to run (default: dummy).",
     )
     parser.add_argument(
@@ -624,7 +630,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--json-warn-bytes",
         type=int,
         default=_DEFAULT_JSON_WARN_BYTES,
-        help="Warn if sw-pipe.processed.json is at or above this byte size (0 disables).",
+        help="Warn if the per-pipeline sw-pipe state JSON is at or above this byte size (0 disables).",
     )
     return parser
 

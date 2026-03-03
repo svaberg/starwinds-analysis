@@ -49,7 +49,7 @@ Files:
 
 Status: DONE
 
-- `sw-pipe.processed.json` entries keep `value` and `source` (`module`, `function`, `line`).
+- `sw-pipe.<pipeline>.processed.json` entries keep `value` and `source` (`module`, `function`, `line`).
 - Quicklook pipeline records were confirmed present in state JSON with valid source metadata.
 
 Files:

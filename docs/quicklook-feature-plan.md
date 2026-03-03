@@ -47,7 +47,7 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
 - open-wind magnetisation (`Upsilon_open`) scaling helper and quicklook plotting support (old quicklook-style analytical diagnostic)
 - `slice` pipeline for simple 2D `rho` / `U` / `B` PNG outputs
-- `volume` pipeline for simple 3D shell-summary PNG output plus recorded shell diagnostics in `sw-pipe.processed.json`
+- `volume` pipeline for simple 3D shell-summary PNG output plus recorded shell diagnostics in `sw-pipe.<pipeline>.processed.json`
 
 Removed after refactor:
 
@@ -106,7 +106,7 @@ The table below maps high-use non-3D features from the old script to the new rep
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Partial | Core analytics exist in `physics/`; a direct current plotting workflow still needs to be rebuilt |
 | Orbit-surface torque diagnostics (new non-VTK workflow) | Partial | Core analytics exist in `physics/`; the remaining gap is a direct user-facing workflow around them |
-| Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `add_record(...)` into `sw-pipe.processed.json`; plot outputs are saved as normal files |
+| Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `add_record(...)` into `sw-pipe.<pipeline>.processed.json`; plot outputs are saved as normal files |
 
 ## Current Converted vs Missing Snapshot
 

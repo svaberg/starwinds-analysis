@@ -1,4 +1,4 @@
-"""CLI parser for `sw-pipe.processed.json` results."""
+"""CLI parser for per-pipeline `sw-pipe.<pipeline>.processed.json` results."""
 
 from __future__ import annotations
 
@@ -73,11 +73,11 @@ def build_parser() -> argparse.ArgumentParser:
     Build the `sw-pipe-results` CLI parser.
     Used by: `starwinds_analysis/pipelines/sw_pipe_results.py`
     """
-    parser = argparse.ArgumentParser(description="Inspect sw-pipe.processed.json results.")
+    parser = argparse.ArgumentParser(description="Inspect sw-pipe.<pipeline>.processed.json results.")
     parser.add_argument(
         "--state",
-        default="sw-pipe.processed.json",
-        help="Path to sw-pipe state JSON (default: ./sw-pipe.processed.json).",
+        default="sw-pipe.dummy.processed.json",
+        help="Path to sw-pipe state JSON (default: ./sw-pipe.dummy.processed.json).",
     )
     parser.add_argument(
         "--list-fields",
