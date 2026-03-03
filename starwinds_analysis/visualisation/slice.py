@@ -8,6 +8,11 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LogNorm
+from matplotlib.colors import SymLogNorm
+from matplotlib.ticker import FixedLocator
+from matplotlib.ticker import NullLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from starwinds_analysis.utils import auto_coords, triangles
 
@@ -28,6 +33,40 @@ def _resolve_field(ds, var: str | None) -> str:
     return str(ds.variables[0])
 
 
+def _apply_field_scale(ax_left, ax_bottom, norm) -> None:
+    """
+    Make the marginal field axes follow the main color normalization.
+    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
+    """
+    if norm is None:
+        ax_left.xaxis.set_minor_locator(NullLocator())
+        ax_bottom.yaxis.set_minor_locator(NullLocator())
+        return
+    if isinstance(norm, LogNorm):
+        ax_left.set_xscale("log")
+        ax_bottom.set_yscale("log")
+        ax_left.xaxis.set_minor_locator(NullLocator())
+        ax_bottom.yaxis.set_minor_locator(NullLocator())
+    if isinstance(norm, SymLogNorm):
+        base = getattr(getattr(norm, "_scale", None), "base", 10)
+        ax_left.set_xscale("symlog", linthresh=norm.linthresh, base=base)
+        ax_bottom.set_yscale("symlog", linthresh=norm.linthresh, base=base)
+        ax_left.xaxis.set_minor_locator(NullLocator())
+        ax_bottom.yaxis.set_minor_locator(NullLocator())
+
+
+def _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar) -> None:
+    """
+    Reuse the colorbar field ticks on the marginal field axes.
+    Used by: `starwinds_analysis/visualisation/slice.py`
+    """
+    cbar.update_ticks()
+    ticks = cbar.get_ticks()
+    ax_left.xaxis.set_major_locator(FixedLocator(ticks))
+    ax_bottom.yaxis.set_major_locator(FixedLocator(ticks))
+    formatter = cbar.ax.yaxis.get_major_formatter()
+    ax_left.xaxis.set_major_formatter(formatter)
+    ax_bottom.yaxis.set_major_formatter(formatter)
 def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwargs):
     """
     Tripcolor slice plot with compact marginal companion axes.
@@ -42,30 +81,27 @@ def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwar
     norm = kwargs.pop("norm", None)
     shading = kwargs.pop("shading", "flat")
 
-    fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
-    ax_main = fig.add_subplot(gs[0, 1])
-    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
-    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
-    ax_corner = fig.add_subplot(gs[1, 0])
-    ax_corner.axis("off")
+    fig, ax_main = plt.subplots(figsize=figsize)
+    divider = make_axes_locatable(ax_main)
+    ax_left = divider.append_axes("left", size="25%", pad=0.03, sharey=ax_main)
+    ax_bottom = divider.append_axes("bottom", size="25%", pad=0.03, sharex=ax_main)
+    ax_cbar = divider.append_axes("right", size="4%", pad=0.03)
 
     image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
     ax_main.set_aspect("equal")
-    ax_main.set_xlabel(x_name)
-    ax_main.set_ylabel(y_name)
     ax_main.set_title(field)
 
     x = ds.variable(x_name)
     y = ds.variable(y_name)
     ax_left.plot(c, y, ",", alpha=0.4)
-    ax_left.set_xlabel(field)
-    ax_left.tick_params(labelleft=False)
     ax_bottom.plot(x, c, ",", alpha=0.4)
-    ax_bottom.set_xlabel(x_name)
-    ax_bottom.set_ylabel(field)
+    ax_bottom.tick_params(axis="y", labelright=True, right=True, labelleft=False, left=False)
+    ax_left.set_ylim(ax_main.get_ylim())
+    ax_bottom.set_xlim(ax_main.get_xlim())
+    _apply_field_scale(ax_left, ax_bottom, norm)
 
-    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    cbar = fig.colorbar(image, cax=ax_cbar, label=field)
+    _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -83,30 +119,27 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(ds, *, var: str | None = None, 
     norm = kwargs.pop("norm", None)
     shading = kwargs.pop("shading", "flat")
 
-    fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
-    ax_main = fig.add_subplot(gs[0, 1])
-    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
-    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
-    ax_corner = fig.add_subplot(gs[1, 0])
-    ax_corner.axis("off")
+    fig, ax_main = plt.subplots(figsize=figsize)
+    divider = make_axes_locatable(ax_main)
+    ax_left = divider.append_axes("left", size="25%", pad=0.03, sharey=ax_main)
+    ax_bottom = divider.append_axes("bottom", size="25%", pad=0.03, sharex=ax_main)
+    ax_cbar = divider.append_axes("right", size="4%", pad=0.03)
 
     image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
     ax_main.set_aspect("equal")
-    ax_main.set_xlabel(x_name)
-    ax_main.set_ylabel(y_name)
     ax_main.set_title(field)
 
     x = ds.variable(x_name)
     y = ds.variable(y_name)
     ax_left.plot(c, y, ",", alpha=0.4)
-    ax_left.set_xlabel(field)
-    ax_left.tick_params(labelleft=False)
     ax_bottom.plot(x, c, ",", alpha=0.4)
-    ax_bottom.set_xlabel(x_name)
-    ax_bottom.set_ylabel(field)
+    ax_bottom.tick_params(axis="y", labelright=True, right=True, labelleft=False, left=False)
+    ax_left.set_ylim(ax_main.get_ylim())
+    ax_bottom.set_xlim(ax_main.get_xlim())
+    _apply_field_scale(ax_left, ax_bottom, norm)
 
-    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    cbar = fig.colorbar(image, cax=ax_cbar, label=field)
+    _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -124,30 +157,27 @@ def plot_xz_slice_with_marginal_points(ds, *, var: str | None = None, **kwargs):
     norm = kwargs.pop("norm", None)
     shading = kwargs.pop("shading", "flat")
 
-    fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
-    ax_main = fig.add_subplot(gs[0, 1])
-    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
-    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
-    ax_corner = fig.add_subplot(gs[1, 0])
-    ax_corner.axis("off")
+    fig, ax_main = plt.subplots(figsize=figsize)
+    divider = make_axes_locatable(ax_main)
+    ax_left = divider.append_axes("left", size="25%", pad=0.03, sharey=ax_main)
+    ax_bottom = divider.append_axes("bottom", size="25%", pad=0.03, sharex=ax_main)
+    ax_cbar = divider.append_axes("right", size="4%", pad=0.03)
 
     image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
     ax_main.set_aspect("equal")
-    ax_main.set_xlabel(x_name)
-    ax_main.set_ylabel(y_name)
     ax_main.set_title(field)
 
     x = ds.variable(x_name)
     y = ds.variable(y_name)
     ax_left.plot(c, y, ",", alpha=0.4)
-    ax_left.set_xlabel(field)
-    ax_left.tick_params(labelleft=False)
     ax_bottom.plot(x, c, ",", alpha=0.4)
-    ax_bottom.set_xlabel(x_name)
-    ax_bottom.set_ylabel(field)
+    ax_bottom.tick_params(axis="y", labelright=True, right=True, labelleft=False, left=False)
+    ax_left.set_ylim(ax_main.get_ylim())
+    ax_bottom.set_xlim(ax_main.get_xlim())
+    _apply_field_scale(ax_left, ax_bottom, norm)
 
-    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    cbar = fig.colorbar(image, cax=ax_cbar, label=field)
+    _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -170,28 +200,25 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
     norm = kwargs.pop("norm", None)
     shading = kwargs.pop("shading", "flat")
 
-    fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 2, width_ratios=(1.0, 4.0), height_ratios=(4.0, 1.0), wspace=0.05, hspace=0.05)
-    ax_main = fig.add_subplot(gs[0, 1])
-    ax_left = fig.add_subplot(gs[0, 0], sharey=ax_main)
-    ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
-    ax_corner = fig.add_subplot(gs[1, 0])
-    ax_corner.axis("off")
+    fig, ax_main = plt.subplots(figsize=figsize)
+    divider = make_axes_locatable(ax_main)
+    ax_left = divider.append_axes("left", size="25%", pad=0.03, sharey=ax_main)
+    ax_bottom = divider.append_axes("bottom", size="25%", pad=0.03, sharex=ax_main)
+    ax_cbar = divider.append_axes("right", size="4%", pad=0.03)
 
     image = ax_main.tripcolor(tri, c, shading=shading, cmap=cmap, norm=norm)
     ax_main.set_aspect("equal")
-    ax_main.set_xlabel(x_name)
-    ax_main.set_ylabel(y_name)
     ax_main.set_title(field)
 
     x = ds.variable(x_name)
     y = ds.variable(y_name)
     ax_left.plot(c, y, ",", alpha=0.4)
-    ax_left.set_xlabel(field)
-    ax_left.tick_params(labelleft=False)
     ax_bottom.plot(x, c, ",", alpha=0.4)
-    ax_bottom.set_xlabel(x_name)
-    ax_bottom.set_ylabel(field)
+    ax_bottom.tick_params(axis="y", labelright=True, right=True, labelleft=False, left=False)
+    ax_left.set_ylim(ax_main.get_ylim())
+    ax_bottom.set_xlim(ax_main.get_xlim())
+    _apply_field_scale(ax_left, ax_bottom, norm)
 
-    cbar = fig.colorbar(image, ax=ax_main, label=field)
+    cbar = fig.colorbar(image, cax=ax_cbar, label=field)
+    _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
     return fig, (ax_main, ax_left, ax_bottom), cbar

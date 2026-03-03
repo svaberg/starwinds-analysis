@@ -5,7 +5,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import cmocean
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from matplotlib.colors import SymLogNorm
 
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
 from starwinds_analysis.smart_ds import SmartDs
@@ -15,10 +18,11 @@ log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
+BR_CMAP = cmocean.cm.balance
 
 
 def process_plt_file(file_path: str | Path) -> None:
-    """Process one `.plt` file into 2D rho/u/b slice PNGs."""
+    """Process one `.plt` file into 2D rho/u/b/br slice PNGs."""
     # Start: resolve input/output paths and log the file being processed.
     log.debug("Resolving slice pipeline paths...")
     path = Path(file_path)
@@ -36,7 +40,11 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: make, save, and record the density slice.
     log.debug("Computing density slice...")
-    fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="Rho [kg/m^3]")
+    fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(
+        smart_ds,
+        var="Rho [kg/m^3]",
+        norm=LogNorm(),
+    )
     out_path = output_dir / f"{prefix}.slices.rho.png"
     fig.savefig(out_path)
     plt.close(fig)
@@ -54,9 +62,27 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: make, save, and record the magnetic-field slice.
     log.debug("Computing magnetic-field slice...")
-    fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="B [T]")
+    fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(
+        smart_ds,
+        var="B [T]",
+        norm=LogNorm(),
+    )
     out_path = output_dir / f"{prefix}.slices.b.png"
     fig.savefig(out_path)
     plt.close(fig)
     add_record("slice_b_png %r", str(out_path.relative_to(path.parent)))
     log.info("Computing magnetic-field slice complete.")
+
+    # Start: make, save, and record the radial magnetic-field slice.
+    log.debug("Computing radial magnetic-field slice...")
+    fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(
+        smart_ds,
+        var="B_r [T]",
+        cmap=BR_CMAP,
+        norm=SymLogNorm(linthresh=1.0e-9, base=10),
+    )
+    out_path = output_dir / f"{prefix}.slices.br.png"
+    fig.savefig(out_path)
+    plt.close(fig)
+    add_record("slice_br_png %r", str(out_path.relative_to(path.parent)))
+    log.info("Computing radial magnetic-field slice complete.")
