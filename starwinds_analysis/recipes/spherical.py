@@ -191,7 +191,6 @@ def register_vector_spherical_components(
     prefix: str,
     unit: str,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    register_components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Register local on-demand spherical vector components for one Cartesian vector triplet.
@@ -216,28 +215,19 @@ def register_vector_spherical_components(
             ds.variable(z_name),
         )
 
-    requested = set(register_components)
-    if "theta" in requested:
-        requested.add("p")
-    if "phi" in requested:
-        requested.add("a")
-
-    if "r" in requested:
-        smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0], overwrite=True)
-    if "p" in requested:
-        smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1], overwrite=True)
-        smart_ds.register_field(
-            f"{prefix}_theta [{unit}]",
-            lambda ds: np.array(ds.variable(f"{prefix}_p [{unit}]")),
-            overwrite=True,
-        )
-    if "a" in requested:
-        smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2], overwrite=True)
-        smart_ds.register_field(
-            f"{prefix}_phi [{unit}]",
-            lambda ds: np.array(ds.variable(f"{prefix}_a [{unit}]")),
-            overwrite=True,
-        )
+    smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0], overwrite=True)
+    smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1], overwrite=True)
+    smart_ds.register_field(
+        f"{prefix}_theta [{unit}]",
+        lambda ds: ds.variable(f"{prefix}_p [{unit}]"),
+        overwrite=True,
+    )
+    smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2], overwrite=True)
+    smart_ds.register_field(
+        f"{prefix}_phi [{unit}]",
+        lambda ds: ds.variable(f"{prefix}_a [{unit}]"),
+        overwrite=True,
+    )
 
 
 def auto_register_vector_spherical_components(
@@ -245,7 +235,6 @@ def auto_register_vector_spherical_components(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
     prefixes: Sequence[str] | None = None,
-    components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Auto-detect vector component triplets named like ``prefix_x [unit]``.
@@ -280,7 +269,6 @@ def auto_register_vector_spherical_components(
             prefix=prefix,
             unit=unit,
             coord_fields=coord_fields,
-            register_components=components,
         )
         created_prefixes.append(prefix)
     log.debug("auto_registered_vector_spherical_components %r", created_prefixes)
@@ -424,7 +412,6 @@ def build_griblet_vector_spherical_components_graph(
     prefix: str,
     unit: str,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    register_components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Build griblet recipes for ``prefix_{r,p,a}`` (with ``theta/phi`` aliases) from Cartesian components.
@@ -438,50 +425,41 @@ def build_griblet_vector_spherical_components_graph(
     deps = [vx_name, vy_name, vz_name, x_name, y_name, z_name]
 
     graph = griblet.ComputationGraph()
-    requested = set(register_components)
-    if "theta" in requested:
-        requested.add("p")
-    if "phi" in requested:
-        requested.add("a")
-
-    if "r" in requested:
-        graph.add_recipe(
-            f"{prefix}_r [{unit}]",
-            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
-            deps=deps,
-            cost=0.4,
-            metadata={"description": f"{prefix} radial component"},
-        )
-    if "p" in requested:
-        graph.add_recipe(
-            f"{prefix}_p [{unit}]",
-            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
-            deps=deps,
-            cost=0.5,
-            metadata={"description": f"{prefix} polar component"},
-        )
-        graph.add_recipe(
-            f"{prefix}_theta [{unit}]",
-            lambda vp: np.array(vp),
-            deps=[f"{prefix}_p [{unit}]"],
-            cost=0.01,
-            metadata={"description": f"{prefix} polar alias"},
-        )
-    if "a" in requested:
-        graph.add_recipe(
-            f"{prefix}_a [{unit}]",
-            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
-            deps=deps,
-            cost=0.5,
-            metadata={"description": f"{prefix} azimuth component"},
-        )
-        graph.add_recipe(
-            f"{prefix}_phi [{unit}]",
-            lambda va: np.array(va),
-            deps=[f"{prefix}_a [{unit}]"],
-            cost=0.01,
-            metadata={"description": f"{prefix} azimuth alias"},
-        )
+    graph.add_recipe(
+        f"{prefix}_r [{unit}]",
+        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
+        deps=deps,
+        cost=0.4,
+        metadata={"description": f"{prefix} radial component"},
+    )
+    graph.add_recipe(
+        f"{prefix}_p [{unit}]",
+        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
+        deps=deps,
+        cost=0.5,
+        metadata={"description": f"{prefix} polar component"},
+    )
+    graph.add_recipe(
+        f"{prefix}_theta [{unit}]",
+        lambda vp: vp,
+        deps=[f"{prefix}_p [{unit}]"],
+        cost=0.01,
+        metadata={"description": f"{prefix} polar alias"},
+    )
+    graph.add_recipe(
+        f"{prefix}_a [{unit}]",
+        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
+        deps=deps,
+        cost=0.5,
+        metadata={"description": f"{prefix} azimuth component"},
+    )
+    graph.add_recipe(
+        f"{prefix}_phi [{unit}]",
+        lambda va: va,
+        deps=[f"{prefix}_a [{unit}]"],
+        cost=0.01,
+        metadata={"description": f"{prefix} azimuth alias"},
+    )
     return graph
 
 
@@ -490,7 +468,6 @@ def build_griblet_auto_vector_spherical_components_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
     prefixes: Sequence[str] | None = None,
-    components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Auto-detect Cartesian vector triplets in `variable_names` and build a merged spherical-
@@ -525,7 +502,6 @@ def build_griblet_auto_vector_spherical_components_graph(
                 prefix=prefix,
                 unit=info["unit"],
                 coord_fields=coord_fields,
-                register_components=components,
             )
         )
     return merged

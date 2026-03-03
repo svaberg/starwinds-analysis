@@ -333,7 +333,6 @@ class SmartDs:
         *,
         coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
         vectors: Sequence[str] | None = None,
-        components: Sequence[str] = ("r", "p", "a"),
     ):
         """
         Add local (non-griblet) spherical geometry/vector component fields.
@@ -353,7 +352,6 @@ class SmartDs:
             self,
             coord_fields=coord_fields,
             prefixes=None if vectors is None else tuple(vectors),
-            components=tuple(components),
         )
         return self
 
@@ -362,7 +360,6 @@ class SmartDs:
         *,
         coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
         vectors: Sequence[str] | None = None,
-        components: Sequence[str] = ("r", "p", "a"),
         merge: bool = True,
     ):
         """
@@ -383,7 +380,6 @@ class SmartDs:
                 self.variables,
                 coord_fields=coord_fields,
                 prefixes=None if vectors is None else tuple(vectors),
-                components=tuple(components),
             )
         )
         self.set_computation_graph(graph, merge=merge)

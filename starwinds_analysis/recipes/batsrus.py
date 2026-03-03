@@ -79,7 +79,6 @@ def build_griblet_batsrus_graph(
                 sorted(derived_input_names),
                 coord_fields=("X [R]", "Y [R]", "Z [R]"),
                 prefixes=None,
-                components=("r", "p", "a"),
             )
         )
         derived_names = set(derived_input_names)
