@@ -10,6 +10,11 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+DAT_EQUIV_STEMS = (
+    "3d__var_4_n00000000",
+    "x=0_var_2_n00000000",
+    "z=0_var_1_n00000000",
+)
 SUN_RADIUS_M = 6.96e8
 
 
@@ -230,6 +235,33 @@ def test_add_spherical_fields_on_real_example_data():
     direct = np.full_like(r, np.nan, dtype=float)
     direct[mask] = (bx[mask] * x[mask] + by[mask] * y[mask] + bz[mask] * z[mask]) / r[mask]
     np.testing.assert_allclose(b_r[mask], direct[mask], rtol=1e-5, atol=1e-6)
+
+
+@pytest.mark.parametrize("stem", DAT_EQUIV_STEMS)
+def test_dat_and_plt_pairs_load_to_nearly_identical_smartds(stem):
+    plt_path = Path("sample_data") / f"{stem}.plt"
+    dat_path = Path("sample_data") / f"{stem}.dat"
+
+    if not plt_path.exists() or not dat_path.exists():
+        pytest.skip("matching .plt/.dat pair not present")
+
+    sds_plt = SmartDs.from_file(plt_path)
+    sds_dat = SmartDs.from_file(dat_path)
+
+    assert sds_plt.title == sds_dat.title
+    assert sds_plt.zone == sds_dat.zone
+    assert len(sds_plt.points) == len(sds_dat.points)
+    assert getattr(sds_plt.corners, "shape", None) == getattr(sds_dat.corners, "shape", None)
+    assert tuple(sds_plt.variables) == tuple(sds_dat.variables)
+
+    for name in sds_plt.variables:
+        np.testing.assert_allclose(
+            np.ravel(sds_plt(name)),
+            np.ravel(sds_dat(name)),
+            rtol=0.0,
+            atol=2.0e-4,
+            err_msg=name,
+        )
 
 
 @pytest.mark.skipif(
