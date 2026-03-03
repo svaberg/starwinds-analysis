@@ -446,6 +446,21 @@ def discover_input_files(directory: str | Path = ".", *, recursive: bool = False
     return sorted(files)
 
 
+def _pipeline_name_for_file(file_path: str | Path) -> str | None:
+    """
+    Infer the built-in pipeline from the input filename prefix.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    name = Path(file_path).name.lower()
+    if name.startswith("3d"):
+        return "volume"
+    if name.startswith("shl"):
+        return "shell"
+    if name.startswith("x=0") or name.startswith("y=0") or name.startswith("z=0"):
+        return "slice"
+    return None
+
+
 def _resolve_pipeline_process_file(
     pipeline: str,
 ) -> Callable[[Path], None]:
@@ -476,7 +491,7 @@ def _resolve_pipeline_process_file(
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
-    pipeline: str = "dummy",
+    pipeline: str | None = None,
     recursive: bool = False,
     noclobber: bool = False,
     include_file_hash: bool = False,
@@ -489,40 +504,84 @@ def run_sw_pipe(
     Run `sw-pipe` over all discovered `.plt` files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
+    files = discover_input_files(directory, recursive=recursive)
+    state_files: dict[str, Path] = {}
+    known_processed_by_pipeline: dict[str, set[str]] = {}
+    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]] = {}
+    process_functions: dict[str, Callable[[Path], None]] = {}
+    selected: list[tuple[Path, str, Callable[[Path], None], str]] = []
+    pipeline_label = "auto" if pipeline is None else str(pipeline)
     if process_file is None:
-        process_file = _resolve_pipeline_process_file(pipeline)
-        process_label = str(pipeline)
-        state_pipeline_name = str(pipeline)
+        if pipeline == "dummy":
+            process_functions["dummy"] = _resolve_pipeline_process_file("dummy")
+            state_files["dummy"] = _state_file_path(directory, pipeline_name="dummy")
+            known_processed, known_computed = _load_state(state_files["dummy"])
+            known_processed_by_pipeline["dummy"] = known_processed
+            known_computed_by_pipeline["dummy"] = known_computed
+            for file_path in files:
+                selected.append((file_path, "dummy", process_functions["dummy"], "dummy"))
+        elif pipeline is not None:
+            state_files[str(pipeline)] = _state_file_path(directory, pipeline_name=str(pipeline))
+            known_processed, known_computed = _load_state(state_files[str(pipeline)])
+            known_processed_by_pipeline[str(pipeline)] = known_processed
+            known_computed_by_pipeline[str(pipeline)] = known_computed
+            process_functions[str(pipeline)] = _resolve_pipeline_process_file(str(pipeline))
+            for file_path in files:
+                if _pipeline_name_for_file(file_path) != str(pipeline):
+                    continue
+                selected.append((file_path, str(pipeline), process_functions[str(pipeline)], str(pipeline)))
+        else:
+            for file_path in files:
+                resolved_pipeline = _pipeline_name_for_file(file_path)
+                if resolved_pipeline is None:
+                    continue
+                if resolved_pipeline not in process_functions:
+                    process_functions[resolved_pipeline] = _resolve_pipeline_process_file(resolved_pipeline)
+                if resolved_pipeline not in state_files:
+                    state_files[resolved_pipeline] = _state_file_path(directory, pipeline_name=resolved_pipeline)
+                    known_processed, known_computed = _load_state(state_files[resolved_pipeline])
+                    known_processed_by_pipeline[resolved_pipeline] = known_processed
+                    known_computed_by_pipeline[resolved_pipeline] = known_computed
+                selected.append((file_path, resolved_pipeline, process_functions[resolved_pipeline], resolved_pipeline))
     else:
         process_label = f"{process_file.__module__}.{process_file.__name__}"
-        state_pipeline_name = "custom"
+        state_files["custom"] = _state_file_path(directory, pipeline_name="custom")
+        known_processed, known_computed = _load_state(state_files["custom"])
+        known_processed_by_pipeline["custom"] = known_processed
+        known_computed_by_pipeline["custom"] = known_computed
+        for file_path in files:
+            selected.append((file_path, process_label, process_file, "custom"))
 
-    state_file = _state_file_path(directory, pipeline_name=state_pipeline_name)
-    known_processed, known_computed = _load_state(state_file)
-    files = discover_input_files(directory, recursive=recursive)
     results = SwPipeResults(
         directory=Path(directory),
         recursive=recursive,
         noclobber=noclobber,
-        discovered_files=list(files),
-        computed_results=dict(known_computed),
-        state_file=state_file,
+        discovered_files=[item[0] for item in selected],
+        computed_results={},
+        state_file=None if len(state_files) != 1 else next(iter(state_files.values())),
     )
+    for pipeline_name, pipeline_results in known_computed_by_pipeline.items():
+        if pipeline_name == "custom":
+            results.computed_results.update(pipeline_results)
+            continue
+        for file_key, payload in pipeline_results.items():
+            results.computed_results[file_key] = payload
     log_pipeline_event(
         log,
         "sw_pipe.discovered",
-        count=len(files),
+        count=len(selected),
         directory=Path(directory),
         recursive=recursive,
         noclobber=noclobber,
+        pipeline=pipeline_label,
     )
-    processed_keys = set(known_processed)
     recorder_logger = logging.getLogger("recorder")
     recorder_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
-    for file_path in files:
+    for file_path, process_label, active_process_file, state_pipeline_name in selected:
         file_key = _relative_file_key(file_path, base_dir=directory)
-        if noclobber and file_key in known_processed:
+        processed_keys = known_processed_by_pipeline[state_pipeline_name]
+        if noclobber and file_key in processed_keys:
             results.skipped_files.append(file_path)
             log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
             continue
@@ -543,7 +602,7 @@ def run_sw_pipe(
         )
         recorder_logger.addHandler(recorder_handler)
         try:
-            process_file(file_path)
+            active_process_file(file_path)
         except Exception as exc:
             results.failed_files.append(file_path)
             file_results["meta"]["status"] = "failed"
@@ -563,14 +622,18 @@ def run_sw_pipe(
             recorder_handler.close()
         if file_results:
             results.computed_results[file_key] = file_results
+            known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
         else:
             results.computed_results.pop(file_key, None)
-    _save_state(
-        state_file,
-        processed_keys=processed_keys,
-        computed_results=results.computed_results,
-        json_warn_bytes=int(json_warn_bytes),
-    )
+            known_computed_by_pipeline[state_pipeline_name].pop(file_key, None)
+    for state_pipeline_name, state_file in state_files.items():
+        pipeline_computed = known_computed_by_pipeline[state_pipeline_name]
+        _save_state(
+            state_file,
+            processed_keys=known_processed_by_pipeline[state_pipeline_name],
+            computed_results=pipeline_computed,
+            json_warn_bytes=int(json_warn_bytes),
+        )
     return results
 
 
@@ -593,9 +656,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--pipeline",
-        default="dummy",
+        default=None,
         choices=("dummy", "slice", "shell", "volume"),
-        help="Built-in per-file pipeline to run (default: dummy).",
+        help="Built-in per-file pipeline to run (default: auto by filename prefix).",
     )
     parser.add_argument(
         "--log-level",

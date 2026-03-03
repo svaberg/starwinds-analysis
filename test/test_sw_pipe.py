@@ -66,8 +66,8 @@ def test_run_sw_pipe_noclobber_skips_already_processed_files(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
 
-    first = run_sw_pipe(tmp_path)
-    second = run_sw_pipe(tmp_path, noclobber=True)
+    first = run_sw_pipe(tmp_path, pipeline="dummy")
+    second = run_sw_pipe(tmp_path, pipeline="dummy", noclobber=True)
 
     assert [path.name for path in first.processed_files] == ["alpha.plt", "beta.plt"]
     assert second.processed_files == []
@@ -78,8 +78,8 @@ def test_run_sw_pipe_default_clobber_reprocesses_files(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
 
-    first = run_sw_pipe(tmp_path)
-    second = run_sw_pipe(tmp_path)
+    first = run_sw_pipe(tmp_path, pipeline="dummy")
+    second = run_sw_pipe(tmp_path, pipeline="dummy")
 
     assert [path.name for path in first.processed_files] == ["alpha.plt", "beta.plt"]
     assert [path.name for path in second.processed_files] == ["alpha.plt", "beta.plt"]
@@ -134,7 +134,7 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     (tmp_path / "nested").mkdir()
     (tmp_path / "nested" / "beta.plt").write_text("")
 
-    run_sw_pipe(tmp_path, recursive=True)
+    run_sw_pipe(tmp_path, recursive=True, pipeline="dummy")
     state_file = tmp_path / "sw-pipe.dummy.processed.json"
     assert state_file.exists()
     payload = json.loads(state_file.read_text())
@@ -148,7 +148,7 @@ def test_run_sw_pipe_writes_processed_state_file(tmp_path):
 def test_run_sw_pipe_can_record_file_hash(tmp_path):
     file_path = tmp_path / "alpha.plt"
     file_path.write_text("abc")
-    results = run_sw_pipe(tmp_path, include_file_hash=True)
+    results = run_sw_pipe(tmp_path, pipeline="dummy", include_file_hash=True)
     expected_hash = hashlib.sha256(b"abc").hexdigest()
     alpha = results.computed_results["alpha.plt"]
     assert alpha["meta"]["file_hash_sha256"] == expected_hash
@@ -180,9 +180,40 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
 def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     with caplog.at_level(logging.WARNING, logger="starwinds_analysis.pipelines.sw_pipe"):
-        run_sw_pipe(tmp_path, json_warn_bytes=1)
+        run_sw_pipe(tmp_path, pipeline="dummy", json_warn_bytes=1)
     warnings = [record.getMessage() for record in caplog.records if record.levelno == logging.WARNING]
     assert any("state file is large" in message for message in warnings)
+
+
+def test_run_sw_pipe_auto_routes_by_filename_prefix(tmp_path):
+    (tmp_path / "3d__one.plt").write_text("")
+    (tmp_path / "shl_one.plt").write_text("")
+    (tmp_path / "x=0_one.plt").write_text("")
+    (tmp_path / "misc.plt").write_text("")
+
+    results = run_sw_pipe(tmp_path)
+
+    assert sorted(path.name for path in results.discovered_files) == ["3d__one.plt", "shl_one.plt", "x=0_one.plt"]
+    assert sorted(path.name for path in results.failed_files) == ["3d__one.plt", "shl_one.plt", "x=0_one.plt"]
+    assert sorted(results.computed_results.keys()) == ["3d__one.plt", "shl_one.plt", "x=0_one.plt"]
+    assert (tmp_path / "sw-pipe.volume.processed.json").exists()
+    assert (tmp_path / "sw-pipe.shell.processed.json").exists()
+    assert (tmp_path / "sw-pipe.slice.processed.json").exists()
+    assert not (tmp_path / "sw-pipe.dummy.processed.json").exists()
+
+
+def test_run_sw_pipe_explicit_pipeline_only_processes_matching_prefixes(tmp_path):
+    (tmp_path / "3d__one.plt").write_text("")
+    (tmp_path / "x=0_one.plt").write_text("")
+    (tmp_path / "y=0_one.dat").write_text("")
+
+    results = run_sw_pipe(tmp_path, pipeline="slice")
+
+    assert sorted(path.name for path in results.discovered_files) == ["x=0_one.plt", "y=0_one.dat"]
+    assert sorted(path.name for path in results.failed_files) == ["x=0_one.plt", "y=0_one.dat"]
+    assert sorted(results.computed_results.keys()) == ["x=0_one.plt", "y=0_one.dat"]
+    assert (tmp_path / "sw-pipe.slice.processed.json").exists()
+    assert not (tmp_path / "sw-pipe.volume.processed.json").exists()
 
 
 def test_sw_pipe_main_accepts_builtin_pipeline_names_on_empty_directory(tmp_path):
