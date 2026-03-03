@@ -99,6 +99,7 @@ class SwPipeResults:
     noclobber: bool
     discovered_files: list[Path] = field(default_factory=list)
     processed_files: list[Path] = field(default_factory=list)
+    failed_files: list[Path] = field(default_factory=list)
     skipped_files: list[Path] = field(default_factory=list)
     computed_results: dict[str, dict[str, object]] = field(default_factory=dict)
     state_file: Path | None = None
@@ -549,6 +550,15 @@ def run_sw_pipe(
         recorder_logger.addHandler(recorder_handler)
         try:
             process_file(file_path)
+        except Exception as exc:
+            results.failed_files.append(file_path)
+            log.exception("sw-pipe file failed: %s", file_path.name)
+            file_results["meta"]["status"] = "failed"
+            file_results["meta"]["error"] = str(exc)
+        else:
+            file_results["meta"]["status"] = "processed"
+            results.processed_files.append(file_path)
+            processed_keys.add(file_key)
         finally:
             meta = file_results.get("meta")
             if isinstance(meta, dict):
@@ -559,8 +569,6 @@ def run_sw_pipe(
             results.computed_results[file_key] = file_results
         else:
             results.computed_results.pop(file_key, None)
-        results.processed_files.append(file_path)
-        processed_keys.add(file_key)
     _save_state(
         state_file,
         processed_keys=processed_keys,

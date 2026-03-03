@@ -22,6 +22,18 @@ from starwinds_analysis._smart_ds_resample import resample_smart_ds
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
 
+
+def prepare_smartds(smart_ds: "SmartDs", *, body_radius_m: float) -> None:
+    """
+    Attach the standard SI and spherical field graphs used by common workflows.
+    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
+    """
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    try:
+        smart_ds.add_spherical_graph(vectors=("B", "U"))
+    except Exception:
+        smart_ds.add_spherical_fields(vectors=("B", "U"))
+
 class SmartDs:
     """
     Lightweight wrapper around ``starwinds_readplt.Dataset``.

@@ -86,6 +86,27 @@ def test_run_sw_pipe_default_clobber_reprocesses_files(tmp_path):
     assert second.skipped_files == []
 
 
+def test_run_sw_pipe_continues_after_single_file_failure(tmp_path):
+    (tmp_path / "alpha.plt").write_text("")
+    (tmp_path / "beta.plt").write_text("")
+
+    def process_file(path):
+        if Path(path).name == "alpha.plt":
+            raise RuntimeError("boom")
+        recorder_log = logging.getLogger("recorder.test_pipeline")
+        recorder_log.setLevel(logging.DEBUG)
+        recorder_log.debug("ok %r", True)
+
+    results = run_sw_pipe(tmp_path, process_file=process_file)
+
+    assert [path.name for path in results.failed_files] == ["alpha.plt"]
+    assert [path.name for path in results.processed_files] == ["beta.plt"]
+    assert results.computed_results["alpha.plt"]["meta"]["status"] == "failed"
+    assert "boom" in results.computed_results["alpha.plt"]["meta"]["error"]
+    assert results.computed_results["beta.plt"]["meta"]["status"] == "processed"
+    assert results.computed_results["beta.plt"]["ok"]["value"] is True
+
+
 @pytest.mark.design_lockin
 def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     (tmp_path / "alpha.plt").write_text("")

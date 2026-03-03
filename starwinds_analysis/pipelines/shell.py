@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid
-from starwinds_analysis.pipelines.orchestration_helpers import prepare_smartds
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
+from starwinds_analysis.smart_ds import prepare_smartds
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)

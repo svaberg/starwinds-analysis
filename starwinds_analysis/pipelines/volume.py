@@ -12,9 +12,8 @@ from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
 from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
-from starwinds_analysis.pipelines.orchestration_helpers import is_2d_input
-from starwinds_analysis.pipelines.orchestration_helpers import prepare_smartds
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
+from starwinds_analysis.smart_ds import prepare_smartds
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -34,14 +33,10 @@ def process_plt_file(file_path: str | Path) -> None:
     log.info("%s", path.name)
     log.info("Resolving volume pipeline paths complete.")
 
-    # Start: load the dataset and reject non-3D inputs.
-    log.debug("Loading volume dataset and checking dimensionality...")
+    # Start: load the dataset.
+    log.debug("Loading volume dataset...")
     smart_ds = SmartDs.from_file(path)
-    if is_2d_input(smart_ds):
-        log.info("skip file=%s reason=non_3d_input", path.name)
-        add_record("volume_status %r", "skipped_non_3d")
-        return
-    log.info("Loading volume dataset and checking dimensionality complete.")
+    log.info("Loading volume dataset complete.")
 
     # Start: prepare the dataset and create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
