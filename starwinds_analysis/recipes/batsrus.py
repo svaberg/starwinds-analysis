@@ -72,14 +72,14 @@ def build_griblet_batsrus_graph(
             derived_input_names.update(graph.fields())
 
         # Include spherical geometry/components in the BATSRUS graph from the start so
-        # pointwise recipes can depend on U_r/B_r/U_phi/B_phi without extra setup.
+        # pointwise recipes can depend on U_r/B_r/U_a/B_a without extra setup.
         graph.merge(build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]")))
         graph.merge(
             build_griblet_auto_vector_spherical_components_graph(
                 sorted(derived_input_names),
                 coord_fields=("X [R]", "Y [R]", "Z [R]"),
                 prefixes=None,
-                components=("r", "theta", "phi"),
+                components=("r", "p", "a"),
             )
         )
         derived_names = set(derived_input_names)
@@ -318,14 +318,14 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     graph.add_recipe(
         "magnetic_torque_density [N/m]",
         lambda varpi, bphi, br: -np.array(varpi) * np.array(bphi) * np.array(br) / _MU0,
-        deps=["cylindrical_radius [m]", "B_phi [T]", "B_r [T]"],
+        deps=["cylindrical_radius [m]", "B_a [T]", "B_r [T]"],
         cost=0.2,
         metadata={"description": "Magnetic z-torque density (shell form)"},
     )
     graph.add_recipe(
         "dynamic_torque_density [N/m]",
         lambda varpi, rho, uphi, ur: np.array(varpi) * np.array(rho) * np.array(uphi) * np.array(ur),
-        deps=["cylindrical_radius [m]", "Rho [kg/m^3]", "U_phi [m/s]", "U_r [m/s]"],
+        deps=["cylindrical_radius [m]", "Rho [kg/m^3]", "U_a [m/s]", "U_r [m/s]"],
         cost=0.2,
         metadata={"description": "Dynamic z-torque density (shell form)"},
     )
@@ -340,15 +340,15 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     # Latitude-map magnetic components (common plotting quantities).
     graph.add_recipe(
         "B_meridional [T]",
-        lambda btheta: -np.array(btheta),
-        deps=["B_theta [T]"],
+        lambda bp: -np.array(bp),
+        deps=["B_p [T]"],
         cost=0.05,
         metadata={"description": "Meridional magnetic component (northward)"},
     )
     graph.add_recipe(
         "B_tangential [T]",
-        lambda bphi, bmer: np.sqrt(np.array(bphi) ** 2 + np.array(bmer) ** 2),
-        deps=["B_phi [T]", "B_meridional [T]"],
+        lambda ba, bmer: np.sqrt(np.array(ba) ** 2 + np.array(bmer) ** 2),
+        deps=["B_a [T]", "B_meridional [T]"],
         cost=0.08,
         metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )

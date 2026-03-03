@@ -56,6 +56,20 @@ def make_dataset_3d_vectors():
     return Dataset(points, corners, aux={}, title="demo3d", variables=variables, zone="z3d")
 
 
+def make_dataset_spherical_coords():
+    variables = ["R [R]", "polar [rad]", "azimuth [rad]"]
+    points = np.array(
+        [
+            [2.0, np.pi / 2.0, 0.0],
+            [3.0, np.pi / 2.0, np.pi / 2.0],
+            [4.0, 0.0, 0.0],
+        ],
+        dtype=float,
+    )
+    corners = np.empty((0, 0), dtype=int)
+    return Dataset(points, corners, aux={}, title="demo-spherical", variables=variables, zone="zsph")
+
+
 def test_passthrough_raw_field():
     sds = SmartDs(make_dataset_2d())
 
@@ -177,6 +191,41 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     np.testing.assert_allclose(lon, phi)
     np.testing.assert_allclose(lat_deg, np.degrees(lat))
     np.testing.assert_allclose(lon_deg, np.degrees(lon))
+
+
+def test_add_spherical_fields_exposes_polar_azimuth_and_compact_vector_names():
+    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_fields(vectors=("B",))
+
+    polar = sds.variable("polar [rad]")
+    azimuth = sds.variable("azimuth [rad]")
+    theta = sds.variable("theta [rad]")
+    phi = sds.variable("phi [rad]")
+    b_p = sds.variable("B_p [T]")
+    b_a = sds.variable("B_a [T]")
+    b_theta = sds.variable("B_theta [T]")
+    b_phi = sds.variable("B_phi [T]")
+
+    np.testing.assert_allclose(polar, theta)
+    np.testing.assert_allclose(azimuth, phi)
+    np.testing.assert_allclose(b_p, b_theta)
+    np.testing.assert_allclose(b_a, b_phi)
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("griblet") is None,
+    reason="griblet is required for graph-based spherical inverse recipes",
+)
+def test_add_spherical_graph_can_recover_cartesian_from_r_polar_azimuth():
+    sds = SmartDs(make_dataset_spherical_coords())
+    sds.add_spherical_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))
+
+    x = np.array(sds.variable("X [R]"))
+    y = np.array(sds.variable("Y [R]"))
+    z = np.array(sds.variable("Z [R]"))
+
+    np.testing.assert_allclose(x, [2.0, 0.0, 0.0], atol=1e-12)
+    np.testing.assert_allclose(y, [0.0, 3.0, 0.0], atol=1e-12)
+    np.testing.assert_allclose(z, [0.0, 0.0, 4.0], atol=1e-12)
 
 
 def test_spherical_fields_are_available_by_default_for_xyz_vector_datasets():

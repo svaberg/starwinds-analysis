@@ -49,6 +49,15 @@ Immediate recommendation:
 - enforce the dependency direction above
 - prefer moving or deleting leaky helpers over creating new folders
 
+Coordinate/vector naming note:
+
+- In recipes and SmartDs/griblet-facing field names, use:
+  - `R [R]`, `polar [rad]`, `azimuth [rad]`
+- For vector components, use compact suffixes:
+  - `_r`, `_p`, `_a`
+  - for example `U_r [m/s]`, `U_p [m/s]`, `U_a [m/s]`
+- Keep `theta`/`phi` and `*_theta`/`*_phi` only as compatibility aliases while older code and tests are migrated.
+
 ## examples
 
 - `examples/earth-xuv-neutrals/earth-xuv-neutrals.py` — **Reviewed**. Example script (one-off workflow code is allowed here).
