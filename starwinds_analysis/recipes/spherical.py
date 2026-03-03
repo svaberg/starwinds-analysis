@@ -146,28 +146,18 @@ def build_griblet_spherical_geometry_graph(
     """
     x_name, y_name, z_name = coord_fields
     r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
+    xyz_names = (x_name, y_name, z_name)
+    rpa_names = (r_name, "polar [rad]", "azimuth [rad]")
 
     graph = griblet.ComputationGraph()
 
-    deps = [x_name, y_name, z_name]
-    graph.add_recipe(
-        r_name,
-        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[0],
-        deps=deps,
-        cost=0.2,
-    )
-    graph.add_recipe(
-        "polar [rad]",
-        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[1],
-        deps=deps,
-        cost=0.2,
-    )
-    graph.add_recipe(
-        "azimuth [rad]",
-        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[2],
-        deps=deps,
-        cost=0.2,
-    )
+    for index, field_name in enumerate(rpa_names):
+        graph.add_recipe(
+            field_name,
+            lambda x, y, z, index=index: cartesian_to_spherical_coordinates(x, y, z)[index],
+            deps=list(xyz_names),
+            cost=0.2,
+        )
     graph.add_recipe(
         "latitude [rad]",
         lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[0],
@@ -216,24 +206,13 @@ def build_griblet_spherical_geometry_graph(
         deps=["longitude [deg]"],
         cost=0.05,
     )
-    graph.add_recipe(
-        x_name,
-        lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[0],
-        deps=[r_name, "polar [rad]", "azimuth [rad]"],
-        cost=0.25,
-    )
-    graph.add_recipe(
-        y_name,
-        lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[1],
-        deps=[r_name, "polar [rad]", "azimuth [rad]"],
-        cost=0.25,
-    )
-    graph.add_recipe(
-        z_name,
-        lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[2],
-        deps=[r_name, "polar [rad]", "azimuth [rad]"],
-        cost=0.25,
-    )
+    for index, field_name in enumerate(xyz_names):
+        graph.add_recipe(
+            field_name,
+            lambda r, polar, azimuth, index=index: spherical_to_cartesian_coordinates(r, polar, azimuth)[index],
+            deps=list(rpa_names),
+            cost=0.25,
+        )
 
     return graph
 
@@ -257,27 +236,17 @@ def build_griblet_vector_spherical_components_graph(
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
     vz_name = f"{prefix}_z [{unit}]"
-    deps = [vx_name, vy_name, vz_name, x_name, y_name, z_name]
+    xyz_names = (vx_name, vy_name, vz_name, x_name, y_name, z_name)
+    rpa_names = (f"{prefix}_r [{unit}]", f"{prefix}_p [{unit}]", f"{prefix}_a [{unit}]")
 
     graph = griblet.ComputationGraph()
-    graph.add_recipe(
-        f"{prefix}_r [{unit}]",
-        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
-        deps=deps,
-        cost=0.4,
-    )
-    graph.add_recipe(
-        f"{prefix}_p [{unit}]",
-        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
-        deps=deps,
-        cost=0.5,
-    )
-    graph.add_recipe(
-        f"{prefix}_a [{unit}]",
-        lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
-        deps=deps,
-        cost=0.5,
-    )
+    for index, field_name in enumerate(rpa_names):
+        graph.add_recipe(
+            field_name,
+            lambda vx, vy, vz, x, y, z, index=index: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[index],
+            deps=list(xyz_names),
+            cost=0.4 if index == 0 else 0.5,
+        )
     return graph
 
 
