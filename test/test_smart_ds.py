@@ -228,10 +228,10 @@ def test_add_spherical_graph_can_recover_cartesian_from_r_polar_azimuth():
     np.testing.assert_allclose(z, [0.0, 0.0, 4.0], atol=1e-12)
 
 
-def test_spherical_fields_are_available_by_default_for_xyz_vector_datasets():
+def test_add_spherical_fields_registers_xyz_geometry_and_vectors():
     sds = SmartDs(make_dataset_3d_vectors())
+    sds.add_spherical_fields(vectors=("B",))
 
-    # No explicit `add_spherical_fields()` call.
     r = np.array(sds("R [R]"))
     polar = np.array(sds("polar [rad]"))
     azimuth = np.array(sds("azimuth [rad]"))

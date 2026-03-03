@@ -65,8 +65,6 @@ class SmartDs:
         for name, candidates in (aliases or {}).items():
             self.set_alias(name, candidates)
 
-        self._auto_register_builtin_fields()
-
     def __repr__(self) -> str:
         """
         Debug-style summary string for interactive use.
@@ -99,23 +97,6 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         return cls(Dataset.from_file(str(file)), **kwargs)
-
-    def _auto_register_builtin_fields(self) -> None:
-        """
-        Register built-in spherical geometry/vector fields when XYZ coordinates are present.
-        Used by: `SmartDs` users and internal methods
-        """
-        coord_fields = ("X [R]", "Y [R]", "Z [R]")
-        if not all(name in self._dataset.variables for name in coord_fields):
-            return
-
-        from starwinds_analysis.recipes.spherical import _vector_triplets
-        from starwinds_analysis.recipes.spherical import register_spherical_geometry_fields
-        from starwinds_analysis.recipes.spherical import register_vector_spherical_components
-
-        register_spherical_geometry_fields(self, coord_fields=coord_fields)
-        for prefix, unit in _vector_triplets(self.variables):
-            register_vector_spherical_components(self, prefix=prefix, unit=unit, coord_fields=coord_fields)
 
     @property
     def raw(self) -> Dataset:

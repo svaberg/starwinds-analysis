@@ -38,7 +38,7 @@ def register_spherical_geometry_fields(
 
     # Add XYZ -> Rpa.
     for index, field_name in enumerate(rpa_names):
-        smart_ds.register_field(field_name, lambda ds, index=index: _coordinates(ds)[index], overwrite=True)
+        smart_ds.register_field(field_name, lambda ds, index=index: _coordinates(ds)[index])
 
     # Add Rpa -> latlon_rad.
     for index, field_name in enumerate(latlon_names):
@@ -48,7 +48,6 @@ def register_spherical_geometry_fields(
                 ds.variable("polar [rad]"),
                 ds.variable("azimuth [rad]"),
             )[index],
-            overwrite=True,
         )
 
     # Add latlon_rad -> latlon_deg.
@@ -56,7 +55,6 @@ def register_spherical_geometry_fields(
         smart_ds.register_field(
             deg_name,
             lambda ds, rad_name=rad_name: np.degrees(ds.variable(rad_name)),
-            overwrite=True,
         )
 
 
@@ -90,9 +88,9 @@ def register_vector_spherical_components(
             ds.variable(z_name),
         )
 
-    smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0], overwrite=True)
-    smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1], overwrite=True)
-    smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2], overwrite=True)
+    smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0])
+    smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1])
+    smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2])
 
 
 def _vector_triplets(
