@@ -6,7 +6,7 @@ It should remain backend-agnostic and avoid plotting concerns.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 import importlib
 import logging
 import re
@@ -146,67 +146,43 @@ def register_spherical_geometry_fields(
     smart_ds,
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    r_name: str | None = None,
-    polar_name: str = "polar [rad]",
-    azimuth_name: str = "azimuth [rad]",
-    theta_name: str = "theta [rad]",
-    phi_name: str = "phi [rad]",
-    latitude_name: str = "latitude [rad]",
-    longitude_name: str = "longitude [rad]",
-    latitude_deg_name: str = "latitude [deg]",
-    longitude_deg_name: str = "longitude [deg]",
 ):
     """
     Register local on-demand spherical coordinate fields on a SmartDs wrapper.
     Used by: `starwinds_analysis/smart_ds.py`
     """
     x_name, y_name, z_name = coord_fields
-    if r_name is None:
-        r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
+    r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
     def _coordinates(ds):
         return cartesian_to_spherical_coordinates(ds.variable(x_name), ds.variable(y_name), ds.variable(z_name))
 
     smart_ds.register_field(r_name, lambda ds: _coordinates(ds)[0], overwrite=True)
-    smart_ds.register_field(polar_name, lambda ds: _coordinates(ds)[1], overwrite=True)
-    smart_ds.register_field(azimuth_name, lambda ds: _coordinates(ds)[2], overwrite=True)
-    if theta_name != polar_name:
-        smart_ds.register_field(theta_name, lambda ds: np.array(ds.variable(polar_name)), overwrite=True)
-    if phi_name != azimuth_name:
-        smart_ds.register_field(phi_name, lambda ds: np.array(ds.variable(azimuth_name)), overwrite=True)
+    smart_ds.register_field("polar [rad]", lambda ds: _coordinates(ds)[1], overwrite=True)
+    smart_ds.register_field("azimuth [rad]", lambda ds: _coordinates(ds)[2], overwrite=True)
+    smart_ds.register_field("theta [rad]", lambda ds: np.array(ds.variable("polar [rad]")), overwrite=True)
+    smart_ds.register_field("phi [rad]", lambda ds: np.array(ds.variable("azimuth [rad]")), overwrite=True)
 
     smart_ds.register_field(
-        latitude_name,
-        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable(polar_name), 0.0)[0],
+        "latitude [rad]",
+        lambda ds: (0.5 * np.pi) - np.array(ds.variable("polar [rad]")),
         overwrite=True,
     )
     smart_ds.register_field(
-        longitude_name,
-        lambda ds: polar_azimuth_to_latitude_longitude(0.0, ds.variable(azimuth_name))[1],
+        "longitude [rad]",
+        lambda ds: np.array(ds.variable("azimuth [rad]")),
         overwrite=True,
     )
     smart_ds.register_field(
-        latitude_deg_name,
-        lambda ds: np.degrees(np.array(ds.variable(latitude_name))),
+        "latitude [deg]",
+        lambda ds: np.degrees(np.array(ds.variable("latitude [rad]"))),
         overwrite=True,
     )
     smart_ds.register_field(
-        longitude_deg_name,
-        lambda ds: np.degrees(np.array(ds.variable(longitude_name))),
+        "longitude [deg]",
+        lambda ds: np.degrees(np.array(ds.variable("longitude [rad]"))),
         overwrite=True,
     )
-    registered = {
-        "r": r_name,
-        "polar": polar_name,
-        "azimuth": azimuth_name,
-        "theta": theta_name,
-        "phi": phi_name,
-        "latitude": latitude_name,
-        "longitude": longitude_name,
-        "latitude_deg": latitude_deg_name,
-        "longitude_deg": longitude_deg_name,
-    }
-    log.debug("registered_spherical_geometry_fields %r", registered)
 
 
 def register_vector_spherical_components(
@@ -215,7 +191,6 @@ def register_vector_spherical_components(
     prefix: str,
     unit: str,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    component_names: Mapping[str, str] | None = None,
     register_components: Sequence[str] = ("r", "p", "a"),
 ):
     """
@@ -226,18 +201,6 @@ def register_vector_spherical_components(
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
     vz_name = f"{prefix}_z [{unit}]"
-
-    default_component_names = {
-        "r": f"{prefix}_r [{unit}]",
-        "p": f"{prefix}_p [{unit}]",
-        "a": f"{prefix}_a [{unit}]",
-        "theta": f"{prefix}_theta [{unit}]",
-        "phi": f"{prefix}_phi [{unit}]",
-    }
-    component_names = {
-        **default_component_names,
-        **({} if component_names is None else dict(component_names)),
-    }
 
     def _compute(ds):
         """
@@ -253,18 +216,28 @@ def register_vector_spherical_components(
             ds.variable(z_name),
         )
 
-    if "r" in register_components:
-        smart_ds.register_field(component_names["r"], lambda ds: _compute(ds)[0], overwrite=True)
-    if ("p" in register_components) or ("theta" in register_components):
-        smart_ds.register_field(component_names["p"], lambda ds: _compute(ds)[1], overwrite=True)
-        if component_names["theta"] != component_names["p"]:
-            smart_ds.register_field(component_names["theta"], lambda ds: np.array(ds.variable(component_names["p"])), overwrite=True)
-    if ("a" in register_components) or ("phi" in register_components):
-        smart_ds.register_field(component_names["a"], lambda ds: _compute(ds)[2], overwrite=True)
-        if component_names["phi"] != component_names["a"]:
-            smart_ds.register_field(component_names["phi"], lambda ds: np.array(ds.variable(component_names["a"])), overwrite=True)
+    requested = set(register_components)
+    if "theta" in requested:
+        requested.add("p")
+    if "phi" in requested:
+        requested.add("a")
 
-    return component_names
+    if "r" in requested:
+        smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0], overwrite=True)
+    if "p" in requested:
+        smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1], overwrite=True)
+        smart_ds.register_field(
+            f"{prefix}_theta [{unit}]",
+            lambda ds: np.array(ds.variable(f"{prefix}_p [{unit}]")),
+            overwrite=True,
+        )
+    if "a" in requested:
+        smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2], overwrite=True)
+        smart_ds.register_field(
+            f"{prefix}_phi [{unit}]",
+            lambda ds: np.array(ds.variable(f"{prefix}_a [{unit}]")),
+            overwrite=True,
+        )
 
 
 def auto_register_vector_spherical_components(
@@ -316,15 +289,6 @@ def auto_register_vector_spherical_components(
 def build_griblet_spherical_geometry_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    r_name: str | None = None,
-    polar_name: str = "polar [rad]",
-    azimuth_name: str = "azimuth [rad]",
-    theta_name: str = "theta [rad]",
-    phi_name: str = "phi [rad]",
-    latitude_name: str = "latitude [rad]",
-    longitude_name: str = "longitude [rad]",
-    latitude_deg_name: str = "latitude [deg]",
-    longitude_deg_name: str = "longitude [deg]",
 ):
     """
     Build a griblet graph for spherical geometry fields.
@@ -333,8 +297,7 @@ def build_griblet_spherical_geometry_graph(
     """
     griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
-    if r_name is None:
-        r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
+    r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
     graph = griblet.ComputationGraph()
 
@@ -347,110 +310,108 @@ def build_griblet_spherical_geometry_graph(
         metadata={"description": "Cartesian->spherical radius"},
     )
     graph.add_recipe(
-        polar_name,
+        "polar [rad]",
         lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[1],
         deps=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical polar angle"},
     )
     graph.add_recipe(
-        azimuth_name,
+        "azimuth [rad]",
         lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[2],
         deps=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical azimuth"},
     )
-    if theta_name != polar_name:
-        graph.add_recipe(
-            theta_name,
-            lambda polar: np.array(polar),
-            deps=[polar_name],
-            cost=0.01,
-            metadata={"description": "polar-angle alias"},
-        )
-    if phi_name != azimuth_name:
-        graph.add_recipe(
-            phi_name,
-            lambda azimuth: np.array(azimuth),
-            deps=[azimuth_name],
-            cost=0.01,
-            metadata={"description": "azimuth alias"},
-        )
+    graph.add_recipe(
+        "theta [rad]",
+        lambda polar: np.array(polar),
+        deps=["polar [rad]"],
+        cost=0.01,
+        metadata={"description": "polar-angle alias"},
+    )
+    graph.add_recipe(
+        "phi [rad]",
+        lambda azimuth: np.array(azimuth),
+        deps=["azimuth [rad]"],
+        cost=0.01,
+        metadata={"description": "azimuth alias"},
+    )
 
     graph.add_recipe(
-        latitude_name,
-        lambda polar: polar_azimuth_to_latitude_longitude(polar, 0.0)[0],
-        deps=[polar_name],
+        "latitude [rad]",
+        lambda polar: (0.5 * np.pi) - np.array(polar),
+        deps=["polar [rad]"],
         cost=0.05,
         metadata={"description": "polar -> latitude (radians)"},
     )
     graph.add_recipe(
-        polar_name,
-        lambda latitude: latitude_longitude_to_polar_azimuth(latitude, 0.0)[0],
-        deps=[latitude_name],
+        "polar [rad]",
+        lambda latitude: (0.5 * np.pi) - np.array(latitude),
+        deps=["latitude [rad]"],
         cost=0.05,
         metadata={"description": "latitude -> polar (radians)"},
     )
     graph.add_recipe(
-        longitude_name,
-        lambda azimuth: polar_azimuth_to_latitude_longitude(0.0, azimuth)[1],
-        deps=[azimuth_name],
+        "longitude [rad]",
+        lambda azimuth: np.array(azimuth),
+        deps=["azimuth [rad]"],
         cost=0.01,
         metadata={"description": "azimuth -> longitude (radians)"},
     )
     graph.add_recipe(
-        azimuth_name,
-        lambda longitude: latitude_longitude_to_polar_azimuth(0.0, longitude)[1],
-        deps=[longitude_name],
+        "azimuth [rad]",
+        lambda longitude: np.array(longitude),
+        deps=["longitude [rad]"],
         cost=0.01,
         metadata={"description": "longitude -> azimuth (radians)"},
     )
     graph.add_recipe(
-        latitude_deg_name,
+        "latitude [deg]",
         lambda lat: np.degrees(np.array(lat)),
-        deps=[latitude_name],
+        deps=["latitude [rad]"],
         cost=0.05,
         metadata={"description": "latitude radians -> degrees"},
     )
     graph.add_recipe(
-        longitude_deg_name,
+        "longitude [deg]",
         lambda lon: np.degrees(np.array(lon)),
-        deps=[longitude_name],
+        deps=["longitude [rad]"],
         cost=0.05,
         metadata={"description": "longitude radians -> degrees"},
     )
     graph.add_recipe(
-        latitude_name,
+        "latitude [rad]",
         lambda lat_deg: np.deg2rad(np.array(lat_deg)),
-        deps=[latitude_deg_name],
+        deps=["latitude [deg]"],
         cost=0.05,
         metadata={"description": "latitude degrees -> radians"},
     )
     graph.add_recipe(
-        longitude_name,
+        "longitude [rad]",
         lambda lon_deg: np.deg2rad(np.array(lon_deg)),
-        deps=[longitude_deg_name],
+        deps=["longitude [deg]"],
         cost=0.05,
         metadata={"description": "longitude degrees -> radians"},
     )
     graph.add_recipe(
         x_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[0],
-        deps=[r_name, polar_name, azimuth_name],
+        deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
         metadata={"description": "Spherical->Cartesian X"},
     )
     graph.add_recipe(
         y_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[1],
-        deps=[r_name, polar_name, azimuth_name],
+        deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
         metadata={"description": "Spherical->Cartesian Y"},
     )
     graph.add_recipe(
         z_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[2],
-        deps=[r_name, polar_name, azimuth_name],
+        deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
         metadata={"description": "Spherical->Cartesian Z"},
     )
@@ -477,8 +438,13 @@ def build_griblet_vector_spherical_components_graph(
     deps = [vx_name, vy_name, vz_name, x_name, y_name, z_name]
 
     graph = griblet.ComputationGraph()
+    requested = set(register_components)
+    if "theta" in requested:
+        requested.add("p")
+    if "phi" in requested:
+        requested.add("a")
 
-    if "r" in register_components:
+    if "r" in requested:
         graph.add_recipe(
             f"{prefix}_r [{unit}]",
             lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
@@ -486,7 +452,7 @@ def build_griblet_vector_spherical_components_graph(
             cost=0.4,
             metadata={"description": f"{prefix} radial component"},
         )
-    if ("p" in register_components) or ("theta" in register_components):
+    if "p" in requested:
         graph.add_recipe(
             f"{prefix}_p [{unit}]",
             lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
@@ -501,7 +467,7 @@ def build_griblet_vector_spherical_components_graph(
             cost=0.01,
             metadata={"description": f"{prefix} polar alias"},
         )
-    if ("a" in register_components) or ("phi" in register_components):
+    if "a" in requested:
         graph.add_recipe(
             f"{prefix}_a [{unit}]",
             lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
