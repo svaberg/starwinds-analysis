@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
-from functools import partial
 import hashlib
 import json
 from json.encoder import INFINITY, _make_iterencode, encode_basestring, encode_basestring_ascii
@@ -449,8 +448,6 @@ def discover_input_files(directory: str | Path = ".", *, recursive: bool = False
 
 def _resolve_pipeline_process_file(
     pipeline: str,
-    *,
-    force_slice_3d: bool = False,
 ) -> Callable[[Path], None]:
     """
     Resolve a named built-in pipeline to its per-file process function.
@@ -464,7 +461,7 @@ def _resolve_pipeline_process_file(
     if key == "slice":
         from starwinds_analysis.pipelines.slice import process_plt_file
 
-        return partial(process_plt_file, force_3d=bool(force_slice_3d))
+        return process_plt_file
     if key == "shell":
         from starwinds_analysis.pipelines.shell import process_plt_file
 
@@ -480,7 +477,6 @@ def run_sw_pipe(
     directory: str | Path = ".",
     *,
     pipeline: str = "dummy",
-    force_slice_3d: bool = False,
     recursive: bool = False,
     noclobber: bool = False,
     include_file_hash: bool = False,
@@ -494,10 +490,7 @@ def run_sw_pipe(
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     if process_file is None:
-        process_file = _resolve_pipeline_process_file(
-            pipeline,
-            force_slice_3d=force_slice_3d,
-        )
+        process_file = _resolve_pipeline_process_file(pipeline)
         process_label = str(pipeline)
         state_pipeline_name = str(pipeline)
     else:
@@ -605,11 +598,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Built-in per-file pipeline to run (default: dummy).",
     )
     parser.add_argument(
-        "--force-slice-3d",
-        action="store_true",
-        help="Allow the slice pipeline to process 3D files.",
-    )
-    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"),
@@ -667,7 +655,6 @@ def main(argv: list[str] | None = None) -> int:
     run_sw_pipe(
         args.directory,
         pipeline=str(args.pipeline),
-        force_slice_3d=bool(args.force_slice_3d),
         recursive=bool(args.recursive),
         noclobber=bool(args.noclobber),
         include_file_hash=bool(args.file_hash),

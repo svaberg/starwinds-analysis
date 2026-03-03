@@ -18,9 +18,8 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
 
 
-def process_plt_file(file_path: str | Path, *, force_3d: bool | None = None) -> None:
+def process_plt_file(file_path: str | Path) -> None:
     """Process one `.plt` file into 2D rho/u/b slice PNGs."""
-    del force_3d
     # Start: resolve input/output paths and log the file being processed.
     log.debug("Resolving slice pipeline paths...")
     path = Path(file_path)
