@@ -45,9 +45,10 @@ def output_prefix_from_input_file(input_file) -> str:
     Build a quicklook output prefix from an input filename.
     Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    stem = Path(str(input_file)).name
-    if stem.endswith(".plt"):
-        stem = stem[:-4]
+    path = Path(str(input_file))
+    stem = path.name
+    if path.suffix.lower() in {".plt", ".dat"}:
+        stem = path.stem
     else:
         stem = Path(stem).stem
     return slug_key(stem)

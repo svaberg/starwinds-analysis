@@ -435,14 +435,14 @@ def _save_state(
     path.write_text(payload_text)
 
 
-def discover_plt_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
+def discover_input_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
     """
-    Discover `.plt` files in a directory.
+    Discover supported input files in a directory.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
     """
     base = Path(directory)
     paths = base.rglob("*") if recursive else base.iterdir()
-    files = [path for path in paths if path.is_file() and path.suffix.lower() == ".plt"]
+    files = [path for path in paths if path.is_file() and path.suffix.lower() in {".plt", ".dat"}]
     return sorted(files)
 
 
@@ -504,7 +504,7 @@ def run_sw_pipe(
 
     state_file = _state_file_path(directory, pipeline_name=state_pipeline_name)
     known_processed, known_computed = _load_state(state_file)
-    files = discover_plt_files(directory, recursive=recursive)
+    files = discover_input_files(directory, recursive=recursive)
     results = SwPipeResults(
         directory=Path(directory),
         recursive=recursive,

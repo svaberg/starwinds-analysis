@@ -13,20 +13,22 @@ from starwinds_analysis.pipelines.dummy_pipeline import name_letter_counts
 from starwinds_analysis.pipelines.dummy_pipeline import name_profile_payload
 from starwinds_analysis.pipelines.dummy_pipeline import name_waveform_payload
 from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
-from starwinds_analysis.pipelines.sw_pipe import discover_plt_files
+from starwinds_analysis.pipelines.sw_pipe import discover_input_files
 from starwinds_analysis.pipelines.sw_pipe import main
 from starwinds_analysis.pipelines.sw_pipe import run_sw_pipe
 
 
-def test_discover_plt_files_finds_only_current_directory(tmp_path):
+def test_discover_input_files_finds_supported_extensions_in_current_directory(tmp_path):
     (tmp_path / "a.plt").write_text("")
     (tmp_path / "b.PLT").write_text("")
+    (tmp_path / "c.dat").write_text("")
+    (tmp_path / "d.DAT").write_text("")
     (tmp_path / "ignore.txt").write_text("")
     (tmp_path / "nested").mkdir()
     (tmp_path / "nested" / "c.plt").write_text("")
 
-    files = discover_plt_files(tmp_path)
-    assert [path.name for path in files] == ["a.plt", "b.PLT"]
+    files = discover_input_files(tmp_path)
+    assert [path.name for path in files] == ["a.plt", "b.PLT", "c.dat", "d.DAT"]
 
 
 def test_name_letter_counts_counts_alpha_only():
