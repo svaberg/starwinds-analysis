@@ -29,34 +29,35 @@ def register_spherical_geometry_fields(
     """
     x_name, y_name, z_name = coord_fields
     r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
+    rpa_names = (r_name, "polar [rad]", "azimuth [rad]")
+    latlon_names = ("latitude [rad]", "longitude [rad]")
+    latlon_deg_names = ("latitude [deg]", "longitude [deg]")
 
     def _coordinates(ds):
         return cartesian_to_spherical_coordinates(ds.variable(x_name), ds.variable(y_name), ds.variable(z_name))
 
-    smart_ds.register_field(r_name, lambda ds: _coordinates(ds)[0], overwrite=True)
-    smart_ds.register_field("polar [rad]", lambda ds: _coordinates(ds)[1], overwrite=True)
-    smart_ds.register_field("azimuth [rad]", lambda ds: _coordinates(ds)[2], overwrite=True)
+    # Add XYZ -> Rpa.
+    for index, field_name in enumerate(rpa_names):
+        smart_ds.register_field(field_name, lambda ds, index=index: _coordinates(ds)[index], overwrite=True)
 
-    smart_ds.register_field(
-        "latitude [rad]",
-        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable("polar [rad]"), ds.variable("azimuth [rad]"))[0],
-        overwrite=True,
-    )
-    smart_ds.register_field(
-        "longitude [rad]",
-        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable("polar [rad]"), ds.variable("azimuth [rad]"))[1],
-        overwrite=True,
-    )
-    smart_ds.register_field(
-        "latitude [deg]",
-        lambda ds: np.degrees(ds.variable("latitude [rad]")),
-        overwrite=True,
-    )
-    smart_ds.register_field(
-        "longitude [deg]",
-        lambda ds: np.degrees(ds.variable("longitude [rad]")),
-        overwrite=True,
-    )
+    # Add Rpa -> latlon_rad.
+    for index, field_name in enumerate(latlon_names):
+        smart_ds.register_field(
+            field_name,
+            lambda ds, index=index: polar_azimuth_to_latitude_longitude(
+                ds.variable("polar [rad]"),
+                ds.variable("azimuth [rad]"),
+            )[index],
+            overwrite=True,
+        )
+
+    # Add latlon_rad -> latlon_deg.
+    for rad_name, deg_name in zip(latlon_names, latlon_deg_names):
+        smart_ds.register_field(
+            deg_name,
+            lambda ds, rad_name=rad_name: np.degrees(ds.variable(rad_name)),
+            overwrite=True,
+        )
 
 
 def register_vector_spherical_components(
