@@ -107,6 +107,21 @@ def test_run_sw_pipe_continues_after_single_file_failure(tmp_path):
     assert results.computed_results["beta.plt"]["ok"]["value"] is True
 
 
+def test_run_sw_pipe_fail_fast_raises_on_first_failure(tmp_path):
+    (tmp_path / "alpha.plt").write_text("")
+    (tmp_path / "beta.plt").write_text("")
+
+    def process_file(path):
+        if Path(path).name == "alpha.plt":
+            raise RuntimeError("boom")
+        recorder_log = logging.getLogger("recorder.test_pipeline")
+        recorder_log.setLevel(logging.DEBUG)
+        recorder_log.debug("ok %r", True)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        run_sw_pipe(tmp_path, process_file=process_file, fail_fast=True)
+
+
 @pytest.mark.design_lockin
 def test_run_sw_pipe_writes_processed_state_file(tmp_path):
     (tmp_path / "alpha.plt").write_text("")

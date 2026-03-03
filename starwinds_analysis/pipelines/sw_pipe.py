@@ -486,6 +486,7 @@ def run_sw_pipe(
     include_file_hash: bool = False,
     array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
     json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
+    fail_fast: bool = False,
     process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
     """
@@ -555,6 +556,8 @@ def run_sw_pipe(
             log.exception("sw-pipe file failed: %s", file_path.name)
             file_results["meta"]["status"] = "failed"
             file_results["meta"]["error"] = str(exc)
+            if fail_fast:
+                raise
         else:
             file_results["meta"]["status"] = "processed"
             results.processed_files.append(file_path)
@@ -640,6 +643,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=_DEFAULT_JSON_WARN_BYTES,
         help="Warn if the per-pipeline sw-pipe state JSON is at or above this byte size (0 disables).",
     )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop the run on the first per-file pipeline failure.",
+    )
     return parser
 
 
@@ -665,6 +673,7 @@ def main(argv: list[str] | None = None) -> int:
         include_file_hash=bool(args.file_hash),
         array_offload_min_bytes=int(args.array_offload_min_bytes),
         json_warn_bytes=int(args.json_warn_bytes),
+        fail_fast=bool(args.fail_fast),
     )
     return 0
 
