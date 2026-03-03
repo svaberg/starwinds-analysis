@@ -101,21 +101,6 @@ def process_plt_file(file_path: str | Path) -> None:
     height_r = [radius_r - 1.0 for radius_r in shell_radii_r]
     log.info("Loading shell dataset and preparing native shell grid complete.")
 
-    # Start: create the figure canvases used by the shell tasks.
-    log.debug("Preparing shell plotting canvases...")
-    map_fig, map_axes = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
-    profile_fig, profile_axes = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
-
-    for axis in map_axes.ravel():
-        axis.set_xlabel("Longitude [deg]")
-        axis.set_ylabel("Latitude [deg]")
-
-    for axis in profile_axes.ravel():
-        axis.set_xlabel("Height [R]")
-        axis.grid(True, alpha=0.25)
-
-    log.info("Preparing shell plotting canvases complete.")
-
     # Start: compute, plot, and record shell wind mass flux.
     log.debug("Computing shell wind mass flux...")
     rho = np.ravel(smart_ds("Rho [kg/m^3]"))
@@ -153,12 +138,27 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_nodes=lon_nodes,
         lat_nodes=lat_nodes,
     )
-    image = map_axes[0, 0].pcolormesh(lon_nodes, lat_nodes, mass_flux_map, shading="flat", cmap="viridis")
-    map_axes[0, 0].set_title("Wind Mass Flux")
-    map_fig.colorbar(image, ax=map_axes[0, 0], label="Mass flux [kg/m^2/s]")
-    profile_axes[0, 0].plot(height_r, mass_loss_kg_s, ".-", color="C0")
-    profile_axes[0, 0].set_title("Wind Mass Loss")
-    profile_axes[0, 0].set_ylabel("Mass loss [kg/s]")
+    mass_flux_fig, mass_flux_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    image = mass_flux_ax.pcolormesh(lon_nodes, lat_nodes, mass_flux_map, shading="flat", cmap="viridis")
+    mass_flux_ax.set_xlabel("Longitude [deg]")
+    mass_flux_ax.set_ylabel("Latitude [deg]")
+    mass_flux_ax.set_title("Wind Mass Flux")
+    mass_flux_fig.colorbar(image, ax=mass_flux_ax, label="Mass flux [kg/m^2/s]")
+    mass_flux_png = output_dir / f"{prefix}.mass_flux_map.png"
+    mass_flux_fig.savefig(mass_flux_png)
+    plt.close(mass_flux_fig)
+    add_record("shell_mass_flux_map_png %r", str(mass_flux_png.relative_to(path.parent)))
+
+    mass_loss_fig, mass_loss_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    mass_loss_ax.plot(height_r, mass_loss_kg_s, ".-", color="C0")
+    mass_loss_ax.set_xlabel("Height [R]")
+    mass_loss_ax.set_ylabel("Mass loss [kg/s]")
+    mass_loss_ax.set_title("Wind Mass Loss")
+    mass_loss_ax.grid(True, alpha=0.25)
+    mass_loss_png = output_dir / f"{prefix}.mass_loss_profile.png"
+    mass_loss_fig.savefig(mass_loss_png)
+    plt.close(mass_loss_fig)
+    add_record("shell_mass_loss_profile_png %r", str(mass_loss_png.relative_to(path.parent)))
     add_record("shell_radius_R %r", shell_radii_r)
     add_record("shell_mass_loss_kg_s %r", mass_loss_kg_s)
     add_record("shell_mass_loss_value_kg_s %r", mass_loss_kg_s[-1])
@@ -201,12 +201,27 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_nodes=lon_nodes,
         lat_nodes=lat_nodes,
     )
-    image = map_axes[0, 1].pcolormesh(lon_nodes, lat_nodes, torque_map, shading="flat", cmap="cividis")
-    map_axes[0, 1].set_title("Angular Momentum Flux")
-    map_fig.colorbar(image, ax=map_axes[0, 1], label="Torque density [N/m]")
-    profile_axes[0, 1].plot(height_r, total_torque_nm, ".-", color="C1")
-    profile_axes[0, 1].set_title("Wind Torque")
-    profile_axes[0, 1].set_ylabel("Torque [Nm]")
+    torque_map_fig, torque_map_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    image = torque_map_ax.pcolormesh(lon_nodes, lat_nodes, torque_map, shading="flat", cmap="cividis")
+    torque_map_ax.set_xlabel("Longitude [deg]")
+    torque_map_ax.set_ylabel("Latitude [deg]")
+    torque_map_ax.set_title("Angular Momentum Flux")
+    torque_map_fig.colorbar(image, ax=torque_map_ax, label="Torque density [N/m]")
+    torque_map_png = output_dir / f"{prefix}.torque_map.png"
+    torque_map_fig.savefig(torque_map_png)
+    plt.close(torque_map_fig)
+    add_record("shell_torque_map_png %r", str(torque_map_png.relative_to(path.parent)))
+
+    torque_profile_fig, torque_profile_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    torque_profile_ax.plot(height_r, total_torque_nm, ".-", color="C1")
+    torque_profile_ax.set_xlabel("Height [R]")
+    torque_profile_ax.set_ylabel("Torque [Nm]")
+    torque_profile_ax.set_title("Wind Torque")
+    torque_profile_ax.grid(True, alpha=0.25)
+    torque_profile_png = output_dir / f"{prefix}.torque_profile.png"
+    torque_profile_fig.savefig(torque_profile_png)
+    plt.close(torque_profile_fig)
+    add_record("shell_torque_profile_png %r", str(torque_profile_png.relative_to(path.parent)))
     add_record("shell_total_torque_nm %r", total_torque_nm)
     add_record("shell_total_torque_value_nm %r", total_torque_nm[-1])
     log.info("Computing shell angular momentum flux complete.")
@@ -235,12 +250,27 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_nodes=lon_nodes,
         lat_nodes=lat_nodes,
     )
-    image = map_axes[1, 0].pcolormesh(lon_nodes, lat_nodes, energy_map, shading="flat", cmap="plasma")
-    map_axes[1, 0].set_title("Energy Flux")
-    map_fig.colorbar(image, ax=map_axes[1, 0], label="Energy flux [W/m^2]")
-    profile_axes[1, 0].plot(height_r, energy_flow_w, ".-", color="C2")
-    profile_axes[1, 0].set_title("Shell Energy Flow")
-    profile_axes[1, 0].set_ylabel("Energy flow [W]")
+    energy_map_fig, energy_map_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    image = energy_map_ax.pcolormesh(lon_nodes, lat_nodes, energy_map, shading="flat", cmap="plasma")
+    energy_map_ax.set_xlabel("Longitude [deg]")
+    energy_map_ax.set_ylabel("Latitude [deg]")
+    energy_map_ax.set_title("Energy Flux")
+    energy_map_fig.colorbar(image, ax=energy_map_ax, label="Energy flux [W/m^2]")
+    energy_map_png = output_dir / f"{prefix}.energy_flux_map.png"
+    energy_map_fig.savefig(energy_map_png)
+    plt.close(energy_map_fig)
+    add_record("shell_energy_flux_map_png %r", str(energy_map_png.relative_to(path.parent)))
+
+    energy_profile_fig, energy_profile_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    energy_profile_ax.plot(height_r, energy_flow_w, ".-", color="C2")
+    energy_profile_ax.set_xlabel("Height [R]")
+    energy_profile_ax.set_ylabel("Energy flow [W]")
+    energy_profile_ax.set_title("Shell Energy Flow")
+    energy_profile_ax.grid(True, alpha=0.25)
+    energy_profile_png = output_dir / f"{prefix}.energy_flow_profile.png"
+    energy_profile_fig.savefig(energy_profile_png)
+    plt.close(energy_profile_fig)
+    add_record("shell_energy_flow_profile_png %r", str(energy_profile_png.relative_to(path.parent)))
     add_record("shell_energy_flow_w %r", energy_flow_w)
     add_record("shell_energy_flow_value_w %r", energy_flow_w[-1])
     log.info("Computing shell energy flux complete.")
@@ -268,24 +298,27 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_nodes=lon_nodes,
         lat_nodes=lat_nodes,
     )
-    image = map_axes[1, 1].pcolormesh(lon_nodes, lat_nodes, open_flux_map, shading="flat", cmap="magma")
-    map_axes[1, 1].set_title("Open Magnetic Flux Density")
-    map_fig.colorbar(image, ax=map_axes[1, 1], label="|B_r| [T]")
-    profile_axes[1, 1].plot(height_r, open_flux_wb, ".-", color="C3")
-    profile_axes[1, 1].set_title("Open Magnetic Flux")
-    profile_axes[1, 1].set_ylabel("Open flux [Wb]")
+    open_flux_map_fig, open_flux_map_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    image = open_flux_map_ax.pcolormesh(lon_nodes, lat_nodes, open_flux_map, shading="flat", cmap="magma")
+    open_flux_map_ax.set_xlabel("Longitude [deg]")
+    open_flux_map_ax.set_ylabel("Latitude [deg]")
+    open_flux_map_ax.set_title("Open Magnetic Flux Density")
+    open_flux_map_fig.colorbar(image, ax=open_flux_map_ax, label="|B_r| [T]")
+    open_flux_map_png = output_dir / f"{prefix}.open_flux_map.png"
+    open_flux_map_fig.savefig(open_flux_map_png)
+    plt.close(open_flux_map_fig)
+    add_record("shell_open_flux_map_png %r", str(open_flux_map_png.relative_to(path.parent)))
+
+    open_flux_profile_fig, open_flux_profile_ax = plt.subplots(figsize=(7, 5), constrained_layout=True)
+    open_flux_profile_ax.plot(height_r, open_flux_wb, ".-", color="C3")
+    open_flux_profile_ax.set_xlabel("Height [R]")
+    open_flux_profile_ax.set_ylabel("Open flux [Wb]")
+    open_flux_profile_ax.set_title("Open Magnetic Flux")
+    open_flux_profile_ax.grid(True, alpha=0.25)
+    open_flux_profile_png = output_dir / f"{prefix}.open_flux_profile.png"
+    open_flux_profile_fig.savefig(open_flux_profile_png)
+    plt.close(open_flux_profile_fig)
+    add_record("shell_open_flux_profile_png %r", str(open_flux_profile_png.relative_to(path.parent)))
     add_record("shell_open_flux_wb %r", open_flux_wb)
     add_record("shell_open_flux_value_wb %r", open_flux_wb[-1])
     log.info("Computing shell open magnetic flux complete.")
-
-    # Start: save the figures and record the output artifacts.
-    log.debug("Saving shell figures...")
-    shell_maps_png = output_dir / f"{prefix}.shell_maps.png"
-    shell_profiles_png = output_dir / f"{prefix}.shell_profiles.png"
-    map_fig.savefig(shell_maps_png)
-    profile_fig.savefig(shell_profiles_png)
-    plt.close(map_fig)
-    plt.close(profile_fig)
-    add_record("shell_maps_png %r", str(shell_maps_png.relative_to(path.parent)))
-    add_record("shell_profiles_png %r", str(shell_profiles_png.relative_to(path.parent)))
-    log.info("Saving shell figures complete.")
