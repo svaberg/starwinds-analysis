@@ -11,11 +11,9 @@ import logging
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import (
-    infer_body_radius_m,
-    integrate_shell_scalar,
-    sample_spherical_shells_by_strategy,
-)
+from starwinds_analysis.analysis.shells import infer_body_radius_m
+from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_spherical_shells_by_strategy
 from starwinds_analysis.physics.constants import MU0
 
 log = logging.getLogger(__name__)

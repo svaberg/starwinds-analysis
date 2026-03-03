@@ -12,12 +12,10 @@ from os import PathLike
 import numpy as np
 
 from starwinds_readplt.dataset import Dataset
-from starwinds_analysis._smart_ds_graph import (
-    compute_via_graph as _compute_via_graph,
-    explain_field as _explain_field,
-    graph_field_names as _graph_field_names,
-    resolve_field as _resolve_field,
-)
+from starwinds_analysis._smart_ds_graph import compute_via_graph as _compute_via_graph
+from starwinds_analysis._smart_ds_graph import explain_field as _explain_field
+from starwinds_analysis._smart_ds_graph import graph_field_names as _graph_field_names
+from starwinds_analysis._smart_ds_graph import resolve_field as _resolve_field
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
@@ -126,11 +124,9 @@ class SmartDs:
         if not all(name in self._dataset.variables for name in coord_fields):
             return
 
-        from starwinds_analysis.recipes.spherical import (
-            _vector_triplets,
-            register_spherical_geometry_fields,
-            register_vector_spherical_components,
-        )
+        from starwinds_analysis.recipes.spherical import _vector_triplets
+        from starwinds_analysis.recipes.spherical import register_spherical_geometry_fields
+        from starwinds_analysis.recipes.spherical import register_vector_spherical_components
 
         register_spherical_geometry_fields(self, coord_fields=coord_fields)
         for prefix, unit in _vector_triplets(self.variables):
@@ -344,11 +340,9 @@ class SmartDs:
         functions are available in ``starwinds_analysis.recipes.spherical`` for
         future griblet integration.
         """
-        from starwinds_analysis.recipes.spherical import (
-            _vector_triplets,
-            register_spherical_geometry_fields,
-            register_vector_spherical_components,
-        )
+        from starwinds_analysis.recipes.spherical import _vector_triplets
+        from starwinds_analysis.recipes.spherical import register_spherical_geometry_fields
+        from starwinds_analysis.recipes.spherical import register_vector_spherical_components
 
         register_spherical_geometry_fields(self, coord_fields=coord_fields)
         for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
@@ -369,11 +363,9 @@ class SmartDs:
         Unlike ``add_spherical_fields()``, this registers recipes in the attached
         computation graph and resolves them via ``griblet`` on demand.
         """
-        from starwinds_analysis.recipes.spherical import (
-            _vector_triplets,
-            build_griblet_spherical_geometry_graph,
-            build_griblet_vector_spherical_components_graph,
-        )
+        from starwinds_analysis.recipes.spherical import _vector_triplets
+        from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
+        from starwinds_analysis.recipes.spherical import build_griblet_vector_spherical_components_graph
 
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
         for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):

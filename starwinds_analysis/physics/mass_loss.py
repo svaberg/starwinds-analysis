@@ -35,11 +35,9 @@ def mass_loss_vs_radius(
     Used by: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
       `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/physics/orbit_local.py`
     """
-    from starwinds_analysis.analysis.shells import (
-        infer_body_radius_m,
-        integrate_shell_scalar,
-        sample_spherical_shells_by_strategy,
-    )
+    from starwinds_analysis.analysis.shells import infer_body_radius_m
+    from starwinds_analysis.analysis.shells import integrate_shell_scalar
+    from starwinds_analysis.analysis.shells import sample_spherical_shells_by_strategy
 
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)

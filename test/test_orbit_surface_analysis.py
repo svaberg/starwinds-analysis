@@ -3,13 +3,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.physics.orbit_surface import (
-    pressure_components_on_orbit_surface,
-    sample_orbit_surface_revolution,
-    surface_of_revolution_from_path,
-    surface_point_normals_and_areas,
-    torque_components_on_orbit_surface,
-)
+from starwinds_analysis.physics.orbit_surface import pressure_components_on_orbit_surface
+from starwinds_analysis.physics.orbit_surface import sample_orbit_surface_revolution
+from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_path
+from starwinds_analysis.physics.orbit_surface import surface_point_normals_and_areas
+from starwinds_analysis.physics.orbit_surface import torque_components_on_orbit_surface
 from starwinds_analysis.smart_ds import SmartDs
 
 

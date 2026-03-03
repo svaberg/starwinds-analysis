@@ -16,10 +16,8 @@ import numpy as np
 from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.physics.local_estimates import (
-    local_mass_loss_estimates,
-    local_torque_estimates,
-)
+from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
+from starwinds_analysis.physics.local_estimates import local_torque_estimates
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
 

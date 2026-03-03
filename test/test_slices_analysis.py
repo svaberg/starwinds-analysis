@@ -3,11 +3,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.slices import (
-    infer_range,
-    resample_structured_xz_slice,
-    structured_quad_corners,
-)
+from starwinds_analysis.analysis.slices import infer_range
+from starwinds_analysis.analysis.slices import resample_structured_xz_slice
+from starwinds_analysis.analysis.slices import structured_quad_corners
 from starwinds_analysis.smart_ds import SmartDs
 
 

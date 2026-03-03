@@ -10,14 +10,12 @@ from collections.abc import Sequence
 
 import griblet
 import numpy as np
-from starwinds_analysis.algorithms.spherical import (
-    cartesian_to_spherical_coordinates,
-    cartesian_vector_to_spherical_components,
-    latitude_longitude_to_polar_azimuth,
-    polar_azimuth_to_latitude_longitude,
-    spherical_to_cartesian_coordinates,
-    spherical_vector_to_cartesian_components,
-)
+from starwinds_analysis.algorithms.spherical import cartesian_to_spherical_coordinates
+from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
+from starwinds_analysis.algorithms.spherical import latitude_longitude_to_polar_azimuth
+from starwinds_analysis.algorithms.spherical import polar_azimuth_to_latitude_longitude
+from starwinds_analysis.algorithms.spherical import spherical_to_cartesian_coordinates
+from starwinds_analysis.algorithms.spherical import spherical_vector_to_cartesian_components
 
 
 def register_spherical_geometry_fields(

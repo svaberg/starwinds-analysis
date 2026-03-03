@@ -3,16 +3,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.physics.orbit_pressure import (
-    pressure_components_on_circular_orbit,
-    pressure_components_on_elliptic_orbit,
-)
-from starwinds_analysis.physics.pressure import (
-    magnetic_pressure,
-    magnetospheric_standoff_distance,
-    pressure_components,
-    ram_pressure,
-)
+from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
+from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
+from starwinds_analysis.physics.pressure import magnetic_pressure
+from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
+from starwinds_analysis.physics.pressure import pressure_components
+from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.smart_ds import SmartDs
 
 

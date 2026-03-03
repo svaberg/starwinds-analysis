@@ -3,35 +3,25 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.physics.fluxes import (
-    axisymmetric_open_flux_vs_radius,
-    energy_flux_vs_radius,
-    open_magnetic_flux_vs_radius,
-)
-from starwinds_analysis.physics.local_estimates import (
-    local_mass_loss_estimates,
-    local_torque_estimates,
-)
+from starwinds_analysis.physics.fluxes import axisymmetric_open_flux_vs_radius
+from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
+from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
+from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
+from starwinds_analysis.physics.local_estimates import local_torque_estimates
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.analysis.shell_summary import (
-    boxcar_shell_weights,
-    summarize_shell_diagnostics_band,
-    summarize_shell_series,
-)
-from starwinds_analysis.analysis.shells import (
-    infer_cartesian_axis_radii,
-    integrate_shell_scalar,
-    sample_spherical_shells,
-    sample_spherical_shells_fibonacci,
-)
+from starwinds_analysis.analysis.shell_summary import boxcar_shell_weights
+from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
+from starwinds_analysis.analysis.shell_summary import summarize_shell_series
+from starwinds_analysis.analysis.shells import infer_cartesian_axis_radii
+from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_spherical_shells
+from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
-from starwinds_analysis.physics.wind_scaling import (
-    open_wind_magnetisation,
-    surface_escape_speed,
-)
+from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
+from starwinds_analysis.physics.wind_scaling import surface_escape_speed
 from starwinds_analysis.smart_ds import SmartDs
 
 

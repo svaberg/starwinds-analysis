@@ -19,10 +19,8 @@ import numpy as np
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
-from starwinds_analysis.physics.pressure import (
-    magnetospheric_standoff_distance,
-    ram_pressure,
-)
+from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
+from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 
 log = logging.getLogger(__name__)

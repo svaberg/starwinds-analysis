@@ -60,11 +60,9 @@ def build_griblet_batsrus_graph(
         graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
 
     if include_derived:
-        from starwinds_analysis.recipes.spherical import (
-            _vector_triplets,
-            build_griblet_spherical_geometry_graph,
-            build_griblet_vector_spherical_components_graph,
-        )
+        from starwinds_analysis.recipes.spherical import _vector_triplets
+        from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
+        from starwinds_analysis.recipes.spherical import build_griblet_vector_spherical_components_graph
 
         derived_input_names: set[str] = set()
         for raw_name in vars_list:
