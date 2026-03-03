@@ -55,6 +55,10 @@ Pipeline follow-up:
   demonstrated approach in `examples/smartds_2d_xy_points.ipynb`.
 - The 2D `slice` pipeline should add a wind-pressure plot in the stellar frame.
 
+Notebook follow-up:
+
+- Example notebook filenames should not be prefixed with `smartds_`.
+
 Coordinate/vector naming note:
 
 - In recipes and SmartDs/griblet-facing field names, use:

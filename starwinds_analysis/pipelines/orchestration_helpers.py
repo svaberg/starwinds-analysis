@@ -46,15 +46,3 @@ def output_prefix_from_input_file(input_file) -> str:
     else:
         stem = Path(stem).stem
     return slug_key(stem)
-
-
-def resolve_output_prefix(*, prefix: str | None, input_file=None) -> str:
-    """
-    Resolve the quicklook prefix from explicit value or input filename fallback.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    if prefix is not None and str(prefix).strip():
-        return str(prefix)
-    if input_file is not None:
-        return output_prefix_from_input_file(input_file)
-    return "output"

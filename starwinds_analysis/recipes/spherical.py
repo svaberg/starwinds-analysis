@@ -34,6 +34,7 @@ def register_spherical_geometry_fields(
     latlon_deg_names = ("latitude [deg]", "longitude [deg]")
 
     def _coordinates(ds):
+        """Compute `R/polar/azimuth` once from the chosen Cartesian coordinate fields."""
         return cartesian_to_spherical_coordinates(ds.variable(x_name), ds.variable(y_name), ds.variable(z_name))
 
     # Add XYZ -> Rpa.

@@ -117,6 +117,10 @@ Rule:
 - If logic needs detailed tests, that logic belongs in lower reusable layers (`physics/`, `analysis/`, `visualisation/`), not inside `pipelines/`.
 - If a test mainly locks in the current API shape, output schema, or implementation details rather than core functionality, mark it with `@pytest.mark.design_lockin`.
 - Do not build wrappers, shims, or compatibility layers just to satisfy a `design_lockin` test; those tests are warnings, not architecture requirements.
+- If a test failure points to a real code or design issue, fix the code or design issue first, even if that means the test should stay failing until it is updated or deleted.
+- Do not preserve bad code just to make a rules test pass.
+- Do not "fix" banned names or banned patterns by cosmetic renaming alone; if the underlying code is unnecessary or badly placed, delete it, inline it, or move it to the correct layer.
+- Treat rule-test failures as prompts to inspect the code, not as instructions to preserve the current shape.
 
 Bad:
 
@@ -127,6 +131,7 @@ Bad:
 - recording a synthetic final pipeline summary instead of recording results at the point they are computed
 - keeping dead wrappers or compatibility layers only because a pipeline test expects them
 - writing detailed behavior tests for pipeline-only glue instead of testing the reusable functions it calls
+- cosmetically renaming a bad helper only to satisfy a naming rule while keeping the same unnecessary helper alive
 
 Preferred pattern:
 

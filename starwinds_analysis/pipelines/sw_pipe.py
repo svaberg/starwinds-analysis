@@ -49,6 +49,7 @@ class _ScientificFloatEncoder(json.JSONEncoder):
             _inf=INFINITY,
             _neginf=-INFINITY,
         ):
+            """Render finite floats in scientific notation for JSON encoding."""
             if math.isnan(value):
                 text = "NaN"
             elif value == _inf:
