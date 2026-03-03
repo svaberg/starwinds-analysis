@@ -41,6 +41,17 @@ def shell_spherical_components(
     return radial, latitudinal, azimuthal
 
 
+def edges_from_centres(centres, *, lower_edge=None, upper_edge=None):
+    """Construct cell edges from ordered cell centres."""
+    edges = np.empty(len(centres) + 1, dtype=float)
+    edges[1:-1] = 0.5 * (centres[:-1] + centres[1:])
+    first_edge = centres[0] - 0.5 * (centres[1] - centres[0])
+    last_edge = centres[-1] + 0.5 * (centres[-1] - centres[-2])
+    edges[0] = first_edge if lower_edge is None else float(lower_edge)
+    edges[-1] = last_edge if upper_edge is None else float(upper_edge)
+    return edges
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """Process one shell-like `.plt` file into shell maps, profiles, and recorded diagnostics."""
     # Start: resolve input/output paths and log the file being processed.
@@ -66,15 +77,8 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_levels = lon_levels[:-1]
     lat_levels = np.unique(np.round(lat_all, 10))
 
-    lon_edges = np.empty(lon_levels.size + 1, dtype=float)
-    lon_edges[1:-1] = 0.5 * (lon_levels[:-1] + lon_levels[1:])
-    lon_edges[0] = lon_levels[0] - 0.5 * (lon_levels[1] - lon_levels[0])
-    lon_edges[-1] = lon_levels[-1] + 0.5 * (lon_levels[-1] - lon_levels[-2])
-
-    lat_edges = np.empty(lat_levels.size + 1, dtype=float)
-    lat_edges[1:-1] = 0.5 * (lat_levels[:-1] + lat_levels[1:])
-    lat_edges[0] = -90.0
-    lat_edges[-1] = 90.0
+    lon_edges = edges_from_centres(lon_levels)
+    lat_edges = edges_from_centres(lat_levels, lower_edge=-90.0, upper_edge=90.0)
 
     solid_angle = (
         np.sin(np.deg2rad(lat_edges[1:]))[:, None] - np.sin(np.deg2rad(lat_edges[:-1]))[:, None]
