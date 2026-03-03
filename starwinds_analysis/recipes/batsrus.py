@@ -12,8 +12,9 @@ import math
 
 import numpy as np
 
+from starwinds_analysis.constants import MU0
+
 _AMU_KG = 1.66053906660e-27
-_MU0 = 4.0e-7 * math.pi
 _DEFAULT_GAMMA = 5.0 / 3.0
 
 _UNIT_FACTORS = {
@@ -182,6 +183,23 @@ def build_griblet_unit_normalization_graph(
                 metadata={"description": "Parse GAMMA from aux"},
             )
 
+    # Add stellar params from aux/PARAM.in when available.
+    for raw_name, field_name in (
+        ("Star_radius_m", "Star_radius [m]"),
+        ("Star_mass_kg", "Star_mass [kg]"),
+        ("Star_rotational_period_s", "Star_rotational_period [s]"),
+        ("Star_rotation_rate_rad_s", "Star_rotation_rate [rad/s]"),
+    ):
+        if aux is None or raw_name not in aux:
+            continue
+        graph.add_recipe(
+            field_name,
+            lambda x: float(x) if isinstance(x, (int, float, np.floating)) else float(str(x).strip()),
+            deps=[raw_name],
+            cost=0.01,
+            metadata={"description": f"Parse {raw_name} from aux"},
+        )
+
     return graph
 
 def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
@@ -240,7 +258,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     # Alfven speed and Alfven Mach
     graph.add_recipe(
         "c_A [m/s]",
-        lambda B, rho: np.array(B) / np.sqrt(_MU0 * np.array(rho)),
+        lambda B, rho: np.array(B) / np.sqrt(MU0 * np.array(rho)),
         deps=["B [T]", "Rho [kg/m^3]"],
         cost=0.2,
         metadata={"description": "Alfven speed"},
@@ -261,7 +279,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     )
     graph.add_recipe(
         "P_b [Pa]",
-        lambda B: np.array(B) ** 2 / (2.0 * _MU0),
+        lambda B: np.array(B) ** 2 / (2.0 * MU0),
         deps=["B [T]"],
         cost=0.12,
         metadata={"description": "Magnetic pressure"},
@@ -290,7 +308,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     graph.add_recipe(
         "standoff_distance [m]",
         lambda rho, U: np.power(
-            ((0.7e-4) ** 2 / (2.0 * _MU0)) / (np.array(rho) * (np.array(U) ** 2)),
+            ((0.7e-4) ** 2 / (2.0 * MU0)) / (np.array(rho) * (np.array(U) ** 2)),
             1.0 / 6.0,
         ),
         deps=["Rho [kg/m^3]", "U [m/s]"],
@@ -340,7 +358,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     # Pointwise shell-style torque densities (about +z).
     graph.add_recipe(
         "magnetic_torque_density [N/m]",
-        lambda varpi, bphi, br: -np.array(varpi) * np.array(bphi) * np.array(br) / _MU0,
+        lambda varpi, bphi, br: -np.array(varpi) * np.array(bphi) * np.array(br) / MU0,
         deps=["cylindrical_radius [m]", "B_a [T]", "B_r [T]"],
         cost=0.2,
         metadata={"description": "Magnetic z-torque density (shell form)"},

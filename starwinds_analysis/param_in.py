@@ -1,13 +1,25 @@
 """THIS FILE contains a small reader for SWMF-style `PARAM.in` files.
 
-It flattens `#INCLUDE` statements when the child file exists, preserves sessions,
-components, and duplicate commands, and exposes simple typed access helpers.
+BATSRUS itself parses these files line by line. Non-command lines are ignored
+until a line starting with `#` is encountered, at which point BATSRUS switches
+into command-specific parsing and consumes a hard-coded number of following
+parameter lines for that command. In the SWMF layer, sessions are demarcated by
+`#END` or `#RUN`, and components are additional structure layered on top.
+
+This reader is intentionally more permissive: it flattens resolvable
+`#INCLUDE` statements, preserves sessions/components/duplicate commands, and
+stores command blocks for inspection without hard-coding command arity.
 """
 
 from __future__ import annotations
 
 from collections import OrderedDict
 from pathlib import Path
+
+from scipy.constants import day
+
+_SOLAR_RADIUS_M = 6.957e8
+_SOLAR_MASS_KG = 1.98847e30
 
 
 def _strip_lines(path) -> list[str]:
@@ -36,6 +48,18 @@ def flatten_includes(file_path) -> list[str]:
         line_id += 1
 
     return flat_lines
+
+
+def find_param_in(file_path):
+    """Find the nearest `PARAM.in`/`param.in` beside or above a data file."""
+    start = Path(file_path)
+    search_root = start if start.is_dir() else start.parent
+    for directory in (search_root, *search_root.parents):
+        for name in ("PARAM.in", "param.in"):
+            candidate = directory / name
+            if candidate.exists():
+                return candidate
+    return None
 
 
 def _new_session():
@@ -236,6 +260,61 @@ class ParamIn:
             out[key] = _parse_value_text(value_text)
         return out
 
+    def stellar_params(self) -> OrderedDict:
+        """Return parsed stellar parameters from `#STAR`, if present."""
+        for line_id, line in enumerate(self.flat_lines):
+            if not line or line.split()[0] != "#STAR":
+                continue
+
+            inline_name = line[len("#STAR") :].strip()
+            block: list[str] = []
+            next_id = line_id + 1
+            while next_id < len(self.flat_lines):
+                next_line = self.flat_lines[next_id]
+                if not next_line:
+                    next_id += 1
+                    continue
+                if next_line.startswith("!"):
+                    next_id += 1
+                    continue
+                if next_line.lower().startswith("begin session:"):
+                    next_id += 1
+                    continue
+                if next_line.startswith("#"):
+                    break
+                block.append(next_line)
+                next_id += 1
+
+            if not block:
+                return OrderedDict()
+
+            name = inline_name
+            value_index = 0
+            if not name:
+                first_value, _first_label = _split_value_and_label(block[0])
+                parsed_first = _parse_value_text(first_value)
+                if isinstance(parsed_first, str):
+                    name = parsed_first
+                    value_index = 1
+
+            if len(block) < value_index + 3:
+                return OrderedDict()
+
+            radius_rsun = float(_parse_value_text(_split_value_and_label(block[value_index])[0]))
+            mass_msun = float(_parse_value_text(_split_value_and_label(block[value_index + 1])[0]))
+            period_days = float(_parse_value_text(_split_value_and_label(block[value_index + 2])[0]))
+
+            out = OrderedDict()
+            if name:
+                out["Star_name"] = name
+            out["Star_radius_m"] = radius_rsun * _SOLAR_RADIUS_M
+            out["Star_mass_kg"] = mass_msun * _SOLAR_MASS_KG
+            out["Star_rotational_period_s"] = period_days * day
+            out["Star_rotation_rate_rad_s"] = 2.0 * 3.141592653589793 / out["Star_rotational_period_s"]
+            return out
+
+        return OrderedDict()
+
     def __str__(self) -> str:
         """Summarize the parsed config briefly."""
         component_count = sum(len(session) for session in self.sessions)
@@ -247,3 +326,11 @@ class ParamIn:
             f"ParamIn(path={self.path.name!r}, sessions={self.num_sessions()}, "
             f"components={component_count}, command_blocks={command_count})"
         )
+
+
+def stellar_aux_from_nearby_param_in(file_path) -> OrderedDict:
+    """Read stellar aux values from the nearest available `PARAM.in`."""
+    param_path = find_param_in(file_path)
+    if param_path is None:
+        return OrderedDict()
+    return ParamIn.from_file(param_path).stellar_params()

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from starwinds_analysis.param_in import ParamIn
 from starwinds_analysis.param_in import flatten_includes
+from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
 
 SAMPLE_PARAM_IN = Path("sample_data/PARAM.in")
@@ -68,3 +69,17 @@ def test_param_in_parses_sample_file():
     assert len(config.get_commands("#AMRREGION")) == 2
     assert config.get_named_params("#AMRREGION", occurrence=0)["NameRegion"] == "InnerShell"
     assert config.get_named_params("#AMRREGION", occurrence=1)["NameRegion"] == "LargeShell"
+
+
+def test_param_in_extracts_stellar_params_and_nearby_lookup():
+    config = ParamIn.from_file(SAMPLE_PARAM_IN)
+    star = config.stellar_params()
+    nearby = stellar_aux_from_nearby_param_in("sample_data/3d__var_1_n00060000.plt")
+
+    assert star["Star_name"] == "tau Boötis"
+    assert star["Star_radius_m"] > 1.0e9
+    assert star["Star_mass_kg"] > 1.0e30
+    assert star["Star_rotational_period_s"] > 0.0
+    assert star["Star_rotation_rate_rad_s"] > 0.0
+    assert nearby["Star_name"] == star["Star_name"]
+    assert nearby["Star_radius_m"] == star["Star_radius_m"]

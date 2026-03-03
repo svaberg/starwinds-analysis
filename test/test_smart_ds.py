@@ -6,6 +6,8 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
+from starwinds_analysis.constants import MU0
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -15,7 +17,6 @@ DAT_EQUIV_STEMS = (
     "x=0_var_2_n00000000",
     "z=0_var_1_n00000000",
 )
-SUN_RADIUS_M = 6.96e8
 
 
 def make_dataset_2d():
@@ -374,7 +375,7 @@ def test_griblet_add_spherical_graph_on_real_example_data():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_griblet_batsrus_si_normalization_and_derived_fields():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
 
     # Unit normalization examples
     bx_g = np.array(sds.variable("B_x [Gauss]"))
@@ -387,6 +388,12 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     np.testing.assert_allclose(bx_t, bx_g * 1e-4, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(rho_si, rho_cgs * 1e3, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(p_si, p_cgs * 1e-1, rtol=1e-12, atol=0.0)
+
+    assert sds.aux["Star_name"] == "tau Boötis"
+    assert np.isfinite(float(sds("Star_radius [m]")))
+    assert np.isfinite(float(sds("Star_mass [kg]")))
+    assert np.isfinite(float(sds("Star_rotational_period [s]")))
+    assert np.isfinite(float(sds("Star_rotation_rate [rad/s]")))
 
     # Canonicalize unbracketed units
     qrad_raw = np.array(sds.variable("qrad J/m^3/s"))
@@ -409,7 +416,7 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
 
     b = np.array(sds.variable("B [T]"))
     c_a = np.array(sds.variable("c_A [m/s]"))
-    c_a_direct = b / np.sqrt((4e-7 * np.pi) * rho_si)
+    c_a_direct = b / np.sqrt(MU0 * rho_si)
     np.testing.assert_allclose(c_a, c_a_direct, rtol=1e-10, atol=1e-10)
 
     m_a = np.array(sds.variable("M_A [none]"))
@@ -419,7 +426,7 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     np.testing.assert_allclose(ma, u / c_s, rtol=1e-10, atol=1e-10)
 
     p_b = np.array(sds.variable("P_b [Pa]"))
-    np.testing.assert_allclose(p_b, b**2 / (2 * (4e-7 * np.pi)), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(p_b, b**2 / (2 * MU0), rtol=1e-10, atol=1e-10)
     magnetic_pressure = np.array(sds.variable("magnetic_pressure [Pa]"))
     np.testing.assert_allclose(magnetic_pressure, p_b, rtol=1e-12, atol=1e-12)
 
@@ -441,7 +448,7 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     tmag = np.array(sds.variable("magnetic_torque_density [N/m]"))
     tdyn = np.array(sds.variable("dynamic_torque_density [N/m]"))
     ttot = np.array(sds.variable("total_torque_density [N/m]"))
-    np.testing.assert_allclose(tmag, -varpi * b_a * b_r / (4e-7 * np.pi), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(tmag, -varpi * b_a * b_r / MU0, rtol=1e-10, atol=1e-10)
     np.testing.assert_allclose(tdyn, varpi * rho_si * u_a * u_r, rtol=1e-10, atol=1e-10)
     np.testing.assert_allclose(ttot, tmag + tdyn, rtol=1e-10, atol=1e-10)
 

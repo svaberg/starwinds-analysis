@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from os import PathLike
+from pathlib import Path
 
 import numpy as np
 
@@ -17,6 +18,7 @@ from starwinds_analysis._smart_ds_graph import explain_field as _explain_field
 from starwinds_analysis._smart_ds_graph import graph_field_names as _graph_field_names
 from starwinds_analysis._smart_ds_graph import resolve_field as _resolve_field
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
+from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
 
@@ -96,7 +98,10 @@ class SmartDs:
         Construct a SmartDs directly from a `.plt` file path.
         Used by: `SmartDs` users and internal methods
         """
-        return cls(Dataset.from_file(str(file)), **kwargs)
+        dataset = Dataset.from_file(str(file))
+        for key, value in stellar_aux_from_nearby_param_in(Path(file)).items():
+            dataset.aux.setdefault(key, value)
+        return cls(dataset, **kwargs)
 
     @property
     def raw(self) -> Dataset:
