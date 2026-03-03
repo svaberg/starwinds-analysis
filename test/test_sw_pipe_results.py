@@ -63,6 +63,14 @@ def test_sw_pipe_results_lists_fields(tmp_path, capsys):
     assert output == ["letter_counts", "name_dominance"]
 
 
+def test_sw_pipe_results_lists_files(tmp_path, capsys):
+    path = _write_state(tmp_path)
+    code = main(["--state", str(path), "--list-files"])
+    output = [line.strip() for line in capsys.readouterr().out.splitlines() if line.strip()]
+    assert code == 0
+    assert output == ["alpha.plt", "beta.plt"]
+
+
 def test_sw_pipe_results_field_query_value_only(tmp_path, capsys):
     path = _write_state(tmp_path)
     code = main(["--state", str(path), "--field", "letter_count"])

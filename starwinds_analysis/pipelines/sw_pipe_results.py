@@ -12,7 +12,10 @@ def _load_state(path: str | Path) -> dict[str, object]:
     Load a sw-pipe state JSON payload from disk.
     Used by: `starwinds_analysis/pipelines/sw_pipe_results.py`
     """
-    return json.loads(Path(path).read_text())
+    payload = json.loads(Path(path).read_text())
+    if isinstance(payload, dict):
+        return payload
+    return {}
 
 
 def _computed_results(payload: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -24,6 +27,29 @@ def _computed_results(payload: dict[str, object]) -> dict[str, dict[str, object]
     if isinstance(computed, dict):
         return {str(key): value for key, value in computed.items() if isinstance(value, dict)}
     return {}
+
+
+def _iter_file_keys(payload: dict[str, object], computed: dict[str, dict[str, object]]) -> list[str]:
+    """
+    List file keys in recorded order, using `processed_files` first and `computed_results` as fallback.
+    Used by: `starwinds_analysis/pipelines/sw_pipe_results.py`
+    """
+    ordered: list[str] = []
+    seen: set[str] = set()
+    processed = payload.get("processed_files")
+    if isinstance(processed, list):
+        for item in processed:
+            key = str(item)
+            if key in seen:
+                continue
+            seen.add(key)
+            ordered.append(key)
+    for key in computed:
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(key)
+    return ordered
 
 
 def _iter_fields(computed: dict[str, dict[str, object]]) -> list[str]:
@@ -80,6 +106,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to sw-pipe state JSON (default: ./sw-pipe.dummy.processed.json).",
     )
     parser.add_argument(
+        "--list-files",
+        action="store_true",
+        help="List processed file keys.",
+    )
+    parser.add_argument(
         "--list-fields",
         action="store_true",
         help="List available field names.",
@@ -111,7 +142,13 @@ def main(argv: list[str] | None = None) -> int:
 
     payload = _load_state(args.state)
     computed = _computed_results(payload)
+    available_files = _iter_file_keys(payload, computed)
     available_fields = _iter_fields(computed)
+
+    if args.list_files:
+        for file_key in available_files:
+            print(file_key)
+        return 0
 
     if args.list_fields:
         for field in available_fields:
