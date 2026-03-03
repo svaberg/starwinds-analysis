@@ -24,6 +24,26 @@ Implication:
 - Write the math/operation directly when it is simple.
 - Split code only for real reuse, real boundaries, or real complexity.
 
+## Branching Rule: No Gratuitous Guards
+
+Rule:
+
+- Do not add guard branches, fallback branches, or conditional attachment logic unless the design explicitly requires them.
+- Do not "fix" a downstream composition problem by branching earlier in the call path.
+- Prefer one direct model over multiple conditional code paths.
+
+Bad:
+
+- attaching core graph fragments only for some files
+- skipping behavior upstream because one downstream composition path is noisy
+- adding random guards that hide the real source of a problem
+
+Preferred pattern:
+
+- attach the intended fragments consistently
+- fix the actual composition point where the incorrect behavior appears
+- keep branching only where it is part of the real API or domain model
+
 ## Data Geometry Rule: Treat Input Data Honestly
 
 Rule:
