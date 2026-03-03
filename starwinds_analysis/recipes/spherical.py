@@ -38,8 +38,6 @@ def register_spherical_geometry_fields(
     smart_ds.register_field(r_name, lambda ds: _coordinates(ds)[0], overwrite=True)
     smart_ds.register_field("polar [rad]", lambda ds: _coordinates(ds)[1], overwrite=True)
     smart_ds.register_field("azimuth [rad]", lambda ds: _coordinates(ds)[2], overwrite=True)
-    smart_ds.register_field("theta [rad]", lambda ds: ds.variable("polar [rad]"), overwrite=True)
-    smart_ds.register_field("phi [rad]", lambda ds: ds.variable("azimuth [rad]"), overwrite=True)
 
     smart_ds.register_field(
         "latitude [rad]",
@@ -165,19 +163,6 @@ def build_griblet_spherical_geometry_graph(
         deps=deps,
         cost=0.2,
     )
-    graph.add_recipe(
-        "theta [rad]",
-        lambda polar: polar,
-        deps=["polar [rad]"],
-        cost=0.01,
-    )
-    graph.add_recipe(
-        "phi [rad]",
-        lambda azimuth: azimuth,
-        deps=["azimuth [rad]"],
-        cost=0.01,
-    )
-
     graph.add_recipe(
         "latitude [rad]",
         lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[0],

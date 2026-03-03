@@ -162,23 +162,23 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors()).add_spherical_fields(vectors=("B",))
 
     r = sds.variable("R [R]")
-    theta = sds.variable("theta [rad]")
-    phi = sds.variable("phi [rad]")
+    polar = sds.variable("polar [rad]")
+    azimuth = sds.variable("azimuth [rad]")
     b_r = sds.variable("B_r [T]")
     b_p = sds.variable("B_p [T]")
     b_a = sds.variable("B_a [T]")
 
     assert r.shape == (3,)
-    assert theta.shape == (3,)
-    assert phi.shape == (3,)
+    assert polar.shape == (3,)
+    assert azimuth.shape == (3,)
     assert b_r.shape == (3,)
     assert b_p.shape == (3,)
     assert b_a.shape == (3,)
 
     # First point is on +x axis.
     np.testing.assert_allclose(r[0], 1.0)
-    np.testing.assert_allclose(theta[0], np.pi / 2)
-    np.testing.assert_allclose(phi[0], 0.0)
+    np.testing.assert_allclose(polar[0], np.pi / 2)
+    np.testing.assert_allclose(azimuth[0], 0.0)
     np.testing.assert_allclose(b_r[0], 1.0)
     np.testing.assert_allclose(b_p[0], -3.0)
     np.testing.assert_allclose(b_a[0], 2.0)
@@ -187,8 +187,8 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     lon = sds.variable("longitude [rad]")
     lat_deg = sds.variable("latitude [deg]")
     lon_deg = sds.variable("longitude [deg]")
-    np.testing.assert_allclose(lat, (np.pi / 2) - theta)
-    np.testing.assert_allclose(lon, phi)
+    np.testing.assert_allclose(lat, (np.pi / 2) - polar)
+    np.testing.assert_allclose(lon, azimuth)
     np.testing.assert_allclose(lat_deg, np.degrees(lat))
     np.testing.assert_allclose(lon_deg, np.degrees(lon))
 
@@ -198,13 +198,13 @@ def test_add_spherical_fields_exposes_polar_azimuth_and_compact_vector_names():
 
     polar = sds.variable("polar [rad]")
     azimuth = sds.variable("azimuth [rad]")
-    theta = sds.variable("theta [rad]")
-    phi = sds.variable("phi [rad]")
     b_p = sds.variable("B_p [T]")
     b_a = sds.variable("B_a [T]")
 
-    np.testing.assert_allclose(polar, theta)
-    np.testing.assert_allclose(azimuth, phi)
+    with pytest.raises(IndexError):
+        sds.variable("theta [rad]")
+    with pytest.raises(IndexError):
+        sds.variable("phi [rad]")
     with pytest.raises(IndexError):
         sds.variable("B_theta [T]")
     with pytest.raises(IndexError):
@@ -233,18 +233,18 @@ def test_spherical_fields_are_available_by_default_for_xyz_vector_datasets():
 
     # No explicit `add_spherical_fields()` call.
     r = np.array(sds("R [R]"))
-    theta = np.array(sds("theta [rad]"))
-    phi = np.array(sds("phi [rad]"))
+    polar = np.array(sds("polar [rad]"))
+    azimuth = np.array(sds("azimuth [rad]"))
     b_r = np.array(sds("B_r [T]"))
     lat_deg = np.array(sds("latitude [deg]"))
     lon_deg = np.array(sds("longitude [deg]"))
 
     assert r.shape == (3,)
-    assert theta.shape == (3,)
-    assert phi.shape == (3,)
+    assert polar.shape == (3,)
+    assert azimuth.shape == (3,)
     assert b_r.shape == (3,)
-    np.testing.assert_allclose(lat_deg, np.degrees((np.pi / 2) - theta))
-    np.testing.assert_allclose(lon_deg, np.degrees(phi))
+    np.testing.assert_allclose(lat_deg, np.degrees((np.pi / 2) - polar))
+    np.testing.assert_allclose(lon_deg, np.degrees(azimuth))
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -257,22 +257,22 @@ def test_add_spherical_fields_on_real_example_data():
     z = np.array(sds.variable("Z [R]"))
 
     r = np.array(sds.variable("R [R]"))
-    theta = np.array(sds.variable("theta [rad]"))
-    phi = np.array(sds.variable("phi [rad]"))
+    polar = np.array(sds.variable("polar [rad]"))
+    azimuth = np.array(sds.variable("azimuth [rad]"))
 
     assert r.shape == x.shape
-    assert theta.shape == x.shape
-    assert phi.shape == x.shape
+    assert polar.shape == x.shape
+    assert azimuth.shape == x.shape
 
     finite_r = np.isfinite(r)
     assert np.any(finite_r)
     assert np.nanmin(r) >= 0.0
 
-    finite_theta = np.isfinite(theta)
-    assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
+    finite_polar = np.isfinite(polar)
+    assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
-    finite_phi = np.isfinite(phi)
-    assert np.all((phi[finite_phi] >= -np.pi) & (phi[finite_phi] <= np.pi))
+    finite_azimuth = np.isfinite(azimuth)
+    assert np.all((azimuth[finite_azimuth] >= -np.pi) & (azimuth[finite_azimuth] <= np.pi))
 
     # Check B_r against direct projection for all non-singular points.
     bx = np.array(sds.variable("B_x [Gauss]"))
@@ -332,15 +332,15 @@ def test_griblet_graph_resolution_and_explain():
     lon = sds.variable("longitude [rad]")
     lat_deg = sds.variable("latitude [deg]")
     lon_deg = sds.variable("longitude [deg]")
-    theta = sds.variable("theta [rad]")
-    phi = sds.variable("phi [rad]")
-    np.testing.assert_allclose(lat, (np.pi / 2) - theta)
-    np.testing.assert_allclose(lon, phi)
+    polar = sds.variable("polar [rad]")
+    azimuth = sds.variable("azimuth [rad]")
+    np.testing.assert_allclose(lat, (np.pi / 2) - polar)
+    np.testing.assert_allclose(lon, azimuth)
     np.testing.assert_allclose(lat_deg, np.degrees(lat))
     np.testing.assert_allclose(lon_deg, np.degrees(lon))
 
-    explanation = sds.explain("theta [rad]")
-    assert "theta [rad]" in explanation
+    explanation = sds.explain("polar [rad]")
+    assert "polar [rad]" in explanation
     assert "X [R]" in explanation
 
 
@@ -353,14 +353,14 @@ def test_griblet_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.add_spherical_graph(vectors=("B",))
 
-    theta = np.array(sds.variable("theta [rad]"))
+    polar = np.array(sds.variable("polar [rad]"))
     b_r = np.array(sds.variable("B_r [Gauss]"))
 
-    assert theta.shape == sds.variable("X [R]").shape
+    assert polar.shape == sds.variable("X [R]").shape
     assert b_r.shape == sds.variable("B_x [Gauss]").shape
 
-    finite_theta = np.isfinite(theta)
-    assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
+    finite_polar = np.isfinite(polar)
+    assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
     expl = sds.explain("B_r [Gauss]")
     assert "B_r [Gauss]" in expl

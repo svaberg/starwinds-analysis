@@ -59,6 +59,6 @@ print(sds.explain("M_A [none]"))
 
 Spherical conventions used by the helper recipes:
 
-- `theta [rad]`: colatitude in `[0, pi]`
-- `phi [rad]`: azimuth from `atan2(y, x)` in `[-pi, pi]`
+- `polar [rad]`: colatitude in `[0, pi]`
+- `azimuth [rad]`: azimuth from `atan2(y, x)` in `[-pi, pi]`
 - singular points (e.g. `r=0`, polar axis for some components) produce `NaN`

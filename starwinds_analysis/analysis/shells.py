@@ -214,21 +214,21 @@ def sample_spherical_shells(
     x_name, y_name, z_name = coordinate_fields
     length_unit = field_unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
-    theta_name = "theta [rad]"
-    phi_name = "phi [rad]"
+    polar_name = "polar [rad]"
+    azimuth_name = "azimuth [rad]"
     area_unit = "m^2" if length_unit_to_m is not None else f"{length_unit}^2"
     area_name = f"dA [{area_unit}]"
 
     r_field = np.broadcast_to(radii[:, None, None], (radii.size, ntheta, nphi)).copy()
-    theta_field = np.broadcast_to(theta[None, :, :], (radii.size, ntheta, nphi)).copy()
-    phi_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
+    polar_field = np.broadcast_to(theta[None, :, :], (radii.size, ntheta, nphi)).copy()
+    azimuth_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
     area_field = np.array(area)
 
     shell_ds = resampled.append_fields(
         {
             r_name: r_field,
-            theta_name: theta_field,
-            phi_name: phi_field,
+            polar_name: polar_field,
+            azimuth_name: azimuth_field,
             area_name: area_field,
         },
         zone_suffix="shell-grid-structured",
@@ -291,21 +291,21 @@ def sample_spherical_shells_fibonacci(
     x_name, y_name, z_name = coordinate_fields
     length_unit = field_unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
-    theta_name = "theta [rad]"
-    phi_name = "phi [rad]"
+    polar_name = "polar [rad]"
+    azimuth_name = "azimuth [rad]"
     area_unit_name = "m^2" if length_unit_to_m is not None else f"{length_unit}^2"
     area_name = f"dA [{area_unit_name}]"
 
     r_field = np.broadcast_to(radii[:, None, None], (radii.size, n_points, 1)).copy()
-    theta_field = np.broadcast_to(theta[None, :, :], (radii.size, n_points, 1)).copy()
-    phi_field = np.broadcast_to(phi[None, :, :], (radii.size, n_points, 1)).copy()
+    polar_field = np.broadcast_to(theta[None, :, :], (radii.size, n_points, 1)).copy()
+    azimuth_field = np.broadcast_to(phi[None, :, :], (radii.size, n_points, 1)).copy()
     area_field = np.broadcast_to(area, (radii.size, n_points, 1)).copy()
 
     shell_ds = resampled.append_fields(
         {
             r_name: r_field,
-            theta_name: theta_field,
-            phi_name: phi_field,
+            polar_name: polar_field,
+            azimuth_name: azimuth_field,
             area_name: area_field,
         },
         zone_suffix="shell-fibonacci-structured",

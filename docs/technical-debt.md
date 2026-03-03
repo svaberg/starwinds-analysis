@@ -56,7 +56,7 @@ Coordinate/vector naming note:
 - For vector components, use compact suffixes:
   - `_r`, `_p`, `_a`
   - for example `U_r [m/s]`, `U_p [m/s]`, `U_a [m/s]`
-- Keep `theta`/`phi` as temporary coordinate aliases while older code is migrated.
+- Do not reintroduce `theta`/`phi` aliases in active field names; use `polar`/`azimuth`.
 
 ## examples
 
