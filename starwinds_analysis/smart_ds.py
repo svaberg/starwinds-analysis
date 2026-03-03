@@ -20,18 +20,6 @@ from starwinds_analysis._smart_ds_resample import resample_smart_ds
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
 
-
-def prepare_smartds(smart_ds: "SmartDs", *, body_radius_m: float) -> None:
-    """
-    Attach the standard SI and spherical field graphs used by common workflows.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
-    """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    try:
-        smart_ds.add_spherical_graph(vectors=("B", "U"))
-    except Exception:
-        smart_ds.add_spherical_fields(vectors=("B", "U"))
-
 class SmartDs:
     """
     Lightweight wrapper around ``starwinds_readplt.Dataset``.
@@ -116,9 +104,6 @@ class SmartDs:
         """
         Register built-in spherical geometry/vector fields when XYZ coordinates are present.
         Used by: `SmartDs` users and internal methods
-        Register lightweight built-in derived fields that should be available by default.
-        For now this auto-registers spherical geometry/vector-component fields when
-        standard Cartesian BATSRUS-style coordinates are present.
         """
         coord_fields = ("X [R]", "Y [R]", "Z [R]")
         if not all(name in self._dataset.variables for name in coord_fields):
@@ -136,15 +121,6 @@ class SmartDs:
     def raw(self) -> Dataset:
         """
         Direct access to the underlying `starwinds_readplt.Dataset`.
-        Used by: `SmartDs` users and internal methods
-        """
-        return self._dataset
-
-    @property
-    def dataset(self) -> Dataset:
-        # Alias for readability at call sites.
-        """
-        Readability alias for `raw`.
         Used by: `SmartDs` users and internal methods
         """
         return self._dataset
@@ -217,7 +193,6 @@ class SmartDs:
         """
         Known field names from raw variables, local fields, and the attached graph.
         Used by: `SmartDs` users and internal methods
-        Known field names (raw + registered computed fields).
         """
         names = list(self._dataset.variables)
         for name in self._field_functions:
@@ -311,10 +286,6 @@ class SmartDs:
         """
         Attach or merge a griblet computation graph used for unresolved fields.
         Used by: `SmartDs` users and internal methods
-        Attach a griblet computation graph used as a fallback for unresolved fields.
-        Parameters
-        ----------
-        graph
         """
         if graph is None:
             self._computation_graph = None
@@ -335,10 +306,6 @@ class SmartDs:
         """
         Add local (non-griblet) spherical geometry/vector component fields.
         Used by: `SmartDs` users and internal methods
-        Register on-demand spherical geometry and vector-component fields.
-        This uses local field functions (no griblet required), but the same recipe
-        functions are available in ``starwinds_analysis.recipes.spherical`` for
-        future griblet integration.
         """
         from starwinds_analysis.recipes.spherical import _vector_triplets
         from starwinds_analysis.recipes.spherical import register_spherical_geometry_fields
@@ -359,9 +326,6 @@ class SmartDs:
         """
         Add griblet spherical geometry/vector recipes to the attached graph.
         Used by: `SmartDs` users and internal methods
-        Attach griblet recipes for spherical geometry/vector components.
-        Unlike ``add_spherical_fields()``, this registers recipes in the attached
-        computation graph and resolves them via ``griblet`` on demand.
         """
         from starwinds_analysis.recipes.spherical import _vector_triplets
         from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
@@ -390,7 +354,6 @@ class SmartDs:
         """
         Add the BATSRUS SI-normalization and derived-field recipe graph.
         Used by: `SmartDs` users and internal methods
-        Attach a BATSRUS-oriented griblet graph (SI normalization + derived fields).
         """
         from starwinds_analysis.recipes.batsrus import build_griblet_batsrus_graph
 
@@ -402,6 +365,18 @@ class SmartDs:
             include_derived=include_derived,
         )
         self.set_computation_graph(graph, merge=merge)
+        return self
+
+    def prepare(self, *, body_radius_m: float) -> "SmartDs":
+        """
+        Attach the standard SI and spherical graphs used by common workflows.
+        Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
+        """
+        self.add_batsrus_graph(body_radius_m=body_radius_m)
+        try:
+            self.add_spherical_graph(vectors=("B", "U"))
+        except Exception:
+            self.add_spherical_fields(vectors=("B", "U"))
         return self
 
     def clear_cache(self, *names: str) -> None:
@@ -486,10 +461,6 @@ class SmartDs:
         """
         Generic resampling entry point returning a new SmartDs (flat or structured targets).
         Used by: `SmartDs` users and internal methods
-        Resample scalar fields onto new point locations and return a new wrapped dataset.
-        Parameters
-        ----------
-        sample_points
         """
         return resample_smart_ds(
             self,

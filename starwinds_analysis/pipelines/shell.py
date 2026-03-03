@@ -10,7 +10,6 @@ import numpy as np
 
 from starwinds_analysis.physics.constants import MU0
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
-from starwinds_analysis.smart_ds import prepare_smartds
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -76,7 +75,7 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: load the dataset and prepare the native shell grid.
     log.debug("Loading shell dataset and preparing native shell grid...")
     smart_ds = SmartDs.from_file(path)
-    prepare_smartds(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     r_all = np.ravel(smart_ds("R [R]"))

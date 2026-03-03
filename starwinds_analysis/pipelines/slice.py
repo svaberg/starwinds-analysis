@@ -8,7 +8,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
-from starwinds_analysis.smart_ds import prepare_smartds
 from starwinds_analysis.smart_ds import SmartDs
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
 
@@ -30,7 +29,7 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: load and prepare the dataset for direct plotting.
     log.debug("Loading and preparing slice dataset...")
     smart_ds = SmartDs.from_file(path)
-    prepare_smartds(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
     output_dir.mkdir(parents=True, exist_ok=True)
     prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
     log.info("Loading and preparing slice dataset complete.")

@@ -13,7 +13,6 @@ from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
-from starwinds_analysis.smart_ds import prepare_smartds
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: prepare the dataset and create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
-    prepare_smartds(smart_ds, body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
