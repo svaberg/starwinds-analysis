@@ -89,8 +89,13 @@ def build_runtime_graph(smart_ds):
         raise RuntimeError("No computation graph attached")
     griblet = import_griblet()
     runtime_graph = griblet.ComputationGraph()
-    runtime_graph.merge(build_loader_graph(smart_ds))
-    runtime_graph.merge(smart_ds._computation_graph)
+    loader_graph = build_loader_graph(smart_ds)
+    runtime_graph.merge(loader_graph)
+    loader_fields = set(loader_graph.fields())
+    for field, recipes in smart_ds._computation_graph.recipes.items():
+        if field in loader_fields:
+            continue
+        runtime_graph.recipes.setdefault(field, []).extend(recipes)
     return runtime_graph
 
 def build_loader_graph(smart_ds):
