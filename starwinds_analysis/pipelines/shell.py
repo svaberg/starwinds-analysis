@@ -19,20 +19,26 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 DEFAULT_STAR_RADIUS_M = 6.957e8
 
 
-def shell_radial_azimuthal_components(
-    x_component,
-    y_component,
-    z_component,
+def shell_spherical_components(
+    vector,
     *,
-    cos_lat,
-    sin_lat,
-    cos_lon,
-    sin_lon,
+    lon_deg,
+    lat_deg,
 ):
-    """Project Cartesian shell vectors onto radial and azimuthal directions."""
+    """Project a stacked Cartesian shell vector onto radial/latitudinal/azimuthal directions."""
+    lon_rad = np.deg2rad(lon_deg)
+    lat_rad = np.deg2rad(lat_deg)
+    cos_lon = np.cos(lon_rad)
+    sin_lon = np.sin(lon_rad)
+    cos_lat = np.cos(lat_rad)
+    sin_lat = np.sin(lat_rad)
+    x_component = vector[0]
+    y_component = vector[1]
+    z_component = vector[2]
     radial = x_component * cos_lat * cos_lon + y_component * cos_lat * sin_lon + z_component * sin_lat
+    latitudinal = -x_component * sin_lat * cos_lon - y_component * sin_lat * sin_lon + z_component * cos_lat
     azimuthal = -x_component * sin_lon + y_component * cos_lon
-    return radial, azimuthal
+    return radial, latitudinal, azimuthal
 
 
 def process_plt_file(file_path: str | Path) -> None:
@@ -54,12 +60,6 @@ def process_plt_file(file_path: str | Path) -> None:
     r_all = np.ravel(smart_ds("R [R]"))
     lon_all = np.ravel(smart_ds("Lon [deg]"))
     lat_all = np.ravel(smart_ds("Lat [deg]"))
-    lon_rad = np.deg2rad(lon_all)
-    lat_rad = np.deg2rad(lat_all)
-    cos_lon = np.cos(lon_rad)
-    sin_lon = np.sin(lon_rad)
-    cos_lat = np.cos(lat_rad)
-    sin_lat = np.sin(lat_rad)
     shell_radii_r = [float(radius_r) for radius_r in np.unique(np.round(r_all, 10))]
     lon_levels = np.unique(np.round(lon_all, 10))
     if lon_levels.size > 1 and np.isclose(lon_levels[0], 0.0) and np.isclose(lon_levels[-1], 360.0):
@@ -115,17 +115,18 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: compute, plot, and record shell wind mass flux.
     log.debug("Computing shell wind mass flux...")
     rho = np.ravel(smart_ds("Rho [kg/m^3]"))
-    u_x = np.ravel(smart_ds("U_x [m/s]"))
-    u_y = np.ravel(smart_ds("U_y [m/s]"))
-    u_z = np.ravel(smart_ds("U_z [m/s]"))
-    u_r, u_phi = shell_radial_azimuthal_components(
-        u_x,
-        u_y,
-        u_z,
-        cos_lat=cos_lat,
-        sin_lat=sin_lat,
-        cos_lon=cos_lon,
-        sin_lon=sin_lon,
+    u_vector = np.stack(
+        (
+            np.ravel(smart_ds("U_x [m/s]")),
+            np.ravel(smart_ds("U_y [m/s]")),
+            np.ravel(smart_ds("U_z [m/s]")),
+        ),
+        axis=0,
+    )
+    u_r, _u_lat, u_phi = shell_spherical_components(
+        u_vector,
+        lon_deg=lon_all,
+        lat_deg=lat_all,
     )
     mass_flux = rho * u_r
     mass_loss_kg_s = []
@@ -147,19 +148,20 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell angular momentum flux.
     log.debug("Computing shell angular momentum flux...")
-    b_x = np.ravel(smart_ds("B_x [T]"))
-    b_y = np.ravel(smart_ds("B_y [T]"))
-    b_z = np.ravel(smart_ds("B_z [T]"))
-    b_r, b_phi = shell_radial_azimuthal_components(
-        b_x,
-        b_y,
-        b_z,
-        cos_lat=cos_lat,
-        sin_lat=sin_lat,
-        cos_lon=cos_lon,
-        sin_lon=sin_lon,
+    b_vector = np.stack(
+        (
+            np.ravel(smart_ds("B_x [T]")),
+            np.ravel(smart_ds("B_y [T]")),
+            np.ravel(smart_ds("B_z [T]")),
+        ),
+        axis=0,
     )
-    varpi_m = r_all * DEFAULT_STAR_RADIUS_M * cos_lat
+    b_r, _b_lat, b_phi = shell_spherical_components(
+        b_vector,
+        lon_deg=lon_all,
+        lat_deg=lat_all,
+    )
+    varpi_m = r_all * DEFAULT_STAR_RADIUS_M * np.cos(np.deg2rad(lat_all))
     torque_density = varpi_m * (rho * u_phi * u_r - (b_phi * b_r / MU0))
     total_torque_nm = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
