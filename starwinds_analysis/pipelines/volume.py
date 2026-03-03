@@ -8,18 +8,17 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+from starwinds_analysis.constants import DEFAULT_QUICKLOOK_RADII_R
 from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
 from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
-from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
+from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
-DEFAULT_STAR_RADIUS_M = 6.957e8
-DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 
 
 def process_plt_file(file_path: str | Path) -> None:
@@ -28,7 +27,7 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Resolving volume pipeline paths...")
     path = Path(file_path)
     output_dir = path.parent / "volume"
-    prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
+    prefix = output_prefix_from_input_file(path.name)
     log.info("%s", path.name)
     log.info("Resolving volume pipeline paths complete.")
 
@@ -39,7 +38,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: prepare the dataset and create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
-    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
@@ -53,7 +52,6 @@ def process_plt_file(file_path: str | Path) -> None:
     mass_loss = mass_loss_vs_radius(
         smart_ds,
         radii,
-        body_radius_m=DEFAULT_STAR_RADIUS_M,
         n_polar=24,
         n_azimuth=48,
         method="nearest",
@@ -81,7 +79,6 @@ def process_plt_file(file_path: str | Path) -> None:
     torque = torque_vs_radius(
         smart_ds,
         radii,
-        body_radius_m=DEFAULT_STAR_RADIUS_M,
         n_polar=24,
         n_azimuth=48,
         method="nearest",
@@ -108,7 +105,6 @@ def process_plt_file(file_path: str | Path) -> None:
     open_flux = open_magnetic_flux_vs_radius(
         smart_ds,
         radii,
-        body_radius_m=DEFAULT_STAR_RADIUS_M,
         n_polar=24,
         n_azimuth=48,
         method="nearest",
@@ -135,7 +131,6 @@ def process_plt_file(file_path: str | Path) -> None:
     energy_flux = energy_flux_vs_radius(
         smart_ds,
         radii,
-        body_radius_m=DEFAULT_STAR_RADIUS_M,
         n_polar=24,
         n_azimuth=48,
         method="nearest",

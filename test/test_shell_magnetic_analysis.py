@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.data.samples import get_sample
 from starwinds_analysis.physics.magnetic import magnetic_field_unit_scale
 from starwinds_analysis.smart_ds import SmartDs
@@ -18,19 +19,18 @@ def _example_3d():
 
 
 EXAMPLE_3D = _example_3d()
-SUN_RADIUS_M = 6.957e8
 
 
 def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
     sds = SmartDs.from_file(str(EXAMPLE_3D))
-    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
     shell = sample_spherical_shells(
         sds,
         [1.0],
         fields=("B_x [T]", "B_y [T]", "B_z [T]"),
         n_polar=n_polar,
         n_azimuth=n_azimuth,
-        length_unit_to_m=SUN_RADIUS_M,
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
     comps = {
         "B_r [T]": np.array(shell("B_r [T]"), dtype=float),
@@ -121,14 +121,14 @@ def test_shell_magnetic_flux_summary_primitives_smoke():
 
 def test_direct_shell_mass_flux_lonlat_plot_smoke():
     sds = SmartDs.from_file(str(EXAMPLE_3D))
-    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
     shell = sample_spherical_shells(
         sds,
         [2.0],
         fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         n_polar=10,
         n_azimuth=20,
-        length_unit_to_m=SUN_RADIUS_M,
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
     rho = np.array(shell("Rho [kg/m^3]"), dtype=float)
     mass_flux = rho * np.array(shell("U_r [m/s]"), dtype=float)

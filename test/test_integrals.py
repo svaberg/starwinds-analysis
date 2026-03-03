@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import logging
 log = logging.getLogger(__name__)
 import pytest
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 try:
     from starwinds_analysis import reader
 except ImportError:
@@ -69,7 +70,7 @@ def mass_loss_at_radius(grid, radius, direction=(1,0,0)):
     # interpolated.set_active_scalars("Mass flux [kg/m^2/s]")
     # interpolated.plot(show_edges=True)
 
-    return integrated_data['Mass flux [kg/m^2/s]'] * 6.957e8**2
+    return integrated_data['Mass flux [kg/m^2/s]'] * SOLAR_RADIUS_M**2
 
 
 def test_flux_integral(file='sample_data/3d__var_1_n00060000.plt'):

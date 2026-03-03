@@ -3,8 +3,8 @@
 BATSRUS itself parses these files line by line. Non-command lines are ignored
 until a line starting with `#` is encountered, at which point BATSRUS switches
 into command-specific parsing and consumes a hard-coded number of following
-parameter lines for that command. In the SWMF layer, sessions are demarcated by
-`#END` or `#RUN`, and components are additional structure layered on top.
+parameter lines for that command. Sessions are demarcated by `#END` or `#RUN`. 
+In the SWMF layer, components are additional structure layered on top.
 
 This reader is intentionally more permissive: it flattens resolvable
 `#INCLUDE` statements, preserves sessions/components/duplicate commands, and

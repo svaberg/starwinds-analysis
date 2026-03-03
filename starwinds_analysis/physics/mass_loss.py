@@ -39,8 +39,8 @@ def mass_loss_vs_radius(
     from starwinds_analysis.analysis.shells import integrate_shell_scalar
     from starwinds_analysis.analysis.shells import sample_spherical_shells_by_strategy
 
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     area_name = "dA [m^2]"

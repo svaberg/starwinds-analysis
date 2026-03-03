@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.fluxes import axisymmetric_open_flux_vs_radius
 from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
 from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
@@ -26,7 +27,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-SUN_RADIUS_M = 6.957e8
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -41,11 +41,11 @@ def test_sample_spherical_shells_area_matches_sphere():
         n_polar=12,
         n_azimuth=24,
         method="nearest",
-        length_unit_to_m=SUN_RADIUS_M,
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
 
     area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
-    expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
+    expected = 4.0 * np.pi * (radii * SOLAR_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=2e-2, atol=0.0)
 
 
@@ -71,11 +71,11 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
         fields=(),
         n_points=12 * 24,
         method="nearest",
-        length_unit_to_m=SUN_RADIUS_M,
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
 
     area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
-    expected = 4.0 * np.pi * (radii * SUN_RADIUS_M) ** 2
+    expected = 4.0 * np.pi * (radii * SOLAR_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=1e-12, atol=0.0)
     assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
 
@@ -86,7 +86,7 @@ def test_mass_loss_profile_runs_on_example():
     profile = mass_loss_vs_radius(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         method="nearest",
@@ -107,7 +107,7 @@ def test_mass_loss_profile_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph(body_radius_m=SUN_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
     shells = sample_spherical_shells(
         sds,
         [5.0],
@@ -115,7 +115,7 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
         n_polar=12,
         n_azimuth=24,
         method="nearest",
-        length_unit_to_m=SUN_RADIUS_M,
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
     rho = np.array(shells("Rho [kg/m^3]"), dtype=float)
     ux = np.array(shells("U_x [m/s]"), dtype=float)
@@ -143,7 +143,7 @@ def test_torque_profile_runs_on_example():
     profile = torque_vs_radius(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         method="nearest",
@@ -170,7 +170,7 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
     profile = open_magnetic_flux_vs_radius(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=16,
         n_azimuth=32,
         method="nearest",
@@ -192,7 +192,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
     profile = axisymmetric_open_flux_vs_radius(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=16,
         n_azimuth=32,
         method="nearest",
@@ -217,7 +217,7 @@ def test_energy_flux_profile_runs_on_example():
     profile = energy_flux_vs_radius(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         method="nearest",

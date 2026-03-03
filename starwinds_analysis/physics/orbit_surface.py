@@ -309,8 +309,8 @@ def pressure_components_on_orbit_surface(
         method,
         include_relative_ram,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -438,8 +438,8 @@ def torque_components_on_orbit_surface(
         method,
         include_pressure_term,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"

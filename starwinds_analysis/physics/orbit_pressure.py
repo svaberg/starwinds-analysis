@@ -162,8 +162,8 @@ def pressure_components_on_circular_orbit(
         method,
         plane,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
@@ -224,8 +224,8 @@ def pressure_components_on_elliptic_orbit(
         method,
         plane,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")

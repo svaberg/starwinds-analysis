@@ -8,6 +8,7 @@ from starwinds_analysis.analysis.orbits import circular_orbit_points
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import sample_circular_orbit
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbit_local import local_mass_loss_on_circular_orbit
 from starwinds_analysis.physics.orbit_local import local_mass_loss_on_elliptic_orbit
 from starwinds_analysis.physics.orbit_local import local_torque_on_circular_orbit
@@ -17,7 +18,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-SUN_RADIUS_M = 6.957e8
 
 
 def test_circular_orbit_points_constant_radius():
@@ -95,7 +95,7 @@ def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
     out = local_mass_loss_on_circular_orbit(
         sds,
         10.0,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         shell_n_polar=12,
@@ -116,7 +116,7 @@ def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
     out = local_torque_on_circular_orbit(
         sds,
         10.0,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         shell_n_polar=12,
@@ -140,7 +140,7 @@ def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
         sds,
         10.0,
         eccentricity=0.2,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         shell_n_polar=12,
@@ -168,7 +168,7 @@ def test_local_torque_on_elliptic_orbit_runs_and_compares_to_shell_profile():
         sds,
         10.0,
         eccentricity=0.15,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         shell_n_polar=12,

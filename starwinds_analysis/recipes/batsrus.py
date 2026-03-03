@@ -184,11 +184,11 @@ def build_griblet_unit_normalization_graph(
             )
 
     # Add stellar params from aux/PARAM.in when available.
-    for raw_name, field_name in (
-        ("Star_radius_m", "Star_radius [m]"),
-        ("Star_mass_kg", "Star_mass [kg]"),
-        ("Star_rotational_period_s", "Star_rotational_period [s]"),
-        ("Star_rotation_rate_rad_s", "Star_rotation_rate [rad/s]"),
+    for raw_name, field_name, lower_name in (
+        ("Star_radius_m", "Star_radius [m]", "star_radius [m]"),
+        ("Star_mass_kg", "Star_mass [kg]", "star_mass [kg]"),
+        ("Star_rotational_period_s", "Star_rotational_period [s]", "star_rotational_period [s]"),
+        ("Star_rotation_rate_rad_s", "Star_rotation_rate [rad/s]", "star_rotation_rate [rad/s]"),
     ):
         if aux is None or raw_name not in aux:
             continue
@@ -198,6 +198,13 @@ def build_griblet_unit_normalization_graph(
             deps=[raw_name],
             cost=0.01,
             metadata={"description": f"Parse {raw_name} from aux"},
+        )
+        graph.add_recipe(
+            lower_name,
+            lambda x: np.array(x),
+            deps=[field_name],
+            cost=0.01,
+            metadata={"description": f"Lowercase alias for {field_name}"},
         )
 
     return graph
@@ -490,8 +497,7 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
     if aux is None:
         return None
 
-    # Leave room for future conventions; current example files do not include SI radius.
-    for key in ("RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
+    for key in ("Star_radius_m", "Planet_radius_m", "RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
         if key in aux:
             try:
                 value = aux[key]

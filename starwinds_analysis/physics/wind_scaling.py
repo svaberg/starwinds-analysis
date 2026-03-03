@@ -15,7 +15,7 @@ import math
 import numpy as np
 import scipy.constants as c
 
-from starwinds_analysis.physics.constants import MU0
+from starwinds_analysis.constants import MU0
 
 # DONE(debt): Reuse the shared `MU0` constant from `physics.constants`.
 

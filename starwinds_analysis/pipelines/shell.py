@@ -8,14 +8,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.physics.constants import MU0
-from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
+from starwinds_analysis.constants import MU0
+from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
-DEFAULT_STAR_RADIUS_M = 6.957e8
 
 
 def shell_spherical_components(
@@ -68,17 +67,18 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Resolving shell pipeline paths...")
     path = Path(file_path)
     output_dir = path.parent / "shell"
-    prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
+    prefix = output_prefix_from_input_file(path.name)
     log.info("%s", path.name)
     log.info("Resolving shell pipeline paths complete.")
 
     # Start: load the dataset and prepare the native shell grid.
     log.debug("Loading shell dataset and preparing native shell grid...")
     smart_ds = SmartDs.from_file(path)
-    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     r_all = np.ravel(smart_ds("R [R]"))
+    star_radius_m = float(smart_ds("star_radius [m]"))
     lon_all = np.ravel(smart_ds("Lon [deg]"))
     lat_all = np.ravel(smart_ds("Lat [deg]"))
     shell_radii_r = [float(radius_r) for radius_r in np.unique(np.round(r_all, 10))]
@@ -95,7 +95,7 @@ def process_plt_file(file_path: str | Path) -> None:
     for radius_r in shell_radii_r:
         shell_mask = np.isclose(r_all, radius_r, rtol=0.0, atol=1.0e-10)
         shell_masks.append(shell_mask)
-        shell_areas_m2.append((float(radius_r) * DEFAULT_STAR_RADIUS_M) ** 2 * solid_angle)
+        shell_areas_m2.append((float(radius_r) * star_radius_m) ** 2 * solid_angle)
 
     height_r = [radius_r - 1.0 for radius_r in shell_radii_r]
     log.info("Loading shell dataset and preparing native shell grid complete.")
@@ -178,7 +178,7 @@ def process_plt_file(file_path: str | Path) -> None:
         lon_deg=lon_all,
         lat_deg=lat_all,
     )
-    varpi_m = r_all * DEFAULT_STAR_RADIUS_M * np.cos(np.deg2rad(lat_all))
+    varpi_m = r_all * star_radius_m * np.cos(np.deg2rad(lat_all))
     torque_density = varpi_m * (rho * u_phi * u_r - (b_phi * b_r / MU0))
     total_torque_nm = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):

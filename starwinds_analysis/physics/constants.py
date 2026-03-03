@@ -1,8 +1,3 @@
-"""THIS FILE contains shared physical constants for the physics layer.
+"""THIS FILE contains compatibility access to shared physical constants."""
 
-Keep constants defined once and imported from here to avoid numerical drift and
-sprinkled magic numbers.
-"""
-
-from scipy.constants import mu_0 as MU0
-
+from starwinds_analysis.constants import MU0

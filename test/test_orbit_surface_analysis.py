@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbit_surface import pressure_components_on_orbit_surface
 from starwinds_analysis.physics.orbit_surface import sample_orbit_surface_revolution
 from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_path
@@ -12,7 +13,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-SUN_RADIUS_M = 6.957e8
 SUN_MASS_KG = 1.98847e30
 
 
@@ -74,7 +74,7 @@ def test_pressure_components_on_orbit_surface_runs_on_example():
     out = pressure_components_on_orbit_surface(
         sds,
         {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_longitudes=48,
         method="nearest",
         star_mass_kg=SUN_MASS_KG,
@@ -100,7 +100,7 @@ def test_torque_components_on_orbit_surface_runs_on_example():
     out = torque_components_on_orbit_surface(
         sds,
         {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_longitudes=48,
         method="nearest",
         angvel_rad_s=0.0,

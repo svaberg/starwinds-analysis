@@ -41,8 +41,8 @@ def open_magnetic_flux_vs_radius(
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`,
       `starwinds_analysis/physics/fluxes.py`
     """
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
     x_name, y_name, z_name = coordinate_fields
     area_name = "dA [m^2]"
@@ -190,8 +190,8 @@ def energy_flux_vs_radius(
     Radial energy flux profile using `E * U_r`.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     if smart_ds.has_field("E [J/m^3]"):
         e_name = "E [J/m^3]"
     elif smart_ds.has_field("E [erg/cm^3]"):

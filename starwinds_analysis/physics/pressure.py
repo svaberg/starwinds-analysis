@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.physics.constants import MU0
+from starwinds_analysis.constants import MU0
 
 def magnetic_pressure(b_t_or_mag):
     """

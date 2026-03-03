@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
 from starwinds_analysis.physics.pressure import magnetic_pressure
@@ -13,7 +14,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-SUN_RADIUS_M = 6.957e8
 SUN_MASS_KG = 1.98847e30
 
 
@@ -53,7 +53,7 @@ def test_pressure_components_on_circular_orbit_runs_on_example():
     out = pressure_components_on_circular_orbit(
         sds,
         10.0,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         star_mass_kg=SUN_MASS_KG,
@@ -82,7 +82,7 @@ def test_pressure_components_on_elliptic_orbit_runs_on_example():
         sds,
         10.0,
         eccentricity=0.2,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_points=96,
         method="nearest",
         star_mass_kg=SUN_MASS_KG,

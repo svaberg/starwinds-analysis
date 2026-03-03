@@ -353,9 +353,11 @@ class SmartDs:
         self.set_computation_graph(graph, merge=merge)
         return self
 
-    def prepare(self, *, body_radius_m: float) -> "SmartDs":
+    def prepare(self, *, body_radius_m: float | None = None) -> "SmartDs":
         """
         Attach the standard SI and spherical graphs used by common workflows.
+        If `body_radius_m` is omitted, the BATSRUS graph must be able to infer it
+        from available metadata (for example nearby `PARAM.in` stellar parameters).
         Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
         """
         self.add_batsrus_graph(body_radius_m=body_radius_m)

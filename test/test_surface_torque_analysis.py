@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
-from starwinds_analysis.physics.torque import MU0
+from starwinds_analysis.constants import MU0
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
 from starwinds_analysis.physics.torque import surface_torque_vs_radius
@@ -13,7 +14,6 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
-SUN_RADIUS_M = 6.957e8
 
 
 def _cart_from_spherical_components(v_r, v_phi, xyz):
@@ -85,7 +85,7 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     shell = torque_vs_radius(
         sds,
         radii,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         sampling="fibonacci",
@@ -94,7 +94,7 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     surf = surface_torque_vs_radius(
         sds,
         radii,
-        body_radius_m=SUN_RADIUS_M,
+        body_radius_m=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         sampling="fibonacci",

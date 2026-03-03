@@ -10,9 +10,8 @@ import math
 import numpy as np
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.utils import field_unit_from_brackets
-
-_SOLAR_RADIUS_M = 6.957e8
 
 def _resample_shell_points(
     smart_ds,
@@ -62,16 +61,16 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     if body_radius_m is not None:
         return float(body_radius_m)
 
+    for name in ("star_radius [m]", "Star_radius [m]", "RBODY [m]"):
+        try:
+            value = float(smart_ds.variable(name))
+            if np.isfinite(value) and value > 0:
+                return value
+        except Exception:
+            pass
+
     aux = getattr(smart_ds, "aux", {})
-    for key in (
-        "Star_radius_m",
-        "Planet_radius_m",
-        "BODY_RADIUS_M",
-        "RBODY [m]",
-        "RBODY_M",
-        "RSTAR [m]",
-        "RPLANET [m]",
-    ):
+    for key in ("Star_radius_m", "Planet_radius_m", "BODY_RADIUS_M", "RBODY [m]", "RBODY_M", "RSTAR [m]", "RPLANET [m]"):
         if key in aux:
             value = _to_float(aux[key])
             if value is not None and np.isfinite(value) and value > 0:
@@ -81,15 +80,7 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
         if key in aux:
             value = _to_float(aux[key])
             if value is not None and np.isfinite(value) and value > 0:
-                return value * _SOLAR_RADIUS_M
-
-    # If a graph exposes RBODY [m], use it.
-    try:
-        value = float(smart_ds.variable("RBODY [m]"))
-        if np.isfinite(value) and value > 0:
-            return value
-    except Exception:
-        pass
+                return value * SOLAR_RADIUS_M
 
     raise ValueError(
         "Could not infer body radius in meters. Pass body_radius_m explicitly."

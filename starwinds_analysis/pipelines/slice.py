@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from matplotlib.colors import SymLogNorm
 
-from starwinds_analysis.pipelines.orchestration_helpers import resolve_output_prefix as _resolve_output_prefix
+from starwinds_analysis.constants import B_R_SYMLOG_LINTHRESH_T
+from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
 
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
-DEFAULT_STAR_RADIUS_M = 6.957e8
 BR_CMAP = cmocean.cm.balance
 
 
@@ -33,9 +33,9 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: load and prepare the dataset for direct plotting.
     log.debug("Loading and preparing slice dataset...")
     smart_ds = SmartDs.from_file(path)
-    smart_ds.prepare(body_radius_m=DEFAULT_STAR_RADIUS_M)
+    smart_ds.prepare()
     output_dir.mkdir(parents=True, exist_ok=True)
-    prefix = _resolve_output_prefix(prefix=None, input_file=path.name)
+    prefix = output_prefix_from_input_file(path.name)
     log.info("Loading and preparing slice dataset complete.")
 
     # Start: make, save, and record the density slice.
@@ -79,7 +79,7 @@ def process_plt_file(file_path: str | Path) -> None:
         smart_ds,
         var="B_r [T]",
         cmap=BR_CMAP,
-        norm=SymLogNorm(linthresh=1.0e-9, base=10),
+        norm=SymLogNorm(linthresh=B_R_SYMLOG_LINTHRESH_T, base=10),
     )
     out_path = output_dir / f"{prefix}.slices.br.png"
     fig.savefig(out_path)

@@ -9,7 +9,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.physics.constants import MU0
+from starwinds_analysis.constants import MU0
 
 def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):
     """

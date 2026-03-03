@@ -375,7 +375,7 @@ def test_griblet_add_spherical_graph_on_real_example_data():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_griblet_batsrus_si_normalization_and_derived_fields():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph()
 
     # Unit normalization examples
     bx_g = np.array(sds.variable("B_x [Gauss]"))
@@ -390,10 +390,10 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     np.testing.assert_allclose(p_si, p_cgs * 1e-1, rtol=1e-12, atol=0.0)
 
     assert sds.aux["Star_name"] == "tau Boötis"
-    assert np.isfinite(float(sds("Star_radius [m]")))
-    assert np.isfinite(float(sds("Star_mass [kg]")))
-    assert np.isfinite(float(sds("Star_rotational_period [s]")))
-    assert np.isfinite(float(sds("Star_rotation_rate [rad/s]")))
+    assert np.isfinite(float(sds("star_radius [m]")))
+    assert np.isfinite(float(sds("star_mass [kg]")))
+    assert np.isfinite(float(sds("star_rotational_period [s]")))
+    assert np.isfinite(float(sds("star_rotation_rate [rad/s]")))
 
     # Canonicalize unbracketed units
     qrad_raw = np.array(sds.variable("qrad J/m^3/s"))
