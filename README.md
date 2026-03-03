@@ -33,7 +33,7 @@ sds.add_spherical_fields(vectors=("B", "U"))
 
 r = sds.variable("R [R]")
 br = sds.variable("B_r [Gauss]")
-uphi = sds.variable("U_phi [km/s]")
+ua = sds.variable("U_a [km/s]")
 ```
 
 If `griblet` is installed, you can also attach spherical *recipes* (dependency-path

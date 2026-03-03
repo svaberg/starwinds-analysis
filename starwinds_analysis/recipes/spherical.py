@@ -95,17 +95,7 @@ def register_vector_spherical_components(
 
     smart_ds.register_field(f"{prefix}_r [{unit}]", lambda ds: _compute(ds)[0], overwrite=True)
     smart_ds.register_field(f"{prefix}_p [{unit}]", lambda ds: _compute(ds)[1], overwrite=True)
-    smart_ds.register_field(
-        f"{prefix}_theta [{unit}]",
-        lambda ds: ds.variable(f"{prefix}_p [{unit}]"),
-        overwrite=True,
-    )
     smart_ds.register_field(f"{prefix}_a [{unit}]", lambda ds: _compute(ds)[2], overwrite=True)
-    smart_ds.register_field(
-        f"{prefix}_phi [{unit}]",
-        lambda ds: ds.variable(f"{prefix}_a [{unit}]"),
-        overwrite=True,
-    )
 
 
 def _vector_triplets(
@@ -265,7 +255,7 @@ def build_griblet_vector_spherical_components_graph(
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
 ):
     """
-    Build griblet recipes for ``prefix_{r,p,a}`` (with ``theta/phi`` aliases) from Cartesian components.
+    Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
     Used by: `starwinds_analysis/recipes/spherical.py`
     """
     x_name, y_name, z_name = coord_fields
@@ -288,22 +278,10 @@ def build_griblet_vector_spherical_components_graph(
         cost=0.5,
     )
     graph.add_recipe(
-        f"{prefix}_theta [{unit}]",
-        lambda vp: vp,
-        deps=[f"{prefix}_p [{unit}]"],
-        cost=0.01,
-    )
-    graph.add_recipe(
         f"{prefix}_a [{unit}]",
         lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
         deps=deps,
         cost=0.5,
-    )
-    graph.add_recipe(
-        f"{prefix}_phi [{unit}]",
-        lambda va: va,
-        deps=[f"{prefix}_a [{unit}]"],
-        cost=0.01,
     )
     return graph
 

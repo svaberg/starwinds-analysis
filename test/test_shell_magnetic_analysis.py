@@ -34,8 +34,8 @@ def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
     )
     comps = {
         "B_r [T]": np.array(shell("B_r [T]"), dtype=float),
-        "B_theta [T]": np.array(shell("B_theta [T]"), dtype=float),
-        "B_phi [T]": np.array(shell("B_phi [T]"), dtype=float),
+        "B_p [T]": np.array(shell("B_p [T]"), dtype=float),
+        "B_a [T]": np.array(shell("B_a [T]"), dtype=float),
         "B_meridional [T]": np.array(shell("B_meridional [T]"), dtype=float),
         "B_tangential [T]": np.array(shell("B_tangential [T]"), dtype=float),
     }
@@ -48,7 +48,7 @@ def test_shell_magnetic_component_fields_via_griblet_shapes():
     assert np.array(shell("theta [rad]"), dtype=float).shape == (1, 12, 24)
     assert np.array(shell("phi [rad]"), dtype=float).shape == (1, 12, 24)
     assert comps["B_r [T]"].shape == (1, 12, 24)
-    assert comps["B_phi [T]"].shape == (1, 12, 24)
+    assert comps["B_a [T]"].shape == (1, 12, 24)
     assert comps["B_meridional [T]"].shape == (1, 12, 24)
     assert comps["B_tangential [T]"].shape == (1, 12, 24)
     assert np.isfinite(comps["B_r [T]"]).any()
@@ -66,12 +66,12 @@ def test_direct_zdi_style_plots_smoke():
     lon_deg = np.degrees(np.array(shell("phi [rad]"), dtype=float)[0])
     lat_deg = 90.0 - np.degrees(np.array(shell("theta [rad]"), dtype=float)[0])
     b_r = np.array(comps["B_r [T]"][0], dtype=float) * 1e4
-    b_phi = np.array(comps["B_phi [T]"][0], dtype=float) * 1e4
+    b_a = np.array(comps["B_a [T]"][0], dtype=float) * 1e4
     b_mer = np.array(comps["B_meridional [T]"][0], dtype=float) * 1e4
 
     fig, axes = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
     try:
-        for ax, arr in zip(np.ravel(axes), (b_r, b_phi, b_mer)):
+        for ax, arr in zip(np.ravel(axes), (b_r, b_a, b_mer)):
             ax.pcolormesh(lon_deg, lat_deg, arr, shading="nearest", cmap="RdBu_r")
             ax.set_xlim(-180, 180)
             ax.set_ylim(-90, 90)
@@ -85,7 +85,7 @@ def test_direct_tangential_vector_plot_smoke():
     lon_deg = np.degrees(np.array(shell("phi [rad]"), dtype=float)[0])
     lat_deg = 90.0 - np.degrees(np.array(shell("theta [rad]"), dtype=float)[0])
     b_r = np.array(comps["B_r [T]"][0], dtype=float) * 1e4
-    b_phi = np.array(comps["B_phi [T]"][0], dtype=float) * 1e4
+    b_a = np.array(comps["B_a [T]"][0], dtype=float) * 1e4
     b_mer = np.array(comps["B_meridional [T]"][0], dtype=float) * 1e4
     b_tan = np.array(comps["B_tangential [T]"][0], dtype=float) * 1e4
 
@@ -95,7 +95,7 @@ def test_direct_tangential_vector_plot_smoke():
         i_step, j_step = 2, 3
         lon_q = lon_deg[::i_step, ::j_step]
         lat_q = lat_deg[::i_step, ::j_step]
-        u = b_phi[::i_step, ::j_step] / np.cos(np.deg2rad(lat_q))
+        u = b_a[::i_step, ::j_step] / np.cos(np.deg2rad(lat_q))
         v = b_mer[::i_step, ::j_step]
         ax.quiver(lon_q, lat_q, u, v, color="white", angles="xy", scale_units="xy", scale=1.0)
         ax.contour(lon_deg, lat_deg, b_r, levels=[0.0], colors="k", linewidths=0.8)

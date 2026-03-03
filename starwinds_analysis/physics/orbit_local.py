@@ -131,10 +131,10 @@ def _local_torque_from_orbit_sample(
     r_m = r_sample_r * body_radius_m
     rho = orbit[rho_name]
     u_r = orbit["U_r [m/s]"]
-    u_phi = orbit["U_phi [m/s]"]
+    u_a = orbit["U_a [m/s]"]
     b_r = orbit["B_r [T]"]
-    b_phi = orbit["B_phi [T]"]
-    local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_phi, b_r, b_phi)
+    b_a = orbit["B_a [T]"]
+    local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_a, b_r, b_a)
     weights = orbit.get("time_weight [none]")
 
     if shell_radii is None:
@@ -172,9 +172,9 @@ def _local_torque_from_orbit_sample(
         "radius [m]": float(np.nanmean(r_m)),
         "rho [kg/m^3]": rho,
         "u_r [m/s]": u_r,
-        "u_phi [m/s]": u_phi,
+        "u_a [m/s]": u_a,
         "b_r [T]": b_r,
-        "b_phi [T]": b_phi,
+        "b_a [T]": b_a,
         "local_magnetic_torque [Nm]": local_magnetic,
         "local_dynamic_torque [Nm]": local_dynamic,
         "local_total_torque [Nm]": local_total,
@@ -258,9 +258,9 @@ def local_torque_on_circular_orbit(
             "B_y [T]",
             "B_z [T]",
             "U_r [m/s]",
-            "U_phi [m/s]",
+            "U_a [m/s]",
             "B_r [T]",
-            "B_phi [T]",
+            "B_a [T]",
         ),
         n_points=n_points,
         plane=plane,
@@ -361,9 +361,9 @@ def local_torque_on_elliptic_orbit(
         "B_y [T]",
         "B_z [T]",
         "U_r [m/s]",
-        "U_phi [m/s]",
+        "U_a [m/s]",
         "B_r [T]",
-        "B_phi [T]",
+        "B_a [T]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,

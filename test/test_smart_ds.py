@@ -165,23 +165,23 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     theta = sds.variable("theta [rad]")
     phi = sds.variable("phi [rad]")
     b_r = sds.variable("B_r [T]")
-    b_theta = sds.variable("B_theta [T]")
-    b_phi = sds.variable("B_phi [T]")
+    b_p = sds.variable("B_p [T]")
+    b_a = sds.variable("B_a [T]")
 
     assert r.shape == (3,)
     assert theta.shape == (3,)
     assert phi.shape == (3,)
     assert b_r.shape == (3,)
-    assert b_theta.shape == (3,)
-    assert b_phi.shape == (3,)
+    assert b_p.shape == (3,)
+    assert b_a.shape == (3,)
 
     # First point is on +x axis.
     np.testing.assert_allclose(r[0], 1.0)
     np.testing.assert_allclose(theta[0], np.pi / 2)
     np.testing.assert_allclose(phi[0], 0.0)
     np.testing.assert_allclose(b_r[0], 1.0)
-    np.testing.assert_allclose(b_theta[0], -3.0)
-    np.testing.assert_allclose(b_phi[0], 2.0)
+    np.testing.assert_allclose(b_p[0], -3.0)
+    np.testing.assert_allclose(b_a[0], 2.0)
 
     lat = sds.variable("latitude [rad]")
     lon = sds.variable("longitude [rad]")
@@ -202,13 +202,13 @@ def test_add_spherical_fields_exposes_polar_azimuth_and_compact_vector_names():
     phi = sds.variable("phi [rad]")
     b_p = sds.variable("B_p [T]")
     b_a = sds.variable("B_a [T]")
-    b_theta = sds.variable("B_theta [T]")
-    b_phi = sds.variable("B_phi [T]")
 
     np.testing.assert_allclose(polar, theta)
     np.testing.assert_allclose(azimuth, phi)
-    np.testing.assert_allclose(b_p, b_theta)
-    np.testing.assert_allclose(b_a, b_phi)
+    with pytest.raises(IndexError):
+        sds.variable("B_theta [T]")
+    with pytest.raises(IndexError):
+        sds.variable("B_phi [T]")
 
 
 @pytest.mark.skipif(
@@ -435,21 +435,21 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     np.testing.assert_allclose(mass_flux, rho_si * u_r, rtol=1e-10, atol=1e-10)
 
     b_r = np.array(sds.variable("B_r [T]"))
-    b_phi = np.array(sds.variable("B_phi [T]"))
-    u_phi = np.array(sds.variable("U_phi [m/s]"))
+    b_a = np.array(sds.variable("B_a [T]"))
+    u_a = np.array(sds.variable("U_a [m/s]"))
     varpi = np.array(sds.variable("cylindrical_radius [m]"))
     tmag = np.array(sds.variable("magnetic_torque_density [N/m]"))
     tdyn = np.array(sds.variable("dynamic_torque_density [N/m]"))
     ttot = np.array(sds.variable("total_torque_density [N/m]"))
-    np.testing.assert_allclose(tmag, -varpi * b_phi * b_r / (4e-7 * np.pi), rtol=1e-10, atol=1e-10)
-    np.testing.assert_allclose(tdyn, varpi * rho_si * u_phi * u_r, rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(tmag, -varpi * b_a * b_r / (4e-7 * np.pi), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(tdyn, varpi * rho_si * u_a * u_r, rtol=1e-10, atol=1e-10)
     np.testing.assert_allclose(ttot, tmag + tdyn, rtol=1e-10, atol=1e-10)
 
     b_mer = np.array(sds.variable("B_meridional [T]"))
-    b_theta = np.array(sds.variable("B_theta [T]"))
+    b_p = np.array(sds.variable("B_p [T]"))
     b_tan = np.array(sds.variable("B_tangential [T]"))
-    np.testing.assert_allclose(b_mer, -b_theta, rtol=1e-12, atol=1e-12)
-    np.testing.assert_allclose(b_tan, np.sqrt(np.array(sds.variable("B_phi [T]")) ** 2 + b_mer**2), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(b_mer, -b_p, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(b_tan, np.sqrt(np.array(sds.variable("B_a [T]")) ** 2 + b_mer**2), rtol=1e-10, atol=1e-10)
 
     expl = sds.explain("M_A [none]")
     assert "M_A [none]" in expl

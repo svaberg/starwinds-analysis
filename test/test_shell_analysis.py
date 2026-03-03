@@ -134,7 +134,7 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
     x = np.array(shells("X [R]"), dtype=float)
     y = np.array(shells("Y [R]"), dtype=float)
     z = np.array(shells("Z [R]"), dtype=float)
-    u_r, _u_theta, _u_phi = cartesian_vector_to_spherical_components(ux, uy, uz, x, y, z)
+    u_r, _u_p, _u_a = cartesian_vector_to_spherical_components(ux, uy, uz, x, y, z)
     mass_flux = rho * u_r
     integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, np.array(shells("dA [m^2]"), dtype=float))
     integral = float(integral_arr[0])
