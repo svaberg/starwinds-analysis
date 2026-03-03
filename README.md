@@ -7,7 +7,7 @@ This repo is moving toward a lightweight analysis core built around:
 
 - `starwinds_readplt.Dataset` (raw BATSRUS/SWMF data access)
 - `numpy` / `scipy` (analysis, transforms, resampling)
-- optional `pyvista` / `vtk` only for 3D plotting / geometry operations
+- optional `pyvista` only for 3D plotting / geometry operations
 
 The goal is to avoid a large "precomputed quantity" workflow and instead compute
 derived fields on demand.

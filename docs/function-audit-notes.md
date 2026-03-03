@@ -102,7 +102,7 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 - `_phase_line_integrals`: Integrate sampled surface density values over longitude for each orbit phase. Used in `starwinds_analysis/physics/orbit_surface.py`.
 - `sample_orbit_surface_revolution`: Sample explicit fields on a surface of revolution generated from an orbit path. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
 - `pressure_components_on_orbit_surface`: Pressure-component analytics on a surface of revolution around an orbit path. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `torque_components_on_orbit_surface`: Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK). Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+- `torque_components_on_orbit_surface`: Explicit-surface torque diagnostics on an orbit surface of revolution (no dedicated 3D visualisation dependency). Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 
 ## `starwinds_analysis/physics/orbits.py`
 - `orbital_period`: Keplerian orbital period for a test particle around a point mass. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`.
@@ -153,7 +153,7 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 - `orbit_pressure_figure`: Orbit pressure quicklook (thermal/magnetic/ram and stand-off proxy). Used in `test/test_quicklook2d.py`.
 - `_plot_phase_quantile_band`: Plot filled phase-quantile bands for orbit-surface diagnostics. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
 - `orbit_surface_pressure_figure`: Surface-of-revolution orbit pressure quicklook (pure NumPy/SciPy resampling). Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `orbit_surface_torque_figure`: Surface-of-revolution torque quicklook (`T1..T4` + total), non-VTK. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+- `orbit_surface_torque_figure`: Surface-of-revolution torque quicklook (`T1..T4` + total), independent of dedicated 3D visualisation tooling. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 - `orbit_local_comparison_figure`: Compute and plot local-vs-shell comparisons for mass loss and torque on one orbit. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 - `summarize_shell_diagnostics`: JSON-friendly summary (stats only) of shell diagnostics. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
 - `flatten_shell_diagnostics_arrays`: Flatten shell diagnostic arrays for `np.savez`. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
@@ -205,7 +205,7 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 
 ## `starwinds_analysis/smart_ds.py`
 - `SmartDs` (class): Lightweight wrapper around ``starwinds_readplt.Dataset``. Used across notebooks/tests and most physics/sampling workflows as the main dataset wrapper.
-  - `SmartDs.from_file`: Constructs a wrapper from a BATSRUS/Tecplot file path. Used by tests and all example notebooks.
+  - `SmartDs.from_file`: Constructs a wrapper from a BATSRUS output file path. Used by tests and all example notebooks.
   - `SmartDs.__str__`: Prints a compact summary (title/zone/points/variables). Used in example notebooks via `print(sds)`.
   - `SmartDs.__call__`: Shorthand for `variable(...)` (full SmartDs/griblet path). Used heavily in notebooks and shell/orbit workflows.
   - `SmartDs.__getitem__`: Raw-only field access passthrough to the underlying dataset. Used when callers explicitly want base/raw fields only.
@@ -235,6 +235,6 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 - `plot_shell_height_series`: Generic shell-profile line plot primitive (height on x, chosen quantity on y). Used in `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 
 ## `starwinds_analysis/vtk_utils.py`
-- `read`: Read a `.plt` file and optionally convert to base SI after VTK conversion. Used in `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`, `test/test_integrals.py`.
-- `convert`: Convert a `starwinds_readplt.Dataset` into a PyVista unstructured grid. Used in `starwinds_analysis/vtk_utils.py`.
-- `convert_to_base_si`: Rename/scale common BATSRUS variables in a VTK grid into base SI units. Used in `starwinds_analysis/vtk_utils.py`.
+- `read`: Read a `.plt` file and optionally convert to base SI after 3D-grid conversion. Used in `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`, `test/test_integrals.py`.
+- `convert`: Convert a `starwinds_readplt.Dataset` into an unstructured 3D grid. Used in `starwinds_analysis/vtk_utils.py`.
+- `convert_to_base_si`: Rename/scale common BATSRUS variables in a 3D visualisation grid into base SI units. Used in `starwinds_analysis/vtk_utils.py`.

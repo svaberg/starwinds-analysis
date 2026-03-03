@@ -14,7 +14,7 @@ In scope:
 Out of scope for this plan:
 
 - all 3D plotting and 3D geometry workflows (isosurfaces, streamlines, marching cubes, volumetric rendering)
-- any hard dependency on `vtk` / `pyvista`
+- any hard dependency on dedicated 3D visualisation tooling
 
 ## Design Constraints (Current Direction)
 
@@ -22,7 +22,7 @@ Out of scope for this plan:
 - Derived quantities should be computed on demand.
 - `griblet` should provide recipe/path resolution for derived fields.
 - Base SI should be the internal target as early as practical.
-- Core quicklook/analysis features should use `numpy` / `scipy` / `matplotlib`, not VTK.
+- Core quicklook/analysis features should use `numpy` / `scipy` / `matplotlib`, not dedicated 3D visualisation tooling.
 
 ## Progress (Current)
 
@@ -39,9 +39,9 @@ Implemented from this plan so far (non-3D, NumPy/SciPy only):
 - circular-orbit sampling wrappers + local-vs-shell comparison helpers
 - pure-NumPy Kepler/elliptic orbit sampling wrappers + local-vs-shell comparison helpers (time-weighted summaries)
 - orbit pressure-component analytics on sampled paths (thermal/magnetic/ram + stand-off proxy)
-- orbit-surface (surface-of-revolution) pressure/standoff analytics on 3D files without VTK/PyVista
-- orbit-surface (surface-of-revolution) torque diagnostics (`T1..T4` + total) on 3D files without VTK/PyVista
-- generic explicit-surface torque integrator core (points/normals/areas; non-VTK), validated against spherical-shell torque
+- orbit-surface (surface-of-revolution) pressure/standoff analytics on 3D files without dedicated 3D visualisation tooling
+- orbit-surface (surface-of-revolution) torque diagnostics (`T1..T4` + total) on 3D files without dedicated 3D visualisation tooling
+- generic explicit-surface torque integrator core (points/normals/areas; no dedicated 3D visualisation dependency), validated against spherical-shell torque
 - modernized radial "monster" histogram quicklook mode (`hist2d` radius-vs-value maps)
 - structured XZ slice resampling (3D -> 2D quad grid) to support 2D slice quicklooks on 3D BATSRUS outputs
 - weighted shell-band summary helpers (mean/std/quantiles over selected radius ranges)
@@ -95,17 +95,17 @@ The table below maps high-use non-3D features from the old script to the new rep
 | 2D contour overlays (`B_r=0`, `Ma=1`, `MA=1`, `beta=1`) | Partial | Straightforward with Matplotlib primitives, but not packaged as a current pipeline/helper surface |
 | Scatter plots vs height/radius | Partial | Plotting primitives still exist; no current one-shot quicklook wrapper |
 | Radial “monster” histogram plots | Partial | `hist2d` primitives exist, but there is no active quicklook pipeline around them |
-| Shell mass-loss integral (`add_integral_mass`) | Implemented (v1, Fibonacci default) | Spherical-shell profile API added (NumPy/SciPy, no Tecplot/VTK) |
+| Shell mass-loss integral (`add_integral_mass`) | Implemented (v1, Fibonacci default) | Spherical-shell profile API added (NumPy/SciPy, no dedicated 3D visualisation dependency) |
 | Shell torque integral (`add_integral_momentum`) | Implemented (v1, Fibonacci default) | Spherical-shell magnetic/dynamic/total profile API added |
 | Shell open magnetic flux (`add_integral_open_flux`) | Implemented (v1, Fibonacci default) | Signed and unsigned/open flux shell profiles added |
 | Shell energy flux (`add_integral_energy`) | Implemented (v1, Fibonacci default) | Uses `E * U_r` shell integration |
 | Axisymmetric open flux + fraction | Implemented (v1, grid sampler) | Azimuthal-mean `B_r` shell diagnostic added; kept on grid sampler because it requires explicit azimuthal structure |
-| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Non-VTK explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; the old Tecplot isosurface-zone path remains deferred |
+| Generic surface torque (`surface_torque` / `integrate_surface_torque`) | Implemented (explicit-surface v1) | Explicit-surface torque term/integral engine added for sampled points+normals+areas, with spherical-shell and orbit-surface workflows; the old isosurface-zone path remains deferred |
 | Weighted summary stats / quantiles | Implemented (v1) | Includes shell-band weighted summaries and quantiles for analysis and recorded outputs |
 | Local analytical mass-loss estimate (`local_massloss_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Local analytical torque estimate (`local_torque_estimate`) | Implemented (v2) | Core formula + circular and Kepler/elliptic orbit sampling wrappers + shell comparison helper |
 | Orbit pressure-component diagnostics (`orbit_surface_ram_pressure`-adjacent workflow) | Partial | Core analytics exist in `physics/`; a direct current plotting workflow still needs to be rebuilt |
-| Orbit-surface torque diagnostics (new non-VTK workflow) | Partial | Core analytics exist in `physics/`; the remaining gap is a direct user-facing workflow around them |
+| Orbit-surface torque diagnostics (new non-3D-visualisation workflow) | Partial | Core analytics exist in `physics/`; the remaining gap is a direct user-facing workflow around them |
 | Shell summary persistence (`.p` pickle aux outputs) | Partial (redesigned) | Persistent machine-readable outputs now go through `add_record(...)` into `sw-pipe.<pipeline>.processed.json`; plot outputs are saved as normal files |
 
 ## Current Converted vs Missing Snapshot
@@ -130,9 +130,9 @@ Still missing or intentionally not rebuilt yet:
 - a unified replacement for the old all-in-one `quicklook(...)` entrypoint
 - a direct current workflow for scatter plots and radial histograms
 - a direct current workflow for orbit comparison plots
-- a direct current workflow for Tecplot-style isosurface-driven steps
+- a direct current workflow for legacy isosurface-driven steps
 - a thin replacement for the old monolithic quicklook branching logic
-- 3D VTK/Tecplot workflows (still out of scope here)
+- 3D visualisation workflows (still out of scope here)
 
 ## High-Priority Feature Plan
 
@@ -150,7 +150,7 @@ Initial formulation (spherical shells):
 
 - `dotM(r) = ∮ rho * U_r * dA`
 
-Implementation approach (no VTK):
+Implementation approach (no dedicated 3D visualisation tooling):
 
 - build shell sampling helper using `PolarAzimuthalGrid` (preferred) and/or `fibonacci_sphere`
 - resample source fields to shell points using `SmartDs.resample(...)`
@@ -185,7 +185,7 @@ Start with spherical-shell formulation (no generic arbitrary surface yet):
 Why start here:
 
 - It delivers the main scientific quicklook output without requiring 3D surface extraction.
-- It avoids Tecplot-specific normal-vector machinery.
+- It avoids older 3D-tooling-specific normal-vector machinery.
 
 Required fields (SI target):
 
@@ -198,8 +198,8 @@ Notes:
 
 - The old quicklook also computed a four-component generic surface torque (`surface_torque` / `integrate_surface_torque`).
 - For this plan, implement spherical-shell torque first.
-- Generic-surface torque workflows driven by Tecplot-style isosurface zones can be a later extension after the shell path is stable.
-  - The non-VTK explicit-surface torque integrator is implemented; remaining work is rebuilding the old isosurface-zone-driven path (a VTK/Tecplot-adjacent concern).
+- Generic-surface torque workflows driven by legacy isosurface zones can be a later extension after the shell path is stable.
+  - The explicit-surface torque integrator is implemented; remaining work is rebuilding the old isosurface-zone-driven path (a 3D visualisation concern).
 
 Validation:
 
@@ -229,8 +229,8 @@ The new quicklook entry point should be a thin orchestration layer built on exis
 
 ### Features to Defer
 
-- Tecplot-style streamtraces in 2D quicklook
-- any 3D slice widgets or VTK-backed slicing
+- legacy streamtraces in 2D quicklook
+- any 3D slice widgets or 3D-visualisation-backed slicing
 
 ## Shell/Radial Analytics Plan (Beyond Mass Loss and Torque)
 
@@ -335,7 +335,7 @@ Status:
 
 ## Definition of Success for the New "Quicklook" (Non-3D)
 
-The migration is successful when the new quicklook can, without Tecplot and without VTK/PyVista:
+The migration is successful when the new quicklook can, without dedicated 3D visualisation tooling:
 
 - generate standard 2D XZ slice figures for core wind variables
 - compute and plot wind mass loss vs radius

@@ -51,7 +51,7 @@ Legend:
 - `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and incomplete unit/centering-aware quantity request path; multiple TODOs already track this. Code TODO: existing TODOs.
 - `starwinds_analysis/utils.py` — **Reviewed**. General small helpers; no clear current bad-practice hit recorded in this pass.
 - `starwinds_analysis/visualisation/histograms.py` — **Reviewed**. Visualisation layer; plotting functions belong here more than in analysis/physics. Some quantity defaults exist but no code TODO added in this pass.
-- `starwinds_analysis/vtk_utils.py` — **Reviewed**. Optional VTK/PyVista bridge (separate integration layer); no additional debt marker added in this pass.
+- `starwinds_analysis/vtk_utils.py` — **Reviewed**. Optional 3D visualisation bridge (separate integration layer); no additional debt marker added in this pass.
 
 ## test
 
