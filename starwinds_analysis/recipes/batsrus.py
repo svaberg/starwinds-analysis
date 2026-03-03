@@ -39,6 +39,16 @@ def build_griblet_batsrus_graph(
 ):
     """
     Build a griblet graph for BATSRUS-style fields.
+    Adds:
+    - `raw -> SI`
+    - `XYZ <-> Rpa`
+    - `U_xyz -> U_rpa`
+    - `B_xyz -> B_rpa`
+    - `SI -> common_derived`
+    Example:
+    - `raw -> SI` covers conversions like `B_x [Gauss] -> B_x [T]`
+    - `SI -> common_derived` covers fields like `mass_flux`, `energy_flux`,
+      `magnetic_torque_density`, and `B_tangential`.
     Used by: `starwinds_analysis/smart_ds.py`
     """
     griblet = importlib.import_module("griblet")
@@ -97,6 +107,13 @@ def build_griblet_unit_normalization_graph(
 ):
     """
     Add raw->SI unit conversion recipes (BATSRUS naming conventions).
+    Adds:
+    - `raw -> SI`
+    - `XYZ_R -> XYZ_m` (when `body_radius_m` is available)
+    Example:
+    - `B_x [Gauss] -> B_x [T]`
+    - `U_x [km/s] -> U_x [m/s]`
+    - `X [R] -> X [m]`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     griblet = importlib.import_module("griblet")
@@ -174,6 +191,17 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     """
     Add common BATSRUS derived SI quantities (pressures, Mach numbers, fluxes, torque
       densities).
+    Adds:
+    - `U_xyz -> U`
+    - `B_xyz -> B`
+    - `Rho + U_r -> mass_flux`
+    - `E + U_r -> energy_flux`
+    - `varpi + B_a + B_r -> magnetic_torque_density`
+    - `varpi + Rho + U_a + U_r -> dynamic_torque_density`
+    Example:
+    - `U_xyz -> U` means `U_x/U_y/U_z` can produce `U [m/s]`
+    - `varpi + B_a + B_r -> magnetic_torque_density` means the pointwise
+      shell-style magnetic torque density is built from those SI fields
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     griblet = importlib.import_module("griblet")
@@ -358,6 +386,11 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
     """
     Add vector-magnitude recipes (e.g. `|U|`, `|B|`) for available Cartesian triplets.
+    Adds:
+    - `prefix_xyz -> prefix`
+    Example:
+    - `U_xyz -> U`
+    - `B_xyz -> B`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     griblet = importlib.import_module("griblet")

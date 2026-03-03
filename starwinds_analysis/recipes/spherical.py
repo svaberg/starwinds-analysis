@@ -136,6 +136,13 @@ def build_griblet_spherical_geometry_graph(
 ):
     """
     Build a griblet graph for spherical geometry fields.
+    Adds:
+    - `XYZ <-> Rpa`
+    - `pa <-> latlon`
+    - `latlon_rad <-> latlon_deg`
+    Example:
+    - `XYZ <-> Rpa` means `X/Y/Z` can produce `R/polar/azimuth`, and
+      `R/polar/azimuth` can produce `X/Y/Z`.
     Used by: `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`,
       `starwinds_analysis/recipes/batsrus.py`
     """
@@ -241,6 +248,11 @@ def build_griblet_vector_spherical_components_graph(
 ):
     """
     Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
+    Adds:
+    - `prefix_xyz -> prefix_rpa`
+    Example:
+    - `U_xyz -> U_rpa`
+    - `B_xyz -> B_rpa`
     Used by: `starwinds_analysis/recipes/spherical.py`
     """
     x_name, y_name, z_name = coord_fields
