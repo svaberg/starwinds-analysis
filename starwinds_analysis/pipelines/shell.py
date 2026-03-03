@@ -41,15 +41,26 @@ def shell_spherical_components(
     return radial, latitudinal, azimuthal
 
 
-def edges_from_centres(centres, *, lower_edge=None, upper_edge=None):
-    """Construct cell edges from ordered cell centres."""
-    edges = np.empty(len(centres) + 1, dtype=float)
-    edges[1:-1] = 0.5 * (centres[:-1] + centres[1:])
-    first_edge = centres[0] - 0.5 * (centres[1] - centres[0])
-    last_edge = centres[-1] + 0.5 * (centres[-1] - centres[-2])
-    edges[0] = first_edge if lower_edge is None else float(lower_edge)
-    edges[-1] = last_edge if upper_edge is None else float(upper_edge)
-    return edges
+def shell_cell_values(
+    values,
+    *,
+    shell_mask,
+    lon_deg,
+    lat_deg,
+    lon_nodes,
+    lat_nodes,
+):
+    """Convert nodal shell values on corner nodes into explicit cell values."""
+    node_values = np.full((lat_nodes.size, lon_nodes.size), np.nan)
+    lat_index = np.searchsorted(lat_nodes, np.round(lat_deg[shell_mask], 10))
+    lon_index = np.searchsorted(lon_nodes, np.round(lon_deg[shell_mask], 10))
+    node_values[lat_index, lon_index] = values[shell_mask]
+    return 0.25 * (
+        node_values[:-1, :-1]
+        + node_values[1:, :-1]
+        + node_values[:-1, 1:]
+        + node_values[1:, 1:]
+    )
 
 
 def process_plt_file(file_path: str | Path) -> None:
@@ -72,31 +83,20 @@ def process_plt_file(file_path: str | Path) -> None:
     lon_all = np.ravel(smart_ds("Lon [deg]"))
     lat_all = np.ravel(smart_ds("Lat [deg]"))
     shell_radii_r = [float(radius_r) for radius_r in np.unique(np.round(r_all, 10))]
-    lon_levels = np.unique(np.round(lon_all, 10))
-    if lon_levels.size > 1 and np.isclose(lon_levels[0], 0.0) and np.isclose(lon_levels[-1], 360.0):
-        lon_levels = lon_levels[:-1]
-    lat_levels = np.unique(np.round(lat_all, 10))
-
-    lon_edges = edges_from_centres(lon_levels)
-    lat_edges = edges_from_centres(lat_levels, lower_edge=-90.0, upper_edge=90.0)
+    lon_nodes = np.unique(np.round(lon_all, 10))
+    lat_nodes = np.unique(np.round(lat_all, 10))
 
     solid_angle = (
-        np.sin(np.deg2rad(lat_edges[1:]))[:, None] - np.sin(np.deg2rad(lat_edges[:-1]))[:, None]
-    ) * np.deg2rad(np.diff(lon_edges))[None, :]
+        np.sin(np.deg2rad(lat_nodes[1:]))[:, None] - np.sin(np.deg2rad(lat_nodes[:-1]))[:, None]
+    ) * np.deg2rad(np.diff(lon_nodes))[None, :]
 
-    seam_mask = lon_all < lon_edges[-1]
-    plot_mask = np.isclose(r_all, shell_radii_r[-1], rtol=0.0, atol=1.0e-10) & seam_mask
-    plot_lat_index = np.searchsorted(lat_levels, np.round(lat_all[plot_mask], 10))
-    plot_lon_index = np.searchsorted(lon_levels, np.round(lon_all[plot_mask], 10))
     shell_masks = []
     shell_areas_m2 = []
 
     for radius_r in shell_radii_r:
-        shell_mask = np.isclose(r_all, radius_r, rtol=0.0, atol=1.0e-10) & seam_mask
-        lat_index = np.searchsorted(lat_levels, np.round(lat_all[shell_mask], 10))
-        lon_index = np.searchsorted(lon_levels, np.round(lon_all[shell_mask], 10))
+        shell_mask = np.isclose(r_all, radius_r, rtol=0.0, atol=1.0e-10)
         shell_masks.append(shell_mask)
-        shell_areas_m2.append((float(radius_r) * DEFAULT_STAR_RADIUS_M) ** 2 * solid_angle[lat_index, lon_index])
+        shell_areas_m2.append((float(radius_r) * DEFAULT_STAR_RADIUS_M) ** 2 * solid_angle)
 
     height_r = [radius_r - 1.0 for radius_r in shell_radii_r]
     log.info("Loading shell dataset and preparing native shell grid complete.")
@@ -135,11 +135,25 @@ def process_plt_file(file_path: str | Path) -> None:
     mass_flux = rho * u_r
     mass_loss_kg_s = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
-        mass_loss_kg_s.append(float(np.sum(mass_flux[shell_mask] * area_m2)))
+        mass_flux_cells = shell_cell_values(
+            mass_flux,
+            shell_mask=shell_mask,
+            lon_deg=lon_all,
+            lat_deg=lat_all,
+            lon_nodes=lon_nodes,
+            lat_nodes=lat_nodes,
+        )
+        mass_loss_kg_s.append(float(np.sum(mass_flux_cells * area_m2)))
 
-    mass_flux_map = np.full((lat_edges.size - 1, lon_edges.size - 1), np.nan)
-    mass_flux_map[plot_lat_index, plot_lon_index] = mass_flux[plot_mask]
-    image = map_axes[0, 0].pcolormesh(lon_edges, lat_edges, mass_flux_map, shading="flat", cmap="viridis")
+    mass_flux_map = shell_cell_values(
+        mass_flux,
+        shell_mask=shell_masks[-1],
+        lon_deg=lon_all,
+        lat_deg=lat_all,
+        lon_nodes=lon_nodes,
+        lat_nodes=lat_nodes,
+    )
+    image = map_axes[0, 0].pcolormesh(lon_nodes, lat_nodes, mass_flux_map, shading="flat", cmap="viridis")
     map_axes[0, 0].set_title("Wind Mass Flux")
     map_fig.colorbar(image, ax=map_axes[0, 0], label="Mass flux [kg/m^2/s]")
     profile_axes[0, 0].plot(height_r, mass_loss_kg_s, ".-", color="C0")
@@ -169,11 +183,25 @@ def process_plt_file(file_path: str | Path) -> None:
     torque_density = varpi_m * (rho * u_phi * u_r - (b_phi * b_r / MU0))
     total_torque_nm = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
-        total_torque_nm.append(float(np.sum(torque_density[shell_mask] * area_m2)))
+        torque_cells = shell_cell_values(
+            torque_density,
+            shell_mask=shell_mask,
+            lon_deg=lon_all,
+            lat_deg=lat_all,
+            lon_nodes=lon_nodes,
+            lat_nodes=lat_nodes,
+        )
+        total_torque_nm.append(float(np.sum(torque_cells * area_m2)))
 
-    torque_map = np.full((lat_edges.size - 1, lon_edges.size - 1), np.nan)
-    torque_map[plot_lat_index, plot_lon_index] = torque_density[plot_mask]
-    image = map_axes[0, 1].pcolormesh(lon_edges, lat_edges, torque_map, shading="flat", cmap="cividis")
+    torque_map = shell_cell_values(
+        torque_density,
+        shell_mask=shell_masks[-1],
+        lon_deg=lon_all,
+        lat_deg=lat_all,
+        lon_nodes=lon_nodes,
+        lat_nodes=lat_nodes,
+    )
+    image = map_axes[0, 1].pcolormesh(lon_nodes, lat_nodes, torque_map, shading="flat", cmap="cividis")
     map_axes[0, 1].set_title("Angular Momentum Flux")
     map_fig.colorbar(image, ax=map_axes[0, 1], label="Torque density [N/m]")
     profile_axes[0, 1].plot(height_r, total_torque_nm, ".-", color="C1")
@@ -189,11 +217,25 @@ def process_plt_file(file_path: str | Path) -> None:
     energy_flux = energy_density * u_r
     energy_flow_w = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
-        energy_flow_w.append(float(np.sum(energy_flux[shell_mask] * area_m2)))
+        energy_cells = shell_cell_values(
+            energy_flux,
+            shell_mask=shell_mask,
+            lon_deg=lon_all,
+            lat_deg=lat_all,
+            lon_nodes=lon_nodes,
+            lat_nodes=lat_nodes,
+        )
+        energy_flow_w.append(float(np.sum(energy_cells * area_m2)))
 
-    energy_map = np.full((lat_edges.size - 1, lon_edges.size - 1), np.nan)
-    energy_map[plot_lat_index, plot_lon_index] = energy_flux[plot_mask]
-    image = map_axes[1, 0].pcolormesh(lon_edges, lat_edges, energy_map, shading="flat", cmap="plasma")
+    energy_map = shell_cell_values(
+        energy_flux,
+        shell_mask=shell_masks[-1],
+        lon_deg=lon_all,
+        lat_deg=lat_all,
+        lon_nodes=lon_nodes,
+        lat_nodes=lat_nodes,
+    )
+    image = map_axes[1, 0].pcolormesh(lon_nodes, lat_nodes, energy_map, shading="flat", cmap="plasma")
     map_axes[1, 0].set_title("Energy Flux")
     map_fig.colorbar(image, ax=map_axes[1, 0], label="Energy flux [W/m^2]")
     profile_axes[1, 0].plot(height_r, energy_flow_w, ".-", color="C2")
@@ -208,11 +250,25 @@ def process_plt_file(file_path: str | Path) -> None:
     open_flux_density = np.abs(b_r)
     open_flux_wb = []
     for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
-        open_flux_wb.append(float(np.sum(open_flux_density[shell_mask] * area_m2)))
+        open_flux_cells = shell_cell_values(
+            open_flux_density,
+            shell_mask=shell_mask,
+            lon_deg=lon_all,
+            lat_deg=lat_all,
+            lon_nodes=lon_nodes,
+            lat_nodes=lat_nodes,
+        )
+        open_flux_wb.append(float(np.sum(open_flux_cells * area_m2)))
 
-    open_flux_map = np.full((lat_edges.size - 1, lon_edges.size - 1), np.nan)
-    open_flux_map[plot_lat_index, plot_lon_index] = open_flux_density[plot_mask]
-    image = map_axes[1, 1].pcolormesh(lon_edges, lat_edges, open_flux_map, shading="flat", cmap="magma")
+    open_flux_map = shell_cell_values(
+        open_flux_density,
+        shell_mask=shell_masks[-1],
+        lon_deg=lon_all,
+        lat_deg=lat_all,
+        lon_nodes=lon_nodes,
+        lat_nodes=lat_nodes,
+    )
+    image = map_axes[1, 1].pcolormesh(lon_nodes, lat_nodes, open_flux_map, shading="flat", cmap="magma")
     map_axes[1, 1].set_title("Open Magnetic Flux Density")
     map_fig.colorbar(image, ax=map_axes[1, 1], label="|B_r| [T]")
     profile_axes[1, 1].plot(height_r, open_flux_wb, ".-", color="C3")
