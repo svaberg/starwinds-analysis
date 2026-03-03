@@ -7,7 +7,6 @@ It should avoid owning the raw Cartesian/spherical transform math.
 from __future__ import annotations
 
 from collections.abc import Sequence
-import re
 
 import griblet
 import numpy as np
@@ -120,15 +119,12 @@ def _vector_triplets(
       `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
     """
     by_prefix: dict[str, dict[str, str]] = {}
-    pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
 
     for name in variable_names:
-        m = pattern.match(name)
-        if not m:
+        parsed = _parse_xyz_component_name(name)
+        if parsed is None:
             continue
-        prefix = m.group("prefix")
-        comp = m.group("comp")
-        unit = m.group("unit")
+        prefix, comp, unit = parsed
         slot = by_prefix.setdefault(prefix, {"unit": unit})
         # Skip mixed-unit vectors for now.
         if slot["unit"] != unit:
@@ -317,7 +313,22 @@ def _infer_radius_name_from_coord(x_name: str) -> str | None:
     Infer the matching radius field name/unit from coordinate field names.
     Used by: `starwinds_analysis/recipes/spherical.py`
     """
-    m = re.match(r"^X \[(.+)\]$", x_name)
-    if m:
-        return f"R [{m.group(1)}]"
+    if x_name.startswith("X [") and x_name.endswith("]"):
+        return f"R [{x_name[3:-1]}]"
     return None
+
+
+def _parse_xyz_component_name(name: str) -> tuple[str, str, str] | None:
+    """
+    Parse names like ``prefix_x [unit]``.
+    Used by: `starwinds_analysis/recipes/spherical.py`
+    """
+    if " [" not in name or not name.endswith("]"):
+        return None
+    head, unit = name[:-1].split(" [", 1)
+    if "_" not in head:
+        return None
+    prefix, comp = head.rsplit("_", 1)
+    if comp not in ("x", "y", "z") or not prefix:
+        return None
+    return prefix, comp, unit

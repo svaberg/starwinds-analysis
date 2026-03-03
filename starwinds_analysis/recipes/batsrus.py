@@ -9,7 +9,6 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 import importlib
 import math
-import re
 
 import numpy as np
 
@@ -364,15 +363,15 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
     griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
-    pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
 
     by_prefix: dict[tuple[str, str], set[str]] = {}
     for name in names:
-        m = pattern.match(name)
-        if not m:
+        parsed = _parse_xyz_component_name(name)
+        if parsed is None:
             continue
-        key = (m.group("prefix"), m.group("unit"))
-        by_prefix.setdefault(key, set()).add(m.group("comp"))
+        prefix, comp, unit = parsed
+        key = (prefix, unit)
+        by_prefix.setdefault(key, set()).add(comp)
 
     for (prefix, unit), comps in sorted(by_prefix.items()):
         if comps != {"x", "y", "z"}:
@@ -392,9 +391,10 @@ def _parse_var_name(name: str):
     Parse BATSRUS variable names.
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    m = re.match(r"^(?P<base>.+?) \[(?P<unit>.+)\]$", name)
-    if m:
-        return m.group("base"), m.group("unit")
+    if " [" in name and name.endswith("]"):
+        base, unit = name[:-1].split(" [", 1)
+        if base and unit:
+            return base, unit
 
     # If there is a space and no brackets, interpret the final token as the unit.
     if " " in name and "[" not in name and "]" not in name:
@@ -402,6 +402,23 @@ def _parse_var_name(name: str):
         if "/" in unit or unit.isalpha() or any(ch.isdigit() for ch in unit):
             return base, unit
     return None
+
+
+def _parse_xyz_component_name(name: str):
+    """
+    Parse names like ``prefix_x [unit]``.
+    Used by: `starwinds_analysis/recipes/batsrus.py`
+    """
+    parsed = _parse_var_name(name)
+    if parsed is None:
+        return None
+    base, unit = parsed
+    if "_" not in base:
+        return None
+    prefix, comp = base.rsplit("_", 1)
+    if comp not in ("x", "y", "z") or not prefix:
+        return None
+    return prefix, comp, unit
 
 def _safe_gamma(gamma):
     """
