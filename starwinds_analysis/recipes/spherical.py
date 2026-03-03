@@ -16,7 +16,7 @@ import numpy as np
 log = logging.getLogger(__name__)
 
 
-def cartesian_to_spherical_angles(x, y, z):
+def cartesian_to_spherical_coordinates(x, y, z):
     """
     Convert Cartesian coordinates to spherical coordinates.
     Used by: `starwinds_analysis/recipes/spherical.py`
@@ -59,28 +59,33 @@ def spherical_to_cartesian_coordinates(r, polar, azimuth):
     return x, y, z
 
 
-def radial_component(vx, vy, vz, x, y, z):
+def polar_azimuth_to_latitude_longitude(polar, azimuth):
     """
-    Project a Cartesian vector onto the radial direction defined by `(x,y,z)`.
-    Used by: no external call sites found
+    Convert polar/azimuth coordinates to latitude/longitude.
+    Used by: `starwinds_analysis/recipes/spherical.py`
     """
-    x = np.array(x)
-    y = np.array(y)
-    z = np.array(z)
-    vx = np.array(vx)
-    vy = np.array(vy)
-    vz = np.array(vz)
-
-    r = np.sqrt(x * x + y * y + z * z)
-    out = np.full_like(r, np.nan, dtype=float)
-    mask = r > 0
-    out[mask] = (vx[mask] * x[mask] + vy[mask] * y[mask] + vz[mask] * z[mask]) / r[mask]
-    return out
+    polar = np.array(polar)
+    azimuth = np.array(azimuth)
+    latitude = (0.5 * np.pi) - polar
+    longitude = np.array(azimuth)
+    return latitude, longitude
 
 
-def spherical_vector_components(vx, vy, vz, x, y, z):
+def latitude_longitude_to_polar_azimuth(latitude, longitude):
     """
-    Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``.
+    Convert latitude/longitude to polar/azimuth coordinates.
+    Used by: `starwinds_analysis/recipes/spherical.py`
+    """
+    latitude = np.array(latitude)
+    longitude = np.array(longitude)
+    polar = (0.5 * np.pi) - latitude
+    azimuth = np.array(longitude)
+    return polar, azimuth
+
+
+def cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z):
+    """
+    Return ``(v_r, v_p, v_a)`` using `polar` and `azimuth` coordinates.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/recipes/spherical.py`
     """
     x = np.array(x)
@@ -94,8 +99,8 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     rho_xy = np.sqrt(x * x + y * y)
 
     v_r = np.full_like(r, np.nan, dtype=float)
-    v_theta = np.full_like(r, np.nan, dtype=float)
-    v_phi = np.full_like(r, np.nan, dtype=float)
+    v_p = np.full_like(r, np.nan, dtype=float)
+    v_a = np.full_like(r, np.nan, dtype=float)
 
     mask_r = r > 0
     v_r[mask_r] = (vx[mask_r] * x[mask_r] + vy[mask_r] * y[mask_r] + vz[mask_r] * z[mask_r]) / r[mask_r]
@@ -111,13 +116,30 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
         vyy = vy[mask_axis]
         vzz = vz[mask_axis]
 
-        # e_theta = (cos(theta)cos(phi), cos(theta)sin(phi), -sin(theta))
-        # Derived directly in Cartesian coordinates to avoid angle singularities.
-        v_theta[mask_axis] = (zz * (xx * vxx + yy * vyy) - (xx * xx + yy * yy) * vzz) / (rr * rho)
-        # e_phi = (-sin(phi), cos(phi), 0)
-        v_phi[mask_axis] = (-yy * vxx + xx * vyy) / rho
+        v_p[mask_axis] = (zz * (xx * vxx + yy * vyy) - (xx * xx + yy * yy) * vzz) / (rr * rho)
+        v_a[mask_axis] = (-yy * vxx + xx * vyy) / rho
 
-    return v_r, v_theta, v_phi
+    return v_r, v_p, v_a
+
+
+def spherical_vector_to_cartesian_components(v_r, v_p, v_a, polar, azimuth):
+    """
+    Convert spherical vector components `(r, p, a)` into Cartesian components.
+    Used by: `starwinds_analysis/recipes/spherical.py`
+    """
+    v_r = np.array(v_r)
+    v_p = np.array(v_p)
+    v_a = np.array(v_a)
+    polar = np.array(polar)
+    azimuth = np.array(azimuth)
+    sin_polar = np.sin(polar)
+    cos_polar = np.cos(polar)
+    sin_azimuth = np.sin(azimuth)
+    cos_azimuth = np.cos(azimuth)
+    vx = v_r * sin_polar * cos_azimuth + v_p * cos_polar * cos_azimuth - v_a * sin_azimuth
+    vy = v_r * sin_polar * sin_azimuth + v_p * cos_polar * sin_azimuth + v_a * cos_azimuth
+    vz = v_r * cos_polar - v_p * sin_polar
+    return vx, vy, vz
 
 
 def register_spherical_geometry_fields(
@@ -142,42 +164,12 @@ def register_spherical_geometry_fields(
     if r_name is None:
         r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
-    def _r(ds):
-        """
-        Radius from Cartesian coordinates (same unit as `coord_fields`).
-        Used by: `register_spherical_geometry_fields` (nested helper)
-        """
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
-        r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
-        return r
+    def _coordinates(ds):
+        return cartesian_to_spherical_coordinates(ds.variable(x_name), ds.variable(y_name), ds.variable(z_name))
 
-    def _polar(ds):
-        """
-        Polar angle from Cartesian coordinates.
-        Used by: `register_spherical_geometry_fields` (nested helper)
-        """
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
-        _r, polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
-        return polar
-
-    def _azimuth(ds):
-        """
-        Azimuth from Cartesian coordinates.
-        Used by: `register_spherical_geometry_fields` (nested helper)
-        """
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
-        _r, _polar, azimuth = cartesian_to_spherical_angles(x, y, z)
-        return azimuth
-
-    smart_ds.register_field(r_name, _r, overwrite=True)
-    smart_ds.register_field(polar_name, _polar, overwrite=True)
-    smart_ds.register_field(azimuth_name, _azimuth, overwrite=True)
+    smart_ds.register_field(r_name, lambda ds: _coordinates(ds)[0], overwrite=True)
+    smart_ds.register_field(polar_name, lambda ds: _coordinates(ds)[1], overwrite=True)
+    smart_ds.register_field(azimuth_name, lambda ds: _coordinates(ds)[2], overwrite=True)
     if theta_name != polar_name:
         smart_ds.register_field(theta_name, lambda ds: np.array(ds.variable(polar_name)), overwrite=True)
     if phi_name != azimuth_name:
@@ -185,12 +177,12 @@ def register_spherical_geometry_fields(
 
     smart_ds.register_field(
         latitude_name,
-        lambda ds: (0.5 * np.pi) - np.array(ds.variable(polar_name)),
+        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable(polar_name), 0.0)[0],
         overwrite=True,
     )
     smart_ds.register_field(
         longitude_name,
-        lambda ds: np.array(ds.variable(azimuth_name)),
+        lambda ds: polar_azimuth_to_latitude_longitude(0.0, ds.variable(azimuth_name))[1],
         overwrite=True,
     )
     smart_ds.register_field(
@@ -252,13 +244,14 @@ def register_vector_spherical_components(
         Compute all spherical vector components once per SmartDs request.
         Used by: `register_vector_spherical_components` (nested helper)
         """
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
-        vx = ds.variable(vx_name)
-        vy = ds.variable(vy_name)
-        vz = ds.variable(vz_name)
-        return spherical_vector_components(vx, vy, vz, x, y, z)
+        return cartesian_vector_to_spherical_components(
+            ds.variable(vx_name),
+            ds.variable(vy_name),
+            ds.variable(vz_name),
+            ds.variable(x_name),
+            ds.variable(y_name),
+            ds.variable(z_name),
+        )
 
     if "r" in register_components:
         smart_ds.register_field(component_names["r"], lambda ds: _compute(ds)[0], overwrite=True)
@@ -345,34 +338,28 @@ def build_griblet_spherical_geometry_graph(
 
     graph = griblet.ComputationGraph()
 
-    def _r(x, y, z):
-        """
-        Radius recipe from Cartesian coordinates.
-        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
-        """
-        r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
-        return r
-
-    def _polar(x, y, z):
-        """
-        Polar-angle recipe from Cartesian coordinates.
-        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
-        """
-        _r, polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
-        return polar
-
-    def _azimuth(x, y, z):
-        """
-        Azimuth recipe from Cartesian coordinates.
-        Used by: `build_griblet_spherical_geometry_graph` (nested helper)
-        """
-        _r, _polar, azimuth = cartesian_to_spherical_angles(x, y, z)
-        return azimuth
-
     deps = [x_name, y_name, z_name]
-    graph.add_recipe(r_name, _r, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical radius"})
-    graph.add_recipe(polar_name, _polar, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical polar angle"})
-    graph.add_recipe(azimuth_name, _azimuth, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical azimuth"})
+    graph.add_recipe(
+        r_name,
+        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[0],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical radius"},
+    )
+    graph.add_recipe(
+        polar_name,
+        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[1],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical polar angle"},
+    )
+    graph.add_recipe(
+        azimuth_name,
+        lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[2],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical azimuth"},
+    )
     if theta_name != polar_name:
         graph.add_recipe(
             theta_name,
@@ -392,28 +379,28 @@ def build_griblet_spherical_geometry_graph(
 
     graph.add_recipe(
         latitude_name,
-        lambda polar: (0.5 * np.pi) - np.array(polar),
+        lambda polar: polar_azimuth_to_latitude_longitude(polar, 0.0)[0],
         deps=[polar_name],
         cost=0.05,
         metadata={"description": "polar -> latitude (radians)"},
     )
     graph.add_recipe(
         polar_name,
-        lambda latitude: (0.5 * np.pi) - np.array(latitude),
+        lambda latitude: latitude_longitude_to_polar_azimuth(latitude, 0.0)[0],
         deps=[latitude_name],
         cost=0.05,
         metadata={"description": "latitude -> polar (radians)"},
     )
     graph.add_recipe(
         longitude_name,
-        lambda azimuth: np.array(azimuth),
+        lambda azimuth: polar_azimuth_to_latitude_longitude(0.0, azimuth)[1],
         deps=[azimuth_name],
         cost=0.01,
         metadata={"description": "azimuth -> longitude (radians)"},
     )
     graph.add_recipe(
         azimuth_name,
-        lambda longitude: np.array(longitude),
+        lambda longitude: latitude_longitude_to_polar_azimuth(0.0, longitude)[1],
         deps=[longitude_name],
         cost=0.01,
         metadata={"description": "longitude -> azimuth (radians)"},
@@ -491,17 +478,10 @@ def build_griblet_vector_spherical_components_graph(
 
     graph = griblet.ComputationGraph()
 
-    def _all(vx, vy, vz, x, y, z):
-        """
-        Compute all spherical vector components once for graph recipes.
-        Used by: `build_griblet_vector_spherical_components_graph` (nested helper)
-        """
-        return spherical_vector_components(vx, vy, vz, x, y, z)
-
     if "r" in register_components:
         graph.add_recipe(
             f"{prefix}_r [{unit}]",
-            lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[0],
+            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
             deps=deps,
             cost=0.4,
             metadata={"description": f"{prefix} radial component"},
@@ -509,7 +489,7 @@ def build_griblet_vector_spherical_components_graph(
     if ("p" in register_components) or ("theta" in register_components):
         graph.add_recipe(
             f"{prefix}_p [{unit}]",
-            lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[1],
+            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
             deps=deps,
             cost=0.5,
             metadata={"description": f"{prefix} polar component"},
@@ -524,7 +504,7 @@ def build_griblet_vector_spherical_components_graph(
     if ("a" in register_components) or ("phi" in register_components):
         graph.add_recipe(
             f"{prefix}_a [{unit}]",
-            lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[2],
+            lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
             deps=deps,
             cost=0.5,
             metadata={"description": f"{prefix} azimuth component"},
