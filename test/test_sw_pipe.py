@@ -86,7 +86,7 @@ def test_run_sw_pipe_default_clobber_reprocesses_files(tmp_path):
     assert second.skipped_files == []
 
 
-def test_run_sw_pipe_continues_after_single_file_failure(tmp_path):
+def test_run_sw_pipe_continues_after_single_file_failure(tmp_path, caplog):
     (tmp_path / "alpha.plt").write_text("")
     (tmp_path / "beta.plt").write_text("")
 
@@ -97,7 +97,8 @@ def test_run_sw_pipe_continues_after_single_file_failure(tmp_path):
         recorder_log.setLevel(logging.DEBUG)
         recorder_log.debug("ok %r", True)
 
-    results = run_sw_pipe(tmp_path, process_file=process_file)
+    with caplog.at_level(logging.ERROR, logger="starwinds_analysis.pipelines.sw_pipe"):
+        results = run_sw_pipe(tmp_path, process_file=process_file)
 
     assert [path.name for path in results.failed_files] == ["alpha.plt"]
     assert [path.name for path in results.processed_files] == ["beta.plt"]
@@ -105,6 +106,11 @@ def test_run_sw_pipe_continues_after_single_file_failure(tmp_path):
     assert "boom" in results.computed_results["alpha.plt"]["meta"]["error"]
     assert results.computed_results["beta.plt"]["meta"]["status"] == "processed"
     assert results.computed_results["beta.plt"]["ok"]["value"] is True
+    error_records = [record for record in caplog.records if record.levelno == logging.ERROR]
+    assert len(error_records) == 1
+    assert "alpha.plt" in error_records[0].getMessage()
+    assert "boom" in error_records[0].getMessage()
+    assert error_records[0].exc_info is None
 
 
 def test_run_sw_pipe_fail_fast_raises_on_first_failure(tmp_path):

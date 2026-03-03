@@ -546,11 +546,11 @@ def run_sw_pipe(
             process_file(file_path)
         except Exception as exc:
             results.failed_files.append(file_path)
-            log.exception("sw-pipe file failed: %s", file_path.name)
             file_results["meta"]["status"] = "failed"
             file_results["meta"]["error"] = str(exc)
             if fail_fast:
                 raise
+            log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
         else:
             file_results["meta"]["status"] = "processed"
             results.processed_files.append(file_path)
