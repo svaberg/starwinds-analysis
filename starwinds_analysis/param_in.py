@@ -14,12 +14,14 @@ stores command blocks for inspection without hard-coding command arity.
 from __future__ import annotations
 
 from collections import OrderedDict
+import logging
 from pathlib import Path
 
 from scipy.constants import day
 
 _SOLAR_RADIUS_M = 6.957e8
 _SOLAR_MASS_KG = 1.98847e30
+log = logging.getLogger(__name__)
 
 
 def _strip_lines(path) -> list[str]:
@@ -54,11 +56,21 @@ def find_param_in(file_path):
     """Find the nearest `PARAM.in`/`param.in` beside or above a data file."""
     start = Path(file_path)
     search_root = start if start.is_dir() else start.parent
-    for directory in (search_root, *search_root.parents):
+    search_dirs = [search_root]
+    if search_root.parent != search_root:
+        search_dirs.append(search_root.parent)
+    if search_root.parent.parent != search_root.parent:
+        search_dirs.append(search_root.parent.parent)
+    for directory in search_root.parents:
+        if directory not in search_dirs:
+            search_dirs.append(directory)
+    for directory in search_dirs:
         for name in ("PARAM.in", "param.in"):
             candidate = directory / name
             if candidate.exists():
+                log.info("Using PARAM.in %s", candidate)
                 return candidate
+    log.debug("No nearby PARAM.in found for %s", file_path)
     return None
 
 

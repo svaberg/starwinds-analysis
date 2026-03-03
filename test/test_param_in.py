@@ -1,7 +1,10 @@
 from pathlib import Path
 
+import logging
+
 from starwinds_analysis.param_in import ParamIn
 from starwinds_analysis.param_in import flatten_includes
+from starwinds_analysis.param_in import find_param_in
 from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
 
@@ -83,3 +86,18 @@ def test_param_in_extracts_stellar_params_and_nearby_lookup():
     assert star["Star_rotation_rate_rad_s"] > 0.0
     assert nearby["Star_name"] == star["Star_name"]
     assert nearby["Star_radius_m"] == star["Star_radius_m"]
+
+
+def test_find_param_in_checks_parent_chain_and_logs_choice(tmp_path, caplog):
+    data_dir = tmp_path / "a" / "b" / "c"
+    data_dir.mkdir(parents=True)
+    data_file = data_dir / "data.plt"
+    data_file.write_text("", encoding="utf-8")
+    param_file = tmp_path / "a" / "PARAM.in"
+    param_file.write_text("#STAR\n1.0 RadiusStar\n1.0 MassStar\n25.0 RotationPeriodStar\n", encoding="utf-8")
+
+    with caplog.at_level(logging.INFO):
+        found = find_param_in(data_file)
+
+    assert found == param_file
+    assert f"Using PARAM.in {param_file}" in caplog.text
