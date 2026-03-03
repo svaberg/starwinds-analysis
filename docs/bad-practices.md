@@ -24,6 +24,26 @@ Implication:
 - Write the math/operation directly when it is simple.
 - Split code only for real reuse, real boundaries, or real complexity.
 
+## Data Geometry Rule: Treat Input Data Honestly
+
+Rule:
+
+- In general, data read by this project are corner-point / nodal data.
+- Do not pretend imported coordinates are cell centres just to make plotting or integration easier.
+- If cell-centred values or cell areas/volumes are needed, compute them explicitly from the nodal geometry and nodal values.
+
+Bad:
+
+- treating node coordinates as if they were cell centres
+- inferring a fake centred mesh from nodal coordinates and then plotting/integrating as if that were the native data model
+- hiding node-to-cell conversion inside plotting convenience code
+
+Preferred pattern:
+
+- keep imported coordinates as corner nodes
+- keep imported fields as nodal values
+- when a cell-based operation is needed, make the node-to-cell conversion explicit in code
+
 ## Logging (Good and Bad)
 
 Logging is required for workflow visibility, especially in pipeline and analysis entry points.
