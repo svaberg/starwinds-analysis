@@ -44,6 +44,11 @@ Preferred pattern:
 - keep imported fields as nodal values
 - when a cell-based operation is needed, make the node-to-cell conversion explicit in code
 
+Terminology rule:
+
+- Unless code is directly reading file-provided latitude/longitude fields or labeling a plot, prefer `polar` and `azimuth` over `latitudinal`.
+- Use `lat` / `lon` when the file fields are explicitly latitude/longitude.
+
 ## Logging (Good and Bad)
 
 Logging is required for workflow visibility, especially in pipeline and analysis entry points.

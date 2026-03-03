@@ -25,7 +25,7 @@ def shell_spherical_components(
     lon_deg,
     lat_deg,
 ):
-    """Project a stacked Cartesian shell vector onto radial/latitudinal/azimuthal directions."""
+    """Project a stacked Cartesian shell vector onto radial/polar/azimuth directions."""
     lon_rad = np.deg2rad(lon_deg)
     lat_rad = np.deg2rad(lat_deg)
     cos_lon = np.cos(lon_rad)
@@ -36,9 +36,9 @@ def shell_spherical_components(
     y_component = vector[1]
     z_component = vector[2]
     radial = x_component * cos_lat * cos_lon + y_component * cos_lat * sin_lon + z_component * sin_lat
-    latitudinal = -x_component * sin_lat * cos_lon - y_component * sin_lat * sin_lon + z_component * cos_lat
-    azimuthal = -x_component * sin_lon + y_component * cos_lon
-    return radial, latitudinal, azimuthal
+    polar = -x_component * sin_lat * cos_lon - y_component * sin_lat * sin_lon + z_component * cos_lat
+    azimuth = -x_component * sin_lon + y_component * cos_lon
+    return radial, polar, azimuth
 
 
 def shell_cell_values(
@@ -112,7 +112,7 @@ def process_plt_file(file_path: str | Path) -> None:
         ),
         axis=0,
     )
-    u_r, _u_lat, u_phi = shell_spherical_components(
+    u_r, _u_polar, u_phi = shell_spherical_components(
         u_vector,
         lon_deg=lon_all,
         lat_deg=lat_all,
@@ -174,7 +174,7 @@ def process_plt_file(file_path: str | Path) -> None:
         ),
         axis=0,
     )
-    b_r, _b_lat, b_phi = shell_spherical_components(
+    b_r, _b_polar, b_phi = shell_spherical_components(
         b_vector,
         lon_deg=lon_all,
         lat_deg=lat_all,
