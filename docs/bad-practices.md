@@ -95,6 +95,8 @@ Rule:
 - Pipelines should normally need only a single smoke test.
 - Do not keep production code alive just to satisfy pipeline-specific tests.
 - If logic needs detailed tests, that logic belongs in lower reusable layers (`physics/`, `analysis/`, `visualisation/`), not inside `pipelines/`.
+- If a test mainly locks in the current API shape, output schema, or implementation details rather than core functionality, mark it with `@pytest.mark.design_lockin`.
+- Do not build wrappers, shims, or compatibility layers just to satisfy a `design_lockin` test; those tests are warnings, not architecture requirements.
 
 Bad:
 
