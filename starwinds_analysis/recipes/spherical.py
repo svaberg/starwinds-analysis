@@ -148,9 +148,12 @@ def build_griblet_spherical_geometry_graph(
     r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
     xyz_names = (x_name, y_name, z_name)
     rpa_names = (r_name, "polar [rad]", "azimuth [rad]")
+    latlon_names = ("latitude [rad]", "longitude [rad]")
+    latlon_deg_names = ("latitude [deg]", "longitude [deg]")
 
     graph = griblet.ComputationGraph()
 
+    # Add XYZ -> Rpa.
     for index, field_name in enumerate(rpa_names):
         graph.add_recipe(
             field_name,
@@ -158,54 +161,44 @@ def build_griblet_spherical_geometry_graph(
             deps=list(xyz_names),
             cost=0.2,
         )
-    graph.add_recipe(
-        "latitude [rad]",
-        lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[0],
-        deps=["polar [rad]", "azimuth [rad]"],
-        cost=0.05,
-    )
-    graph.add_recipe(
-        "polar [rad]",
-        lambda latitude, longitude: latitude_longitude_to_polar_azimuth(latitude, longitude)[0],
-        deps=["latitude [rad]", "longitude [rad]"],
-        cost=0.05,
-    )
-    graph.add_recipe(
-        "longitude [rad]",
-        lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[1],
-        deps=["polar [rad]", "azimuth [rad]"],
-        cost=0.01,
-    )
-    graph.add_recipe(
-        "azimuth [rad]",
-        lambda latitude, longitude: latitude_longitude_to_polar_azimuth(latitude, longitude)[1],
-        deps=["latitude [rad]", "longitude [rad]"],
-        cost=0.01,
-    )
-    graph.add_recipe(
-        "latitude [deg]",
-        lambda lat: np.degrees(lat),
-        deps=["latitude [rad]"],
-        cost=0.05,
-    )
-    graph.add_recipe(
-        "longitude [deg]",
-        lambda lon: np.degrees(lon),
-        deps=["longitude [rad]"],
-        cost=0.05,
-    )
-    graph.add_recipe(
-        "latitude [rad]",
-        lambda lat_deg: np.deg2rad(lat_deg),
-        deps=["latitude [deg]"],
-        cost=0.05,
-    )
-    graph.add_recipe(
-        "longitude [rad]",
-        lambda lon_deg: np.deg2rad(lon_deg),
-        deps=["longitude [deg]"],
-        cost=0.05,
-    )
+
+    # Add Rpa -> latlon_rad.
+    for index, field_name in enumerate(latlon_names):
+        graph.add_recipe(
+            field_name,
+            lambda polar, azimuth, index=index: polar_azimuth_to_latitude_longitude(polar, azimuth)[index],
+            deps=["polar [rad]", "azimuth [rad]"],
+            cost=0.05 if index == 0 else 0.01,
+        )
+
+    # Add latlon_rad -> Rpa angles.
+    for index, field_name in enumerate(("polar [rad]", "azimuth [rad]")):
+        graph.add_recipe(
+            field_name,
+            lambda latitude, longitude, index=index: latitude_longitude_to_polar_azimuth(latitude, longitude)[index],
+            deps=list(latlon_names),
+            cost=0.05 if index == 0 else 0.01,
+        )
+
+    # Add latlon_rad -> latlon_deg.
+    for rad_name, deg_name in zip(latlon_names, latlon_deg_names):
+        graph.add_recipe(
+            deg_name,
+            lambda angle_rad: np.degrees(angle_rad),
+            deps=[rad_name],
+            cost=0.05,
+        )
+
+    # Add latlon_deg -> latlon_rad.
+    for rad_name, deg_name in zip(latlon_names, latlon_deg_names):
+        graph.add_recipe(
+            rad_name,
+            lambda angle_deg: np.deg2rad(angle_deg),
+            deps=[deg_name],
+            cost=0.05,
+        )
+
+    # Add Rpa -> XYZ.
     for index, field_name in enumerate(xyz_names):
         graph.add_recipe(
             field_name,
@@ -240,6 +233,7 @@ def build_griblet_vector_spherical_components_graph(
     rpa_names = (f"{prefix}_r [{unit}]", f"{prefix}_p [{unit}]", f"{prefix}_a [{unit}]")
 
     graph = griblet.ComputationGraph()
+    # Add prefix_xyz -> prefix_rpa.
     for index, field_name in enumerate(rpa_names):
         graph.add_recipe(
             field_name,
