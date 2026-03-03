@@ -155,13 +155,12 @@ def build_griblet_unit_normalization_graph(
     # Optional coordinate scale: X/Y/Z [R] -> [m]
     body_radius = _resolve_body_radius_m(aux=aux, body_radius_m=body_radius_m)
     if body_radius is not None:
+        # Add XYZ_R -> XYZ_m.
         for axis in ("X", "Y", "Z"):
-            source = f"{axis} [R]"
-            target = f"{axis} [m]"
             graph.add_recipe(
-                target,
+                f"{axis} [m]",
                 lambda x, scale=body_radius: scale * np.array(x),
-                deps=[source],
+                deps=[f"{axis} [R]"],
                 cost=0.05,
                 metadata={"description": "Scale body-radius coordinates to meters"},
             )
@@ -208,20 +207,18 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 
     # Vector magnitudes (generic scan)
     graph.merge(build_griblet_vector_magnitude_graph(varset))
-    graph.add_recipe(
-        "U [m/s]",
-        lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
-        deps=["U_x [m/s]", "U_y [m/s]", "U_z [m/s]"],
-        cost=0.1,
-        metadata={"description": "Flow speed magnitude"},
-    )
-    graph.add_recipe(
-        "B [T]",
-        lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
-        deps=["B_x [T]", "B_y [T]", "B_z [T]"],
-        cost=0.1,
-        metadata={"description": "Magnetic field magnitude"},
-    )
+    # Add explicit U_xyz -> U and B_xyz -> B.
+    for prefix, unit, description in (
+        ("U", "m/s", "Flow speed magnitude"),
+        ("B", "T", "Magnetic field magnitude"),
+    ):
+        graph.add_recipe(
+            f"{prefix} [{unit}]",
+            lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
+            deps=[f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"],
+            cost=0.1,
+            metadata={"description": description},
+        )
 
     # Sound speed c_s [m/s]
     if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
