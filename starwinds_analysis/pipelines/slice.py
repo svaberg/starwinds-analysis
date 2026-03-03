@@ -37,12 +37,10 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: make, save, and record the density slice.
     log.debug("Computing density slice...")
-    saved_count = 0
     fig, _axes, _cbar = plot_xz_slice_tripcolor_with_cross_quantiles(smart_ds, var="Rho [kg/m^3]")
     out_path = output_dir / f"{prefix}.slices.rho.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved_count += 1
     add_record("slice_rho_png %r", str(out_path.relative_to(path.parent)))
     log.info("Computing density slice complete.")
 
@@ -52,7 +50,6 @@ def process_plt_file(file_path: str | Path) -> None:
     out_path = output_dir / f"{prefix}.slices.u.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved_count += 1
     add_record("slice_u_png %r", str(out_path.relative_to(path.parent)))
     log.info("Computing speed slice complete.")
 
@@ -62,14 +59,5 @@ def process_plt_file(file_path: str | Path) -> None:
     out_path = output_dir / f"{prefix}.slices.b.png"
     fig.savefig(out_path)
     plt.close(fig)
-    saved_count += 1
     add_record("slice_b_png %r", str(out_path.relative_to(path.parent)))
     log.info("Computing magnetic-field slice complete.")
-
-    # Start: record the final pipeline summary.
-    log.debug("Recording slice pipeline summary...")
-    add_record("slice_status %r", "processed")
-    add_record("slice_figure_count %r", saved_count)
-    add_record("slice_output_dir %r", str(output_dir.relative_to(path.parent)))
-    log.info("Recording slice pipeline summary complete.")
-    log.info("result file=%s figures=%d", path.name, saved_count)

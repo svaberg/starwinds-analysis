@@ -197,19 +197,3 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("shell_maps_png %r", str(shell_maps_png.relative_to(path.parent)))
     add_record("shell_profiles_png %r", str(shell_profiles_png.relative_to(path.parent)))
     log.info("Saving shell figures complete.")
-
-    # Start: record the final shell pipeline summary.
-    log.debug("Recording shell pipeline summary...")
-    add_record("shell_status %r", "processed")
-    add_record("shell_count %r", len(shell_masks))
-    log.info("Recording shell pipeline summary complete.")
-    log.info(
-        "result file=%s shells=%d radius=%gR mass_loss_kg_s=%g total_torque_nm=%g energy_flow_w=%g open_flux_wb=%g",
-        path.name,
-        len(shell_masks),
-        shell_radii_r[-1],
-        mass_loss_kg_s[-1],
-        total_torque_nm[-1],
-        energy_flow_w[-1],
-        open_flux_wb[-1],
-    )

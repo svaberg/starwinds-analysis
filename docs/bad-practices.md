@@ -66,6 +66,7 @@ Rule:
   - record that quantity
   - then move to the next quantity
 - Do not group many quantities first and then unpack them later in the pipeline.
+- Do not hold results for a final end-of-pipeline summary record; record each result when it is produced.
 - Pipelines should normally need only a single smoke test.
 - Do not keep production code alive just to satisfy pipeline-specific tests.
 - If logic needs detailed tests, that logic belongs in lower reusable layers (`physics/`, `analysis/`, `visualisation/`), not inside `pipelines/`.
@@ -76,6 +77,7 @@ Bad:
 - putting plotting implementation details directly in `pipelines/`
 - large nested control flow and dict plumbing inside pipeline entry points
 - grouping results into temporary bundles and unpacking them later inside the pipeline
+- recording a synthetic final pipeline summary instead of recording results at the point they are computed
 - keeping dead wrappers or compatibility layers only because a pipeline test expects them
 - writing detailed behavior tests for pipeline-only glue instead of testing the reusable functions it calls
 

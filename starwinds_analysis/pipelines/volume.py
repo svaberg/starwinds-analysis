@@ -24,7 +24,7 @@ DEFAULT_QUICKLOOK_RADII_R = (2.0, 4.0, 8.0, 16.0)
 
 
 def process_plt_file(file_path: str | Path) -> None:
-    """Process one 3D `.plt` file into a shell-summary PNG and recorded diagnostics."""
+    """Process one 3D `.plt` file into a shell PNG and recorded diagnostics."""
     # Start: resolve input/output paths and log the file being processed.
     log.debug("Resolving volume pipeline paths...")
     path = Path(file_path)
@@ -157,24 +157,9 @@ def process_plt_file(file_path: str | Path) -> None:
     log.info("Computing energy flux complete.")
 
     # Start: save the figure and record the output artifact.
-    log.debug("Saving volume summary figure...")
+    log.debug("Saving volume figure...")
     shell_png = output_dir / f"{prefix}.shells.png"
     fig.savefig(shell_png)
     plt.close(fig)
-    log.info("Saving volume summary figure complete.")
-
-    # Start: record the final pipeline summary.
-    log.debug("Recording volume pipeline summary...")
-    add_record("volume_status %r", "processed")
     add_record("volume_shell_png %r", str(shell_png.relative_to(path.parent)))
-    log.info("Recording volume pipeline summary complete.")
-    if isfinite(mass_loss_radius_ref):
-        log.info(
-            "result file=%s radius=%gR mass_loss_kg_s=%g total_torque_nm=%g open_flux_wb=%g energy_flux_w=%g",
-            path.name,
-            mass_loss_radius_ref,
-            mass_loss_value_ref,
-            torque_value_ref,
-            open_flux_value_ref,
-            energy_flux_value_ref,
-        )
+    log.info("Saving volume figure complete.")
