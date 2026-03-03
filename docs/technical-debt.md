@@ -10,6 +10,45 @@ Legend:
 - `Debt`: bad-practice hit found in this pass (code TODO added or already present)
 - `Reviewed`: no additional debt marker added in this pass
 
+## Architecture Recommendations (Current)
+
+The target is a DAG-shaped library with a small folder tree. The goal is not to
+create more packages; the goal is to keep dependency direction clean.
+
+Recommended practical structure (using the folders that already mostly exist):
+
+- `recipes/`: field semantics, unit conversion, coordinate transforms, pointwise derived quantities
+- `analysis/`: generic sampling, geometry, interpolation, and numerical reductions
+- `physics/`: domain-specific diagnostics (`mass_loss`, `torque`, `pressure`, orbit diagnostics)
+- `visualisation/`: plotting primitives only
+- `pipelines/`: thin per-file workflows and CLI-facing glue
+- top-level modules (`smart_ds.py`, `utils.py`, `constants.py`-style modules): shared access/utilities
+
+Recommended dependency direction:
+
+- `recipes` should not depend on `analysis`, `physics`, `visualisation`, or `pipelines`
+- `analysis` should stay generic and should not depend on `physics`
+- `smart_ds` can depend on `recipes` and low-level helpers, but should not own domain workflows
+- `physics` can depend on `smart_ds`, `analysis`, and `recipes`
+- `visualisation` can depend on `smart_ds` and plotting inputs, but should not compute physics
+- `pipelines` can depend on `physics`, `visualisation`, and small pipeline-specific helpers only
+- `sw_pipe` should stay execution/state/recording glue and should not know science
+
+Current practical fit:
+
+- The existing folders already mostly match this structure.
+- No major folder reorg is required right now.
+- The main remaining structural risks are:
+  - generic logic drifting into `pipelines/orchestration_helpers.py`
+  - quantity-specific workflow wrappers living too deep in `physics/`
+  - extra side folders (`sampling/`, `algorithms/`, `data/`) becoming architectural clutter if they grow without a clear boundary
+
+Immediate recommendation:
+
+- keep the current folders
+- enforce the dependency direction above
+- prefer moving or deleting leaky helpers over creating new folders
+
 ## examples
 
 - `examples/earth-xuv-neutrals/earth-xuv-neutrals.py` — **Reviewed**. Example script (one-off workflow code is allowed here).
