@@ -127,12 +127,14 @@ class SmartDs:
             return
 
         from starwinds_analysis.recipes.spherical import (
-            auto_register_vector_spherical_components,
+            _vector_triplets,
             register_spherical_geometry_fields,
+            register_vector_spherical_components,
         )
 
         register_spherical_geometry_fields(self, coord_fields=coord_fields)
-        auto_register_vector_spherical_components(self, coord_fields=coord_fields)
+        for prefix, unit in _vector_triplets(self.variables):
+            register_vector_spherical_components(self, prefix=prefix, unit=unit, coord_fields=coord_fields)
 
     @property
     def raw(self) -> Dataset:
@@ -343,16 +345,14 @@ class SmartDs:
         future griblet integration.
         """
         from starwinds_analysis.recipes.spherical import (
-            auto_register_vector_spherical_components,
+            _vector_triplets,
             register_spherical_geometry_fields,
+            register_vector_spherical_components,
         )
 
         register_spherical_geometry_fields(self, coord_fields=coord_fields)
-        auto_register_vector_spherical_components(
-            self,
-            coord_fields=coord_fields,
-            prefixes=None if vectors is None else tuple(vectors),
-        )
+        for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
+            register_vector_spherical_components(self, prefix=prefix, unit=unit, coord_fields=coord_fields)
         return self
 
     def add_spherical_graph(
@@ -370,18 +370,20 @@ class SmartDs:
         computation graph and resolves them via ``griblet`` on demand.
         """
         from starwinds_analysis.recipes.spherical import (
-            build_griblet_auto_vector_spherical_components_graph,
+            _vector_triplets,
             build_griblet_spherical_geometry_graph,
+            build_griblet_vector_spherical_components_graph,
         )
 
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
-        graph.merge(
-            build_griblet_auto_vector_spherical_components_graph(
-                self.variables,
-                coord_fields=coord_fields,
-                prefixes=None if vectors is None else tuple(vectors),
+        for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
+            graph.merge(
+                build_griblet_vector_spherical_components_graph(
+                    prefix=prefix,
+                    unit=unit,
+                    coord_fields=coord_fields,
+                )
             )
-        )
         self.set_computation_graph(graph, merge=merge)
         return self
 

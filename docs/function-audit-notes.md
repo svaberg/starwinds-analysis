@@ -187,10 +187,10 @@ Usage notes are direct caller locations (grep-based, then manually tightened for
 - `spherical_vector_components`: Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``. Used in `test/test_shell_analysis.py`, `starwinds_analysis/recipes/spherical.py`.
 - `register_spherical_geometry_fields`: Register local on-demand spherical coordinate fields on a SmartDs wrapper. Used in `starwinds_analysis/smart_ds.py`.
 - `register_vector_spherical_components`: Register local on-demand spherical vector components for one Cartesian vector triplet. Used in `starwinds_analysis/recipes/spherical.py`.
-- `auto_register_vector_spherical_components`: Auto-detect vector component triplets named like ``prefix_x [unit]``. Used in `starwinds_analysis/smart_ds.py`.
+- `_vector_triplets`: Find vector component triplets named like ``prefix_x [unit]``. Used in `starwinds_analysis/recipes/spherical.py`, `starwinds_analysis/smart_ds.py`, and `starwinds_analysis/recipes/batsrus.py`.
 - `build_griblet_spherical_geometry_graph`: Build a griblet graph for spherical geometry fields. Used in `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`.
 - `build_griblet_vector_spherical_components_graph`: Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components. Used in `starwinds_analysis/recipes/spherical.py`.
-- `build_griblet_auto_vector_spherical_components_graph`: Auto-detect Cartesian vector triplets in `variable_names` and build a merged spherical-component recipe graph. Used in `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`.
+- `build_griblet_vector_spherical_components_graph`: Build spherical-component recipes for one detected vector triplet. Used in `starwinds_analysis/recipes/spherical.py`, `starwinds_analysis/smart_ds.py`, and `starwinds_analysis/recipes/batsrus.py`.
 - `_infer_radius_name_from_coord`: Infer the matching radius field name/unit from coordinate field names. Used in `starwinds_analysis/recipes/spherical.py`.
 
 ## `starwinds_analysis/analysis/orbits.py`

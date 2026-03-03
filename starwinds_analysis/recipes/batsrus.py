@@ -52,8 +52,9 @@ def build_griblet_batsrus_graph(
 
     if include_derived:
         from starwinds_analysis.recipes.spherical import (
-            build_griblet_auto_vector_spherical_components_graph,
+            _vector_triplets,
             build_griblet_spherical_geometry_graph,
+            build_griblet_vector_spherical_components_graph,
         )
 
         derived_input_names: set[str] = set()
@@ -74,13 +75,14 @@ def build_griblet_batsrus_graph(
         # Include spherical geometry/components in the BATSRUS graph from the start so
         # pointwise recipes can depend on U_r/B_r/U_a/B_a without extra setup.
         graph.merge(build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]")))
-        graph.merge(
-            build_griblet_auto_vector_spherical_components_graph(
-                sorted(derived_input_names),
-                coord_fields=("X [R]", "Y [R]", "Z [R]"),
-                prefixes=None,
+        for prefix, unit in _vector_triplets(sorted(derived_input_names)):
+            graph.merge(
+                build_griblet_vector_spherical_components_graph(
+                    prefix=prefix,
+                    unit=unit,
+                    coord_fields=("X [R]", "Y [R]", "Z [R]"),
+                )
             )
-        )
         derived_names = set(derived_input_names)
         if hasattr(graph, "fields"):
             derived_names.update(graph.fields())

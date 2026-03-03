@@ -7,13 +7,10 @@ It should remain backend-agnostic and avoid plotting concerns.
 from __future__ import annotations
 
 from collections.abc import Sequence
-import logging
 import re
 
 import griblet
 import numpy as np
-
-log = logging.getLogger(__name__)
 
 
 def cartesian_to_spherical_coordinates(x, y, z):
@@ -230,20 +227,20 @@ def register_vector_spherical_components(
     )
 
 
-def auto_register_vector_spherical_components(
-    smart_ds,
+def _vector_triplets(
+    variable_names: Sequence[str],
     *,
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
     prefixes: Sequence[str] | None = None,
 ):
     """
-    Auto-detect vector component triplets named like ``prefix_x [unit]``.
-    Used by: `starwinds_analysis/smart_ds.py`
+    Find Cartesian vector triplets named like ``prefix_x [unit]``.
+    Used by: `starwinds_analysis/recipes/spherical.py`,
+      `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
     """
     by_prefix: dict[str, dict[str, str]] = {}
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
 
-    for name in smart_ds.variables:
+    for name in variable_names:
         m = pattern.match(name)
         if not m:
             continue
@@ -256,22 +253,15 @@ def auto_register_vector_spherical_components(
             continue
         slot[comp] = name
 
-    created_prefixes = []
     wanted = set(prefixes) if prefixes is not None else None
+    triplets = []
     for prefix, info in sorted(by_prefix.items()):
         if wanted is not None and prefix not in wanted:
             continue
         if not {"x", "y", "z"}.issubset(info):
             continue
-        unit = info["unit"]
-        register_vector_spherical_components(
-            smart_ds,
-            prefix=prefix,
-            unit=unit,
-            coord_fields=coord_fields,
-        )
-        created_prefixes.append(prefix)
-    log.debug("auto_registered_vector_spherical_components %r", created_prefixes)
+        triplets.append((prefix, info["unit"]))
+    return triplets
 
 
 def build_griblet_spherical_geometry_graph(
@@ -438,49 +428,6 @@ def build_griblet_vector_spherical_components_graph(
         cost=0.01,
     )
     return graph
-
-
-def build_griblet_auto_vector_spherical_components_graph(
-    variable_names: Sequence[str],
-    *,
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    prefixes: Sequence[str] | None = None,
-):
-    """
-    Auto-detect Cartesian vector triplets in `variable_names` and build a merged spherical-
-      component recipe graph.
-    Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
-    """
-    pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
-
-    by_prefix: dict[str, dict[str, str]] = {}
-    for name in variable_names:
-        m = pattern.match(name)
-        if not m:
-            continue
-        prefix = m.group("prefix")
-        comp = m.group("comp")
-        unit = m.group("unit")
-        slot = by_prefix.setdefault(prefix, {"unit": unit})
-        if slot["unit"] != unit:
-            continue
-        slot[comp] = name
-
-    wanted = set(prefixes) if prefixes is not None else None
-    merged = griblet.ComputationGraph()
-    for prefix, info in sorted(by_prefix.items()):
-        if wanted is not None and prefix not in wanted:
-            continue
-        if not {"x", "y", "z"}.issubset(info):
-            continue
-        merged.merge(
-            build_griblet_vector_spherical_components_graph(
-                prefix=prefix,
-                unit=info["unit"],
-                coord_fields=coord_fields,
-            )
-        )
-    return merged
 
 
 def _infer_radius_name_from_coord(x_name: str) -> str | None:

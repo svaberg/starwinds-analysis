@@ -39,7 +39,7 @@ Files:
 Status: DONE for confirmed unused cases found in current scan
 
 - `register_spherical_geometry_fields(...)` no longer returns an unused dict.
-- `auto_register_vector_spherical_components(...)` no longer returns an unused dict.
+- `_vector_triplets(...)` now handles vector-triplet discovery directly, with registration done at the call site.
 - Both now log creation summaries at the point of creation.
 
 Files:
