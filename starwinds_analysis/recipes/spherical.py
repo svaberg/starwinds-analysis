@@ -7,10 +7,10 @@ It should remain backend-agnostic and avoid plotting concerns.
 from __future__ import annotations
 
 from collections.abc import Sequence
-import importlib
 import logging
 import re
 
+import griblet
 import numpy as np
 
 log = logging.getLogger(__name__)
@@ -160,27 +160,27 @@ def register_spherical_geometry_fields(
     smart_ds.register_field(r_name, lambda ds: _coordinates(ds)[0], overwrite=True)
     smart_ds.register_field("polar [rad]", lambda ds: _coordinates(ds)[1], overwrite=True)
     smart_ds.register_field("azimuth [rad]", lambda ds: _coordinates(ds)[2], overwrite=True)
-    smart_ds.register_field("theta [rad]", lambda ds: np.array(ds.variable("polar [rad]")), overwrite=True)
-    smart_ds.register_field("phi [rad]", lambda ds: np.array(ds.variable("azimuth [rad]")), overwrite=True)
+    smart_ds.register_field("theta [rad]", lambda ds: ds.variable("polar [rad]"), overwrite=True)
+    smart_ds.register_field("phi [rad]", lambda ds: ds.variable("azimuth [rad]"), overwrite=True)
 
     smart_ds.register_field(
         "latitude [rad]",
-        lambda ds: (0.5 * np.pi) - np.array(ds.variable("polar [rad]")),
+        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable("polar [rad]"), ds.variable("azimuth [rad]"))[0],
         overwrite=True,
     )
     smart_ds.register_field(
         "longitude [rad]",
-        lambda ds: np.array(ds.variable("azimuth [rad]")),
+        lambda ds: polar_azimuth_to_latitude_longitude(ds.variable("polar [rad]"), ds.variable("azimuth [rad]"))[1],
         overwrite=True,
     )
     smart_ds.register_field(
         "latitude [deg]",
-        lambda ds: np.degrees(np.array(ds.variable("latitude [rad]"))),
+        lambda ds: np.degrees(ds.variable("latitude [rad]")),
         overwrite=True,
     )
     smart_ds.register_field(
         "longitude [deg]",
-        lambda ds: np.degrees(np.array(ds.variable("longitude [rad]"))),
+        lambda ds: np.degrees(ds.variable("longitude [rad]")),
         overwrite=True,
     )
 
@@ -283,7 +283,6 @@ def build_griblet_spherical_geometry_graph(
     Used by: `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`,
       `starwinds_analysis/recipes/batsrus.py`
     """
-    griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
     r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
@@ -295,113 +294,97 @@ def build_griblet_spherical_geometry_graph(
         lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[0],
         deps=deps,
         cost=0.2,
-        metadata={"description": "Cartesian->spherical radius"},
     )
     graph.add_recipe(
         "polar [rad]",
         lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[1],
         deps=deps,
         cost=0.2,
-        metadata={"description": "Cartesian->spherical polar angle"},
     )
     graph.add_recipe(
         "azimuth [rad]",
         lambda x, y, z: cartesian_to_spherical_coordinates(x, y, z)[2],
         deps=deps,
         cost=0.2,
-        metadata={"description": "Cartesian->spherical azimuth"},
     )
     graph.add_recipe(
         "theta [rad]",
-        lambda polar: np.array(polar),
+        lambda polar: polar,
         deps=["polar [rad]"],
         cost=0.01,
-        metadata={"description": "polar-angle alias"},
     )
     graph.add_recipe(
         "phi [rad]",
-        lambda azimuth: np.array(azimuth),
+        lambda azimuth: azimuth,
         deps=["azimuth [rad]"],
         cost=0.01,
-        metadata={"description": "azimuth alias"},
     )
 
     graph.add_recipe(
         "latitude [rad]",
-        lambda polar: (0.5 * np.pi) - np.array(polar),
-        deps=["polar [rad]"],
+        lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[0],
+        deps=["polar [rad]", "azimuth [rad]"],
         cost=0.05,
-        metadata={"description": "polar -> latitude (radians)"},
     )
     graph.add_recipe(
         "polar [rad]",
-        lambda latitude: (0.5 * np.pi) - np.array(latitude),
-        deps=["latitude [rad]"],
+        lambda latitude, longitude: latitude_longitude_to_polar_azimuth(latitude, longitude)[0],
+        deps=["latitude [rad]", "longitude [rad]"],
         cost=0.05,
-        metadata={"description": "latitude -> polar (radians)"},
     )
     graph.add_recipe(
         "longitude [rad]",
-        lambda azimuth: np.array(azimuth),
-        deps=["azimuth [rad]"],
+        lambda polar, azimuth: polar_azimuth_to_latitude_longitude(polar, azimuth)[1],
+        deps=["polar [rad]", "azimuth [rad]"],
         cost=0.01,
-        metadata={"description": "azimuth -> longitude (radians)"},
     )
     graph.add_recipe(
         "azimuth [rad]",
-        lambda longitude: np.array(longitude),
-        deps=["longitude [rad]"],
+        lambda latitude, longitude: latitude_longitude_to_polar_azimuth(latitude, longitude)[1],
+        deps=["latitude [rad]", "longitude [rad]"],
         cost=0.01,
-        metadata={"description": "longitude -> azimuth (radians)"},
     )
     graph.add_recipe(
         "latitude [deg]",
-        lambda lat: np.degrees(np.array(lat)),
+        lambda lat: np.degrees(lat),
         deps=["latitude [rad]"],
         cost=0.05,
-        metadata={"description": "latitude radians -> degrees"},
     )
     graph.add_recipe(
         "longitude [deg]",
-        lambda lon: np.degrees(np.array(lon)),
+        lambda lon: np.degrees(lon),
         deps=["longitude [rad]"],
         cost=0.05,
-        metadata={"description": "longitude radians -> degrees"},
     )
     graph.add_recipe(
         "latitude [rad]",
-        lambda lat_deg: np.deg2rad(np.array(lat_deg)),
+        lambda lat_deg: np.deg2rad(lat_deg),
         deps=["latitude [deg]"],
         cost=0.05,
-        metadata={"description": "latitude degrees -> radians"},
     )
     graph.add_recipe(
         "longitude [rad]",
-        lambda lon_deg: np.deg2rad(np.array(lon_deg)),
+        lambda lon_deg: np.deg2rad(lon_deg),
         deps=["longitude [deg]"],
         cost=0.05,
-        metadata={"description": "longitude degrees -> radians"},
     )
     graph.add_recipe(
         x_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[0],
         deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
-        metadata={"description": "Spherical->Cartesian X"},
     )
     graph.add_recipe(
         y_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[1],
         deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
-        metadata={"description": "Spherical->Cartesian Y"},
     )
     graph.add_recipe(
         z_name,
         lambda r, polar, azimuth: spherical_to_cartesian_coordinates(r, polar, azimuth)[2],
         deps=[r_name, "polar [rad]", "azimuth [rad]"],
         cost=0.25,
-        metadata={"description": "Spherical->Cartesian Z"},
     )
 
     return graph
@@ -417,7 +400,6 @@ def build_griblet_vector_spherical_components_graph(
     Build griblet recipes for ``prefix_{r,p,a}`` (with ``theta/phi`` aliases) from Cartesian components.
     Used by: `starwinds_analysis/recipes/spherical.py`
     """
-    griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
@@ -430,35 +412,30 @@ def build_griblet_vector_spherical_components_graph(
         lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[0],
         deps=deps,
         cost=0.4,
-        metadata={"description": f"{prefix} radial component"},
     )
     graph.add_recipe(
         f"{prefix}_p [{unit}]",
         lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[1],
         deps=deps,
         cost=0.5,
-        metadata={"description": f"{prefix} polar component"},
     )
     graph.add_recipe(
         f"{prefix}_theta [{unit}]",
         lambda vp: vp,
         deps=[f"{prefix}_p [{unit}]"],
         cost=0.01,
-        metadata={"description": f"{prefix} polar alias"},
     )
     graph.add_recipe(
         f"{prefix}_a [{unit}]",
         lambda vx, vy, vz, x, y, z: cartesian_vector_to_spherical_components(vx, vy, vz, x, y, z)[2],
         deps=deps,
         cost=0.5,
-        metadata={"description": f"{prefix} azimuth component"},
     )
     graph.add_recipe(
         f"{prefix}_phi [{unit}]",
         lambda va: va,
         deps=[f"{prefix}_a [{unit}]"],
         cost=0.01,
-        metadata={"description": f"{prefix} azimuth alias"},
     )
     return graph
 
@@ -474,7 +451,6 @@ def build_griblet_auto_vector_spherical_components_graph(
       component recipe graph.
     Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
     """
-    griblet = importlib.import_module("griblet")
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
 
     by_prefix: dict[str, dict[str, str]] = {}
