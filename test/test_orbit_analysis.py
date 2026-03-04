@@ -209,6 +209,19 @@ def test_trajectory_velocity_matches_linear_motion():
     np.testing.assert_allclose(velocity, np.repeat(expected[None, :], 6, axis=0), rtol=1e-12, atol=1e-12)
 
 
+def test_trajectory_velocity_rejects_nonincreasing_time():
+    points = np.column_stack(
+        [
+            np.arange(4, dtype=float),
+            np.arange(4, dtype=float),
+            np.arange(4, dtype=float),
+        ]
+    )
+    time = np.array([0.0, 1.0, 1.0, 2.0], dtype=float)
+    with pytest.raises(ValueError, match="strictly increasing"):
+        trajectory_velocity(points, time, coordinate_scale=1.0)
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
