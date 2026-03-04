@@ -23,33 +23,16 @@ def circular_orbit_points(
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`,
       `starwinds_analysis/physics/orbit_surface.py`
     """
-    r = float(radius)
-    if r <= 0:
-        raise ValueError("radius must be > 0")
-    if n_points < 3:
-        raise ValueError("n_points must be >= 3")
-
-    t = np.linspace(0.0, 2.0 * math.pi, n_points, endpoint=False) + float(phase0)
-    c = np.cos(t)
-    s = np.sin(t)
-    cx, cy, cz = map(float, center)
-
-    pts = np.empty((n_points, 3), dtype=float)
-    if plane == "xy":
-        pts[:, 0] = cx + r * c
-        pts[:, 1] = cy + r * s
-        pts[:, 2] = cz
-    elif plane == "xz":
-        pts[:, 0] = cx + r * c
-        pts[:, 1] = cy
-        pts[:, 2] = cz + r * s
-    elif plane == "yz":
-        pts[:, 0] = cx
-        pts[:, 1] = cy + r * c
-        pts[:, 2] = cz + r * s
-    else:
-        raise ValueError("plane must be 'xy', 'xz', or 'yz'")
-    return pts
+    return elliptic_orbit_points(
+        radius,
+        eccentricity=0.0,
+        n_points=n_points,
+        plane=plane,
+        phase0=phase0,
+        center=center,
+        sample="eccentric_anomaly",
+        return_info=False,
+    )
 
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
@@ -310,28 +293,21 @@ def sample_circular_orbit(
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
       `starwinds_analysis/physics/orbit_pressure.py`
     """
-    pts = circular_orbit_points(
-        radius, n_points=n_points, plane=plane, phase0=phase0, center=center
-    )
-    sampled = sample_curve(
+    return sample_elliptic_orbit(
         smart_ds,
-        pts,
+        radius,
+        eccentricity=0.0,
         fields=fields,
+        n_points=n_points,
+        plane=plane,
+        angle0=0.0,
+        phase0=phase0,
+        center=center,
+        sample="eccentric_anomaly",
         coordinate_fields=coordinate_fields,
         method=method,
         fill_value=fill_value,
     )
-    sampled = sampled.append_fields(
-        {
-            "phase [turns]": np.arange(n_points, dtype=float) / max(1, n_points),
-            "time_weight [none]": np.full(n_points, 1.0 / n_points, dtype=float),
-        },
-        zone_suffix="circular orbit",
-    )
-    sampled.raw.aux["orbit_kind"] = "circular"
-    sampled.raw.aux["orbit_plane"] = plane
-    sampled.raw.aux["orbit_radius_R"] = float(radius)
-    return sampled
 
 def sample_elliptic_orbit(
     smart_ds,

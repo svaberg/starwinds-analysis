@@ -19,7 +19,6 @@ import numpy as np
 
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.analysis.orbits import circular_orbit_points
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_curve
@@ -208,14 +207,23 @@ def sample_orbit_surface_revolution(
         }
     else:
         r = float(orbit)
-        path_points = circular_orbit_points(r, n_points=360, plane="xy")
+        orbit_info = elliptic_orbit_points(
+            r,
+            eccentricity=0.0,
+            n_points=360,
+            plane="xy",
+            sample="eccentric_anomaly",
+            return_info=True,
+        )
+        path_points = orbit_info["points"]
         n = path_points.shape[0]
         path_meta = {
-            "kind": "circular",
+            "kind": "elliptic",
             "plane": "xy",
-            "phase [turns]": np.arange(n, dtype=float) / n,
-            "time_weight [none]": np.full(n, 1.0 / n, dtype=float),
-            "radius [R]": float(r),
+            "phase [turns]": orbit_info["phase [turns]"],
+            "time_weight [none]": orbit_info["time_weight [none]"],
+            "semi_major_axis [R]": float(r),
+            "eccentricity [none]": 0.0,
         }
 
     surf = surface_of_revolution_from_path(path_points, n_longitudes=n_longitudes)

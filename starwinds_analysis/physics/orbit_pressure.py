@@ -17,7 +17,6 @@ import logging
 import numpy as np
 
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
-from starwinds_analysis.analysis.orbits import sample_circular_orbit
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.analysis.shells import infer_body_radius_m
@@ -117,45 +116,25 @@ def pressure_components_on_circular_orbit(
     Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     log.info(
-        "pressure_components_on_circular_orbit start: radius=%s, n_points=%d, method=%s, plane=%s",
+        "pressure_components_on_circular_orbit delegates to elliptic path: radius=%s, n_points=%d, method=%s, plane=%s",
         radius,
         n_points,
         method,
         plane,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
-    rho_name = "Rho [kg/m^3]"
-    u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
-    derived = (
-        "U [m/s]",
-        "B [T]",
-        "magnetic_pressure [Pa]",
-        "ram_pressure [Pa]",
-        "thermal_pressure [Pa]",
-        "standoff_distance [m]",
-    )
-    orbit = sample_circular_orbit(
+    return pressure_components_on_elliptic_orbit(
         smart_ds,
         radius,
-        fields=(rho_name, *u_xyz, *derived),
+        eccentricity=0.0,
+        body_radius_m=body_radius_m,
         n_points=n_points,
         plane=plane,
+        angle0=0.0,
+        sample="eccentric_anomaly",
         method=method,
-    )
-    out = pressure_components_from_orbit_sample(
-        orbit,
-        body_radius_m=body_radius_m,
         star_mass_kg=star_mass_kg,
-        semi_major_axis_r=float(radius),
         include_relative_ram=include_relative_ram,
     )
-    out["radius [R]"] = float(radius)
-    out["radius [m]"] = float(radius) * body_radius_m
-    log.info(
-        "pressure_components_on_circular_orbit done: finite_ram=%d",
-        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
-    )
-    return out
 
 def pressure_components_on_elliptic_orbit(
     smart_ds,
