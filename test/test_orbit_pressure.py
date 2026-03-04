@@ -49,7 +49,6 @@ def test_pressure_components_from_curve_runs_on_circular_example():
     )
     out = pressure_components_from_curve(
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
         include_relative_ram=True,
     )
@@ -95,7 +94,6 @@ def test_pressure_components_from_curve_runs_on_elliptic_example():
     )
     out = pressure_components_from_curve(
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
         include_relative_ram=True,
     )

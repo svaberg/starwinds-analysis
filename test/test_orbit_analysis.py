@@ -42,22 +42,18 @@ def compare_curve_mass_loss_to_shell(
     smart_ds,
     curve,
     *,
-    body_radius_m,
     method: str,
     shell_n_polar: int,
     shell_n_azimuth: int,
     shell_radii=None,
 ):
     """Compare local curve mass-loss estimates against shell-integrated values."""
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    body_radius_m = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    estimates = mass_loss_from_curve(curve, body_radius_m=body_radius_m)
+    estimates = mass_loss_from_curve(curve)
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
@@ -101,26 +97,19 @@ def compare_curve_torque_to_shell(
     smart_ds,
     curve,
     *,
-    body_radius_m,
     method: str,
     shell_n_polar: int,
     shell_n_azimuth: int,
     shell_radii=None,
 ):
     """Compare local curve torque estimates against shell-integrated values."""
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    body_radius_m = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
     curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
-    local_magnetic, local_dynamic, local_total = torque_from_curve(
-        curve,
-        body_radius_m=body_radius_m,
-    )
+    local_magnetic, local_dynamic, local_total = torque_from_curve(curve)
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
         [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
@@ -255,7 +244,7 @@ def test_mass_loss_from_curve_runs():
         n_points=96,
         method="nearest",
     )
-    values = np.array(mass_loss_from_curve(curve, body_radius_m=SOLAR_RADIUS_M))
+    values = np.array(mass_loss_from_curve(curve))
     assert values.shape == (96,)
     assert np.count_nonzero(np.isfinite(values)) > 0
 
@@ -275,7 +264,7 @@ def test_torque_from_curve_runs():
         n_points=96,
         method="nearest",
     )
-    magnetic, dynamic, total = torque_from_curve(curve, body_radius_m=SOLAR_RADIUS_M)
+    magnetic, dynamic, total = torque_from_curve(curve)
     magnetic = np.array(magnetic)
     dynamic = np.array(dynamic)
     total = np.array(total)
@@ -299,7 +288,6 @@ def test_compare_curve_mass_loss_to_shell_runs():
     out = compare_curve_mass_loss_to_shell(
         sds,
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         shell_n_polar=12,
         shell_n_azimuth=24,
         method="nearest",
@@ -331,7 +319,6 @@ def test_compare_curve_torque_to_shell_runs():
     out = compare_curve_torque_to_shell(
         sds,
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         shell_n_polar=12,
         shell_n_azimuth=24,
         method="nearest",
@@ -363,7 +350,6 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
     out = compare_curve_mass_loss_to_shell(
         sds,
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         method="nearest",
         shell_n_polar=12,
         shell_n_azimuth=24,
@@ -400,7 +386,6 @@ def test_compare_curve_torque_to_shell_profile_runs():
     out = compare_curve_torque_to_shell(
         sds,
         curve,
-        body_radius_m=SOLAR_RADIUS_M,
         method="nearest",
         shell_n_polar=12,
         shell_n_azimuth=24,
