@@ -100,6 +100,28 @@ def periodic_curve_velocity(points_r, phase_turns, period, body_radius):
         where=denom[:, None] != 0,
     )
 
+
+def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
+    """
+    Velocity from explicit trajectory points and strictly increasing sample times.
+    Used by: `examples/orbit_surface_revolution.ipynb`
+    """
+    pts = np.array(points) * float(coordinate_scale)
+    t = np.array(time)
+    if pts.ndim != 2 or pts.shape[1] != 3:
+        raise ValueError("points must have shape (n, 3)")
+    if t.ndim != 1 or t.shape[0] != pts.shape[0]:
+        raise ValueError("time must have shape (n,)")
+    if pts.shape[0] < 2:
+        return np.full_like(pts, np.nan, dtype=float)
+
+    dt = np.diff(t)
+    if np.any(~np.isfinite(dt)) or np.any(dt <= 0):
+        raise ValueError("time must be strictly increasing and finite")
+
+    edge_order = 2 if pts.shape[0] > 2 else 1
+    return np.gradient(pts, t, axis=0, edge_order=edge_order)
+
 def elliptic_orbit_points(
     semi_major_axis,
     *,

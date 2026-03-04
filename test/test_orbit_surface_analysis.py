@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import periodic_curve_velocity
+from starwinds_analysis.analysis.orbits import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbit_surface import pressure_components_on_surface
@@ -84,11 +84,11 @@ def test_pressure_components_on_surface_runs_on_example():
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    velocity = periodic_curve_velocity(
+    time = orbit["phase [turns]"] * period_s
+    velocity = trajectory_velocity(
         orbit["points"],
-        orbit["phase [turns]"],
-        period_s,
-        SOLAR_RADIUS_M,
+        time,
+        coordinate_scale=SOLAR_RADIUS_M,
     )
     sampled = sample_surface_revolution(
         sds,
@@ -109,7 +109,7 @@ def test_pressure_components_on_surface_runs_on_example():
         ),
         trajectory_points=orbit["points"],
         phase=orbit["phase [turns]"],
-        time=orbit["phase [turns]"] * period_s,
+        time=time,
         time_weight=orbit["time_weight [none]"],
         velocity_xyz=velocity,
         trajectory_meta={

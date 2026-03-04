@@ -5,10 +5,11 @@ import pytest
 from scipy import constants as const
 
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
+from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
+from starwinds_analysis.analysis.orbits import trajectory_velocity
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.curve import mass_loss_from_curve
 from starwinds_analysis.physics.curve import torque_from_curve
@@ -192,6 +193,20 @@ def test_orbital_velocity_is_constant_for_circular_case():
 def test_orbital_period_is_approximately_one_year_for_1au_solar_mass():
     p = orbital_period(1.0 * const.au, 1.98847e30)
     assert np.isclose(p / const.year, 1.0, rtol=5e-3)
+
+
+def test_trajectory_velocity_matches_linear_motion():
+    points = np.column_stack(
+        [
+            2.0 + 0.1 * np.arange(6, dtype=float),
+            -3.0 + 0.2 * np.arange(6, dtype=float),
+            5.0 - 0.4 * np.arange(6, dtype=float),
+        ]
+    )
+    time = 10.0 + np.arange(6, dtype=float)
+    velocity = trajectory_velocity(points, time, coordinate_scale=2.0)
+    expected = np.array([0.2, 0.4, -0.8], dtype=float)
+    np.testing.assert_allclose(velocity, np.repeat(expected[None, :], 6, axis=0), rtol=1e-12, atol=1e-12)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
