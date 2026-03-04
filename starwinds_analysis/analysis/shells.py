@@ -319,7 +319,7 @@ def sample_shell_field(
     *,
     source_fields,
     shell_field: str,
-    body_radius_m: float | None = None,
+    body_radius: float | None = None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
@@ -332,10 +332,10 @@ def sample_shell_field(
     Sample one shell field over a shell series and return shells, values, areas, and radii.
     Used by: `starwinds_analysis/pipelines/volume.py`
     """
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
+    if body_radius is None:
+        body_radius = float(smart_ds("star_radius [m]"))
     else:
-        body_radius_m = float(body_radius_m)
+        body_radius = float(body_radius)
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -348,7 +348,7 @@ def sample_shell_field(
         fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
-        length_unit_to_m=body_radius_m,
+        length_unit_to_m=body_radius,
     )
     values = np.array(shells(shell_field))
     area = np.array(shells("dA [m^2]"))

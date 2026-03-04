@@ -268,7 +268,7 @@ def test_add_spherical_graph_registers_xyz_geometry_and_vectors():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_batsrus_graph_fields_resolve_on_prepared_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
 
     expected_fields = [
         "X [m]",
@@ -506,13 +506,13 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
 
     # Unit normalization examples
     bx_g = np.array(sds.variable("B_x [Gauss]"))
-    bx_t = np.array(sds.variable("B_x [T]"))
+    bx = np.array(sds.variable("B_x [T]"))
     rho_cgs = np.array(sds.variable("Rho [g/cm^3]"))
     rho_si = np.array(sds.variable("Rho [kg/m^3]"))
     p_cgs = np.array(sds.variable("P [dyne/cm^2]"))
     p_si = np.array(sds.variable("P [Pa]"))
 
-    np.testing.assert_allclose(bx_t, bx_g * 1e-4, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(bx, bx_g * 1e-4, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(rho_si, rho_cgs * 1e3, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(p_si, p_cgs * 1e-1, rtol=1e-12, atol=0.0)
 

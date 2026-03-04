@@ -23,12 +23,12 @@ log = logging.getLogger(__name__)
 
 def spherical_wind_torque_density_terms(
     *,
-    rho_kg_m3,
-    u_radial_m_s,
-    u_azimuthal_m_s,
-    b_radial_t,
-    b_azimuthal_t,
-    cylindrical_radius_m,
+    rho,
+    U_r,
+    U_a,
+    B_r,
+    B_a,
+    cylindrical_radius,
 ):
     """
     Spherical-shell wind torque-density terms about +z.
@@ -37,20 +37,20 @@ def spherical_wind_torque_density_terms(
     # TODO(griblet): These local spherical torque-density terms should be available
     # via SmartDs/griblet for SI fields, instead of being recomputed in shell/orbit
     # diagnostics.
-    magnetic = -cylindrical_radius_m * b_azimuthal_t * b_radial_t / MU0
-    dynamic = cylindrical_radius_m * rho_kg_m3 * u_azimuthal_m_s * u_radial_m_s
+    magnetic = -cylindrical_radius * B_a * B_r / MU0
+    dynamic = cylindrical_radius * rho * U_a * U_r
     return magnetic, dynamic
 
-def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
+def rotational_frame_velocity(U_xyz, xyz, angvel):
     """
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`
     Used by: `starwinds_analysis/physics/torque.py`
     """
-    u = np.array(u_xyz_m_s)
-    xyz = np.array(xyz_m)
+    u = np.array(U_xyz)
+    xyz = np.array(xyz)
     if u.shape != xyz.shape or u.shape[-1] != 3:
-        raise ValueError("u_xyz_m_s and xyz_m must have the same shape (..., 3)")
-    omega = float(angvel_rad_s)
+        raise ValueError("U_xyz and xyz must have the same shape (..., 3)")
+    omega = float(angvel)
     v = np.array(u, copy=True)
     v[..., 0] = u[..., 0] + omega * xyz[..., 1]
     v[..., 1] = u[..., 1] - omega * xyz[..., 0]
@@ -85,14 +85,14 @@ def radial_surface_normals(xyz):
 
 def surface_torque_density_terms(
     *,
-    xyz_m,
+    xyz,
     normals_xyz,
-    area_m2,
-    rho_kg_m3,
-    u_xyz_m_s,
-    b_xyz_t,
-    pressure_pa=None,
-    angvel_rad_s: float = 0.0,
+    area,
+    rho,
+    U_xyz,
+    B_xyz,
+    pressure=None,
+    angvel: float = 0.0,
     use_rotating_frame: bool = True,
 ):
     """
@@ -103,15 +103,15 @@ def surface_torque_density_terms(
     # TODO(griblet): The local explicit-surface torque terms (`T1..T4`, `total`) are
     # physical quantities and should eventually be requestable via SmartDs/griblet in
     # SI units, with geometry inputs supplied explicitly.
-    xyz = np.array(xyz_m)
+    xyz = np.array(xyz)
     n = normalize_surface_normals(normals_xyz)
-    area = np.array(area_m2)
-    rho = np.array(rho_kg_m3)
-    u = np.array(u_xyz_m_s)
-    b = np.array(b_xyz_t)
+    area = np.array(area)
+    rho = np.array(rho)
+    u = np.array(U_xyz)
+    b = np.array(B_xyz)
 
     if xyz.shape != u.shape or xyz.shape != b.shape or xyz.shape != n.shape:
-        raise ValueError("xyz_m, normals_xyz, u_xyz_m_s, and b_xyz_t must match shape (..., 3)")
+        raise ValueError("xyz, normals_xyz, U_xyz, and B_xyz must match shape (..., 3)")
     if xyz.shape[-1] != 3:
         raise ValueError("vector inputs must have shape (..., 3)")
 
@@ -121,14 +121,14 @@ def surface_torque_density_terms(
     if rho.shape != scalar_shape:
         rho = np.broadcast_to(rho, scalar_shape)
 
-    if pressure_pa is None:
+    if pressure is None:
         p = np.zeros(scalar_shape, dtype=float)
     else:
-        p = np.array(pressure_pa)
+        p = np.array(pressure)
         if p.shape != scalar_shape:
             p = np.broadcast_to(p, scalar_shape)
 
-    omega = float(angvel_rad_s)
+    omega = float(angvel)
     v = rotational_frame_velocity(u, xyz, omega) if use_rotating_frame else u
 
     x = xyz[..., 0]
@@ -226,12 +226,12 @@ def integrate_surface_torque_terms(terms):
 def surface_torque_terms_on_shell_samples(
     shells,
     *,
-    rho_kg_m3,
-    u_xyz_m_s,
-    b_xyz_t,
-    pressure_pa=None,
-    angvel_rad_s: float = 0.0,
-    body_radius_m: float = 1.0,
+    rho,
+    U_xyz,
+    B_xyz,
+    pressure=None,
+    angvel: float = 0.0,
+    body_radius: float = 1.0,
     normals_xyz=None,
     use_rotating_frame: bool = True,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
@@ -250,17 +250,17 @@ def surface_torque_terms_on_shell_samples(
         ],
         axis=-1,
     )
-    xyz_m = xyz_r * float(body_radius_m)
-    normals = radial_surface_normals(xyz_m) if normals_xyz is None else normals_xyz
+    xyz = xyz_r * float(body_radius)
+    normals = radial_surface_normals(xyz) if normals_xyz is None else normals_xyz
     return surface_torque_density_terms(
-        xyz_m=xyz_m,
+        xyz=xyz,
         normals_xyz=normals,
-        area_m2=np.array(shells(area_field)),
-        rho_kg_m3=rho_kg_m3,
-        u_xyz_m_s=u_xyz_m_s,
-        b_xyz_t=b_xyz_t,
-        pressure_pa=pressure_pa,
-        angvel_rad_s=angvel_rad_s,
+        area=np.array(shells(area_field)),
+        rho=rho,
+        U_xyz=U_xyz,
+        B_xyz=B_xyz,
+        pressure=pressure,
+        angvel=angvel,
         use_rotating_frame=use_rotating_frame,
     )
 
@@ -269,7 +269,7 @@ def surface_torque_vs_radius(
     smart_ds,
     radii,
     *,
-    body_radius_m: float | None = None,
+    body_radius: float | None = None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     n_polar: int = 24,
     n_azimuth: int = 48,
@@ -278,7 +278,7 @@ def surface_torque_vs_radius(
     method: str = "nearest",
     fill_value: float = np.nan,
     include_pressure_term: bool = True,
-    angvel_rad_s: float = 0.0,
+    angvel: float = 0.0,
 ):
     """
     Explicit-surface torque profile on spherical shells using general T1..T4 terms.
@@ -295,10 +295,10 @@ def surface_torque_vs_radius(
         method,
         include_pressure_term,
     )
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
+    if body_radius is None:
+        body_radius = float(smart_ds("star_radius [m]"))
     else:
-        body_radius_m = float(body_radius_m)
+        body_radius = float(body_radius)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -320,7 +320,7 @@ def surface_torque_vs_radius(
         fibonacci_randomize=fibonacci_randomize,
         method=method,
         fill_value=fill_value,
-        length_unit_to_m=body_radius_m,
+        length_unit_to_m=body_radius,
     )
     rho = np.array(shells(rho_name))
     u_xyz = np.array(shells("U_xyz [m/s]"))
@@ -329,12 +329,12 @@ def surface_torque_vs_radius(
 
     terms = surface_torque_terms_on_shell_samples(
         shells,
-        rho_kg_m3=rho,
-        u_xyz_m_s=u_xyz,
-        b_xyz_t=b_xyz,
-        pressure_pa=p,
-        angvel_rad_s=angvel_rad_s,
-        body_radius_m=body_radius_m,
+        rho=rho,
+        U_xyz=u_xyz,
+        B_xyz=b_xyz,
+        pressure=p,
+        angvel=angvel,
+        body_radius=body_radius,
         use_rotating_frame=True,
         coordinate_fields=coordinate_fields,
     )

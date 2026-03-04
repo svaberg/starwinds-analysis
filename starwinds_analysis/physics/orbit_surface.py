@@ -328,14 +328,14 @@ def torque_components_on_surface(
     normals, area = surface_point_normals_and_areas(points)
 
     terms = surface_torque_density_terms(
-        xyz_m=points,
+        xyz=points,
         normals_xyz=normals,
-        area_m2=area,
-        rho_kg_m3=rho,
-        u_xyz_m_s=u_xyz,
-        b_xyz_t=b_xyz,
-        pressure_pa=p,
-        angvel_rad_s=angvel,
+        area=area,
+        rho=rho,
+        U_xyz=u_xyz,
+        B_xyz=b_xyz,
+        pressure=p,
+        angvel=angvel,
         use_rotating_frame=True,
     )
     totals = integrate_surface_torque_terms(terms)

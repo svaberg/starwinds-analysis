@@ -72,7 +72,7 @@ def shell_map_and_profile(
 ):
     """Build the outer-shell cell map and the integrated radial profile for one shell field."""
     integrated_values = []
-    for shell_mask, area_m2 in zip(shell_masks, shell_areas_m2):
+    for shell_mask, area in zip(shell_masks, shell_areas_m2):
         shell_cells = shell_cell_values(
             values,
             shell_mask=shell_mask,
@@ -81,7 +81,7 @@ def shell_map_and_profile(
             lon_nodes=lon_nodes,
             lat_nodes=lat_nodes,
         )
-        integrated_values.append(float(np.sum(shell_cells * area_m2)))
+        integrated_values.append(float(np.sum(shell_cells * area)))
     outer_map = shell_cell_values(
         values,
         shell_mask=shell_masks[-1],

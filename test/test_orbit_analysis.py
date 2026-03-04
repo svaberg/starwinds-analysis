@@ -48,20 +48,20 @@ def compare_curve_mass_loss_to_shell(
     shell_radii=None,
 ):
     """Compare local curve mass-loss estimates against shell-integrated values."""
-    body_radius_m = float(curve("star_radius [m]"))
+    body_radius = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    r_m = np.array(curve("R [m]"))
-    r_r = r_m / body_radius_m
+    radius = np.array(curve("R [m]"))
+    radius_r = radius / body_radius
     estimates = mass_loss_from_curve(curve)
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
-        [float(np.nanmean(r_r))] if shell_radii is None else shell_radii,
+        [float(np.nanmean(radius_r))] if shell_radii is None else shell_radii,
         source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         shell_field="mass_flux [kg/m^2/s]",
-        body_radius_m=body_radius_m,
+        body_radius=body_radius,
         n_polar=shell_n_polar,
         n_azimuth=shell_n_azimuth,
         method=method,
@@ -71,15 +71,15 @@ def compare_curve_mass_loss_to_shell(
         shell_value = float(shell_values[0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, radius_r)
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
         mean_to_shell = stats["mean"] / shell_value if shell_value != 0 else np.nan
 
     out = {
-        "radius [R]": float(np.nanmean(r_r)),
-        "radius [m]": float(np.nanmean(r_m)),
+        "radius [R]": float(np.nanmean(radius_r)),
+        "radius [m]": float(np.nanmean(radius)),
         "mass_flux [kg/m^2/s]": mass_flux,
         "local_mass_loss [kg/s]": estimates,
         "local_mass_loss_mean [kg/s]": float(stats["mean"]),
@@ -103,16 +103,16 @@ def compare_curve_torque_to_shell(
     shell_radii=None,
 ):
     """Compare local curve torque estimates against shell-integrated values."""
-    body_radius_m = float(curve("star_radius [m]"))
+    body_radius = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
-    r_m = np.array(curve("R [m]"))
-    r_r = r_m / body_radius_m
+    radius = np.array(curve("R [m]"))
+    radius_r = radius / body_radius
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
     curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
     local_magnetic, local_dynamic, local_total = torque_from_curve(curve)
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
-        [float(np.nanmean(r_r))] if shell_radii is None else shell_radii,
+        [float(np.nanmean(radius_r))] if shell_radii is None else shell_radii,
         source_fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
@@ -123,7 +123,7 @@ def compare_curve_torque_to_shell(
             "B_z [T]",
         ),
         shell_field="magnetic_torque_density [N/m]",
-        body_radius_m=body_radius_m,
+        body_radius=body_radius,
         n_polar=shell_n_polar,
         n_azimuth=shell_n_azimuth,
         method=method,
@@ -136,7 +136,7 @@ def compare_curve_torque_to_shell(
         shell_total = float(shell_values[0])
         shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
-        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, radius_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
     stats = summarize_samples(local_total, weights=weights)
@@ -144,8 +144,8 @@ def compare_curve_torque_to_shell(
         mean_to_shell = stats["mean"] / shell_total if shell_total != 0 else np.nan
 
     out = {
-        "radius [R]": float(np.nanmean(r_r)),
-        "radius [m]": float(np.nanmean(r_m)),
+        "radius [R]": float(np.nanmean(radius_r)),
+        "radius [m]": float(np.nanmean(radius)),
         "magnetic_torque_density [N/m]": curve_magnetic_density,
         "dynamic_torque_density [N/m]": curve_dynamic_density,
         "local_magnetic_torque [Nm]": local_magnetic,
@@ -197,7 +197,7 @@ def test_orbital_period_is_approximately_one_year_for_1au_solar_mass():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -210,16 +210,16 @@ def test_sample_zero_eccentricity_orbit_runs_on_example():
     x = np.array(out("X [R]"))
     y = np.array(out("Y [R]"))
     z = np.array(out("Z [R]"))
-    r_m = np.array(out("R [m]"))
+    radius = np.array(out("R [m]"))
     assert np.array(out("Rho [g/cm^3]")).shape == (72,)
     np.testing.assert_allclose(np.sqrt(x * x + y * y + z * z), 10.0, rtol=1e-12, atol=0.0)
-    np.testing.assert_allclose(r_m, SOLAR_RADIUS_M * 10.0, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(radius, SOLAR_RADIUS_M * 10.0, rtol=1e-12, atol=0.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_elliptic_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -233,20 +233,20 @@ def test_sample_elliptic_orbit_runs_on_example():
     y = np.array(out("Y [R]"))
     z = np.array(out("Z [R]"))
     radius_r = np.sqrt(x * x + y * y + z * z)
-    radius_m = np.array(out("R [m]"))
+    radius = np.array(out("R [m]"))
     assert np.array(out("Rho [g/cm^3]")).shape == (96,)
     assert np.array(out("phase [turns]")).shape == (96,)
     assert np.array(out("time_weight [none]")).shape == (96,)
     assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
     assert np.nanmin(radius_r) < 10.0
     assert np.nanmax(radius_r) > 10.0
-    np.testing.assert_allclose(radius_m, radius_r * SOLAR_RADIUS_M, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(radius, radius_r * SOLAR_RADIUS_M, rtol=1e-12, atol=0.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,
@@ -263,7 +263,7 @@ def test_mass_loss_from_curve_runs():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,
@@ -287,7 +287,7 @@ def test_torque_from_curve_runs():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,
@@ -315,7 +315,7 @@ def test_compare_curve_mass_loss_to_shell_runs():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,
@@ -348,7 +348,7 @@ def test_compare_curve_torque_to_shell_runs():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,
@@ -381,7 +381,7 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
         sds,
         10.0,

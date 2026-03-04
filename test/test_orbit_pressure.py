@@ -30,7 +30,7 @@ def test_magnetospheric_standoff_distance_decreases_with_speed():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     info = elliptic_orbit_points(10.0, eccentricity=0.0, n_points=96, return_info=True)
     velocity = periodic_curve_velocity(
@@ -64,7 +64,7 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_relative_ram_pressure_from_trajectory_runs_on_elliptic_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     info = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=96, return_info=True)
     velocity = periodic_curve_velocity(

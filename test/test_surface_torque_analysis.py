@@ -38,10 +38,10 @@ def _cart_from_spherical_components(v_r, v_phi, xyz):
 
 def test_surface_torque_density_terms_matches_analytic_sphere_integral():
     n_points = 4096
-    r_m = 3.0
-    xyz = fibonacci_sphere(n_points).reshape(1, n_points, 1, 3) * r_m
-    normals = xyz / r_m
-    area = np.full((1, n_points, 1), 4.0 * np.pi * r_m * r_m / n_points)
+    radius = 3.0
+    xyz = fibonacci_sphere(n_points).reshape(1, n_points, 1, 3) * radius
+    normals = xyz / radius
+    area = np.full((1, n_points, 1), 4.0 * np.pi * radius * radius / n_points)
 
     rho = np.full((1, n_points, 1), 2.0)
     u_r = 5.0
@@ -53,19 +53,19 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
     p = np.full((1, n_points, 1), 3.0)
 
     terms = surface_torque_density_terms(
-        xyz_m=xyz,
+        xyz=xyz,
         normals_xyz=normals,
-        area_m2=area,
-        rho_kg_m3=rho,
-        u_xyz_m_s=u,
-        b_xyz_t=b,
-        pressure_pa=p,
-        angvel_rad_s=0.0,
+        area=area,
+        rho=rho,
+        U_xyz=u,
+        B_xyz=b,
+        pressure=p,
+        angvel=0.0,
         use_rotating_frame=True,
     )
     ints = integrate_surface_torque_terms(terms)
 
-    rest = (np.pi**2) * (r_m**3)
+    rest = (np.pi**2) * (radius**3)
     expected_t1 = -(b_phi * b_r / MU0) * rest
     expected_t4 = (u_phi * u_r * float(rho[0, 0, 0])) * rest
     expected_total = expected_t1 + expected_t4
@@ -81,13 +81,13 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     radii = [2.0, 4.0, 8.0, 16.0]
 
     shells, magnetic_density, area, _ = sample_shell_field(
         sds,
         radii,
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
@@ -110,13 +110,13 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     surf = surface_torque_vs_radius(
         sds,
         radii,
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         n_polar=12,
         n_azimuth=24,
         sampling="fibonacci",
         method="nearest",
         include_pressure_term=True,
-        angvel_rad_s=0.0,
+        angvel=0.0,
     )
 
     np.testing.assert_allclose(

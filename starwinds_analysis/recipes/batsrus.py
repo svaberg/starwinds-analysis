@@ -35,7 +35,7 @@ def build_griblet_batsrus_graph(
     variable_names: Sequence[str],
     *,
     aux: Mapping[str, object] | None = None,
-    body_radius_m: float | None = None,
+    body_radius: float | None = None,
     include_unit_normalization: bool = True,
     include_derived: bool = True,
 ):
@@ -58,7 +58,7 @@ def build_griblet_batsrus_graph(
     vars_list = list(variable_names)
 
     if include_unit_normalization:
-        graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
+        graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius=body_radius))
 
     if include_derived:
         from starwinds_analysis.recipes.spherical import _vector_triplets
@@ -102,13 +102,13 @@ def build_griblet_unit_normalization_graph(
     variable_names: Sequence[str],
     *,
     aux: Mapping[str, object] | None = None,
-    body_radius_m: float | None = None,
+    body_radius: float | None = None,
 ):
     """
     Add raw->SI unit conversion recipes (BATSRUS naming conventions).
     Adds:
     - `raw -> SI`
-    - `XYZ_R -> XYZ_m` (when `body_radius_m` is available)
+    - `XYZ [R] -> XYZ [m]` (when `body_radius` is available)
     Example:
     - `B_x [Gauss] -> B_x [T]`
     - `U_x [km/s] -> U_x [m/s]`
@@ -170,9 +170,9 @@ def build_griblet_unit_normalization_graph(
         )
 
     # Optional coordinate scale: X/Y/Z [R] -> [m]
-    body_radius = _resolve_body_radius_m(aux=aux, body_radius_m=body_radius_m)
+    body_radius = body_radius_from_inputs(aux=aux, body_radius=body_radius)
     if body_radius is not None:
-        # Add XYZ_R -> XYZ_m.
+        # Add XYZ [R] -> XYZ [m].
         for axis in ("X", "Y", "Z"):
             graph.add_recipe(
                 f"{axis} [m]",
@@ -510,13 +510,13 @@ def _safe_gamma(gamma):
         return _DEFAULT_GAMMA
     return g
 
-def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: float | None):
+def body_radius_from_inputs(*, aux: Mapping[str, object] | None, body_radius: float | None):
     """
     Resolve body radius in meters from explicit arg or BATSRUS aux metadata.
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    if body_radius_m is not None:
-        return float(body_radius_m)
+    if body_radius is not None:
+        return float(body_radius)
 
     if aux is None:
         return None

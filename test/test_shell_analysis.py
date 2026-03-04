@@ -78,11 +78,11 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells, mass_flux, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         shell_field="mass_flux [kg/m^2/s]",
         n_polar=12,
@@ -104,7 +104,7 @@ def test_mass_loss_profile_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells = sample_spherical_shells(
         sds,
         [5.0],
@@ -137,11 +137,11 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells, magnetic_density, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
@@ -176,11 +176,11 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
     # Adapted from batplotlib's test_unsigned_magnetic_flux: compare signed flux from
     # B_r with signed flux from B·n, and compute unsigned/open flux.
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells, b_r, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
         shell_field="B_r [T]",
         n_polar=16,
@@ -213,11 +213,11 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells, b_r, area, _ = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
         shell_field="B_r [T]",
         n_polar=16,
@@ -246,12 +246,12 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    sds.prepare(body_radius=SOLAR_RADIUS_M)
     energy_source = "E [J/m^3]" if sds.has_field("E [J/m^3]") else "E [erg/cm^3]"
     _, energy_flux_density, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius_m=SOLAR_RADIUS_M,
+        body_radius=SOLAR_RADIUS_M,
         source_fields=(energy_source, "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         shell_field="energy_flux [W/m^2]",
         n_polar=12,

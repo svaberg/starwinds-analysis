@@ -37,7 +37,7 @@ def magnetic_field_unit_scale(unit: str) -> tuple[float, str]:
 
 def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
     sds = SmartDs.from_file(str(EXAMPLE_3D))
-    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius=SOLAR_RADIUS_M)
     shell = sample_spherical_shells(
         sds,
         [1.0],
@@ -135,7 +135,7 @@ def test_shell_magnetic_flux_summary_primitives_smoke():
 
 def test_direct_shell_mass_flux_lonlat_plot_smoke():
     sds = SmartDs.from_file(str(EXAMPLE_3D))
-    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius=SOLAR_RADIUS_M)
     shell = sample_spherical_shells(
         sds,
         [2.0],
