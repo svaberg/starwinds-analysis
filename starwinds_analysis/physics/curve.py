@@ -20,6 +20,15 @@ from starwinds_analysis.physics.torque import local_torque_estimates
 
 log = logging.getLogger(__name__)
 
+def curve_context(curve, body_radius_m):
+    """Return the shared body-radius and time-weight context for one sampled curve."""
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    weights = curve.get("time_weight [none]")
+    return body_radius_m, weights
+
 
 def pressure_components_from_curve(
     curve,
@@ -30,10 +39,7 @@ def pressure_components_from_curve(
     standoff_b0_t: float = 0.7e-4,
 ):
     """Assemble pressure components and standoff proxies from a sampled curve."""
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    body_radius_m, weights = curve_context(curve, body_radius_m)
     rho = np.array(curve("Rho [kg/m^3]"))
     log.debug(
         "pressure_components_from_curve: n_points=%d, include_relative=%s",
@@ -75,7 +81,6 @@ def pressure_components_from_curve(
         )
         log.debug("pressure_components_from_curve: using relative velocity for standoff")
 
-    weights = curve.get("time_weight [none]")
     summary = {}
     for key, value in comps.items():
         arr = np.array(value)
@@ -118,15 +123,11 @@ def mass_loss_from_curve(
     shell_radii=None,
 ):
     """Compute local mass-loss estimates on one sampled curve."""
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    body_radius_m, weights = curve_context(curve, body_radius_m)
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     estimates = 4.0 * np.pi * np.square(r_m) * mass_flux
-    weights = curve.get("time_weight [none]")
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
@@ -177,10 +178,7 @@ def torque_from_curve(
     shell_radii=None,
 ):
     """Compute local torque estimates on one sampled curve."""
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    body_radius_m, weights = curve_context(curve, body_radius_m)
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     orbit_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
@@ -190,8 +188,6 @@ def torque_from_curve(
         orbit_magnetic_density,
         orbit_dynamic_density,
     )
-    weights = curve.get("time_weight [none]")
-
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
         [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
