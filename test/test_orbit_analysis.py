@@ -106,7 +106,7 @@ def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
     local_vals = np.array(out["local_mass_loss [kg/s]"])
     assert local_vals.shape == (96,)
     assert np.count_nonzero(np.isfinite(local_vals)) > 0
-    assert np.isfinite(out["summary"]["mean"])
+    assert np.isfinite(out["local_mass_loss_mean [kg/s]"])
     assert np.isfinite(out["shell_mass_loss [kg/s]"])
     assert np.isfinite(out["mean_to_shell [none]"])
 
@@ -129,7 +129,7 @@ def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
     dyn = np.array(out["local_dynamic_torque [Nm]"])
 
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
-    assert np.isfinite(out["summary"]["mean"])
+    assert np.isfinite(out["local_total_torque_mean [Nm]"])
     assert np.isfinite(out["shell_total_torque [Nm]"])
     assert np.isfinite(out["mean_to_shell [none]"])
 
@@ -155,7 +155,7 @@ def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
     assert shell_vals.shape == (96,)
     assert np.count_nonzero(np.isfinite(local_vals)) > 0
     assert np.count_nonzero(np.isfinite(shell_vals)) > 0
-    assert np.isfinite(out["summary"]["mean"])
+    assert np.isfinite(out["local_mass_loss_mean [kg/s]"])
     assert np.isfinite(out["shell_mass_loss [kg/s]"])
     assert np.isfinite(out["mean_to_shell [none]"])
     assert np.isclose(out["semi_major_axis [R]"], 10.0)
@@ -185,6 +185,6 @@ def test_local_torque_on_elliptic_orbit_runs_and_compares_to_shell_profile():
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
     assert shell_tot.shape == (96,)
     assert np.count_nonzero(np.isfinite(shell_tot)) > 0
-    assert np.isfinite(out["summary"]["mean"])
+    assert np.isfinite(out["local_total_torque_mean [Nm]"])
     assert np.isfinite(out["shell_total_torque [Nm]"])
     assert np.isfinite(out["mean_to_shell [none]"])

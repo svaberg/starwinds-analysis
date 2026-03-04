@@ -41,7 +41,7 @@ def interp_profile(radii, values, x):
     out[(x < r[0]) | (x > r[-1])] = np.nan
     return out
 
-def _local_mass_loss_from_orbit_sample(
+def local_mass_loss_from_orbit_sample(
     smart_ds,
     orbit,
     *,
@@ -61,7 +61,7 @@ def _local_mass_loss_from_orbit_sample(
     r_m = r_sample_r * body_radius_m
     estimates = local_mass_loss_estimates(r_m, rho, u_r)
     weights = orbit.get("time_weight [none]")
-    summary = summarize_samples(estimates, weights=weights)
+    stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
@@ -82,7 +82,7 @@ def _local_mass_loss_from_orbit_sample(
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
-        mean_to_shell = summary["mean"] / shell_value if shell_value != 0 else np.nan
+        mean_to_shell = stats["mean"] / shell_value if shell_value != 0 else np.nan
 
     out = {
         "radius [R]": float(np.nanmean(r_sample_r)),
@@ -90,7 +90,8 @@ def _local_mass_loss_from_orbit_sample(
         "u_r [m/s]": u_r,
         "rho [kg/m^3]": rho,
         "local_mass_loss [kg/s]": estimates,
-        "summary": summary,
+        "local_mass_loss_mean [kg/s]": float(stats["mean"]),
+        "local_mass_loss_std [kg/s]": float(stats["std"]),
         "shell_mass_loss [kg/s]": float(shell_value),
         "mean_to_shell [none]": float(mean_to_shell),
         "orbit_samples": orbit,
@@ -99,7 +100,7 @@ def _local_mass_loss_from_orbit_sample(
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
     return out
 
-def _local_torque_from_orbit_sample(
+def local_torque_from_orbit_sample(
     smart_ds,
     orbit,
     *,
@@ -153,9 +154,9 @@ def _local_torque_from_orbit_sample(
         shell_interp = interp_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
-    summary = summarize_samples(local_total, weights=weights)
+    stats = summarize_samples(local_total, weights=weights)
     with np.errstate(invalid="ignore", divide="ignore"):
-        mean_to_shell = summary["mean"] / shell_total if shell_total != 0 else np.nan
+        mean_to_shell = stats["mean"] / shell_total if shell_total != 0 else np.nan
 
     out = {
         "radius [R]": float(np.nanmean(r_sample_r)),
@@ -168,7 +169,8 @@ def _local_torque_from_orbit_sample(
         "local_magnetic_torque [Nm]": local_magnetic,
         "local_dynamic_torque [Nm]": local_dynamic,
         "local_total_torque [Nm]": local_total,
-        "summary": summary,
+        "local_total_torque_mean [Nm]": float(stats["mean"]),
+        "local_total_torque_std [Nm]": float(stats["std"]),
         "shell_total_torque [Nm]": float(shell_total),
         "mean_to_shell [none]": float(mean_to_shell),
         "orbit_samples": orbit,
@@ -208,7 +210,7 @@ def local_mass_loss_on_circular_orbit(
         plane=plane,
         method=method,
     )
-    return _local_mass_loss_from_orbit_sample(
+    return local_mass_loss_from_orbit_sample(
         smart_ds,
         orbit,
         body_radius_m=body_radius_m,
@@ -255,7 +257,7 @@ def local_torque_on_circular_orbit(
         plane=plane,
         method=method,
     )
-    return _local_torque_from_orbit_sample(
+    return local_torque_from_orbit_sample(
         smart_ds,
         orbit,
         body_radius_m=body_radius_m,
@@ -307,7 +309,7 @@ def local_mass_loss_on_elliptic_orbit(
     rmin = max(0.0, float(semi_major_axis) * (1.0 - float(eccentricity)))
     rmax = float(semi_major_axis) * (1.0 + float(eccentricity))
     shell_radii = np.linspace(rmin, rmax, max(2, int(shell_n_radii)))
-    out = _local_mass_loss_from_orbit_sample(
+    out = local_mass_loss_from_orbit_sample(
         smart_ds,
         orbit,
         body_radius_m=body_radius_m,
@@ -368,7 +370,7 @@ def local_torque_on_elliptic_orbit(
     rmin = max(0.0, float(semi_major_axis) * (1.0 - float(eccentricity)))
     rmax = float(semi_major_axis) * (1.0 + float(eccentricity))
     shell_radii = np.linspace(rmin, rmax, max(2, int(shell_n_radii)))
-    out = _local_torque_from_orbit_sample(
+    out = local_torque_from_orbit_sample(
         smart_ds,
         orbit,
         body_radius_m=body_radius_m,

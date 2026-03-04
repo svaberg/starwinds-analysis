@@ -17,7 +17,7 @@ from starwinds_analysis.constants import SOLAR_RADIUS_M
 log = logging.getLogger(__name__)
 
 
-def field_unit_from_brackets(name: str) -> str | None:
+def unit_from_brackets(name: str) -> str | None:
     """
     Extract the unit token from a bracketed field name like `X [R]`.
     """
@@ -28,7 +28,7 @@ def field_unit_from_brackets(name: str) -> str | None:
         return None
     return text[i + 1 : j].strip() or None
 
-def _resample_shell_points(
+def resample_shell_points(
     smart_ds,
     sample_points,
     *,
@@ -56,7 +56,7 @@ def _resample_shell_points(
         zone="shell-samples",
     )
 
-def _to_float(value) -> float | None:
+def float_or_none(value) -> float | None:
     """
     Parse an aux value into float, returning None on parse failure.
     Used by: `starwinds_analysis/analysis/shells.py`
@@ -79,20 +79,20 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
     for name in ("star_radius [m]", "Star_radius [m]", "RBODY [m]"):
         if not smart_ds.has_field(name):
             continue
-        value = _to_float(smart_ds.variable(name))
+        value = float_or_none(smart_ds.variable(name))
         if value is not None and np.isfinite(value) and value > 0:
             return value
 
     aux = getattr(smart_ds, "aux", {})
     for key in ("Star_radius_m", "Planet_radius_m", "BODY_RADIUS_M", "RBODY [m]", "RBODY_M", "RSTAR [m]", "RPLANET [m]"):
         if key in aux:
-            value = _to_float(aux[key])
+            value = float_or_none(aux[key])
             if value is not None and np.isfinite(value) and value > 0:
                 return value
 
     for key in ("RBODY", "RBODY [R]", "BODY_RADIUS_R", "RSTAR [R]", "RPLANET [R]"):
         if key in aux:
-            value = _to_float(aux[key])
+            value = float_or_none(aux[key])
             if value is not None and np.isfinite(value) and value > 0:
                 return value * SOLAR_RADIUS_M
 
@@ -202,7 +202,7 @@ def sample_spherical_shells(
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]
     sample_points = xyz
 
-    resampled = _resample_shell_points(
+    resampled = resample_shell_points(
         smart_ds,
         sample_points,
         fields=fields,
@@ -217,7 +217,7 @@ def sample_spherical_shells(
         area = area * float(length_unit_to_m) ** 2
 
     x_name, y_name, z_name = coordinate_fields
-    length_unit = field_unit_from_brackets(x_name) or "R"
+    length_unit = unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
     polar_name = "polar [rad]"
     azimuth_name = "azimuth [rad]"
@@ -278,7 +278,7 @@ def sample_spherical_shells_fibonacci(
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]  # (nr, npts, 1, 3)
     sample_points = xyz
 
-    resampled = _resample_shell_points(
+    resampled = resample_shell_points(
         smart_ds,
         sample_points,
         fields=fields,
@@ -294,7 +294,7 @@ def sample_spherical_shells_fibonacci(
         area = area * float(length_unit_to_m) ** 2
 
     x_name, y_name, z_name = coordinate_fields
-    length_unit = field_unit_from_brackets(x_name) or "R"
+    length_unit = unit_from_brackets(x_name) or "R"
     r_name = f"R [{length_unit}]"
     polar_name = "polar [rad]"
     azimuth_name = "azimuth [rad]"
