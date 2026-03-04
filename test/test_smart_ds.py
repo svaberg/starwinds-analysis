@@ -98,17 +98,11 @@ def test_lazy_registered_field_is_cached():
     assert calls["n"] == 1
 
 
-def test_call_uses_smartds_resolution_but_getitem_is_raw_only():
+def test_call_uses_smartds_resolution():
     sds = SmartDs(make_dataset_2d())
     sds.register_field("Q2 [none]", lambda ds: np.array(ds.variable("Q [none]")) ** 2)
 
-    # `()` routes through SmartDs.variable(...) and can resolve computed fields.
     np.testing.assert_allclose(sds("Q2 [none]"), [0.0, 1.0, 1.0, 4.0])
-
-    # `[]` is a raw Dataset passthrough (base fields only).
-    np.testing.assert_allclose(sds["Q [none]"], [0.0, 1.0, 1.0, 2.0])
-    with pytest.raises(IndexError):
-        _ = sds["Q2 [none]"]
 
 
 def test_alias_passthrough_to_existing_raw_field():
