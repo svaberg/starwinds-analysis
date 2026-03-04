@@ -25,30 +25,27 @@ from starwinds_analysis.pipelines.recorder import sha256_file
 from starwinds_analysis.pipelines.recorder import state_file_path
 
 log = logging.getLogger(__name__)
+PIPELINE_LOG_FORMAT = "[%(levelname)s] %(pipeline_source)s %(message)s"
+PIPELINE_COLOR_LOG_FORMAT = "%(log_color)s[%(levelname)s]%(reset)s %(pipeline_source)s %(message)s"
 
 
 # Human/recorder logging setup
-class PipelineLogFormatter(logging.Formatter):
+class PipelineSourceFilter(logging.Filter):
     """
-    Format pipeline logs as `[level] source message`.
+    Add the shared `pipeline_source` field used by pipeline log formatters.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
 
-    def format(self, record: logging.LogRecord) -> str:
+    def filter(self, record: logging.LogRecord) -> bool:
         """
-        Render one pipeline log record with standard level and short source name.
+        Populate the shared pipeline-source field for one log record.
         Used by: `starwinds_analysis/pipelines/sw_pipe.py`
         """
-        source = record.name.rsplit(".", 1)[-1]
-        message = record.getMessage()
         if record.name.startswith("recorder."):
-            origin = f"{record.name}.{record.funcName}:{record.lineno}"
+            record.pipeline_source = f"{record.name}.{record.funcName}:{record.lineno}"
         else:
-            origin = source
-        out = f"[{record.levelname}] {origin} {message}"
-        if record.exc_info:
-            out = f"{out}\n{self.formatException(record.exc_info)}"
-        return out
+            record.pipeline_source = record.name.rsplit(".", 1)[-1]
+        return True
 
 
 def configure_logger(level_name: str) -> None:
@@ -61,6 +58,7 @@ def configure_logger(level_name: str) -> None:
     logger.setLevel(getattr(logging, str(level_name).upper()))
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(getattr(logging, str(level_name).upper()))
+    handler.addFilter(PipelineSourceFilter())
     if bool(getattr(sys.stdout, "isatty", lambda: False)()):
         for module_name in ("colorlog", "coloredlogs"):
             try:
@@ -68,14 +66,7 @@ def configure_logger(level_name: str) -> None:
                 formatter_class = getattr(module, "ColoredFormatter")
                 handler.setFormatter(
                     formatter_class(
-                        "%(log_color)s[%(levelname)s]%(reset)s %(module)s %(message)s",
-                        log_colors={
-                            "DEBUG": "cyan",
-                            "INFO": "green",
-                            "WARNING": "yellow",
-                            "ERROR": "red",
-                            "CRITICAL": "bold_red",
-                        },
+                        PIPELINE_COLOR_LOG_FORMAT,
                         secondary_log_colors={},
                         reset=True,
                         style="%",
@@ -85,7 +76,7 @@ def configure_logger(level_name: str) -> None:
             except Exception:
                 continue
     if handler.formatter is None:
-        handler.setFormatter(PipelineLogFormatter())
+        handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
     logger.addHandler(handler)
 
 
@@ -99,7 +90,8 @@ def configure_recorder(level_name: str = "WARNING") -> None:
     recorder.handlers.clear()
     recorder_handler = logging.StreamHandler()
     recorder_handler.setLevel(getattr(logging, str(level_name).upper()))
-    recorder_handler.setFormatter(PipelineLogFormatter())
+    recorder_handler.addFilter(PipelineSourceFilter())
+    recorder_handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
     recorder.addHandler(recorder_handler)
     recorder.propagate = False
 
