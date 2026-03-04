@@ -572,9 +572,11 @@ def _run_one_file(
     known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
     recorder_logger: logging.Logger,
     artifacts_root: Path,
+    state_file: Path,
     noclobber: bool,
     include_file_hash: bool,
     array_offload_min_bytes: int,
+    json_warn_bytes: int,
     fail_fast: bool,
 ) -> None:
     """
@@ -605,15 +607,18 @@ def _run_one_file(
         array_offload_min_bytes=array_offload_min_bytes,
     )
     recorder_logger.addHandler(recorder_handler)
+    failure: Exception | None = None
+    failure_tb = None
     try:
         active_process_file(file_path)
     except Exception as exc:
+        failure = exc
+        failure_tb = exc.__traceback__
         results.failed_files.append(file_path)
         file_results["meta"]["status"] = "failed"
         file_results["meta"]["error"] = str(exc)
-        if fail_fast:
-            raise
-        log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
+        if not fail_fast:
+            log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
     else:
         file_results["meta"]["status"] = "processed"
         results.processed_files.append(file_path)
@@ -627,46 +632,14 @@ def _run_one_file(
 
     results.computed_results[file_key] = file_results
     known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-
-
-def _write_all_state_files(
-    state_files: dict[str, Path],
-    *,
-    known_processed_by_pipeline: dict[str, set[str]],
-    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
-    json_warn_bytes: int,
-) -> None:
-    """
-    Persist all per-pipeline state files after the run completes.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    for state_pipeline_name, state_file in state_files.items():
-        _save_state(
-            state_file,
-            processed_keys=known_processed_by_pipeline[state_pipeline_name],
-            computed_results=known_computed_by_pipeline[state_pipeline_name],
-            json_warn_bytes=int(json_warn_bytes),
-        )
-
-
-def _write_one_state_file(
-    state_file: Path,
-    *,
-    state_pipeline_name: str,
-    known_processed_by_pipeline: dict[str, set[str]],
-    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
-    json_warn_bytes: int,
-) -> None:
-    """
-    Persist one per-pipeline state file during the run.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
     _save_state(
         state_file,
-        processed_keys=known_processed_by_pipeline[state_pipeline_name],
+        processed_keys=processed_keys,
         computed_results=known_computed_by_pipeline[state_pipeline_name],
         json_warn_bytes=int(json_warn_bytes),
     )
+    if failure is not None and fail_fast:
+        raise failure.with_traceback(failure_tb)
 
 
 def run_sw_pipe(
@@ -717,6 +690,15 @@ def run_sw_pipe(
         noclobber=noclobber,
         pipeline=pipeline_label,
     )
+    if not selected:
+        for state_pipeline_name, state_file in state_files.items():
+            _save_state(
+                state_file,
+                processed_keys=known_processed_by_pipeline[state_pipeline_name],
+                computed_results=known_computed_by_pipeline[state_pipeline_name],
+                json_warn_bytes=int(json_warn_bytes),
+            )
+        return results
     recorder_logger = logging.getLogger("recorder")
     recorder_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
@@ -732,24 +714,13 @@ def run_sw_pipe(
             known_computed_by_pipeline=known_computed_by_pipeline,
             recorder_logger=recorder_logger,
             artifacts_root=artifacts_root,
+            state_file=state_files[state_pipeline_name],
             noclobber=noclobber,
             include_file_hash=include_file_hash,
             array_offload_min_bytes=array_offload_min_bytes,
+            json_warn_bytes=int(json_warn_bytes),
             fail_fast=fail_fast,
         )
-        _write_one_state_file(
-            state_files[state_pipeline_name],
-            state_pipeline_name=state_pipeline_name,
-            known_processed_by_pipeline=known_processed_by_pipeline,
-            known_computed_by_pipeline=known_computed_by_pipeline,
-            json_warn_bytes=int(json_warn_bytes),
-        )
-    _write_all_state_files(
-        state_files,
-        known_processed_by_pipeline=known_processed_by_pipeline,
-        known_computed_by_pipeline=known_computed_by_pipeline,
-        json_warn_bytes=int(json_warn_bytes),
-    )
     return results
 
 
