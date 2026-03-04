@@ -1,7 +1,8 @@
-"""THIS FILE contains orbit-surface (surface-of-revolution) sampling and diagnostics.
+"""THIS FILE contains surface-of-revolution sampling and diagnostics.
 
-It builds explicit surfaces from orbital paths and evaluates pressure/torque components on them.
-It should reuse pressure/torque core functions rather than redefining those quantities.
+It builds explicit surfaces from path points and evaluates pressure/torque
+components on them. It should reuse pressure/torque core functions rather
+than redefining those quantities.
 """
 
 # TODO(debt): This file combines geometry generation, resampling, pressure/torque
@@ -17,24 +18,18 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_curve
+from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
-from starwinds_analysis.analysis.stats import weighted_quantile
 
 log = logging.getLogger(__name__)
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
-    """
-    Surface of revolution around the z-axis from a sampled orbit path.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Surface of revolution around the z-axis from explicit path points."""
     pts = np.array(points)
     if pts.ndim != 2 or pts.shape[1] != 3:
         raise ValueError("points must have shape (n, 3)")
@@ -63,10 +58,7 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     }
 
 def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
-    """
-    Build integration/summary weights for orbit-surface sampled data.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Build integration/summary weights for one sampled surface."""
     az_w = np.full(int(n_longitudes), 1.0 / float(n_longitudes), dtype=float)
     if time_weight is None:
         t_w = np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
@@ -80,10 +72,7 @@ def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     return np.outer(t_w, az_w)
 
 def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
-    """
-    Compute phase-binned quantiles for 2D orbit-surface sampled values.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Compute phase-binned quantiles for 2D sampled values."""
     arr = np.array(values_2d)
     if arr.ndim != 2:
         raise ValueError("values_2d must be 2D")
@@ -97,10 +86,7 @@ def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     return q, out
 
 def surface_point_normals_and_areas(surface_points_xyz_m):
-    """
-    Estimate point normals and point-associated areas on a periodic structured surface.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Estimate point normals and point-associated areas on a structured surface."""
     pts = np.array(surface_points_xyz_m)
     if pts.ndim != 3 or pts.shape[-1] != 3:
         raise ValueError("surface_points_xyz_m must have shape (n_phase, n_lon, 3)")
@@ -121,10 +107,7 @@ def surface_point_normals_and_areas(surface_points_xyz_m):
     return normals, area
 
 def phase_line_integrals(values_2d, area_2d):
-    """
-    Integrate sampled surface density values over longitude for each orbit phase.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Integrate sampled surface density values over longitude for each phase."""
     v = np.array(values_2d)
     a = np.array(area_2d)
     if v.shape != a.shape:
@@ -142,89 +125,50 @@ def phase_line_integrals(values_2d, area_2d):
         )
     return integ, cov
 
-def sample_orbit_surface_revolution(
+def sample_surface_revolution(
     smart_ds,
     *,
     fields,
-    orbit,
+    path_points,
+    phase=None,
+    time_weight=None,
+    path_meta=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     method: str = "nearest",
     fill_value: float = np.nan,
-    zone: str = "orbit-surface",
+    zone: str = "surface",
     n_longitudes: int = 199,
 ):
-    """
-    Sample explicit fields on a surface of revolution generated from an orbit path.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
-    """
+    """Sample explicit fields on a surface of revolution generated from explicit path points."""
     fields = tuple(fields)
     log.info(
-        "sample_orbit_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
+        "sample_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
         len(fields),
         n_longitudes,
         method,
     )
-    if isinstance(orbit, dict):
-        spec = dict(orbit)
-        kind = str(spec.pop("kind", "kepler")).lower()
-        if kind not in {"kepler", "elliptic", "ellipse"}:
-            raise ValueError(f"Unsupported orbit kind: {kind}")
-        a = float(spec.pop("semi_major_axis", spec.pop("a", np.nan)))
-        if not np.isfinite(a):
-            raise ValueError("orbit spec requires 'semi_major_axis' (or 'a')")
-        e = float(spec.pop("eccentricity", 0.0))
-        plane = str(spec.pop("plane", "xy"))
-        n_points = int(spec.pop("n_points", 360))
-        angle0 = float(spec.pop("angle0", 0.0))
-        phase0 = float(spec.pop("phase0", 0.0))
-        sample = str(spec.pop("sample", "eccentric_anomaly"))
-        center = spec.pop("center", (0.0, 0.0, 0.0))
-        spec.pop("label", None)
-        if spec:
-            raise ValueError(f"Unknown orbit spec keys: {sorted(spec)}")
-        orbit_info = elliptic_orbit_points(
-            a,
-            eccentricity=e,
-            n_points=n_points,
-            plane=plane,
-            angle0=angle0,
-            phase0=phase0,
-            center=center,
-            sample=sample,
-            return_info=True,
-        )
-        path_points = orbit_info["points"]
-        path_meta = {
-            "kind": "elliptic",
-            "plane": plane,
-            "phase [turns]": orbit_info["phase [turns]"],
-            "time_weight [none]": orbit_info["time_weight [none]"],
-            "true_anomaly [rad]": orbit_info["true_anomaly [rad]"],
-            "eccentricity [none]": float(e),
-            "semi_major_axis [R]": float(a),
-            "sample_parameter": sample,
-        }
-    else:
-        r = float(orbit)
-        orbit_info = elliptic_orbit_points(
-            r,
-            eccentricity=0.0,
-            n_points=360,
-            plane="xy",
-            sample="eccentric_anomaly",
-            return_info=True,
-        )
-        path_points = orbit_info["points"]
-        n = path_points.shape[0]
-        path_meta = {
-            "kind": "elliptic",
-            "plane": "xy",
-            "phase [turns]": orbit_info["phase [turns]"],
-            "time_weight [none]": orbit_info["time_weight [none]"],
-            "semi_major_axis [R]": float(r),
-            "eccentricity [none]": 0.0,
-        }
+    path_points = np.array(path_points)
+    if path_points.ndim != 2 or path_points.shape[1] != 3:
+        raise ValueError("path_points must have shape (n_phase, 3)")
+    n_phase = path_points.shape[0]
+    if n_phase < 2:
+        raise ValueError("path_points must contain at least 2 points")
 
+    if phase is None:
+        phase_arr = np.linspace(0.0, 1.0, n_phase, endpoint=False)
+    else:
+        phase_arr = np.array(phase)
+        if phase_arr.shape != (n_phase,):
+            raise ValueError("phase must have shape (n_phase,)")
+
+    if time_weight is None:
+        time_weight_arr = np.full(n_phase, 1.0 / float(n_phase), dtype=float)
+    else:
+        time_weight_arr = np.array(time_weight)
+        if time_weight_arr.shape != (n_phase,):
+            raise ValueError("time_weight must have shape (n_phase,)")
+
+    meta = dict(path_meta or {})
     surf = surface_of_revolution_from_path(path_points, n_longitudes=n_longitudes)
     pts = surf["points"].reshape(-1, 3)
 
@@ -236,7 +180,7 @@ def sample_orbit_surface_revolution(
         method=method,
         fill_value=fill_value,
     )
-    n_phase, n_lon = surf["points"].shape[:2]
+    n_lon = surf["points"].shape[1]
     sampled = {
         "surface_points": surf["points"],
         "X [surface]": surf["points"][..., 0],
@@ -245,9 +189,9 @@ def sample_orbit_surface_revolution(
         "R [surface]": surf["radius [surface]"],
         "C [surface]": surf["cyl_radius [surface]"],
         "azimuth [rad]": surf["azimuth [rad]"],
-        "phase [turns]": np.array(path_meta["phase [turns]"]),
-        "time_weight [none]": np.array(path_meta["time_weight [none]"]),
-        "orbit_meta": path_meta,
+        "phase [turns]": phase_arr,
+        "time_weight [none]": time_weight_arr,
+        "path_meta": meta,
         "zone": zone,
     }
     for key in fields:
@@ -259,59 +203,29 @@ def sample_orbit_surface_revolution(
     if all(name in sampled for name in ("B_x [T]", "B_y [T]", "B_z [T]")):
         sampled["B_xyz [T]"] = np.array(sampled_curve("B_xyz [T]")).reshape(n_phase, n_lon, 3)
     log.info(
-        "sample_orbit_surface_revolution done: n_phase=%d, n_lon=%d",
+        "sample_surface_revolution done: n_phase=%d, n_lon=%d",
         n_phase,
         n_lon,
     )
     return sampled
 
-def pressure_components_on_orbit_surface(
-    smart_ds,
-    orbit,
+
+def pressure_components_on_surface(
+    sampled,
     *,
-    body_radius_m: float | None = None,
-    n_longitudes: int = 199,
-    method: str = "nearest",
-    star_mass_kg: float | None = None,
+    body_radius_m: float,
+    period_s: float | None = None,
     include_relative_ram: bool = True,
     standoff_b0_t: float = 0.7e-4,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
-    """
-    Pressure-component analytics on a surface of revolution around an orbit path.
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
+    """Pressure-component analytics on an already sampled surface of revolution."""
     log.info(
-        "pressure_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_relative=%s",
-        n_longitudes,
-        method,
+        "pressure_components_on_surface start: include_relative=%s",
         include_relative_ram,
     )
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
-    rho_name = "Rho [kg/m^3]"
-    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-    derived = (
-        "U [m/s]",
-        "B [T]",
-        "magnetic_pressure [Pa]",
-        "ram_pressure [Pa]",
-        "thermal_pressure [Pa]",
-        "standoff_distance [m]",
-    )
-
-    sampled = sample_orbit_surface_revolution(
-        smart_ds,
-        fields=(rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name, *derived),
-        orbit=orbit,
-        method=method,
-        n_longitudes=n_longitudes,
-    )
-
-    rho = np.array(sampled[rho_name])
+    body_radius_m = float(body_radius_m)
+    rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
     b = np.array(sampled["B [T]"])
@@ -321,21 +235,13 @@ def pressure_components_on_orbit_surface(
     standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
-    orbit_meta = sampled["orbit_meta"]
-    a_r = orbit_meta.get("semi_major_axis [R]")
-    if (
-        include_relative_ram
-        and star_mass_kg is not None
-        and a_r is not None
-        and np.isfinite(a_r)
-    ):
+    if include_relative_ram and period_s is not None and np.isfinite(period_s):
         path_points = np.column_stack(
             [sampled["X [surface]"][:, 0], sampled["Y [surface]"][:, 0], sampled["Z [surface]"][:, 0]]
         )
         phase = np.array(sampled["phase [turns]"])
         if phase.shape == (path_points.shape[0],):
-            period_s = orbital_period(float(a_r) * body_radius_m, star_mass_kg)
-            v_path = periodic_curve_velocity(path_points, phase, period_s, body_radius_m)
+            v_path = periodic_curve_velocity(path_points, phase, float(period_s), body_radius_m)
             object_velocity = np.repeat(v_path[:, None, :], sampled["X [surface]"].shape[1], axis=1)
 
     comps = {
@@ -348,7 +254,7 @@ def pressure_components_on_orbit_surface(
     }
 
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
-    # local workflow logic because they depend on the orbit-derived object velocity.
+    # local workflow logic because they depend on the trajectory velocity.
     if object_velocity is not None:
         U_minus_V = u_xyz - object_velocity
         U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
@@ -378,72 +284,47 @@ def pressure_components_on_orbit_surface(
         }
 
     out = {
-        "orbit_surface": sampled,
+        "sampled_surface": sampled,
         "rho [kg/m^3]": rho,
         **comps,
         "summary": summaries,
         "phase_quantiles": phase_profiles,
     }
-    if "semi_major_axis [R]" in orbit_meta:
-        out["semi_major_axis [R]"] = float(orbit_meta["semi_major_axis [R]"])
-        out["eccentricity [none]"] = float(orbit_meta.get("eccentricity [none]", np.nan))
-    elif "radius [R]" in orbit_meta:
-        out["radius [R]"] = float(orbit_meta["radius [R]"])
+    meta = sampled.get("path_meta", {})
+    if "semi_major_axis [R]" in meta:
+        out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
+        out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
+    elif "radius [R]" in meta:
+        out["radius [R]"] = float(meta["radius [R]"])
     log.info(
-        "pressure_components_on_orbit_surface done: finite_ram=%d",
+        "pressure_components_on_surface done: finite_ram=%d",
         np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
     )
     return out
 
-def torque_components_on_orbit_surface(
-    smart_ds,
-    orbit,
+
+def torque_components_on_surface(
+    sampled,
     *,
-    body_radius_m: float | None = None,
-    n_longitudes: int = 199,
-    method: str = "nearest",
+    body_radius_m: float,
     include_pressure_term: bool = True,
     angvel_rad_s: float = 0.0,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
-    """
-    Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
-    Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
+    """Explicit-surface torque diagnostics on an already sampled surface of revolution."""
     log.info(
-        "torque_components_on_orbit_surface start: n_longitudes=%d, method=%s, include_pressure=%s",
-        n_longitudes,
-        method,
+        "torque_components_on_surface start: include_pressure=%s",
         include_pressure_term,
     )
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
-    rho_name = "Rho [kg/m^3]"
-    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-    bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
-
-    fields = [rho_name, ux_name, uy_name, uz_name, bx_name, by_name, bz_name]
-    p_name = None
-    if include_pressure_term:
-        p_name = "thermal_pressure [Pa]"
-        fields.append(p_name)
-
-    sampled = sample_orbit_surface_revolution(
-        smart_ds,
-        fields=tuple(fields),
-        orbit=orbit,
-        method=method,
-        n_longitudes=n_longitudes,
-    )
-
-    rho = np.array(sampled[rho_name])
+    body_radius_m = float(body_radius_m)
+    rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     b_xyz = np.array(sampled["B_xyz [T]"])
-    p = None if p_name is None else np.array(sampled[p_name])
+    p = None
+    if include_pressure_term and "thermal_pressure [Pa]" in sampled:
+        p = np.array(sampled["thermal_pressure [Pa]"])
 
-    points_m = np.array(sampled["surface_points"]) * float(body_radius_m)
+    points_m = np.array(sampled["surface_points"]) * body_radius_m
     normals, area = surface_point_normals_and_areas(points_m)
 
     terms = surface_torque_density_terms(
@@ -496,7 +377,7 @@ def torque_components_on_orbit_surface(
         summary[out_key] = summarize_samples(np.array(terms[src_key]).reshape(-1), weights=weights)
 
     out = {
-        "orbit_surface": sampled,
+        "sampled_surface": sampled,
         "surface_points [m]": points_m,
         "surface_normals [none]": normals,
         "surface_area [m^2]": area,
@@ -512,14 +393,14 @@ def torque_components_on_orbit_surface(
         "coverage [none]": np.array(totals["coverage [none]"]),
         "surface_terms": terms,
     }
-    orbit_meta = sampled["orbit_meta"]
-    if "semi_major_axis [R]" in orbit_meta:
-        out["semi_major_axis [R]"] = float(orbit_meta["semi_major_axis [R]"])
-        out["eccentricity [none]"] = float(orbit_meta.get("eccentricity [none]", np.nan))
-    if "radius [R]" in orbit_meta:
-        out["radius [R]"] = float(orbit_meta["radius [R]"])
+    meta = sampled.get("path_meta", {})
+    if "semi_major_axis [R]" in meta:
+        out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
+        out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
+    if "radius [R]" in meta:
+        out["radius [R]"] = float(meta["radius [R]"])
     log.info(
-        "torque_components_on_orbit_surface done: total=%s",
+        "torque_components_on_surface done: total=%s",
         float(out["total [Nm]"]),
     )
     return out

@@ -147,9 +147,10 @@ Recommended next implementation batches:
 - DONE: standard shell profile wrappers were removed and replaced with shared shell primitives in `analysis.shells`.
 - NEXT: remove the remaining quantity-specific `surface_torque_vs_radius(...)` wrapper.
 
-2. `physics/orbit_pressure.py` + `physics/orbit_surface.py` + `physics/orbit_local.py`
-- DONE (partial): orbit workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
-- NEXT: reduce dict-bundle outputs and move more workflow composition upward.
+2. `physics/curve.py` + `physics/curve_shell.py` + `physics/orbit_surface.py`
+- DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
+- DONE (partial): `orbit_surface.py` no longer constructs orbit geometry internally; callers now provide explicit path points and sampled surfaces.
+- NEXT: reduce dict-bundle outputs further and move more workflow composition upward.
 
 3. `visualisation/profile_plots.py` + current pipelines
 - DONE (partial): quantity-specific shell mass-flux plotting wrapper removed.

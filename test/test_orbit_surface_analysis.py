@@ -3,12 +3,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbit_surface import pressure_components_on_orbit_surface
-from starwinds_analysis.physics.orbit_surface import sample_orbit_surface_revolution
+from starwinds_analysis.physics.orbits import orbital_period
+from starwinds_analysis.physics.orbit_surface import pressure_components_on_surface
+from starwinds_analysis.physics.orbit_surface import sample_surface_revolution
 from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_path
 from starwinds_analysis.physics.orbit_surface import surface_point_normals_and_areas
-from starwinds_analysis.physics.orbit_surface import torque_components_on_orbit_surface
+from starwinds_analysis.physics.orbit_surface import torque_components_on_surface
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -52,12 +54,19 @@ def test_surface_point_normals_and_areas_on_cylinder_like_surface_are_finite():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_sample_orbit_surface_revolution_runs_on_example():
+def test_sample_surface_revolution_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    out = sample_orbit_surface_revolution(
+    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    out = sample_surface_revolution(
         sds,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
-        orbit={"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
+        path_points=orbit["points"],
+        phase=orbit["phase [turns]"],
+        time_weight=orbit["time_weight [none]"],
+        path_meta={
+            "semi_major_axis [R]": 10.0,
+            "eccentricity [none]": 0.2,
+        },
         n_longitudes=32,
         method="nearest",
     )
@@ -69,16 +78,41 @@ def test_sample_orbit_surface_revolution_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_pressure_components_on_orbit_surface_runs_on_example():
+def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = pressure_components_on_orbit_surface(
+    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    sampled = sample_surface_revolution(
         sds,
-        {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
-        body_radius_m=SOLAR_RADIUS_M,
+        fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
+            "U [m/s]",
+            "B [T]",
+            "magnetic_pressure [Pa]",
+            "ram_pressure [Pa]",
+            "thermal_pressure [Pa]",
+            "standoff_distance [m]",
+        ),
+        path_points=orbit["points"],
+        phase=orbit["phase [turns]"],
+        time_weight=orbit["time_weight [none]"],
+        path_meta={
+            "semi_major_axis [R]": 10.0,
+            "eccentricity [none]": 0.2,
+        },
         n_longitudes=48,
         method="nearest",
-        star_mass_kg=SUN_MASS_KG,
+    )
+    out = pressure_components_on_surface(
+        sampled,
+        body_radius_m=SOLAR_RADIUS_M,
+        period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
     )
     for key in (
         "ram_pressure [Pa]",
@@ -96,15 +130,35 @@ def test_pressure_components_on_orbit_surface_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_torque_components_on_orbit_surface_runs_on_example():
+def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = torque_components_on_orbit_surface(
+    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    sampled = sample_surface_revolution(
         sds,
-        {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
-        body_radius_m=SOLAR_RADIUS_M,
+        fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
+            "thermal_pressure [Pa]",
+        ),
+        path_points=orbit["points"],
+        phase=orbit["phase [turns]"],
+        time_weight=orbit["time_weight [none]"],
+        path_meta={
+            "semi_major_axis [R]": 10.0,
+            "eccentricity [none]": 0.2,
+        },
         n_longitudes=48,
         method="nearest",
+    )
+    out = torque_components_on_surface(
+        sampled,
+        body_radius_m=SOLAR_RADIUS_M,
         angvel_rad_s=0.0,
     )
     for key in (
