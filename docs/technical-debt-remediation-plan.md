@@ -34,10 +34,10 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 - NEXT: shrink `physics/torque.py` so only local torque terms remain in the deep layer and shell/surface wrappers move upward or become generic reducers.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
-- DONE (updated): orbit geometry/sampling primitives moved to a neutral `sampling.orbits`
-  module; `physics/orbit_*` no longer imports `analysis.orbits`.
+- DONE (updated): orbit geometry/sampling primitives live in `analysis.orbits`,
+  which is generic enough for the current tree.
 - NEXT: reduce workflow debt in `physics/orbit_local.py` (still quantity-specific, but now
-  depends on the neutral `sampling` layer instead of `analysis`).
+  depends on the generic `analysis.orbits` layer instead of quantity-specific helpers).
 
 ## Phase 2 (SmartDs / griblet Migration)
 
@@ -49,7 +49,7 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
 - `mass_flux [kg/m^2/s]`, `energy_flux [W/m^2]`
 - torque-density terms where feasible (with explicit geometry inputs)
  - DONE (partial): core shell profile workflows now request spherical components
-   (`B_r`, `U_r`, `U_phi`, `B_phi`) from shell `SmartDs` instead of recomputing them.
+   (`B_r`, `U_r`, `U_a`, `B_a`) from shell `SmartDs` instead of recomputing them.
  - DONE (partial): `batsrus.py` now provides pointwise SI recipes for
    `magnetic_pressure [Pa]`, `ram_pressure [Pa]`, `mass_flux [kg/m^2/s]`,
    `energy_flux [W/m^2]`, and shell-style torque densities, and shell workflows
@@ -91,11 +91,11 @@ Goal: stop inventing per-function containers and use shared abstractions.
 
 1. Replace `SphericalShellSamples` compatibility usage gradually with structured `SmartDs` shell resampling.
 - DONE (partial): both grid and Fibonacci shell samplers now return structured `SmartDs`
-  with explicit metadata fields (`R`, `theta`, `phi`, `dA`).
+  with explicit metadata fields (`R`, `polar`, `azimuth`, `dA`).
 - DONE: core shell profile workflows and explicit-surface shell wrappers now read
   shell values directly from the shell `SmartDs` (`shell_ds("...")`) instead of
   using compat `.fields/.x/.area`.
-- DONE: temporary shell compatibility bridge (`.radii/.theta/.phi/.x/.y/.z/.area/.fields`)
+- DONE: temporary shell compatibility bridge (`.radii/.polar/.azimuth/.x/.y/.z/.area/.fields`)
   removed after migrating remaining callers/tests/notebooks.
 
 2. Remove `ShellMassFluxMap` (custom workflow container).
@@ -113,9 +113,9 @@ Goal: stop hardening quantity-specific plotting/orchestration wrappers into libr
 1. Reduce `physics.plotting` to genuinely reusable primitives only.
 - Remove quantity-specific `plot_*` wrappers as notebooks/quicklook migrate to direct Matplotlib.
 
-2. Shrink `quicklook2d.py` or split by responsibility (without adding wrappers for notebooks).
-- Keep it only if it remains a real reusable orchestration layer.
-- Otherwise move one-off composition into examples/scripts.
+2. Keep the current `slice.py`, `shell.py`, and `volume.py` pipelines thin.
+- Do not rebuild a new monolithic quicklook wrapper.
+- Move pointwise science down into `recipes/` or `physics/`, and keep one-off composition in examples/scripts.
 
 3. Keep `visualisation/` for real plotting primitives only.
 - No quantity-specific APIs unless algorithmically distinct and reused.
@@ -131,7 +131,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 2. Remove `physics -> analysis` imports in workflow-heavy modules by either:
 - moving workflows out of `physics`, or
 - extracting the needed primitive out of `analysis`.
- - DONE (partial): orbit workflows now use `sampling.orbits` instead of `analysis.orbits`.
+ - DONE (partial): orbit workflows use the generic `analysis.orbits` layer.
 
 3. Only after boundaries are correct, remove lazy-import cycle workarounds.
 
@@ -147,10 +147,10 @@ Recommended next implementation batches:
 - DONE (partial): `resolve_*` calls removed in favor of SI SmartDs/griblet requests.
 - NEXT: separate orbit geometry/sampling from quantity assembly and reduce `physics -> analysis` dependencies.
 
-3. `physics.plotting.py` + `quicklook2d.py`
+3. `visualisation/profile_plots.py` + current pipelines
 - DONE (partial): quantity-specific shell mass-flux plotting wrapper removed.
 - DONE (partial): generic shell-profile plotting helpers moved out of `physics` into `visualisation/profile_plots.py`.
-- NEXT: continue shrinking `quicklook2d.py` without creating notebook convenience wrappers.
+- NEXT: continue shrinking `shell.py` and `volume.py` without creating notebook convenience wrappers.
 
 ## Testing Strategy (Required For Each Batch)
 

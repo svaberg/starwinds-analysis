@@ -1,70 +1,99 @@
 # Goal Audit
 
-Date: 2026-02-27
+Date: 2026-03-04
 Branch: `dev`
 
-## Goals Checked
+## Current Status Snapshot
 
-1. `quicklook2d` can run as a real `sw-pipe` pipeline.
-2. Recorder API is used via `add_record` where pipeline payloads are emitted.
-3. Dict payloads that were created but not consumed are removed, and creation-time logging/recording is used instead.
-4. Pipeline output remains traceable (module/function/line) and machine-ingestable.
+### 1) Pipeline layout
 
-## Status
+Status: DONE (current shape)
 
-### 1) `quicklook2d` pipeline wiring
-
-Status: DONE
-
-- `sw-pipe` supports `--pipeline quicklook2d`.
-- Resolver routes to `starwinds_analysis.pipelines.quicklook2d.process_plt_file`.
-- Per-file metadata records selected pipeline.
+- `sw-pipe` routes built-in pipelines by filename prefix:
+  - `3d* -> volume`
+  - `shl* -> shell`
+  - `x=0*`, `y=0*`, `z=0* -> slice`
+- The old `quicklook2d` pipeline layer is gone.
+- Current built-in per-file pipelines are:
+  - `slice`
+  - `shell`
+  - `volume`
+  - `dummy`
 
 Files:
 - `starwinds_analysis/pipelines/sw_pipe.py`
-- `starwinds_analysis/pipelines/quicklook2d.py`
+- `starwinds_analysis/pipelines/slice.py`
+- `starwinds_analysis/pipelines/shell.py`
+- `starwinds_analysis/pipelines/volume.py`
 
-### 2) `add_record` usage
+### 2) Recorder-backed pipeline output
 
-Status: DONE
+Status: DONE (current model)
 
-- `quicklook2d` per-file step emits structured fields via `add_record`.
-- Emitted fields include output dir, summary file path, and output counts.
-
-Files:
-- `starwinds_analysis/pipelines/quicklook2d.py`
-
-### 3) Unused dict-return cleanup
-
-Status: DONE for confirmed unused cases found in current scan
-
-- `register_spherical_geometry_fields(...)` no longer returns an unused dict.
-- `_vector_triplets(...)` now handles vector-triplet discovery directly, with registration done at the call site.
-- Both now log creation summaries at the point of creation.
+- Pipelines emit results through `add_record(...)` as values are produced.
+- `sw-pipe` captures those records and writes:
+  - `sw-pipe.<pipeline>.processed.json`
+- Recorded values remain machine-ingestable and traceable via:
+  - `value`
+  - `source.module`
+  - `source.function`
+  - `source.line`
 
 Files:
+- `starwinds_analysis/pipelines/recorder.py`
+- `starwinds_analysis/pipelines/sw_pipe.py`
+
+### 3) SmartDs and recipe surface
+
+Status: PARTIAL, usable
+
+- `SmartDs.prepare(...)` is the normal workflow setup method.
+- Local spherical fields are explicit (`add_spherical_fields(...)`), not auto-attached in `__init__()`.
+- Active spherical field names now use:
+  - `R [R]`
+  - `polar [rad]`
+  - `azimuth [rad]`
+  - `_r`, `_p`, `_a`
+- `theta` / `phi` and `*_theta` / `*_phi` aliases are removed from the active path.
+
+Remaining debt:
+- `SmartDs.resolve(...)` still exists and still violates the project rule against `resolve*` API names.
+
+Files:
+- `starwinds_analysis/smart_ds.py`
 - `starwinds_analysis/recipes/spherical.py`
+- `starwinds_analysis/recipes/batsrus.py`
 
-### 4) Traceability and ingest format
+### 4) Nearby config and stellar parameters
 
-Status: DONE
+Status: DONE (first pass)
 
-- `sw-pipe.<pipeline>.processed.json` entries keep `value` and `source` (`module`, `function`, `line`).
-- Quicklook pipeline records were confirmed present in state JSON with valid source metadata.
+- `PARAM.in` parsing is available through `ParamIn`.
+- `SmartDs.from_file(...)` looks for nearby `PARAM.in` / `param.in`.
+- Parsed stellar parameters are exposed through graph-backed scalar fields:
+  - `star_radius [m]`
+  - `star_mass [kg]`
+  - `star_rotational_period [s]`
+  - `star_rotation_rate [rad/s]`
 
 Files:
-- `starwinds_analysis/pipelines/sw_pipe.py`
+- `starwinds_analysis/param_in.py`
+- `starwinds_analysis/smart_ds.py`
+- `starwinds_analysis/recipes/batsrus.py`
 
-## Validation Run
+## Validation Baseline
 
-- `test/test_sw_pipe.py` (pipeline selection + recorder wiring)
-- `test/test_quicklook2d.py` (quicklook per-file process behavior)
-- `test/test_smart_ds.py`, `test/test_shell_analysis.py`, `test/test_shell_resample_smartds_spec.py`
+Current focused checks that should stay healthy:
+
+- `test/test_sw_pipe.py`
 - `test/test_sw_pipe_results.py`
-- `test/test_code_rules.py`
+- `test/test_param_in.py`
+- `test/test_smart_ds.py`
 
-All passed in this audit pass.
+## Main Remaining Work
 
-## Remaining Work (Not Claimed Complete Here)
-
-- Broader technical debt items in `docs/technical-debt.md` and `docs/technical-debt-remediation-plan.md` remain open (especially quantity-specific wrappers and deeper SmartDs/griblet migration).
+- Continue shrinking real debt in `docs/technical-debt.md`, especially:
+  - `SmartDs.resolve(...)`
+  - `param_in._ensure_component(...)`
+  - quantity-specific `*_vs_radius` wrappers in `physics/`
+  - keeping `shell.py` from growing into another logic blob

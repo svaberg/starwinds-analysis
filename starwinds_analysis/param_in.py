@@ -18,9 +18,8 @@ import logging
 from pathlib import Path
 
 from scipy.constants import day
-
-_SOLAR_RADIUS_M = 6.957e8
-_SOLAR_MASS_KG = 1.98847e30
+from starwinds_analysis.constants import SOLAR_MASS_KG
+from starwinds_analysis.constants import SOLAR_RADIUS_M
 log = logging.getLogger(__name__)
 
 
@@ -79,12 +78,6 @@ def _new_session():
     return OrderedDict()
 
 
-def _ensure_component(session, component_name: str):
-    """Ensure a component entry exists inside a session."""
-    session.setdefault(component_name, OrderedDict())
-    return session[component_name]
-
-
 def parse_sessions(flat_lines) -> list[OrderedDict]:
     """Parse flat config lines into sessions, components, commands, and blocks."""
     sessions = [_new_session()]
@@ -104,7 +97,7 @@ def parse_sessions(flat_lines) -> list[OrderedDict]:
             tokens = line.split()
             component_name = tokens[1] if len(tokens) > 1 else "root"
             current_command = None
-            _ensure_component(session, component_name)
+            session.setdefault(component_name, OrderedDict())
             continue
 
         if line.startswith("#END_COMP"):
@@ -122,14 +115,14 @@ def parse_sessions(flat_lines) -> list[OrderedDict]:
 
         if line.startswith("#"):
             current_command = line.split()[0]
-            component = _ensure_component(session, component_name)
+            component = session.setdefault(component_name, OrderedDict())
             component.setdefault(current_command, []).append([])
             continue
 
         if current_command is None:
             continue
 
-        component = _ensure_component(session, component_name)
+        component = session.setdefault(component_name, OrderedDict())
         component[current_command][-1].append(line)
 
     if sessions and not sessions[-1]:
@@ -319,8 +312,8 @@ class ParamIn:
             out = OrderedDict()
             if name:
                 out["Star_name"] = name
-            out["Star_radius_m"] = radius_rsun * _SOLAR_RADIUS_M
-            out["Star_mass_kg"] = mass_msun * _SOLAR_MASS_KG
+            out["Star_radius_m"] = radius_rsun * SOLAR_RADIUS_M
+            out["Star_mass_kg"] = mass_msun * SOLAR_MASS_KG
             out["Star_rotational_period_s"] = period_days * day
             out["Star_rotation_rate_rad_s"] = 2.0 * 3.141592653589793 / out["Star_rotational_period_s"]
             return out

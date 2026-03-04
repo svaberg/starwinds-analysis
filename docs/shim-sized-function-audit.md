@@ -1,6 +1,10 @@
 # Shim-Sized Function Audit
 Short-function scan for `starwinds_analysis/` to find functions that look like shims/wrappers (low-signal code).
 This is a heuristic audit, not an automatic delete list. The point is to spot places where a function call replaces fewer than ~3-4 real lines without protecting tricky logic.
+
+Status note:
+- This audit predates later pipeline and recipe refactors.
+- Entries mentioning removed `quicklook2d.py`, removed `SmartDs.dataset`, or removed `theta`/`phi` alias helpers are historical and should not be treated as current until this scan is rerun.
 ## Heuristic
 - `stmt_count <= 2`, or `stmt_count <= 4` and mostly returns/delegates (`callish`)
 - Excludes nothing automatically; exceptions are listed explicitly below

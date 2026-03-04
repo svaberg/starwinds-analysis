@@ -65,8 +65,8 @@ The following pieces already exist and can be used as building blocks for a new 
 
 - `SmartDs` wrapper with raw passthrough and on-demand fields
 - optional `griblet`-based field resolution (`SmartDs.explain(...)` available)
-- spherical coordinate fields on demand (`R`, `theta`, `phi`)
-- spherical vector components on demand (`B_r`, `U_r`, etc.)
+- spherical coordinate fields on demand (`R`, `polar`, `azimuth`)
+- spherical vector components on demand (`B_r`, `B_p`, `B_a`, `U_r`, `U_p`, `U_a`)
 - BATSRUS-oriented SI normalization and some derived fields (`B`, `U`, `c_s`, `c_A`, `M_A`)
 
 ### 2D Plotting Utilities (Matplotlib)
@@ -190,9 +190,9 @@ Why start here:
 Required fields (SI target):
 
 - `Rho [kg/m^3]`
-- `B_r [T]`, `B_phi [T]` (or equivalent azimuthal component convention)
-- `U_r [m/s]`, `U_phi [m/s]`
-- `X [m]`, `Y [m]`, `Z [m]` (or `R [m]`, `theta`, `phi`) for cylindrical radius `varpi`
+- `B_r [T]`, `B_a [T]`
+- `U_r [m/s]`, `U_a [m/s]`
+- `X [m]`, `Y [m]`, `Z [m]` (or `R [m]`, `polar`, `azimuth`) for cylindrical radius `varpi`
 
 Notes:
 

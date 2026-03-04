@@ -3,6 +3,10 @@
 Short notes for library functions/classes in `starwinds_analysis`.
 Usage notes are direct caller locations (grep-based, then manually tightened for key APIs).
 
+Status note:
+- This is a historical audit snapshot.
+- Entries mentioning removed `quicklook2d.py`, removed `test/test_quicklook2d.py`, or removed `theta`/`phi` field aliases are stale and should be treated as audit debt until this file is rerun against the current codebase.
+
 ## `starwinds_analysis/_smart_ds_graph.py`
 - `graph_field_names`: List available field names from the runtime griblet graph. Used in no external call sites found.
 - `resolve_field`: Resolve a field through the attached griblet computation graph. Used in `starwinds_analysis/_smart_ds_graph.py`.

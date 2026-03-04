@@ -39,9 +39,10 @@ Current practical fit:
 - The existing folders already mostly match this structure.
 - No major folder reorg is required right now.
 - The main remaining structural risks are:
-  - generic logic drifting into `pipelines/utils.py`
+  - `sw_pipe.py` and `recorder.py` still carrying more orchestration/persistence surface than ideal
+  - `shell.py` becoming a second monolith if shell-specific logic keeps accumulating there
   - quantity-specific workflow wrappers living too deep in `physics/`
-  - extra side folders (`sampling/`, `algorithms/`, `data/`) becoming architectural clutter if they grow without a clear boundary
+  - the empty `sampling/` package and similar side folders becoming architectural clutter if they stay around without a clear boundary
 
 Immediate recommendation:
 
@@ -102,8 +103,9 @@ Coordinate/vector naming note:
 - `starwinds_analysis/physics/wind_scaling.py` — **Reviewed**. Local wind-scaling formulas only; profile-bundle helper removed and `MU0` now comes from `physics.constants`.
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.
 - `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Orbit geometry and 1D-curve sampling primitives live in `analysis`; removed the one-module `sampling/` package.
-- `starwinds_analysis/pipelines/quicklook2d.py` — **Debt**. High-level orchestration/convenience wrappers in library (large API surface, quantity-specific presets/workflows) vs library-purity guideline. Code TODO: added TODO.
 - `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. Still a large mixed-responsibility CLI module (dispatch, recorder schema, state persistence, stdout logging, fail-fast policy) and remains the main monolith in `pipelines/`.
+- `starwinds_analysis/pipelines/recorder.py` — **Debt**. Recorder capture + JSON normalization + persistence are now split out cleanly, but the file is still large and schema-heavy; keep it from becoming a second monolith.
+- `starwinds_analysis/pipelines/shell.py` — **Debt**. The shell pipeline is readable, but it is still the largest pipeline and still contains significant shell-specific compute logic; keep pushing pointwise parts down into recipes/physics and avoid further local growth.
 - `starwinds_analysis/param_in.py` — **Debt**. Still uses `_ensure_component(...)`; this is the same `_ensure*` helper pattern already called out as a bad smell and should be replaced with direct structure population.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
@@ -123,7 +125,6 @@ Coordinate/vector naming note:
 - `test/test_orbit_surface_analysis.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_planetary_orbits.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_profile_plotting.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
-- `test/test_quicklook2d.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_read_plt.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_sample_data_helpers.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
 - `test/test_shell_analysis.py` — **Reviewed**. Test module reviewed; production-layer bad-practice rules are not directly enforced here.
