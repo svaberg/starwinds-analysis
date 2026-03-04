@@ -21,15 +21,13 @@ log = logging.getLogger(__name__)
 def mass_loss_from_curve(curve):
     """Compute local mass-loss estimates along a sampled curve."""
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    radius_m = np.array(curve("R [sample]")) * float(curve("star_radius [m]"))
-    shell_area = 4.0 * np.pi * np.square(radius_m)
+    shell_area = 4.0 * np.pi * np.square(np.array(curve("R [m]")))
     return shell_area * mass_flux
 
 
 def torque_from_curve(curve):
     """Compute local magnetic, dynamic, and total torque estimates along a curve."""
-    radius_m = np.array(curve("R [sample]")) * float(curve("star_radius [m]"))
-    shell_area = 4.0 * np.pi * np.square(radius_m)
+    shell_area = 4.0 * np.pi * np.square(np.array(curve("R [m]")))
     magnetic_torque_density = np.array(curve("magnetic_torque_density [N/m]"))
     dynamic_torque_density = np.array(curve("dynamic_torque_density [N/m]"))
     magnetic = shell_area * magnetic_torque_density
