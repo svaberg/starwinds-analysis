@@ -111,8 +111,8 @@ def test_pressure_components_on_surface_runs_on_example():
     )
     out = pressure_components_on_surface(
         sampled,
-        body_radius_m=SOLAR_RADIUS_M,
-        period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
+        body_radius=SOLAR_RADIUS_M,
+        period=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
     )
     for key in (
         "ram_pressure [Pa]",
@@ -158,8 +158,8 @@ def test_torque_components_on_surface_runs_on_example():
     )
     out = torque_components_on_surface(
         sampled,
-        body_radius_m=SOLAR_RADIUS_M,
-        angvel_rad_s=0.0,
+        body_radius=SOLAR_RADIUS_M,
+        angvel=0.0,
     )
     for key in (
         "T1_magnetic [Nm]",

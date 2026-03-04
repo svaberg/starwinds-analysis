@@ -136,6 +136,23 @@ def build_griblet_unit_normalization_graph(
         else:
             source_name = raw_name
 
+        if base == "Lat":
+            graph.add_recipe(
+                f"latitude [{unit}]",
+                lambda x: x,
+                deps=[source_name],
+                cost=0.01,
+                metadata={"description": "Normalize Lat to latitude"},
+            )
+        if base == "Lon":
+            graph.add_recipe(
+                f"longitude [{unit}]",
+                lambda x: x,
+                deps=[source_name],
+                cost=0.01,
+                metadata={"description": "Normalize Lon to longitude"},
+            )
+
         match = _UNIT_FACTORS.get(unit)
         if match is None:
             continue

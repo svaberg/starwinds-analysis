@@ -72,26 +72,26 @@ def _phase_from_weights(weights):
     return phase
 
 
-def periodic_curve_velocity(points_r, phase_turns, period_s, body_radius_m):
+def periodic_curve_velocity(points_r, phase_turns, period, body_radius):
     """
     Velocity along a periodic sampled curve from point positions and phase turns.
     Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
-    points = np.array(points_r) * float(body_radius_m)
+    points = np.array(points_r) * float(body_radius)
     phase = np.array(phase_turns)
     if points.ndim != 2 or points.shape[1] != 3:
         raise ValueError("points_r must have shape (n, 3)")
     if points.shape[0] < 3:
         return np.full_like(points, np.nan, dtype=float)
-    t = phase * float(period_s)
+    t = phase * float(period)
     p_prev = np.roll(points, 1, axis=0)
     p_next = np.roll(points, -1, axis=0)
     t_prev = np.roll(t, 1)
     t_next = np.roll(t, -1)
     dt_prev = t - t_prev
     dt_next = t_next - t
-    dt_prev[0] += float(period_s)
-    dt_next[-1] += float(period_s)
+    dt_prev[0] += float(period)
+    dt_next[-1] += float(period)
     denom = dt_prev + dt_next
     return np.divide(
         p_next - p_prev,
@@ -210,14 +210,14 @@ def sample_trajectory(
     points,
     *,
     fields,
-    time_s,
-    velocity_xyz_m_s=None,
+    time,
+    velocity_xyz=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
     """
-    Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V_xyz`.
+    Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V`.
     """
     curve = sample_curve(
         smart_ds,
@@ -227,14 +227,14 @@ def sample_trajectory(
         method=method,
         fill_value=fill_value,
     )
-    time = np.array(time_s)
+    time = np.array(time)
     if time.ndim != 1 or time.shape[0] != curve.points.shape[0]:
-        raise ValueError("time_s must have shape (n_points,)")
+        raise ValueError("time must have shape (n_points,)")
     extra_fields = {"t [s]": time}
-    if velocity_xyz_m_s is not None:
-        velocity = np.array(velocity_xyz_m_s)
+    if velocity_xyz is not None:
+        velocity = np.array(velocity_xyz)
         if velocity.shape != (curve.points.shape[0], 3):
-            raise ValueError("velocity_xyz_m_s must have shape (n_points, 3)")
+            raise ValueError("velocity_xyz must have shape (n_points, 3)")
         extra_fields["V_x [m/s]"] = velocity[:, 0]
         extra_fields["V_y [m/s]"] = velocity[:, 1]
         extra_fields["V_z [m/s]"] = velocity[:, 2]

@@ -85,11 +85,11 @@ def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
             out[i] = np.quantile(row[m], q)
     return q, out
 
-def surface_point_normals_and_areas(surface_points_xyz_m):
+def surface_point_normals_and_areas(surface_points):
     """Estimate point normals and point-associated areas on a structured surface."""
-    pts = np.array(surface_points_xyz_m)
+    pts = np.array(surface_points)
     if pts.ndim != 3 or pts.shape[-1] != 3:
-        raise ValueError("surface_points_xyz_m must have shape (n_phase, n_lon, 3)")
+        raise ValueError("surface_points must have shape (n_phase, n_lon, 3)")
     if pts.shape[0] < 3 or pts.shape[1] < 4:
         raise ValueError("surface grid is too small for centered-difference geometry")
 
@@ -213,10 +213,10 @@ def sample_surface_revolution(
 def pressure_components_on_surface(
     sampled,
     *,
-    body_radius_m: float,
-    period_s: float | None = None,
+    body_radius: float,
+    period: float | None = None,
     include_relative_ram: bool = True,
-    standoff_b0_t: float = 0.7e-4,
+    standoff_b0: float = 0.7e-4,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
     """Pressure-component analytics on an already sampled surface of revolution."""
@@ -224,7 +224,7 @@ def pressure_components_on_surface(
         "pressure_components_on_surface start: include_relative=%s",
         include_relative_ram,
     )
-    body_radius_m = float(body_radius_m)
+    body_radius = float(body_radius)
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
@@ -235,13 +235,13 @@ def pressure_components_on_surface(
     standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
-    if include_relative_ram and period_s is not None and np.isfinite(period_s):
+    if include_relative_ram and period is not None and np.isfinite(period):
         path_points = np.column_stack(
             [sampled["X [surface]"][:, 0], sampled["Y [surface]"][:, 0], sampled["Z [surface]"][:, 0]]
         )
         phase = np.array(sampled["phase [turns]"])
         if phase.shape == (path_points.shape[0],):
-            v_path = periodic_curve_velocity(path_points, phase, float(period_s), body_radius_m)
+            v_path = periodic_curve_velocity(path_points, phase, float(period), body_radius)
             object_velocity = np.repeat(v_path[:, None, :], sampled["X [surface]"].shape[1], axis=1)
 
     comps = {
@@ -257,14 +257,14 @@ def pressure_components_on_surface(
     # local workflow logic because they depend on the trajectory velocity.
     if object_velocity is not None:
         U_minus_V = u_xyz - object_velocity
-        U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
+        U_minus_V_speed = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
         comps["V [m/s]"] = np.sqrt(np.sum(object_velocity * object_velocity, axis=-1))
-        comps["U_minus_V [m/s]"] = U_minus_V_m_s
-        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, U_minus_V_m_s)
+        comps["U_minus_V [m/s]"] = U_minus_V_speed
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, U_minus_V_speed)
         comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
             rho,
-            U_minus_V_m_s,
-            b0_t=standoff_b0_t,
+            U_minus_V_speed,
+            b0=standoff_b0,
         )
 
     weights = surface_sample_weights(
@@ -306,9 +306,9 @@ def pressure_components_on_surface(
 def torque_components_on_surface(
     sampled,
     *,
-    body_radius_m: float,
+    body_radius: float,
     include_pressure_term: bool = True,
-    angvel_rad_s: float = 0.0,
+    angvel: float = 0.0,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
     """Explicit-surface torque diagnostics on an already sampled surface of revolution."""
@@ -316,7 +316,7 @@ def torque_components_on_surface(
         "torque_components_on_surface start: include_pressure=%s",
         include_pressure_term,
     )
-    body_radius_m = float(body_radius_m)
+    body_radius = float(body_radius)
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     b_xyz = np.array(sampled["B_xyz [T]"])
@@ -324,18 +324,18 @@ def torque_components_on_surface(
     if include_pressure_term and "thermal_pressure [Pa]" in sampled:
         p = np.array(sampled["thermal_pressure [Pa]"])
 
-    points_m = np.array(sampled["surface_points"]) * body_radius_m
-    normals, area = surface_point_normals_and_areas(points_m)
+    points = np.array(sampled["surface_points"]) * body_radius
+    normals, area = surface_point_normals_and_areas(points)
 
     terms = surface_torque_density_terms(
-        xyz_m=points_m,
+        xyz_m=points,
         normals_xyz=normals,
         area_m2=area,
         rho_kg_m3=rho,
         u_xyz_m_s=u_xyz,
         b_xyz_t=b_xyz,
         pressure_pa=p,
-        angvel_rad_s=angvel_rad_s,
+        angvel_rad_s=angvel,
         use_rotating_frame=True,
     )
     totals = integrate_surface_torque_terms(terms)
@@ -378,7 +378,7 @@ def torque_components_on_surface(
 
     out = {
         "sampled_surface": sampled,
-        "surface_points [m]": points_m,
+        "surface_points [m]": points,
         "surface_normals [none]": normals,
         "surface_area [m^2]": area,
         "rho [kg/m^3]": rho,

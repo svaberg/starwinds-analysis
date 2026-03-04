@@ -32,17 +32,18 @@ def torque_from_curve(curve):
 def relative_ram_pressure_from_trajectory(
     trajectory,
     *,
-    standoff_b0_t: float = 0.7e-4,
+    standoff_b0: float = 0.7e-4,
 ):
     """Compute trajectory-frame ram pressure and standoff distance."""
     rho = np.array(trajectory("Rho [kg/m^3]"))
     U_xyz = np.array(trajectory("U_xyz [m/s]"))
-    V_xyz = np.column_stack(
+    V_xyz = np.stack(
         [
             trajectory("V_x [m/s]"),
             trajectory("V_y [m/s]"),
             trajectory("V_z [m/s]"),
-        ]
+        ],
+        axis=-1,
     )
     U_minus_V = U_xyz - V_xyz
     U_minus_V_speed = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
@@ -50,6 +51,6 @@ def relative_ram_pressure_from_trajectory(
     standoff_distance = magnetospheric_standoff_distance(
         rho,
         U_minus_V_speed,
-        b0_t=standoff_b0_t,
+        b0=standoff_b0,
     )
     return relative_ram_pressure, standoff_distance

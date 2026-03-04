@@ -48,8 +48,8 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
             "U_y [m/s]",
             "U_z [m/s]",
         ),
-        time_s=info["phase [turns]"] * period_s,
-        velocity_xyz_m_s=velocity,
+        time=info["phase [turns]"] * period_s,
+        velocity_xyz=velocity,
         method="nearest",
     )
     relative_ram_pressure, standoff_distance = relative_ram_pressure_from_trajectory(trajectory)
@@ -82,8 +82,8 @@ def test_relative_ram_pressure_from_trajectory_runs_on_elliptic_example():
             "U_y [m/s]",
             "U_z [m/s]",
         ),
-        time_s=info["phase [turns]"] * period_s,
-        velocity_xyz_m_s=velocity,
+        time=info["phase [turns]"] * period_s,
+        velocity_xyz=velocity,
         method="nearest",
     )
     relative_ram_pressure, standoff_distance = relative_ram_pressure_from_trajectory(trajectory)

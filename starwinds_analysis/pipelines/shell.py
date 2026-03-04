@@ -8,35 +8,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.constants import MU0
 from starwinds_analysis.pipelines.utils import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
-
-
-def shell_spherical_components(
-    vector,
-    *,
-    lon_deg,
-    lat_deg,
-):
-    """Project a stacked Cartesian shell vector onto radial/polar/azimuth directions."""
-    lon_rad = np.deg2rad(lon_deg)
-    lat_rad = np.deg2rad(lat_deg)
-    cos_lon = np.cos(lon_rad)
-    sin_lon = np.sin(lon_rad)
-    cos_lat = np.cos(lat_rad)
-    sin_lat = np.sin(lat_rad)
-    x_component = vector[..., 0]
-    y_component = vector[..., 1]
-    z_component = vector[..., 2]
-    radial = x_component * cos_lat * cos_lon + y_component * cos_lat * sin_lon + z_component * sin_lat
-    polar = -x_component * sin_lat * cos_lon - y_component * sin_lat * sin_lon + z_component * cos_lat
-    azimuth = -x_component * sin_lon + y_component * cos_lon
-    return radial, polar, azimuth
 
 
 def shell_cell_values(
@@ -80,18 +57,7 @@ def load_shell_grid(smart_ds: SmartDs):
         shell_masks.append(shell_mask)
         shell_areas_m2.append((float(radius_r) * star_radius_m) ** 2 * solid_angle)
     height_r = [radius_r - 1.0 for radius_r in shell_radii_r]
-    return (
-        r_all,
-        star_radius_m,
-        lon_all,
-        lat_all,
-        shell_radii_r,
-        lon_nodes,
-        lat_nodes,
-        shell_masks,
-        shell_areas_m2,
-        height_r,
-    )
+    return lon_all, lat_all, shell_radii_r, lon_nodes, lat_nodes, shell_masks, shell_areas_m2, height_r
 
 
 def shell_map_and_profile(
@@ -192,8 +158,6 @@ def process_plt_file(file_path: str | Path) -> None:
     smart_ds.prepare()
     output_dir.mkdir(parents=True, exist_ok=True)
     (
-        r_all,
-        star_radius_m,
         lon_all,
         lat_all,
         shell_radii_r,
@@ -207,21 +171,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell wind mass flux.
     log.debug("Computing shell wind mass flux...")
-    rho = np.ravel(smart_ds("Rho [kg/m^3]"))
-    u_vector = np.stack(
-        (
-            np.ravel(smart_ds("U_x [m/s]")),
-            np.ravel(smart_ds("U_y [m/s]")),
-            np.ravel(smart_ds("U_z [m/s]")),
-        ),
-        axis=-1,
-    )
-    u_r, _u_polar, u_phi = shell_spherical_components(
-        u_vector,
-        lon_deg=lon_all,
-        lat_deg=lat_all,
-    )
-    mass_flux = rho * u_r
+    mass_flux = np.ravel(smart_ds("mass_flux [kg/m^2/s]"))
     mass_flux_map, mass_loss_kg_s = shell_map_and_profile(
         mass_flux,
         shell_masks=shell_masks,
@@ -261,21 +211,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell angular momentum flux.
     log.debug("Computing shell angular momentum flux...")
-    b_vector = np.stack(
-        (
-            np.ravel(smart_ds("B_x [T]")),
-            np.ravel(smart_ds("B_y [T]")),
-            np.ravel(smart_ds("B_z [T]")),
-        ),
-        axis=-1,
-    )
-    b_r, _b_polar, b_phi = shell_spherical_components(
-        b_vector,
-        lon_deg=lon_all,
-        lat_deg=lat_all,
-    )
-    varpi_m = r_all * star_radius_m * np.cos(np.deg2rad(lat_all))
-    torque_density = varpi_m * (rho * u_phi * u_r - (b_phi * b_r / MU0))
+    torque_density = np.ravel(smart_ds("total_torque_density [N/m]"))
     torque_map, total_torque_nm = shell_map_and_profile(
         torque_density,
         shell_masks=shell_masks,
@@ -314,8 +250,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell energy flux.
     log.debug("Computing shell energy flux...")
-    energy_density = np.ravel(smart_ds("E [J/m^3]"))
-    energy_flux = energy_density * u_r
+    energy_flux = np.ravel(smart_ds("energy_flux [W/m^2]"))
     energy_map, energy_flow_w = shell_map_and_profile(
         energy_flux,
         shell_masks=shell_masks,
@@ -354,7 +289,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell open magnetic flux.
     log.debug("Computing shell open magnetic flux...")
-    open_flux_density = np.abs(b_r)
+    open_flux_density = np.abs(np.ravel(smart_ds("B_r [T]")))
     open_flux_map, open_flux_wb = shell_map_and_profile(
         open_flux_density,
         shell_masks=shell_masks,
