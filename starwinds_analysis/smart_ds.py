@@ -1,12 +1,12 @@
 """THIS FILE contains the public SmartDs dataset wrapper API.
 
-It is the facade for raw field access, lazy computed fields, graph integration, and resampling delegation.
+It is the facade for raw field access, graph integration, and resampling delegation.
 It should not contain domain-specific physics formulas or plotting code.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from os import PathLike
 from pathlib import Path
 
@@ -20,7 +20,6 @@ from starwinds_analysis._smart_ds_graph import graph_field_names as _graph_field
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
 from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
-FieldFunction = Callable[["SmartDs"], np.ndarray]
 
 class SmartDs:
     """
@@ -31,8 +30,8 @@ class SmartDs:
     - Support resampling into a new wrapped dataset without involving VTK/PyVista.
 
     The current implementation is intentionally simple: if a requested field exists
-    in the underlying dataset it is returned directly, and optional registered field
-    functions can be used for lazy derived quantities.
+    in the underlying dataset it is returned directly; otherwise the attached graph
+    is used to derive it.
 
     Centering note (current limitation):
     - SmartDs does not yet track field centering metadata (point-centered vs cell-centered).
@@ -46,17 +45,15 @@ class SmartDs:
         self,
         dataset: Dataset,
         *,
-        field_functions: Mapping[str, FieldFunction] | None = None,
         cache_enabled: bool = True,
         computation_graph=None,
         include_aux_in_loader: bool = True,
     ) -> None:
         """
-        Wrap a raw Dataset and initialize local field functions plus graph hooks.
+        Wrap a raw Dataset and initialize graph hooks.
         Used by: `SmartDs` users and internal methods
         """
         self._dataset = dataset
-        self._field_functions: dict[str, FieldFunction] = dict(field_functions or {})
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = computation_graph
@@ -155,14 +152,6 @@ class SmartDs:
         return tuple(self._dataset.variables)
 
     @property
-    def field_functions(self) -> Mapping[str, FieldFunction]:
-        """
-        Registered instance-local field functions (custom escape hatch outside griblet).
-        Used by: `SmartDs` users and internal methods
-        """
-        return self._field_functions
-
-    @property
     def computation_graph(self):
         """
         Attached griblet graph (or None).
@@ -172,13 +161,10 @@ class SmartDs:
 
     def keys(self) -> tuple[str, ...]:
         """
-        Known field names from raw variables, attached graph fields, and local custom fields.
+        Known field names from raw variables and attached graph fields.
         Used by: `SmartDs` users and internal methods
         """
         names = list(self._dataset.variables)
-        for name in self._field_functions:
-            if name not in names:
-                names.append(name)
         for name in _graph_field_names(self):
             if name not in names:
                 names.append(name)
@@ -207,10 +193,10 @@ class SmartDs:
 
     def has_field(self, name: str) -> bool:
         """
-        Check whether a field is available from raw data, the attached graph, or local custom fields.
+        Check whether a field is available from raw data or the attached graph.
         Used by: `SmartDs` users and internal methods
         """
-        if self.has_raw_field(name) or name in self._field_functions:
+        if self.has_raw_field(name):
             return True
         if self._computation_graph is None:
             return False
@@ -226,22 +212,6 @@ class SmartDs:
         except (IndexError, KeyError):
             return default
 
-    def register_field(
-        self,
-        name: str,
-        func: FieldFunction,
-        *,
-        overwrite: bool = False,
-    ) -> None:
-        """
-        Register a lazy local field function on this SmartDs instance.
-        Used by: `SmartDs` users and internal methods
-        """
-        if (not overwrite) and (name in self._field_functions):
-            raise KeyError(f"Field function for '{name}' is already registered")
-        self._field_functions[name] = func
-        self._cache.pop(name, None)
-
     def set_computation_graph(self, graph, *, merge: bool = False):
         """
         Attach or merge a griblet computation graph used for unresolved fields.
@@ -255,25 +225,6 @@ class SmartDs:
             self._computation_graph.merge(graph)
         else:
             self._computation_graph = graph
-        return self
-
-    def add_spherical_fields(
-        self,
-        *,
-        coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-        vectors: Sequence[str] | None = None,
-    ):
-        """
-        Add local spherical geometry/vector component fields when explicit local registration is desired.
-        Used by: `SmartDs` users and internal methods
-        """
-        from starwinds_analysis.recipes.spherical import _vector_triplets
-        from starwinds_analysis.recipes.spherical import register_spherical_geometry_fields
-        from starwinds_analysis.recipes.spherical import register_vector_spherical_components
-
-        register_spherical_geometry_fields(self, coord_fields=coord_fields)
-        for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
-            register_vector_spherical_components(self, prefix=prefix, unit=unit, coord_fields=coord_fields)
         return self
 
     def add_spherical_graph(
@@ -366,11 +317,8 @@ class SmartDs:
         else:
             try:
                 value = self._compute_via_graph(name)
-            except (IndexError, UnresolvableFieldError) as exc:
-                func = self._field_functions.get(name)
-                if func is None:
-                    raise exc
-                value = np.array(func(self))
+            except UnresolvableFieldError as exc:
+                raise IndexError(str(exc)) from exc
 
         if self._cache_enabled:
             self._cache[name] = value
@@ -460,7 +408,6 @@ class SmartDs:
         )
         return type(self)(
             new_dataset,
-            field_functions=self._field_functions,
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
             include_aux_in_loader=self._include_aux_in_loader,

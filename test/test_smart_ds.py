@@ -79,30 +79,13 @@ def test_passthrough_raw_field():
     assert "Q [none]" in sds
 
 
-def test_lazy_registered_field_is_cached():
-    sds = SmartDs(make_dataset_2d())
-    calls = {"n": 0}
-
-    def q_squared(ds):
-        calls["n"] += 1
-        q = ds.variable("Q [none]")
-        return q**2
-
-    sds.register_field("Q2 [none]", q_squared)
-
-    first = sds.variable("Q2 [none]")
-    second = sds.variable("Q2 [none]")
-
-    np.testing.assert_allclose(first, [0.0, 1.0, 1.0, 4.0])
-    np.testing.assert_allclose(second, first)
-    assert calls["n"] == 1
-
 
 def test_call_uses_smartds_resolution():
     sds = SmartDs(make_dataset_2d())
-    sds.register_field("Q2 [none]", lambda ds: np.array(ds.variable("Q [none]")) ** 2)
+    sds.add_batsrus_graph(include_unit_normalization=False, include_derived=False)
 
-    np.testing.assert_allclose(sds("Q2 [none]"), [0.0, 1.0, 1.0, 4.0])
+    with pytest.raises(IndexError):
+        sds("Q2 [none]")
 
 
 def test_smartds_field_access_is_name_only():
@@ -157,8 +140,8 @@ def test_resample_linear_interpolates_inside_hull():
     np.testing.assert_allclose(out.variable("Q [none]"), [0.75, 0.70], rtol=0, atol=1e-12)
 
 
-def test_add_spherical_fields_computes_geometry_and_vector_components():
-    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_fields(vectors=("B",))
+def test_add_spherical_graph_computes_geometry_and_vector_components():
+    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 
     r = sds.variable("R [R]")
     polar = sds.variable("polar [rad]")
@@ -192,8 +175,8 @@ def test_add_spherical_fields_computes_geometry_and_vector_components():
     np.testing.assert_allclose(lon_deg, np.degrees(lon))
 
 
-def test_add_spherical_fields_exposes_polar_azimuth_and_compact_vector_names():
-    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_fields(vectors=("B",))
+def test_add_spherical_graph_exposes_polar_azimuth_and_compact_vector_names():
+    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 
     polar = sds.variable("polar [rad]")
     azimuth = sds.variable("azimuth [rad]")
@@ -227,9 +210,9 @@ def test_add_spherical_graph_can_recover_cartesian_from_r_polar_azimuth():
     np.testing.assert_allclose(z, [0.0, 0.0, 4.0], atol=1e-12)
 
 
-def test_add_spherical_fields_registers_xyz_geometry_and_vectors():
+def test_add_spherical_graph_registers_xyz_geometry_and_vectors():
     sds = SmartDs(make_dataset_3d_vectors())
-    sds.add_spherical_fields(vectors=("B",))
+    sds.add_spherical_graph(vectors=("B",))
 
     r = np.array(sds("R [R]"))
     polar = np.array(sds("polar [rad]"))
@@ -247,9 +230,9 @@ def test_add_spherical_fields_registers_xyz_geometry_and_vectors():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_add_spherical_fields_on_real_example_data():
+def test_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_spherical_fields(vectors=("B", "U"))
+    sds.add_spherical_graph(vectors=("B", "U"))
 
     x = np.array(sds.variable("X [R]"))
     y = np.array(sds.variable("Y [R]"))

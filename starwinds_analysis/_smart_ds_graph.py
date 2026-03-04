@@ -70,7 +70,7 @@ def compute_via_graph(smart_ds, name: str):
     if smart_ds._computation_graph is None:
         raise IndexError(
             f"Field '{name}' not available. Raw fields: {smart_ds._dataset.variables}. "
-            f"Computed fields: {list(smart_ds._field_functions)}."
+            "No computation graph attached."
         )
 
     graph = build_runtime_graph(smart_ds)

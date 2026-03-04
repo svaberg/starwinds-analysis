@@ -48,7 +48,7 @@ Files:
 Status: PARTIAL, usable
 
 - `SmartDs.prepare(...)` is the normal workflow setup method.
-- Local spherical fields are explicit (`add_spherical_fields(...)`), not auto-attached in `__init__()`.
+- Local spherical field registration has been removed; spherical fields now come from the attached graph only.
 - Active spherical field names now use:
   - `R [R]`
   - `polar [rad]`
