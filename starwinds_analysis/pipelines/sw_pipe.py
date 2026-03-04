@@ -51,14 +51,14 @@ class PipelineLogFormatter(logging.Formatter):
         return out
 
 
-def configure_stdout_logger(level_name: str) -> None:
+def configure_logger(level_name: str) -> None:
     """
     Configure the root logger for human-readable pipeline logs on stdout.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    root_logger = logging.getLogger()
-    root_logger.handlers.clear()
-    root_logger.setLevel(getattr(logging, str(level_name).upper()))
+    logger = logging.getLogger()
+    logger.handlers.clear()
+    logger.setLevel(getattr(logging, str(level_name).upper()))
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(getattr(logging, str(level_name).upper()))
     if bool(getattr(sys.stdout, "isatty", lambda: False)()):
@@ -86,22 +86,22 @@ def configure_stdout_logger(level_name: str) -> None:
                 continue
     if handler.formatter is None:
         handler.setFormatter(PipelineLogFormatter())
-    root_logger.addHandler(handler)
+    logger.addHandler(handler)
 
 
-def configure_recorder_logger(level_name: str = "WARNING") -> None:
+def configure_recorder(level_name: str = "WARNING") -> None:
     """
     Configure the dedicated recorder logger with its own stream handler and level.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    recorder_logger = logging.getLogger("recorder")
-    recorder_logger.setLevel(logging.DEBUG)
-    recorder_logger.handlers.clear()
+    recorder = logging.getLogger("recorder")
+    recorder.setLevel(logging.DEBUG)
+    recorder.handlers.clear()
     recorder_handler = logging.StreamHandler()
     recorder_handler.setLevel(getattr(logging, str(level_name).upper()))
     recorder_handler.setFormatter(PipelineLogFormatter())
-    recorder_logger.addHandler(recorder_handler)
-    recorder_logger.propagate = False
+    recorder.addHandler(recorder_handler)
+    recorder.propagate = False
 
 
 # File discovery and pipeline routing
@@ -279,8 +279,8 @@ def run_sw_pipe(
                 json_warn_bytes=int(json_warn_bytes),
             )
         return results
-    recorder_logger = logging.getLogger("recorder")
-    recorder_logger.setLevel(logging.DEBUG)
+    recorder = logging.getLogger("recorder")
+    recorder.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
 
     def run_one_file(file_path: Path, process_label: str, active_process_file: Callable[[Path], None], state_pipeline_name: str) -> None:
@@ -310,7 +310,7 @@ def run_sw_pipe(
             artifacts_root=artifacts_root,
             array_offload_min_bytes=array_offload_min_bytes,
         )
-        recorder_logger.addHandler(recorder_handler)
+        recorder.addHandler(recorder_handler)
         failure: Exception | None = None
         failure_tb = None
         try:
@@ -331,7 +331,7 @@ def run_sw_pipe(
             meta = file_results.get("meta")
             if isinstance(meta, dict):
                 meta["end_time_utc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            recorder_logger.removeHandler(recorder_handler)
+            recorder.removeHandler(recorder_handler)
             recorder_handler.close()
             results.computed_results[file_key] = file_results
             known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
@@ -423,10 +423,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     # Configure the logger that writes to stdout (for human consumption).
-    configure_stdout_logger(str(args.log_level))
+    configure_logger(str(args.log_level))
 
     # Configure the recorder logger that writes machine-readable data.
-    configure_recorder_logger(str(args.record_log_level))
+    configure_recorder(str(args.record_log_level))
     run_sw_pipe(
         args.directory,
         pipeline=str(args.pipeline),
