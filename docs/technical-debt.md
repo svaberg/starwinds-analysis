@@ -76,7 +76,6 @@ Coordinate/vector naming note:
 
 ## starwinds_analysis
 
-- `starwinds_analysis/_smart_ds_graph.py` — **Debt**. Internal `resolve_field(...)` naming still collides conceptually with forbidden `resolve_*` pattern; keep graph-path resolution distinct from user field/unit requests. Code TODO: existing TODO.
 - `starwinds_analysis/_smart_ds_resample.py` — **Reviewed**. Core resampling internals; no new bad-practice hit beyond existing documented NaN handling for interpolation edge cases.
 - `starwinds_analysis/algorithms/sphere_sampling.py` — **Reviewed**. Geometry/sampling primitive module (good layer fit).
 - `starwinds_analysis/analysis/__init__.py` — **Reviewed**. Re-export facade removed; package boundary is now minimal (`__all__ = []`).

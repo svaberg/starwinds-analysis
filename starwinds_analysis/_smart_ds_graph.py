@@ -18,14 +18,11 @@ def graph_field_names(smart_ds):
         return ()
     return tuple(graph.fields())
 
-def resolve_field(smart_ds, name: str):
+def graph_path(smart_ds, name: str):
     """
-    Resolve a field through the attached griblet computation graph.
+    Return the chosen griblet dependency path for one field.
     Used by: `starwinds_analysis/_smart_ds_graph.py`
     """
-    # TODO smartds-resolve:
-    # This is graph-path resolution, not field/unit resolution. Keep the distinction
-    # explicit if SmartDs grows a user-facing resolve() API that returns data + unit.
     graph = build_runtime_graph(smart_ds)
     solver = griblet.DependencySolver(graph)
     return solver.resolve_field(name)
@@ -35,7 +32,7 @@ def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     Build a human-readable explanation of the chosen graph path.
     Used by: no external call sites found
     """
-    cost, tree = resolve_field(smart_ds, name)
+    cost, tree = graph_path(smart_ds, name)
     if return_tree:
         return cost, tree
 

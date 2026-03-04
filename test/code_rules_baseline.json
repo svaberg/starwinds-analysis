@@ -1,8 +1,1 @@
-[
-  {
-    "file": "starwinds_analysis/_smart_ds_graph.py",
-    "rule": "BAN_RESOLVE_FUNCTION",
-    "line": 21,
-    "detail": "resolve_field"
-  }
-]
+[]

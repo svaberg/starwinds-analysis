@@ -57,7 +57,7 @@ def triangles(ds, uname=None, vname=None):
     return tri.Triangulation(pu, pv, faces)
 
 
-def _resolve_field(ds, var: str | None) -> str:
+def default_slice_field(ds, var: str | None) -> str:
     """
     Resolve a default display field for slice plots when `var` is not provided.
     Used by: `starwinds_analysis/visualisation/slice.py`
@@ -109,7 +109,7 @@ def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwar
     Tripcolor slice plot with compact marginal companion axes.
     Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    field = _resolve_field(ds, var)
+    field = default_slice_field(ds, var)
     x_name, y_name = auto_coords(ds)
     tri = triangles(ds, x_name, y_name)
     c = ds.variable(field)
@@ -147,7 +147,7 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(ds, *, var: str | None = None, 
     Tripcolor slice plot in the cross-quantile style.
     Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    field = _resolve_field(ds, var)
+    field = default_slice_field(ds, var)
     x_name, y_name = auto_coords(ds)
     tri = triangles(ds, x_name, y_name)
     c = ds.variable(field)
@@ -185,7 +185,7 @@ def plot_xz_slice_with_marginal_points(ds, *, var: str | None = None, **kwargs):
     Tripcolor slice plot with point-style marginal companions.
     Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
-    field = _resolve_field(ds, var)
+    field = default_slice_field(ds, var)
     x_name, y_name = auto_coords(ds)
     tri = triangles(ds, x_name, y_name)
     c = ds.variable(field)
@@ -228,7 +228,7 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
     Tripcolor slice plot with unique-coordinate marginal quantile style.
     Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
     """
-    field = _resolve_field(ds, var)
+    field = default_slice_field(ds, var)
     x_name, y_name = auto_coords(ds)
     tri = triangles(ds, x_name, y_name)
     c = ds.variable(field)
