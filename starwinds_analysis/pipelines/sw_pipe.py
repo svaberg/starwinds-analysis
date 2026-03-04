@@ -28,18 +28,6 @@ PIPELINE_LOG_FORMAT = "[%(levelname)s] %(pipeline_source)s %(message)s"
 PIPELINE_COLOR_LOG_FORMAT = "%(log_color)s[%(levelname)s]%(reset)s %(pipeline_source)s %(message)s"
 
 
-def log_pipeline_event(logger, message: str, **fields) -> None:
-    """
-    Emit one normalized pipeline progress message on the provided logger.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    text = message
-    if fields:
-        suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
-        text = f"{message} | {suffix}"
-    logger.debug(text)
-
-
 # Human/recorder logging setup
 class PipelineSourceFilter(logging.Filter):
     """
@@ -265,14 +253,13 @@ def run_sw_pipe(
             continue
         for file_key, payload in pipeline_results.items():
             results.computed_results[file_key] = payload
-    log_pipeline_event(
-        log,
-        "sw_pipe.discovered",
-        count=len(selected),
-        directory=Path(directory),
-        recursive=recursive,
-        noclobber=noclobber,
-        pipeline=pipeline_label,
+    log.debug(
+        "sw_pipe.discovered | count=%s, directory=%s, noclobber=%s, pipeline=%s, recursive=%s",
+        len(selected),
+        Path(directory),
+        noclobber,
+        pipeline_label,
+        recursive,
     )
     if not selected:
         for state_pipeline_name, state_file in state_files.items():
@@ -295,7 +282,7 @@ def run_sw_pipe(
         processed_keys = known_processed_by_pipeline[state_pipeline_name]
         if noclobber and file_key in processed_keys:
             results.skipped_files.append(file_path)
-            log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
+            log.debug("sw_pipe.skip_processed | file=%s", file_path.name)
             return
 
         file_results: dict[str, object] = {
