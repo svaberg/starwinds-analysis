@@ -64,22 +64,21 @@ def configure_logger(level_name: str) -> None:
     if bool(getattr(sys.stdout, "isatty", lambda: False)()):
         for module_name in ("colorlog", "coloredlogs"):
             try:
-                module = __import__(module_name, fromlist=["ColoredFormatter"])
+                formatter_class = __import__(module_name, fromlist=["ColoredFormatter"]).ColoredFormatter
+                handler.setFormatter(
+                    formatter_class(
+                        PIPELINE_COLOR_LOG_FORMAT,
+                        secondary_log_colors={},
+                        reset=True,
+                        style="%",
+                    )
+                )
             except ImportError:
                 color_fallback_notes.append((logging.INFO, f"Pipeline color logging backend not available: {module_name}"))
                 continue
-            formatter_class = getattr(module, "ColoredFormatter", None)
-            if formatter_class is None:
+            except AttributeError:
                 color_fallback_notes.append((logging.WARNING, f"Pipeline color logging backend missing ColoredFormatter: {module_name}"))
                 continue
-            handler.setFormatter(
-                formatter_class(
-                    PIPELINE_COLOR_LOG_FORMAT,
-                    secondary_log_colors={},
-                    reset=True,
-                    style="%",
-                )
-            )
             color_backend = module_name
             break
     if handler.formatter is None:
