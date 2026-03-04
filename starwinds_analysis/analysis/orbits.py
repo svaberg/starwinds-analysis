@@ -72,35 +72,6 @@ def _phase_from_weights(weights):
     return phase
 
 
-def periodic_curve_velocity(points_r, phase_turns, period, body_radius):
-    """
-    Velocity along a periodic sampled curve from point positions and phase turns.
-    Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
-    """
-    points = np.array(points_r) * float(body_radius)
-    phase = np.array(phase_turns)
-    if points.ndim != 2 or points.shape[1] != 3:
-        raise ValueError("points_r must have shape (n, 3)")
-    if points.shape[0] < 3:
-        return np.full_like(points, np.nan, dtype=float)
-    t = phase * float(period)
-    p_prev = np.roll(points, 1, axis=0)
-    p_next = np.roll(points, -1, axis=0)
-    t_prev = np.roll(t, 1)
-    t_next = np.roll(t, -1)
-    dt_prev = t - t_prev
-    dt_next = t_next - t
-    dt_prev[0] += float(period)
-    dt_next[-1] += float(period)
-    denom = dt_prev + dt_next
-    return np.divide(
-        p_next - p_prev,
-        denom[:, None],
-        out=np.full_like(points, np.nan, dtype=float),
-        where=denom[:, None] != 0,
-    )
-
-
 def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     """
     Velocity from explicit trajectory points and strictly increasing sample times.
