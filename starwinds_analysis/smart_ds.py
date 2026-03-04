@@ -377,35 +377,21 @@ class SmartDs:
         """
         if not isinstance(name, str):
             raise TypeError("SmartDs fields must be requested by name")
-        if self._cache_enabled:
-            try:
-                return self._cache[name]
-            except KeyError:
-                pass
+        if self._cache_enabled and name in self._cache:
+            return self._cache[name]
 
-        if name in self._dataset.variables:
-            value = self._dataset.variable(name)
-            if self._cache_enabled:
-                self._cache[name] = value
-            return value
-
-        for candidate in self._aliases.get(name, ()):
+        for candidate in (name, *self._aliases.get(name, ())):
             if candidate in self._dataset.variables:
                 value = self._dataset.variable(candidate)
-                if self._cache_enabled:
-                    self._cache[name] = value
-                return value
-
-        try:
-            value = self._compute_via_graph(name)
-        except (IndexError, UnresolvableFieldError) as exc:
+                break
+        else:
             try:
-                value = np.array(self._field_functions[name](self))
-            except KeyError:
-                raise exc
-            if self._cache_enabled:
-                self._cache[name] = value
-            return value
+                value = self._compute_via_graph(name)
+            except (IndexError, UnresolvableFieldError) as exc:
+                func = self._field_functions.get(name)
+                if func is None:
+                    raise exc
+                value = np.array(func(self))
 
         if self._cache_enabled:
             self._cache[name] = value
