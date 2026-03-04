@@ -145,6 +145,7 @@ def build_griblet_vector_spherical_components_graph(
     Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
     Adds:
     - `prefix_xyz -> prefix_rpa`
+    - `prefix_r/p/a -> prefix_rpa`
     Example:
     - `U_xyz -> U_rpa`
     - `B_xyz -> B_rpa`
@@ -166,6 +167,12 @@ def build_griblet_vector_spherical_components_graph(
             deps=list(xyz_names),
             cost=0.4 if index == 0 else 0.5,
         )
+    graph.add_recipe(
+        f"{prefix}_rpa [{unit}]",
+        lambda vr, vp, va: np.stack([np.array(vr), np.array(vp), np.array(va)], axis=-1),
+        deps=list(rpa_names),
+        cost=0.05,
+    )
     return graph
 
 

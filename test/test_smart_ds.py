@@ -182,6 +182,7 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
     b_r = sds.variable("B_r [T]")
     b_p = sds.variable("B_p [T]")
     b_a = sds.variable("B_a [T]")
+    b_rpa = sds.variable("B_rpa [T]")
 
     assert r.shape == (3,)
     assert polar.shape == (3,)
@@ -189,6 +190,7 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
     assert b_r.shape == (3,)
     assert b_p.shape == (3,)
     assert b_a.shape == (3,)
+    assert b_rpa.shape == (3, 3)
 
     # First point is on +x axis.
     np.testing.assert_allclose(r[0], 1.0)
@@ -197,6 +199,9 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
     np.testing.assert_allclose(b_r[0], 1.0)
     np.testing.assert_allclose(b_p[0], -3.0)
     np.testing.assert_allclose(b_a[0], 2.0)
+    np.testing.assert_allclose(b_rpa[:, 0], b_r)
+    np.testing.assert_allclose(b_rpa[:, 1], b_p)
+    np.testing.assert_allclose(b_rpa[:, 2], b_a)
 
     lat = sds.variable("latitude [rad]")
     lon = sds.variable("longitude [rad]")
@@ -354,6 +359,7 @@ def test_batsrus_graph_fields_resolve_on_prepared_example():
                 f"{prefix}_r [{unit}]",
                 f"{prefix}_p [{unit}]",
                 f"{prefix}_a [{unit}]",
+                f"{prefix}_rpa [{unit}]",
             ]
         )
 
