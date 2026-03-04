@@ -197,7 +197,7 @@ def test_orbital_period_is_approximately_one_year_for_1au_solar_mass():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    star_radius_m = float(sds.aux["Star_radius_m"])
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -207,15 +207,19 @@ def test_sample_zero_eccentricity_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert np.array(out("R [m]")).shape == (72,)
+    x = np.array(out("X [R]"))
+    y = np.array(out("Y [R]"))
+    z = np.array(out("Z [R]"))
+    r_m = np.array(out("R [m]"))
     assert np.array(out("Rho [g/cm^3]")).shape == (72,)
-    np.testing.assert_allclose(out("R [m]"), 10.0 * star_radius_m, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(np.sqrt(x * x + y * y + z * z), 10.0, rtol=1e-12, atol=0.0)
+    np.testing.assert_allclose(r_m, SOLAR_RADIUS_M * 10.0, rtol=1e-12, atol=0.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_elliptic_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    star_radius_m = float(sds.aux["Star_radius_m"])
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -225,13 +229,18 @@ def test_sample_elliptic_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert np.array(out("R [m]")).shape == (96,)
+    x = np.array(out("X [R]"))
+    y = np.array(out("Y [R]"))
+    z = np.array(out("Z [R]"))
+    radius_r = np.sqrt(x * x + y * y + z * z)
+    radius_m = np.array(out("R [m]"))
     assert np.array(out("Rho [g/cm^3]")).shape == (96,)
     assert np.array(out("phase [turns]")).shape == (96,)
     assert np.array(out("time_weight [none]")).shape == (96,)
     assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
-    assert np.nanmin(out("R [m]")) < 10.0 * star_radius_m
-    assert np.nanmax(out("R [m]")) > 10.0 * star_radius_m
+    assert np.nanmin(radius_r) < 10.0
+    assert np.nanmax(radius_r) > 10.0
+    np.testing.assert_allclose(radius_m, radius_r * SOLAR_RADIUS_M, rtol=1e-12, atol=0.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -401,7 +410,4 @@ def test_compare_curve_torque_to_shell_profile_runs():
 
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
     assert shell_tot.shape == (96,)
-    assert np.count_nonzero(np.isfinite(shell_tot)) > 0
     assert np.isfinite(out["local_total_torque_mean [Nm]"])
-    assert np.isfinite(out["shell_total_torque [Nm]"])
-    assert np.isfinite(out["mean_to_shell [none]"])

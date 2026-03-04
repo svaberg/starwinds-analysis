@@ -165,6 +165,13 @@ def build_griblet_unit_normalization_graph(
                 metadata={"description": "Scale body-radius coordinates to meters"},
             )
         graph.add_recipe(
+            "R [m]",
+            lambda r, scale=body_radius: scale * np.array(r),
+            deps=["R [R]"],
+            cost=0.05,
+            metadata={"description": "Scale spherical radius to meters"},
+        )
+        graph.add_recipe(
             "RBODY [m]",
             lambda: float(body_radius),
             deps=[],
