@@ -26,6 +26,7 @@ def test_magnetospheric_standoff_distance_decreases_with_speed():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_pressure_components_on_circular_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = pressure_components_on_circular_orbit(
         sds,
         10.0,
@@ -54,6 +55,7 @@ def test_pressure_components_on_circular_orbit_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_pressure_components_on_elliptic_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = pressure_components_on_elliptic_orbit(
         sds,
         10.0,
