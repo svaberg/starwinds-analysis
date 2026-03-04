@@ -42,6 +42,8 @@ class SmartDs:
       measures (e.g. `length [..]`, `area [..^2]`, `volume [..^3]`) for regular grids.
     """
 
+    DEFAULT_COORD_FIELDS = ("X [R]", "Y [R]", "Z [R]")
+
     def __init__(
         self,
         dataset: Dataset,
@@ -231,7 +233,7 @@ class SmartDs:
     def add_spherical_graph(
         self,
         *,
-        coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+        coord_fields: Sequence[str] | None = None,
         vectors: Sequence[str] | None = None,
         merge: bool = True,
     ):
@@ -243,6 +245,8 @@ class SmartDs:
         from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
         from starwinds_analysis.recipes.spherical import build_griblet_vector_spherical_components_graph
 
+        if coord_fields is None:
+            coord_fields = self.DEFAULT_COORD_FIELDS
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
         for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
             graph.merge(

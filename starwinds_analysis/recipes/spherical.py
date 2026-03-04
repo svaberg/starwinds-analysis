@@ -55,7 +55,7 @@ def _vector_triplets(
 
 def build_griblet_spherical_geometry_graph(
     *,
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+    coord_fields: Sequence[str],
 ):
     """
     Build a griblet graph for spherical geometry fields.
@@ -139,7 +139,7 @@ def build_griblet_vector_spherical_components_graph(
     *,
     prefix: str,
     unit: str,
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+    coord_fields: Sequence[str],
 ):
     """
     Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
