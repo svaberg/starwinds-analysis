@@ -7,7 +7,7 @@ It should keep BATSRUS naming/unit conventions localized here.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-import importlib
+import griblet
 import math
 
 import numpy as np
@@ -52,7 +52,6 @@ def build_griblet_batsrus_graph(
       `magnetic_torque_density`, and `B_tangential`.
     Used by: `starwinds_analysis/smart_ds.py`
     """
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
     vars_list = list(variable_names)
@@ -115,7 +114,6 @@ def build_griblet_unit_normalization_graph(
     - `X [R] -> X [m]`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
     for raw_name in variable_names:
@@ -226,7 +224,6 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
       shell-style magnetic torque density is built from those SI fields
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
 
@@ -413,7 +410,6 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
     - `B_xyz -> B`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
 

@@ -6,7 +6,7 @@ It should not contain domain physics formulas or plotting code.
 
 from __future__ import annotations
 
-import importlib
+import griblet
 
 def graph_field_names(smart_ds):
     """
@@ -27,7 +27,6 @@ def resolve_field(smart_ds, name: str):
     # This is graph-path resolution, not field/unit resolution. Keep the distinction
     # explicit if SmartDs grows a user-facing resolve() API that returns data + unit.
     graph = build_runtime_graph(smart_ds)
-    griblet = import_griblet()
     solver = griblet.DependencySolver(graph)
     return solver.resolve_field(name)
 
@@ -75,7 +74,6 @@ def compute_via_graph(smart_ds, name: str):
         )
 
     graph = build_runtime_graph(smart_ds)
-    griblet = import_griblet()
     solver = griblet.DependencySolver(graph)
     _cost, tree = solver.resolve_field(name)
     return evaluate_resolved_tree(tree, graph)
@@ -87,7 +85,6 @@ def build_runtime_graph(smart_ds):
     """
     if smart_ds._computation_graph is None:
         raise RuntimeError("No computation graph attached")
-    griblet = import_griblet()
     runtime_graph = griblet.ComputationGraph()
     loader_graph = build_loader_graph(smart_ds)
     runtime_graph.merge(loader_graph)
@@ -103,7 +100,6 @@ def build_loader_graph(smart_ds):
     Build a zero-dependency graph exposing raw dataset variables (+ selected aux).
     Used by: `starwinds_analysis/_smart_ds_graph.py`
     """
-    griblet = import_griblet()
     graph = griblet.ComputationGraph()
 
     for raw_name in smart_ds._dataset.variables:
@@ -140,18 +136,6 @@ def build_loader_graph(smart_ds):
             )
     return graph
 
-def import_griblet():
-    """
-    Import griblet lazily and return required runtime pieces.
-    Used by: `starwinds_analysis/_smart_ds_graph.py`
-    """
-    try:
-        return importlib.import_module("griblet")
-    except ImportError as e:
-        raise ImportError(
-            "griblet is required for computation-graph resolution. Install griblet "
-            "or use local register_field(...) functions."
-        ) from e
 
 def evaluate_resolved_tree(node, graph):
     """
