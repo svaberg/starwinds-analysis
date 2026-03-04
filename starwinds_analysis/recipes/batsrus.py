@@ -329,10 +329,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     )
     graph.add_recipe(
         "standoff_distance [m]",
-        lambda rho, U: np.power(
-            ((0.7e-4) ** 2 / (2.0 * MU0)) / (np.array(rho) * (np.array(U) ** 2)),
-            1.0 / 6.0,
-        ),
+        _standoff_distance_from_rho_u,
         deps=["Rho [kg/m^3]", "U [m/s]"],
         cost=0.2,
         metadata={"description": "Magnetospheric stand-off proxy from inertial ram pressure"},
@@ -479,6 +476,21 @@ def _parse_var_name(name: str):
         if "/" in unit or unit.isalpha() or any(ch.isdigit() for ch in unit):
             return base, unit
     return None
+
+
+def _standoff_distance_from_rho_u(rho, U):
+    """Stand-off proxy from density and speed with finite-safe division."""
+    rho_arr = np.array(rho)
+    speed_arr = np.array(U)
+    denom = rho_arr * (speed_arr ** 2)
+    scale = (0.7e-4) ** 2 / (2.0 * MU0)
+    ratio = np.divide(
+        scale,
+        denom,
+        out=np.full(np.shape(denom), np.nan, dtype=float),
+        where=denom > 0,
+    )
+    return np.power(ratio, 1.0 / 6.0)
 
 
 def _parse_xyz_component_name(name: str):
