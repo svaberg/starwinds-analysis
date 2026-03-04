@@ -11,6 +11,8 @@ import math
 
 import numpy as np
 
+from starwinds_analysis.recipes.batsrus import build_griblet_vector_cartesian_graph
+
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
     Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
@@ -211,6 +213,7 @@ def sample_trajectory(
 ):
     """
     Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V`.
+    The returned SmartDs exposes `V_xyz` via graph recipes when `velocity_xyz` is provided.
     """
     curve = sample_curve(
         smart_ds,
@@ -231,7 +234,13 @@ def sample_trajectory(
         extra_fields["V_x [m/s]"] = velocity[:, 0]
         extra_fields["V_y [m/s]"] = velocity[:, 1]
         extra_fields["V_z [m/s]"] = velocity[:, 2]
-    return curve.append_fields(extra_fields, zone_suffix="trajectory")
+    curve = curve.append_fields(extra_fields, zone_suffix="trajectory")
+    if velocity_xyz is not None:
+        curve.set_computation_graph(
+            build_griblet_vector_cartesian_graph(curve.variables),
+            merge=True,
+        )
+    return curve
 
 def sample_elliptic_orbit(
     smart_ds,

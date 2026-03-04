@@ -37,14 +37,7 @@ def relative_ram_pressure_from_trajectory(
     """Compute trajectory-frame ram pressure and standoff distance."""
     rho = np.array(trajectory("Rho [kg/m^3]"))
     U_xyz = np.array(trajectory("U_xyz [m/s]"))
-    V_xyz = np.stack(
-        [
-            trajectory("V_x [m/s]"),
-            trajectory("V_y [m/s]"),
-            trajectory("V_z [m/s]"),
-        ],
-        axis=-1,
-    )
+    V_xyz = np.array(trajectory("V_xyz [m/s]"))
     U_minus_V = U_xyz - V_xyz
     U_minus_V_speed = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
     relative_ram_pressure = ram_pressure(rho, U_minus_V_speed)
