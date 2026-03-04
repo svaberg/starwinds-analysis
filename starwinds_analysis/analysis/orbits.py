@@ -1,7 +1,8 @@
 """THIS FILE contains orbit geometry and 1D-curve sampling primitives.
 
-It provides circular/elliptic orbit paths and SmartDs resampling along those
-paths. This is analysis/sampling code (not local physics formulas).
+It provides ellipse-based orbit paths and SmartDs resampling along those paths.
+The circular case is the `eccentricity=0` case. This is analysis/sampling code
+(not local physics formulas).
 """
 
 from __future__ import annotations
@@ -10,34 +11,9 @@ import math
 
 import numpy as np
 
-def circular_orbit_points(
-    radius,
-    *,
-    n_points: int = 360,
-    plane: str = "xy",
-    phase0: float = 0.0,
-    center=(0.0, 0.0, 0.0),
-):
-    """
-    Cartesian points on a circular orbit (same coordinate unit as `radius`).
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`,
-      `starwinds_analysis/physics/orbit_surface.py`
-    """
-    return elliptic_orbit_points(
-        radius,
-        eccentricity=0.0,
-        n_points=n_points,
-        plane=plane,
-        phase0=phase0,
-        center=center,
-        sample="eccentric_anomaly",
-        return_info=False,
-    )
-
 def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int = 20):
     """
     Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations.
-    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     e = float(eccentricity)
     if not (0.0 <= e < 1.0):
@@ -58,7 +34,6 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
 def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
     """
     Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates.
-    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     cx, cy, cz = map(float, center)
     pts = np.empty((x.size, 3), dtype=float)
@@ -81,7 +56,6 @@ def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
 def _phase_from_weights(weights):
     """
     Convert periodic sample weights into cumulative phase turns.
-    Used by: `starwinds_analysis/analysis/orbits.py`
     """
     w = np.array(weights)
     if w.ndim != 1 or w.size == 0:
@@ -140,8 +114,8 @@ def elliptic_orbit_points(
 ):
     """
     Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`).
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`,
-      `starwinds_analysis/physics/orbit_surface.py`
+    The circular case is `eccentricity=0`.
+    Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     a = float(semi_major_axis)
     e = float(eccentricity)
@@ -218,7 +192,7 @@ def sample_curve(
 ):
     """
     Resample `fields` onto explicit Cartesian points and return a curve SmartDs.
-    Used by: `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`
+    Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
     sampled = smart_ds.resample(
@@ -252,7 +226,6 @@ def sample_trajectory(
 ):
     """
     Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V_xyz`.
-    Used by: no external call sites found
     """
     curve = sample_curve(
         smart_ds,
@@ -275,40 +248,6 @@ def sample_trajectory(
         extra_fields["V_z [m/s]"] = velocity[:, 2]
     return curve.append_fields(extra_fields, zone_suffix="trajectory")
 
-def sample_circular_orbit(
-    smart_ds,
-    radius,
-    *,
-    fields,
-    n_points: int = 360,
-    plane: str = "xy",
-    phase0: float = 0.0,
-    center=(0.0, 0.0, 0.0),
-    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
-    method: str = "nearest",
-    fill_value: float = np.nan,
-):
-    """
-    Sample requested fields along a circular orbit path and return a curve SmartDs.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    return sample_elliptic_orbit(
-        smart_ds,
-        radius,
-        eccentricity=0.0,
-        fields=fields,
-        n_points=n_points,
-        plane=plane,
-        angle0=0.0,
-        phase0=phase0,
-        center=center,
-        sample="eccentric_anomaly",
-        coordinate_fields=coordinate_fields,
-        method=method,
-        fill_value=fill_value,
-    )
-
 def sample_elliptic_orbit(
     smart_ds,
     semi_major_axis,
@@ -327,8 +266,8 @@ def sample_elliptic_orbit(
 ):
     """
     Sample requested fields along an elliptic orbit path and return a curve SmartDs.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
+    The circular case is `eccentricity=0`.
+    Used by: `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`
     """
     info = elliptic_orbit_points(
         semi_major_axis,

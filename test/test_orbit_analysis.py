@@ -4,9 +4,7 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from starwinds_analysis.analysis.orbits import circular_orbit_points
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import sample_circular_orbit
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbit_local import local_mass_loss_from_curve
@@ -19,8 +17,8 @@ from starwinds_analysis.smart_ds import SmartDs
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 
 
-def test_circular_orbit_points_constant_radius():
-    pts = circular_orbit_points(3.0, n_points=64, plane="xy")
+def test_zero_eccentricity_orbit_points_constant_radius():
+    pts = elliptic_orbit_points(3.0, eccentricity=0.0, n_points=64, plane="xy")
     r = np.sqrt(np.sum(pts * pts, axis=1))
     np.testing.assert_allclose(r, 3.0, rtol=0, atol=1e-12)
     np.testing.assert_allclose(pts[:, 2], 0.0)
@@ -52,11 +50,12 @@ def test_orbital_period_is_approximately_one_year_for_1au_solar_mass():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_sample_circular_orbit_runs_on_example():
+def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    out = sample_circular_orbit(
+    out = sample_elliptic_orbit(
         sds,
         10.0,
+        eccentricity=0.0,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
         n_points=72,
         method="nearest",
