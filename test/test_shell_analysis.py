@@ -283,22 +283,20 @@ def test_weighted_stats_helpers():
 
 def test_local_mass_loss_estimate_formula():
     r = np.array([2.0, 3.0])
-    rho = np.array([1.0, 2.0])
-    u_r = np.array([10.0, -5.0])
-    got = local_mass_loss_estimates(r, rho, u_r)
-    expected = 4 * np.pi * r**2 * rho * u_r
+    mass_flux = np.array([10.0, -10.0])
+    got = local_mass_loss_estimates(r, mass_flux)
+    expected = 4 * np.pi * r**2 * mass_flux
     np.testing.assert_allclose(got, expected)
 
 
 def test_local_torque_estimate_formula_and_summary():
     r = np.array([2.0, 3.0, 4.0])
-    rho = np.array([1.0, 2.0, 3.0])
-    u_r = np.array([10.0, 20.0, 30.0])
-    u_phi = np.array([1.0, 2.0, 3.0])
-    b_r = np.array([1e-3, 2e-3, 3e-3])
-    b_phi = np.array([2e-3, 1e-3, -1e-3])
+    magnetic_density = np.array([1.0, -2.0, 3.0])
+    dynamic_density = np.array([4.0, 5.0, -6.0])
 
-    magnetic, dynamic, total = local_torque_estimates(r, rho, u_r, u_phi, b_r, b_phi)
+    magnetic, dynamic, total = local_torque_estimates(r, magnetic_density, dynamic_density)
+    np.testing.assert_allclose(magnetic, (np.pi**2) * r**3 * magnetic_density)
+    np.testing.assert_allclose(dynamic, (np.pi**2) * r**3 * dynamic_density)
     np.testing.assert_allclose(total, magnetic + dynamic)
 
     summary = summarize_samples(total)

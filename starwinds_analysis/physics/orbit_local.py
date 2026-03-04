@@ -55,11 +55,10 @@ def local_mass_loss_from_orbit_sample(
     Compute local mass-loss estimates on one sampled orbit and compare to shell profile values.
     Used by: `starwinds_analysis/physics/orbit_local.py`
     """
-    rho = np.array(orbit("Rho [kg/m^3]"))
-    u_r = np.array(orbit("U_r [m/s]"))
+    mass_flux = np.array(orbit("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(orbit("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    estimates = local_mass_loss_estimates(r_m, rho, u_r)
+    estimates = local_mass_loss_estimates(r_m, mass_flux)
     weights = orbit.get("time_weight [none]")
     stats = summarize_samples(estimates, weights=weights)
 
@@ -87,8 +86,7 @@ def local_mass_loss_from_orbit_sample(
     out = {
         "radius [R]": float(np.nanmean(r_sample_r)),
         "radius [m]": float(np.nanmean(r_m)),
-        "u_r [m/s]": u_r,
-        "rho [kg/m^3]": rho,
+        "mass_flux [kg/m^2/s]": mass_flux,
         "local_mass_loss [kg/s]": estimates,
         "local_mass_loss_mean [kg/s]": float(stats["mean"]),
         "local_mass_loss_std [kg/s]": float(stats["std"]),
@@ -117,15 +115,16 @@ def local_torque_from_orbit_sample(
     """
     r_sample_r = np.array(orbit("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    rho = np.array(orbit("Rho [kg/m^3]"))
-    u_r = np.array(orbit("U_r [m/s]"))
-    u_a = np.array(orbit("U_a [m/s]"))
-    b_r = np.array(orbit("B_r [T]"))
-    b_a = np.array(orbit("B_a [T]"))
-    local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_a, b_r, b_a)
+    orbit_magnetic_density = np.array(orbit("magnetic_torque_density [N/m]"))
+    orbit_dynamic_density = np.array(orbit("dynamic_torque_density [N/m]"))
+    local_magnetic, local_dynamic, local_total = local_torque_estimates(
+        r_m,
+        orbit_magnetic_density,
+        orbit_dynamic_density,
+    )
     weights = orbit.get("time_weight [none]")
 
-    torque_shells, magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
+    torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
         [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
         source_fields=(
@@ -143,9 +142,9 @@ def local_torque_from_orbit_sample(
         n_azimuth=shell_n_azimuth,
         method=method,
     )
-    dynamic_density = np.array(torque_shells("dynamic_torque_density [N/m]"))
-    shell_magnetic, _ = integrate_shell_scalar(magnetic_density, shell_area)
-    shell_dynamic, _ = integrate_shell_scalar(dynamic_density, shell_area)
+    shell_dynamic_density = np.array(torque_shells("dynamic_torque_density [N/m]"))
+    shell_magnetic, _ = integrate_shell_scalar(shell_magnetic_density, shell_area)
+    shell_dynamic, _ = integrate_shell_scalar(shell_dynamic_density, shell_area)
     shell_values = shell_magnetic + shell_dynamic
     if shell_radii is None:
         shell_total = float(shell_values[0])
@@ -161,11 +160,8 @@ def local_torque_from_orbit_sample(
     out = {
         "radius [R]": float(np.nanmean(r_sample_r)),
         "radius [m]": float(np.nanmean(r_m)),
-        "rho [kg/m^3]": rho,
-        "u_r [m/s]": u_r,
-        "u_a [m/s]": u_a,
-        "b_r [T]": b_r,
-        "b_a [T]": b_a,
+        "magnetic_torque_density [N/m]": orbit_magnetic_density,
+        "dynamic_torque_density [N/m]": orbit_dynamic_density,
         "local_magnetic_torque [Nm]": local_magnetic,
         "local_dynamic_torque [Nm]": local_dynamic,
         "local_total_torque [Nm]": local_total,
@@ -200,11 +196,7 @@ def local_mass_loss_on_circular_orbit(
         smart_ds,
         radius,
         fields=(
-            "Rho [kg/m^3]",
-            "U_x [m/s]",
-            "U_y [m/s]",
-            "U_z [m/s]",
-            "U_r [m/s]",
+            "mass_flux [kg/m^2/s]",
         ),
         n_points=n_points,
         plane=plane,
@@ -241,17 +233,8 @@ def local_torque_on_circular_orbit(
         smart_ds,
         radius,
         fields=(
-            "Rho [kg/m^3]",
-            "U_x [m/s]",
-            "U_y [m/s]",
-            "U_z [m/s]",
-            "B_x [T]",
-            "B_y [T]",
-            "B_z [T]",
-            "U_r [m/s]",
-            "U_a [m/s]",
-            "B_r [T]",
-            "B_a [T]",
+            "magnetic_torque_density [N/m]",
+            "dynamic_torque_density [N/m]",
         ),
         n_points=n_points,
         plane=plane,
@@ -289,11 +272,7 @@ def local_mass_loss_on_elliptic_orbit(
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     fields = (
-        "Rho [kg/m^3]",
-        "U_x [m/s]",
-        "U_y [m/s]",
-        "U_z [m/s]",
-        "U_r [m/s]",
+        "mass_flux [kg/m^2/s]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,
@@ -344,17 +323,8 @@ def local_torque_on_elliptic_orbit(
     smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     fields = (
-        "Rho [kg/m^3]",
-        "U_x [m/s]",
-        "U_y [m/s]",
-        "U_z [m/s]",
-        "B_x [T]",
-        "B_y [T]",
-        "B_z [T]",
-        "U_r [m/s]",
-        "U_a [m/s]",
-        "B_r [T]",
-        "B_a [T]",
+        "magnetic_torque_density [N/m]",
+        "dynamic_torque_density [N/m]",
     )
     orbit = sample_elliptic_orbit(
         smart_ds,

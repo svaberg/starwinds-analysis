@@ -9,26 +9,20 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.constants import MU0
-
-def local_mass_loss_estimates(radius_m, rho_kg_m3, u_radial_m_s):
+def local_mass_loss_estimates(radius_m, mass_flux_kg_m2_s):
     """
-    Pointwise local mass-loss estimates using `4*pi*r^2*rho*u_r`.
+    Pointwise local mass-loss estimates using `4*pi*r^2*mass_flux`.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
     """
-    # TODO(griblet): This local estimate should be a griblet/SmartDs quantity when
-    # the required SI inputs (`R`, `rho`, `U_r`) are available on samples.
-    return 4.0 * math.pi * np.square(radius_m) * rho_kg_m3 * u_radial_m_s
+    return 4.0 * math.pi * np.square(radius_m) * mass_flux_kg_m2_s
 
-def local_torque_estimates(radius_m, rho_kg_m3, u_radial_m_s, u_phi_m_s, b_r_t, b_phi_t):
+def local_torque_estimates(radius_m, magnetic_torque_density_n_m, dynamic_torque_density_n_m):
     """
-    Pointwise local torque estimates using the spherical-shell scaling from old quicklook.
+    Pointwise local torque estimates using torque-density fields and the old quicklook scaling.
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
     """
-    # TODO(griblet): These local torque estimate quantities should move behind
-    # SmartDs/griblet field requests.
     rest_integral = (math.pi**2) * np.power(radius_m, 3)
-    magnetic = (-b_phi_t * b_r_t / MU0) * rest_integral
-    dynamic = (u_phi_m_s * u_radial_m_s * rho_kg_m3) * rest_integral
+    magnetic = magnetic_torque_density_n_m * rest_integral
+    dynamic = dynamic_torque_density_n_m * rest_integral
     total = magnetic + dynamic
     return magnetic, dynamic, total
