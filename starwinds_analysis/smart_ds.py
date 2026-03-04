@@ -353,7 +353,7 @@ class SmartDs:
         Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
         """
         self.add_batsrus_graph(body_radius_m=body_radius_m)
-        self.add_spherical_graph(vectors=("B", "U"))
+        self.add_spherical_graph()
         return self
 
     def clear_cache(self, *names: str) -> None:
