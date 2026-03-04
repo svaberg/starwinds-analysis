@@ -212,9 +212,6 @@ def sample_surface_revolution(
     if time_arr is not None:
         sampled["t [s]"] = time_arr
     if velocity is not None:
-        sampled["V_x [m/s]"] = np.repeat(velocity[:, 0][:, None], n_lon, axis=1)
-        sampled["V_y [m/s]"] = np.repeat(velocity[:, 1][:, None], n_lon, axis=1)
-        sampled["V_z [m/s]"] = np.repeat(velocity[:, 2][:, None], n_lon, axis=1)
         sampled["V_xyz [m/s]"] = np.repeat(velocity[:, None, :], n_lon, axis=1)
     for key in fields:
         arr = np.array(sampled_curve(key))
