@@ -33,10 +33,11 @@ class SmartDs:
     in the underlying dataset it is returned directly; otherwise the attached graph
     is used to derive it.
 
-    Centering note (current limitation):
-    - SmartDs does not yet track field centering metadata (point-centered vs cell-centered).
-    - In current resampling/sample workflows, values are effectively treated as samples
-      at the provided coordinates (often used as cell-centered values in notebooks/analysis).
+    Data model note (current limitation):
+    - SmartDs reads the dataset as unstructured point samples.
+    - SmartDs does not track centering metadata (point-centered vs cell-centered).
+    - If cell-centered quantities are needed, they must be constructed explicitly from
+      the available point data.
     - TODO geometry metrics: points/cells should be able to report finite geometric
       measures (e.g. `length [..]`, `area [..^2]`, `volume [..^3]`) for regular grids.
     """
