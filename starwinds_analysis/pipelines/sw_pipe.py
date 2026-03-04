@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 
 # Human/recorder logging setup
-class _PipelineLogFormatter(logging.Formatter):
+class PipelineLogFormatter(logging.Formatter):
     """
     Format pipeline logs as `[level] source message`.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
@@ -51,45 +51,7 @@ class _PipelineLogFormatter(logging.Formatter):
         return out
 
 
-def _stdout_pipeline_formatter(stream) -> logging.Formatter:
-    """
-    Build the stdout formatter for human pipeline logs, using color when available.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    use_color = bool(getattr(stream, "isatty", lambda: False)())
-    if use_color:
-        for module_name in ("colorlog", "coloredlogs"):
-            try:
-                module = __import__(module_name, fromlist=["ColoredFormatter"])
-                formatter_class = getattr(module, "ColoredFormatter")
-                return formatter_class(
-                    "%(log_color)s[%(levelname)s]%(reset)s %(name_last)s %(message)s",
-                    log_colors={
-                        "DEBUG": "cyan",
-                        "INFO": "green",
-                        "WARNING": "yellow",
-                        "ERROR": "red",
-                        "CRITICAL": "bold_red",
-                    },
-                    secondary_log_colors={},
-                    reset=True,
-                    style="%",
-                )
-            except Exception:
-                continue
-    return _PipelineLogFormatter()
-
-
-def _enrich_pipeline_record(record: logging.LogRecord) -> bool:
-    """
-    Add helper fields used by pipeline log formatters.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    record.name_last = record.name.rsplit(".", 1)[-1]
-    return True
-
-
-def _configure_stdout_logger(level_name: str) -> None:
+def configure_stdout_logger(level_name: str) -> None:
     """
     Configure the root logger for human-readable pipeline logs on stdout.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
@@ -99,8 +61,31 @@ def _configure_stdout_logger(level_name: str) -> None:
     root_logger.setLevel(getattr(logging, str(level_name).upper()))
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(getattr(logging, str(level_name).upper()))
-    handler.addFilter(_enrich_pipeline_record)
-    handler.setFormatter(_stdout_pipeline_formatter(sys.stdout))
+    if bool(getattr(sys.stdout, "isatty", lambda: False)()):
+        for module_name in ("colorlog", "coloredlogs"):
+            try:
+                module = __import__(module_name, fromlist=["ColoredFormatter"])
+                formatter_class = getattr(module, "ColoredFormatter")
+                handler.setFormatter(
+                    formatter_class(
+                        "%(log_color)s[%(levelname)s]%(reset)s %(module)s %(message)s",
+                        log_colors={
+                            "DEBUG": "cyan",
+                            "INFO": "green",
+                            "WARNING": "yellow",
+                            "ERROR": "red",
+                            "CRITICAL": "bold_red",
+                        },
+                        secondary_log_colors={},
+                        reset=True,
+                        style="%",
+                    )
+                )
+                break
+            except Exception:
+                continue
+    if handler.formatter is None:
+        handler.setFormatter(PipelineLogFormatter())
     root_logger.addHandler(handler)
 
 
@@ -114,7 +99,7 @@ def configure_recorder_logger(level_name: str = "WARNING") -> None:
     recorder_logger.handlers.clear()
     recorder_handler = logging.StreamHandler()
     recorder_handler.setLevel(getattr(logging, str(level_name).upper()))
-    recorder_handler.setFormatter(_PipelineLogFormatter())
+    recorder_handler.setFormatter(PipelineLogFormatter())
     recorder_logger.addHandler(recorder_handler)
     recorder_logger.propagate = False
 
@@ -434,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     # Configure the logger that writes to stdout (for human consumption).
-    _configure_stdout_logger(str(args.log_level))
+    configure_stdout_logger(str(args.log_level))
 
     # Configure the recorder logger that writes machine-readable data.
     configure_recorder_logger(str(args.record_log_level))
