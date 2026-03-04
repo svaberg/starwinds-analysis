@@ -17,7 +17,6 @@ from starwinds_readplt.dataset import Dataset
 from starwinds_analysis._smart_ds_graph import compute_via_graph as _compute_via_graph
 from starwinds_analysis._smart_ds_graph import explain_field as _explain_field
 from starwinds_analysis._smart_ds_graph import graph_field_names as _graph_field_names
-from starwinds_analysis._smart_ds_graph import resolve_field as _resolve_field
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
 from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
@@ -403,18 +402,6 @@ class SmartDs:
         if self._cache_enabled:
             self._cache[name] = value
         return value
-
-    def resolve(self, name: str):
-        # TODO smartds-resolve:
-        # This currently means "resolve computation path via griblet". The user-facing
-        # field/unit resolution API should likely live on SmartDs too (returning data
-        # + parsed unit string from bracketed field names), which may require renaming
-        # this graph-planning method to avoid semantic collision.
-        """
-        Graph-path resolver (`cost, tree`) used by `has_field` and `explain`.
-        Used by: `SmartDs` users and internal methods
-        """
-        return _resolve_field(self, name)
 
     def explain(self, name: str, *, return_tree: bool = False):
         """

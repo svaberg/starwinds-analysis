@@ -57,7 +57,7 @@ Status: PARTIAL, usable
 - `theta` / `phi` and `*_theta` / `*_phi` aliases are removed from the active path.
 
 Remaining debt:
-- `SmartDs.resolve(...)` still exists and still violates the project rule against `resolve*` API names.
+- `SmartDs.resolve(...)` has been removed; graph-path inspection remains available through `SmartDs.explain(...)`.
 
 Files:
 - `starwinds_analysis/smart_ds.py`
@@ -93,6 +93,6 @@ Current focused checks that should stay healthy:
 ## Main Remaining Work
 
 - Continue shrinking real debt in `docs/technical-debt.md`, especially:
-  - `SmartDs.resolve(...)`
+  - removed `SmartDs.resolve(...)`; keep graph-path inspection on `SmartDs.explain(...)` only
   - quantity-specific `*_vs_radius` wrappers in `physics/`
   - keeping `shell.py` from growing into another logic blob
