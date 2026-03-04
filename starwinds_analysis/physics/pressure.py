@@ -10,13 +10,6 @@ import numpy as np
 
 from starwinds_analysis.constants import MU0
 
-def magnetic_pressure(b_t_or_mag):
-    """
-    Magnetic pressure `B^2 / (2 mu0)` in Pa.
-    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`
-    """
-    return np.square(b_t_or_mag) / (2.0 * MU0)
-
 def ram_pressure(rho_kg_m3, speed_m_s):
     """
     Ram pressure `rho * u^2` in Pa.
@@ -52,7 +45,7 @@ def pressure_components(
     out = {
         "U [m/s]": speed,
         "B [T]": bmag,
-        "magnetic_pressure [Pa]": magnetic_pressure(bmag),
+        "magnetic_pressure [Pa]": np.square(bmag) / (2.0 * MU0),
         "ram_pressure [Pa]": ram_pressure(rho_kg_m3, speed),
     }
 

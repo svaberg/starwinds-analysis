@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.constants import SOLAR_RADIUS_M
+from starwinds_analysis.constants import MU0
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
-from starwinds_analysis.physics.pressure import magnetic_pressure
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import pressure_components
 from starwinds_analysis.physics.pressure import ram_pressure
@@ -31,7 +31,7 @@ def test_pressure_components_static_and_relative_ram():
     np.testing.assert_allclose(out["U [m/s]"], [5.0, 5.0])
     np.testing.assert_allclose(out["ram_pressure [Pa]"], ram_pressure(rho, [5.0, 5.0]))
     np.testing.assert_allclose(
-        out["magnetic_pressure [Pa]"], magnetic_pressure(np.array([1e-4, 2e-4]))
+        out["magnetic_pressure [Pa]"], np.square(np.array([1e-4, 2e-4])) / (2.0 * MU0)
     )
     np.testing.assert_allclose(out["thermal_pressure [Pa]"], p)
     assert np.all(out["relative_ram_pressure [Pa]"] >= 0)
