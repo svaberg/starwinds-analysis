@@ -312,8 +312,7 @@ def run_sw_pipe(
             results.failed_files.append(file_path)
             file_results["meta"]["status"] = "failed"
             file_results["meta"]["error"] = str(exc)
-            if not fail_fast:
-                log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
+            log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
         else:
             file_results["meta"]["status"] = "processed"
             results.processed_files.append(file_path)

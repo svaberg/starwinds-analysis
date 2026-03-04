@@ -25,11 +25,8 @@ def _resolve_field(ds, var: str | None) -> str:
     if var is not None:
         return str(var)
     for candidate in ("Rho [kg/m^3]", "Rho [g/cm^3]", "Rho [amu/cm^3]"):
-        try:
-            ds.variable(candidate)
+        if ds.has_field(candidate):
             return candidate
-        except Exception:
-            continue
     return str(ds.variables[0])
 
 

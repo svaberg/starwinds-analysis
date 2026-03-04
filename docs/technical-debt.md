@@ -104,15 +104,14 @@ Coordinate/vector naming note:
 - `starwinds_analysis/pipelines/__init__.py` — **Reviewed**. Boundary package only; intentionally minimal.
 - `starwinds_analysis/analysis/orbits.py` — **Reviewed**. Orbit geometry and 1D-curve sampling primitives live in `analysis`; removed the one-module `sampling/` package.
 - `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. Still a large mixed-responsibility CLI module (dispatch, recorder schema, state persistence, stdout logging, fail-fast policy) and remains the main monolith in `pipelines/`.
+- `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. The per-file execution path still intentionally catches broad `Exception` so the orchestrator can tolerate arbitrary pipeline failures; this is acceptable only because it now logs on every triggered path and re-raises in fail-fast mode.
 - `starwinds_analysis/pipelines/recorder.py` — **Debt**. Recorder capture + JSON normalization + persistence are now split out cleanly, but the file is still large and schema-heavy; keep it from becoming a second monolith.
 - `starwinds_analysis/pipelines/shell.py` — **Debt**. The shell pipeline is readable, but it is still the largest pipeline and still contains significant shell-specific compute logic; keep pushing pointwise parts down into recipes/physics and avoid further local growth.
-- `starwinds_analysis/pipelines/recorder.py` — **Debt**. `load_state(...)` and `load_state_payload(...)` still use broad `except Exception` for JSON/file parse fallbacks; narrow the expected failure types instead of swallowing everything.
-- Broad `except Exception` remains in other active paths too (`smart_ds.prepare(...)`, `analysis/shells.py` body-radius inference, `visualisation/slice.py` field probing, `recipes/batsrus.py` body-radius parsing, and the main per-file execution path in `pipelines/sw_pipe.py`). These should be narrowed deliberately, not patched mechanically.
 - `starwinds_analysis/param_in.py` — **Reviewed**. Nearby `PARAM.in` lookup + stellar parameter parsing are in place; the `_ensure_component(...)` helper has been removed.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
 - `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).
-- `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and incomplete unit/centering-aware quantity request path; `prepare(...)` also still uses a broad `except Exception` around spherical-graph fallback. Code TODO: existing TODOs.
+- `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and an incomplete unit/centering-aware quantity request path. Code TODO: existing TODOs.
 - `starwinds_analysis/utils.py` — **Reviewed**. General small helpers; no clear current bad-practice hit recorded in this pass.
 - `starwinds_analysis/visualisation/histograms.py` — **Reviewed**. Visualisation layer; plotting functions belong here more than in analysis/physics. Some quantity defaults exist but no code TODO added in this pass.
 - `starwinds_analysis/vtk_utils.py` — **Reviewed**. Optional 3D visualisation bridge (separate integration layer); no additional debt marker added in this pass.

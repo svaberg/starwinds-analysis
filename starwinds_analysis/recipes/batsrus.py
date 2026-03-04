@@ -504,6 +504,6 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
                 if isinstance(value, (int, float, np.floating)):
                     return float(value)
                 return float(str(value).strip())
-            except Exception:
+            except (TypeError, ValueError):
                 return None
     return None

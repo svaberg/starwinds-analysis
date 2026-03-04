@@ -6,12 +6,15 @@ It is the foundation layer for shell-based analyses (sampling geometry, integrat
 from __future__ import annotations
 
 import math
+import logging
 
 import numpy as np
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.utils import field_unit_from_brackets
+
+log = logging.getLogger(__name__)
 
 def _resample_shell_points(
     smart_ds,
@@ -48,7 +51,7 @@ def _to_float(value) -> float | None:
     """
     try:
         return float(value)
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
@@ -62,12 +65,11 @@ def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
         return float(body_radius_m)
 
     for name in ("star_radius [m]", "Star_radius [m]", "RBODY [m]"):
-        try:
-            value = float(smart_ds.variable(name))
-            if np.isfinite(value) and value > 0:
-                return value
-        except Exception:
-            pass
+        if not smart_ds.has_field(name):
+            continue
+        value = _to_float(smart_ds.variable(name))
+        if value is not None and np.isfinite(value) and value > 0:
+            return value
 
     aux = getattr(smart_ds, "aux", {})
     for key in ("Star_radius_m", "Planet_radius_m", "BODY_RADIUS_M", "RBODY [m]", "RBODY_M", "RSTAR [m]", "RPLANET [m]"):

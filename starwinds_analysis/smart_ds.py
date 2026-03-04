@@ -7,6 +7,7 @@ It should not contain domain-specific physics formulas or plotting code.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+import logging
 from os import PathLike
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from starwinds_analysis._smart_ds_resample import resample_smart_ds
 from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
+log = logging.getLogger(__name__)
 
 class SmartDs:
     """
@@ -363,7 +365,8 @@ class SmartDs:
         self.add_batsrus_graph(body_radius_m=body_radius_m)
         try:
             self.add_spherical_graph(vectors=("B", "U"))
-        except Exception:
+        except ImportError:
+            log.info("griblet spherical graph unavailable; falling back to local spherical fields.")
             self.add_spherical_fields(vectors=("B", "U"))
         return self
 

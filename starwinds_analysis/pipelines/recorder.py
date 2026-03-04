@@ -285,7 +285,8 @@ def load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, ob
         return set(), {}
     try:
         payload = json.loads(path.read_text())
-    except Exception:
+    except (OSError, json.JSONDecodeError) as exc:
+        log.info("Could not load recorder state %s (%s); starting from empty state.", path, exc)
         return set(), {}
     files = payload.get("processed_files", [])
     processed_keys = {str(item) for item in files} if isinstance(files, list) else set()
@@ -306,7 +307,8 @@ def load_state_payload(state_file: str | Path) -> dict[str, object]:
         return {}
     try:
         payload = json.loads(path.read_text())
-    except Exception:
+    except (OSError, json.JSONDecodeError) as exc:
+        log.info("Could not load recorder payload %s (%s); returning empty payload.", path, exc)
         return {}
     if isinstance(payload, dict):
         return payload
