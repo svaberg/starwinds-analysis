@@ -13,7 +13,8 @@ from starwinds_analysis.physics.orbit_local import local_mass_loss_on_circular_o
 from starwinds_analysis.physics.orbit_local import local_mass_loss_on_elliptic_orbit
 from starwinds_analysis.physics.orbit_local import local_torque_on_circular_orbit
 from starwinds_analysis.physics.orbit_local import local_torque_on_elliptic_orbit
-from starwinds_analysis.physics.orbits import orbital_period, orbital_velocity
+from starwinds_analysis.physics.orbits import orbital_period
+from starwinds_analysis.physics.orbits import orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
 
 

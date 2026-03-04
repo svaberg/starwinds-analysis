@@ -4,41 +4,15 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.constants import MU0
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
 from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
-from starwinds_analysis.physics.pressure import pressure_components
 from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
 SUN_MASS_KG = 1.98847e30
-
-
-def test_pressure_components_static_and_relative_ram():
-    rho = np.array([1.0, 2.0])
-    u = np.array([[3.0, 0.0, 4.0], [0.0, 5.0, 0.0]])
-    b = np.array([[1e-4, 0.0, 0.0], [0.0, 2e-4, 0.0]])
-    p = np.array([1.5, 2.5])
-    v_obj = np.array([[0.0, 0.0, 0.0], [0.0, 3.0, 0.0]])
-
-    out = pressure_components(
-        rho, u, b, thermal_pressure_pa=p, V_xyz_m_s=v_obj
-    )
-
-    np.testing.assert_allclose(out["U [m/s]"], [5.0, 5.0])
-    np.testing.assert_allclose(out["ram_pressure [Pa]"], ram_pressure(rho, [5.0, 5.0]))
-    np.testing.assert_allclose(
-        out["magnetic_pressure [Pa]"], np.square(np.array([1e-4, 2e-4])) / (2.0 * MU0)
-    )
-    np.testing.assert_allclose(out["thermal_pressure [Pa]"], p)
-    np.testing.assert_allclose(out["V [m/s]"], [0.0, 3.0])
-    np.testing.assert_allclose(out["U_minus_V [m/s]"], [5.0, 2.0])
-    assert np.all(out["relative_ram_pressure [Pa]"] >= 0)
-    assert out["relative_ram_pressure [Pa]"][1] < out["ram_pressure [Pa]"][1]
-
 
 def test_magnetospheric_standoff_distance_decreases_with_speed():
     rho = 1e-16
@@ -93,7 +67,8 @@ def test_pressure_components_on_elliptic_orbit_runs_on_example():
     assert np.isclose(out["semi_major_axis [R]"], 10.0)
     assert np.isclose(out["eccentricity [none]"], 0.2)
     assert "relative_ram_pressure [Pa]" in out
-    assert "object_speed [m/s]" in out
+    assert "V [m/s]" in out
+    assert "U_minus_V [m/s]" in out
     assert np.array(out["orbit_samples"]("time_weight [none]")).shape == (96,)
     assert np.isclose(np.sum(out["orbit_samples"]("time_weight [none]")), 1.0)
     assert np.count_nonzero(np.isfinite(out["relative_ram_pressure [Pa]"])) > 0

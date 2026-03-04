@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
+from starwinds_analysis.analysis.orbits import sample_circular_orbit
+from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
@@ -21,7 +22,7 @@ from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
 from starwinds_analysis.physics.local_estimates import local_torque_estimates
 
-def _interp_profile(radii, values, x):
+def interp_profile(radii, values, x):
     """
     1D interpolate a shell profile onto orbit sample radii (with NaNs outside range).
     """
@@ -77,7 +78,7 @@ def _local_mass_loss_from_orbit_sample(
         shell_value = float(shell_values[0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_interp = _interp_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interp_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -149,7 +150,7 @@ def _local_torque_from_orbit_sample(
         shell_total = float(shell_values[0])
         shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
-        shell_interp = _interp_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interp_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
     summary = summarize_samples(local_total, weights=weights)

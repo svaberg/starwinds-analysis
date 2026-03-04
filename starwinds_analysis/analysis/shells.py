@@ -10,7 +10,8 @@ import logging
 
 import numpy as np
 
-from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
+from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid
+from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 
 log = logging.getLogger(__name__)

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
+from starwinds_analysis.analysis.stats import weighted_mean_std
+from starwinds_analysis.analysis.stats import weighted_quantile
 
 def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | None = None):
     """
@@ -124,4 +125,3 @@ def summarize_shell_diagnostics_band(
         if per_profile:
             out[name] = per_profile
     return out
-

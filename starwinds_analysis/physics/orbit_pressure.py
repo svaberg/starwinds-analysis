@@ -16,57 +16,16 @@ import logging
 
 import numpy as np
 
+from starwinds_analysis.analysis.orbits import periodic_curve_velocity
+from starwinds_analysis.analysis.orbits import sample_circular_orbit
+from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
-from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
-from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.analysis.shells import infer_body_radius_m
+from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
+from starwinds_analysis.physics.orbits import orbital_period
+from starwinds_analysis.physics.pressure import ram_pressure
 
 log = logging.getLogger(__name__)
-
-def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
-    """
-    Compute periodic orbit-frame velocity components from sampled points/phase for relative-
-      speed calculations.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    points = np.array(points_r) * float(body_radius_m)
-    phase = np.array(phase_turns)
-    n = points.shape[0]
-    if n < 3:
-        return np.full_like(points, np.nan, dtype=float)
-
-    t = phase * float(period_s)
-    p_prev = np.roll(points, 1, axis=0)
-    p_next = np.roll(points, -1, axis=0)
-    t_prev = np.roll(t, 1)
-    t_next = np.roll(t, -1)
-    dt_prev = t - t_prev
-    dt_next = t_next - t
-    dt_prev[0] += float(period_s)
-    dt_next[-1] += float(period_s)
-    denom = dt_prev + dt_next
-    return np.divide(
-        p_next - p_prev,
-        denom[:, None],
-        out=np.full_like(points, np.nan, dtype=float),
-        where=denom[:, None] != 0,
-    )
-
-def _summaries_from_arrays(data, *, weights=None):
-    """
-    Build weighted summary dicts (mean/std/quantiles) for a dict of arrays.
-    Used by: `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    out = {}
-    for key, value in data.items():
-        arr = np.array(value)
-        if arr.ndim != 1:
-            continue
-        out[key] = summarize_samples(arr, weights=weights)
-    return out
 
 def pressure_components_from_orbit_sample(
     orbit,
@@ -81,12 +40,12 @@ def pressure_components_from_orbit_sample(
     Assemble orbit-sampled pressure components and standoff proxies from sampled fields.
     Used by: `starwinds_analysis/physics/orbit_pressure.py`
     """
+    rho = np.array(orbit("Rho [kg/m^3]"))
     log.debug(
         "pressure_components_from_orbit_sample: n_points=%d, include_relative=%s",
-        len(np.array(orbit("Rho [kg/m^3]"))),
+        rho.size,
         include_relative_ram,
     )
-    rho = np.array(orbit("Rho [kg/m^3]"))
     u_xyz = np.column_stack(
         [orbit("U_x [m/s]"), orbit("U_y [m/s]"), orbit("U_z [m/s]")]
     )
@@ -104,7 +63,7 @@ def pressure_components_from_orbit_sample(
             points_r = np.column_stack(
                 [orbit("X [sample]"), orbit("Y [sample]"), orbit("Z [sample]")]
             )
-            object_velocity = _periodic_orbit_velocity(points_r, phase, period_s, body_radius_m)
+            object_velocity = periodic_curve_velocity(points_r, phase, period_s, body_radius_m)
 
     comps = {
         "U [m/s]": np.array(orbit("U [m/s]")),
@@ -118,25 +77,30 @@ def pressure_components_from_orbit_sample(
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
     # local workflow logic because they depend on the orbit-derived object velocity.
     if object_velocity is not None:
-        v_obj = object_velocity
-        rel = u_xyz - v_obj
-        rel_speed = np.sqrt(np.sum(rel * rel, axis=-1))
-        comps["object_speed [m/s]"] = np.sqrt(np.sum(v_obj * v_obj, axis=-1))
-        comps["relative_speed [m/s]"] = rel_speed
-        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
+        V_xyz = object_velocity
+        U_minus_V = u_xyz - V_xyz
+        U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
+        comps["V [m/s]"] = np.sqrt(np.sum(V_xyz * V_xyz, axis=-1))
+        comps["U_minus_V [m/s]"] = U_minus_V_m_s
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, U_minus_V_m_s)
         comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
             rho,
-            rel_speed,
+            U_minus_V_m_s,
             b0_t=standoff_b0_t,
         )
         log.debug("pressure_components_from_orbit_sample: using relative velocity for standoff")
 
     weights = orbit.get("time_weight [none]")
+    summary = {}
+    for key, value in comps.items():
+        arr = np.array(value)
+        if arr.ndim == 1:
+            summary[key] = summarize_samples(arr, weights=weights)
     return {
         "rho [kg/m^3]": rho,
         "orbit_samples": orbit,
         **comps,
-        "summary": _summaries_from_arrays(comps, weights=weights),
+        "summary": summary,
     }
 
 def pressure_components_on_circular_orbit(

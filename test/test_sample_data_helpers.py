@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from starwinds_analysis.data.samples import get_sample, sample_data_dir
+from starwinds_analysis.data.samples import get_sample
+from starwinds_analysis.data.samples import sample_data_dir
 from starwinds_analysis.smart_ds import SmartDs
 
 

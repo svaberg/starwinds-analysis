@@ -21,6 +21,7 @@ from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import circular_orbit_points
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
+from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_points
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
@@ -63,36 +64,7 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
         "radius [surface]": np.sqrt(np.sum(surface * surface, axis=-1)),
     }
 
-def _periodic_orbit_velocity(points_r, phase_turns, period_s, body_radius_m):
-    """
-    Compute periodic orbit-frame velocity components from sampled points/phase for relative-
-      speed calculations.
-    Used by: `starwinds_analysis/physics/orbit_surface.py`,
-      `starwinds_analysis/physics/orbit_pressure.py`
-    """
-    points = np.array(points_r) * float(body_radius_m)
-    phase = np.array(phase_turns)
-    n = points.shape[0]
-    if n < 3:
-        return np.full_like(points, np.nan, dtype=float)
-    t = phase * float(period_s)
-    p_prev = np.roll(points, 1, axis=0)
-    p_next = np.roll(points, -1, axis=0)
-    t_prev = np.roll(t, 1)
-    t_next = np.roll(t, -1)
-    dt_prev = t - t_prev
-    dt_next = t_next - t
-    dt_prev[0] += float(period_s)
-    dt_next[-1] += float(period_s)
-    denom = dt_prev + dt_next
-    return np.divide(
-        p_next - p_prev,
-        denom[:, None],
-        out=np.full_like(points, np.nan, dtype=float),
-        where=denom[:, None] != 0,
-    )
-
-def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
+def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     """
     Build integration/summary weights for orbit-surface sampled data.
     Used by: `starwinds_analysis/physics/orbit_surface.py`
@@ -109,7 +81,7 @@ def _make_surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
         t_w = t_w / sw if sw > 0 else np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
     return np.outer(t_w, az_w)
 
-def _phase_quantiles(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
+def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     """
     Compute phase-binned quantiles for 2D orbit-surface sampled values.
     Used by: `starwinds_analysis/physics/orbit_surface.py`
@@ -150,7 +122,7 @@ def surface_point_normals_and_areas(surface_points_xyz_m):
         )
     return normals, area
 
-def _phase_line_integrals(values_2d, area_2d):
+def phase_line_integrals(values_2d, area_2d):
     """
     Integrate sampled surface density values over longitude for each orbit phase.
     Used by: `starwinds_analysis/physics/orbit_surface.py`
@@ -187,13 +159,10 @@ def sample_orbit_surface_revolution(
     Sample explicit fields on a surface of revolution generated from an orbit path.
     Used by: `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
-    try:
-        n_fields = len(fields)
-    except TypeError:
-        n_fields = None
+    fields = tuple(fields)
     log.info(
         "sample_orbit_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
-        n_fields,
+        len(fields),
         n_longitudes,
         method,
     )
@@ -355,7 +324,7 @@ def pressure_components_on_orbit_surface(
         phase = np.array(sampled["phase [turns]"])
         if phase.shape == (path_points.shape[0],):
             period_s = orbital_period(float(a_r) * body_radius_m, star_mass_kg)
-            v_path = _periodic_orbit_velocity(path_points, phase, period_s, body_radius_m)
+            v_path = periodic_curve_velocity(path_points, phase, period_s, body_radius_m)
             object_velocity = np.repeat(v_path[:, None, :], sampled["X [surface]"].shape[1], axis=1)
 
     comps = {
@@ -370,18 +339,18 @@ def pressure_components_on_orbit_surface(
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
     # local workflow logic because they depend on the orbit-derived object velocity.
     if object_velocity is not None:
-        rel = u_xyz - object_velocity
-        rel_speed = np.sqrt(np.sum(rel * rel, axis=-1))
-        comps["object_speed [m/s]"] = np.sqrt(np.sum(object_velocity * object_velocity, axis=-1))
-        comps["relative_speed [m/s]"] = rel_speed
-        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, rel_speed)
+        U_minus_V = u_xyz - object_velocity
+        U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
+        comps["V [m/s]"] = np.sqrt(np.sum(object_velocity * object_velocity, axis=-1))
+        comps["U_minus_V [m/s]"] = U_minus_V_m_s
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, U_minus_V_m_s)
         comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
             rho,
-            rel_speed,
+            U_minus_V_m_s,
             b0_t=standoff_b0_t,
         )
 
-    weights = _make_surface_sample_weights(
+    weights = surface_sample_weights(
         rho.shape[0], rho.shape[1], time_weight=sampled["time_weight [none]"]
     )
     summaries = {}
@@ -390,7 +359,7 @@ def pressure_components_on_orbit_surface(
     for key, arr in comps.items():
         flat = np.array(arr).reshape(-1)
         summaries[key] = summarize_samples(flat, weights=weights.reshape(-1))
-        qq, qarr = _phase_quantiles(arr, q=q)
+        qq, qarr = phase_quantile_rows(arr, q=q)
         phase_profiles[key] = {
             "phase [turns]": np.array(sampled["phase [turns]"]),
             "quantiles [none]": qq,
@@ -493,8 +462,8 @@ def torque_components_on_orbit_surface(
         ("total [N/m]", "total"),
     ):
         arr = np.array(terms[src_key])
-        qq, qarr = _phase_quantiles(arr, q=q)
-        integ, cov = _phase_line_integrals(arr, area)
+        qq, qarr = phase_quantile_rows(arr, q=q)
+        integ, cov = phase_line_integrals(arr, area)
         phase_quantiles[out_key] = {
             "phase [turns]": phase,
             "quantiles [none]": qq,

@@ -7,7 +7,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
+from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_spherical_shells
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.data.samples import get_sample
 from starwinds_analysis.smart_ds import SmartDs

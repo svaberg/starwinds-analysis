@@ -6,7 +6,8 @@ It should keep BATSRUS naming/unit conventions localized here.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
+from collections.abc import Sequence
 import griblet
 import math
 

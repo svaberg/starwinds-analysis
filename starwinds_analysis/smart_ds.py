@@ -6,7 +6,8 @@ It should not contain domain-specific physics formulas or plotting code.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
+from collections.abc import Sequence
 from os import PathLike
 from pathlib import Path
 

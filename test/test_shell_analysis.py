@@ -15,7 +15,8 @@ from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.shells import sample_spherical_shells
 from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
-from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
+from starwinds_analysis.analysis.stats import weighted_mean_std
+from starwinds_analysis.analysis.stats import weighted_quantile
 from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.physics.wind_scaling import surface_escape_speed
