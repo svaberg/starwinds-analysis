@@ -208,7 +208,9 @@ class SmartDs:
         Check only raw dataset fields (including alias fallback).
         Used by: `SmartDs` users and internal methods
         """
-        return self._resolve_raw_name(name) is not None
+        if name in self._dataset.variables:
+            return True
+        return any(candidate in self._dataset.variables for candidate in self._aliases.get(name, ()))
 
     def has_field(self, name: str) -> bool:
         """
@@ -381,12 +383,18 @@ class SmartDs:
             except KeyError:
                 pass
 
-        raw_name = self._resolve_raw_name(name)
-        if raw_name is not None:
-            value = self._dataset.variable(raw_name)
+        if name in self._dataset.variables:
+            value = self._dataset.variable(name)
             if self._cache_enabled:
                 self._cache[name] = value
             return value
+
+        for candidate in self._aliases.get(name, ()):
+            if candidate in self._dataset.variables:
+                value = self._dataset.variable(candidate)
+                if self._cache_enabled:
+                    self._cache[name] = value
+                return value
 
         try:
             value = self._compute_via_graph(name)
@@ -493,19 +501,6 @@ class SmartDs:
             computation_graph=self._computation_graph,
             include_aux_in_loader=self._include_aux_in_loader,
         )
-
-    def _resolve_raw_name(self, name: str) -> str | None:
-        """
-        Resolve a requested name to an existing raw dataset field (via aliases).
-        Used by: `SmartDs` users and internal methods
-        """
-        if name in self._dataset.variables:
-            return name
-
-        for candidate in self._aliases.get(name, ()):
-            if candidate in self._dataset.variables:
-                return candidate
-        return None
 
     def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:
         """
