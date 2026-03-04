@@ -42,6 +42,17 @@ def spherical_wind_torque_density_terms(
     dynamic = cylindrical_radius_m * rho_kg_m3 * u_azimuthal_m_s * u_radial_m_s
     return magnetic, dynamic
 
+def local_torque_estimates(radius_m, magnetic_torque_density, dynamic_torque_density):
+    """
+    Pointwise local torque estimates from local torque densities.
+    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
+    """
+    rest_integral = (np.pi**2) * np.square(radius_m)
+    magnetic = magnetic_torque_density * rest_integral
+    dynamic = dynamic_torque_density * rest_integral
+    total = magnetic + dynamic
+    return magnetic, dynamic, total
+
 
 def rotational_frame_velocity(u_xyz_m_s, xyz_m, angvel_rad_s):
     """

@@ -19,8 +19,7 @@ from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
-from starwinds_analysis.physics.local_estimates import local_torque_estimates
+from starwinds_analysis.physics.torque import local_torque_estimates
 
 def interp_profile(radii, values, x):
     """
@@ -58,7 +57,7 @@ def local_mass_loss_from_orbit_sample(
     mass_flux = np.array(orbit("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(orbit("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    estimates = local_mass_loss_estimates(r_m, mass_flux)
+    estimates = 4.0 * np.pi * np.square(r_m) * mass_flux
     weights = orbit.get("time_weight [none]")
     stats = summarize_samples(estimates, weights=weights)
 

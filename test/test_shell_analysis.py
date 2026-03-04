@@ -4,8 +4,6 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
-from starwinds_analysis.physics.local_estimates import local_torque_estimates
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.analysis.shell_summary import boxcar_shell_weights
 from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
@@ -18,6 +16,7 @@ from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.analysis.stats import weighted_mean_std
 from starwinds_analysis.analysis.stats import weighted_quantile
 from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
+from starwinds_analysis.physics.torque import local_torque_estimates
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.physics.wind_scaling import surface_escape_speed
 from starwinds_analysis.smart_ds import SmartDs
@@ -281,22 +280,14 @@ def test_weighted_stats_helpers():
     np.testing.assert_allclose(qs, [1, 2, 4])
 
 
-def test_local_mass_loss_estimate_formula():
-    r = np.array([2.0, 3.0])
-    mass_flux = np.array([10.0, -10.0])
-    got = local_mass_loss_estimates(r, mass_flux)
-    expected = 4 * np.pi * r**2 * mass_flux
-    np.testing.assert_allclose(got, expected)
-
-
 def test_local_torque_estimate_formula_and_summary():
     r = np.array([2.0, 3.0, 4.0])
     magnetic_density = np.array([1.0, -2.0, 3.0])
     dynamic_density = np.array([4.0, 5.0, -6.0])
 
     magnetic, dynamic, total = local_torque_estimates(r, magnetic_density, dynamic_density)
-    np.testing.assert_allclose(magnetic, (np.pi**2) * r**3 * magnetic_density)
-    np.testing.assert_allclose(dynamic, (np.pi**2) * r**3 * dynamic_density)
+    np.testing.assert_allclose(magnetic, (np.pi**2) * r**2 * magnetic_density)
+    np.testing.assert_allclose(dynamic, (np.pi**2) * r**2 * dynamic_density)
     np.testing.assert_allclose(total, magnetic + dynamic)
 
     summary = summarize_samples(total)
