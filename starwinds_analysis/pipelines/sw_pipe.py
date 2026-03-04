@@ -81,14 +81,6 @@ class _ScientificFloatEncoder(json.JSONEncoder):
         return _iterencode(o, 0)
 
 
-def _dumps_json_scientific(payload: object, *, indent: int = 2) -> str:
-    """
-    Dump JSON text with scientific float formatting.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return json.dumps(payload, indent=indent, cls=_ScientificFloatEncoder)
-
-
 @dataclass
 class SwPipeResults:
     """
@@ -199,16 +191,6 @@ def _safe_name(text: str) -> str:
     return _SAFE_NAME_PATTERN.sub("_", str(text)).strip("._") or "value"
 
 
-def _array_artifact_relpath(file_key: str, field_key: str) -> str:
-    """
-    Relative artifact path for one recorded array payload.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    file_token = _safe_name(str(file_key).replace("/", "__"))
-    field_token = _safe_name(field_key)
-    return f"sw-pipe.artifacts/{file_token}__{field_token}.npy"
-
-
 def _normalize_recorded_value(
     value: object,
     *,
@@ -223,7 +205,9 @@ def _normalize_recorded_value(
     """
     if isinstance(value, np.ndarray):
         if value.nbytes >= int(array_offload_min_bytes):
-            rel_path = _array_artifact_relpath(file_key, field_key)
+            file_token = _safe_name(str(file_key).replace("/", "__"))
+            field_token = _safe_name(field_key)
+            rel_path = f"sw-pipe.artifacts/{file_token}__{field_token}.npy"
             out_path = Path(artifacts_root).parent / rel_path
             out_path.parent.mkdir(parents=True, exist_ok=True)
             np.save(out_path, value)
@@ -427,7 +411,7 @@ def _save_state(
         "processed_files": sorted(processed_keys),
         "computed_results": computed_results,
     }
-    payload_text = _dumps_json_scientific(payload, indent=2)
+    payload_text = json.dumps(payload, indent=2, cls=_ScientificFloatEncoder)
     payload_size_bytes = len(payload_text.encode("utf-8"))
     if int(json_warn_bytes) > 0 and payload_size_bytes >= int(json_warn_bytes):
         log.warning(
@@ -449,48 +433,6 @@ def discover_input_files(directory: str | Path = ".", *, recursive: bool = False
     paths = base.rglob("*") if recursive else base.iterdir()
     files = [path for path in paths if path.is_file() and path.suffix.lower() in {".plt", ".dat"}]
     return sorted(files)
-
-
-def _pipeline_name_for_file(file_path: str | Path) -> str | None:
-    """
-    Infer the built-in pipeline from the input filename prefix.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    name = Path(file_path).name.lower()
-    if name.startswith("3d"):
-        return "volume"
-    if name.startswith("shl"):
-        return "shell"
-    if name.startswith("x=0") or name.startswith("y=0") or name.startswith("z=0"):
-        return "slice"
-    return None
-
-
-def _resolve_pipeline_process_file(
-    pipeline: str,
-) -> Callable[[Path], None]:
-    """
-    Resolve a named built-in pipeline to its per-file process function.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    key = str(pipeline).strip().lower()
-    if key == "dummy":
-        from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
-
-        return process_plt_file
-    if key == "slice":
-        from starwinds_analysis.pipelines.slice import process_plt_file
-
-        return process_plt_file
-    if key == "shell":
-        from starwinds_analysis.pipelines.shell import process_plt_file
-
-        return process_plt_file
-    if key == "volume":
-        from starwinds_analysis.pipelines.volume import process_plt_file
-
-        return process_plt_file
-    raise KeyError(f"Unknown pipeline '{pipeline}'")
 
 
 def _select_pipeline_work(
@@ -517,7 +459,9 @@ def _select_pipeline_work(
 
     if process_file is None:
         if pipeline == "dummy":
-            process_functions["dummy"] = _resolve_pipeline_process_file("dummy")
+            from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as dummy_process_file
+
+            process_functions["dummy"] = dummy_process_file
             state_files["dummy"] = _state_file_path(directory, pipeline_name="dummy")
             known_processed, known_computed = _load_state(state_files["dummy"])
             known_processed_by_pipeline["dummy"] = known_processed
@@ -530,18 +474,51 @@ def _select_pipeline_work(
             known_processed, known_computed = _load_state(state_files[pipeline_name])
             known_processed_by_pipeline[pipeline_name] = known_processed
             known_computed_by_pipeline[pipeline_name] = known_computed
-            process_functions[pipeline_name] = _resolve_pipeline_process_file(pipeline_name)
+            if pipeline_name == "slice":
+                from starwinds_analysis.pipelines.slice import process_plt_file as selected_process_file
+            elif pipeline_name == "shell":
+                from starwinds_analysis.pipelines.shell import process_plt_file as selected_process_file
+            elif pipeline_name == "volume":
+                from starwinds_analysis.pipelines.volume import process_plt_file as selected_process_file
+            elif pipeline_name == "dummy":
+                from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as selected_process_file
+            else:
+                raise KeyError(f"Unknown pipeline '{pipeline_name}'")
+            process_functions[pipeline_name] = selected_process_file
             for file_path in files:
-                if _pipeline_name_for_file(file_path) != pipeline_name:
+                file_name = Path(file_path).name.lower()
+                if file_name.startswith("3d"):
+                    inferred_pipeline = "volume"
+                elif file_name.startswith("shl"):
+                    inferred_pipeline = "shell"
+                elif file_name.startswith("x=0") or file_name.startswith("y=0") or file_name.startswith("z=0"):
+                    inferred_pipeline = "slice"
+                else:
+                    inferred_pipeline = None
+                if inferred_pipeline != pipeline_name:
                     continue
                 selected.append((file_path, pipeline_name, process_functions[pipeline_name], pipeline_name))
         else:
             for file_path in files:
-                resolved_pipeline = _pipeline_name_for_file(file_path)
+                file_name = Path(file_path).name.lower()
+                if file_name.startswith("3d"):
+                    resolved_pipeline = "volume"
+                elif file_name.startswith("shl"):
+                    resolved_pipeline = "shell"
+                elif file_name.startswith("x=0") or file_name.startswith("y=0") or file_name.startswith("z=0"):
+                    resolved_pipeline = "slice"
+                else:
+                    resolved_pipeline = None
                 if resolved_pipeline is None:
                     continue
                 if resolved_pipeline not in process_functions:
-                    process_functions[resolved_pipeline] = _resolve_pipeline_process_file(resolved_pipeline)
+                    if resolved_pipeline == "slice":
+                        from starwinds_analysis.pipelines.slice import process_plt_file as selected_process_file
+                    elif resolved_pipeline == "shell":
+                        from starwinds_analysis.pipelines.shell import process_plt_file as selected_process_file
+                    else:
+                        from starwinds_analysis.pipelines.volume import process_plt_file as selected_process_file
+                    process_functions[resolved_pipeline] = selected_process_file
                 if resolved_pipeline not in state_files:
                     state_files[resolved_pipeline] = _state_file_path(directory, pipeline_name=resolved_pipeline)
                     known_processed, known_computed = _load_state(state_files[resolved_pipeline])
