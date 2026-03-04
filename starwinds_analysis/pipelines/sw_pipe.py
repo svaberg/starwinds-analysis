@@ -8,262 +8,29 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-from dataclasses import dataclass, field
-import hashlib
-import json
-from json.encoder import INFINITY, _make_iterencode, encode_basestring, encode_basestring_ascii
 import logging
-import math
-import numpy as np
 from pathlib import Path
-import re
 import sys
 from typing import Callable
 
 from starwinds_analysis.pipelines.orchestration_helpers import log_pipeline_event
+from starwinds_analysis.pipelines.recorder import DEFAULT_ARRAY_OFFLOAD_MIN_BYTES
+from starwinds_analysis.pipelines.recorder import DEFAULT_JSON_WARN_BYTES
+from starwinds_analysis.pipelines.recorder import SwPipeResults
+from starwinds_analysis.pipelines.recorder import SwRecordHandler
+from starwinds_analysis.pipelines.recorder import load_state
+from starwinds_analysis.pipelines.recorder import relative_file_key
+from starwinds_analysis.pipelines.recorder import save_state
+from starwinds_analysis.pipelines.recorder import sha256_file
+from starwinds_analysis.pipelines.recorder import state_file_path
 
 log = logging.getLogger(__name__)
-_RECORD_PATTERN = re.compile(r"^([A-Za-z0-9_]+)\b")
-_SAFE_NAME_PATTERN = re.compile(r"[^A-Za-z0-9_.-]+")
-_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
-_DEFAULT_JSON_WARN_BYTES = 10_000_000
-
-
-# JSON/state helpers
-class _ScientificFloatEncoder(json.JSONEncoder):
-    """
-    JSON encoder that writes finite floats in scientific notation.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-
-    def iterencode(self, o, _one_shot=False):
-        """
-        Encode JSON while formatting finite floats as scientific literals.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        markers = {} if self.check_circular else None
-        _encoder = encode_basestring_ascii if self.ensure_ascii else encode_basestring
-
-        def floatstr(
-            value,
-            allow_nan=self.allow_nan,
-            _inf=INFINITY,
-            _neginf=-INFINITY,
-        ):
-            """Render finite floats in scientific notation for JSON encoding."""
-            if math.isnan(value):
-                text = "NaN"
-            elif value == _inf:
-                text = "Infinity"
-            elif value == _neginf:
-                text = "-Infinity"
-            else:
-                return format(value, ".16e")
-            if not allow_nan:
-                raise ValueError(
-                    "Out of range float values are not JSON compliant: "
-                    + repr(value)
-                )
-            return text
-
-        _iterencode = _make_iterencode(
-            markers,
-            self.default,
-            _encoder,
-            self.indent,
-            floatstr,
-            self.key_separator,
-            self.item_separator,
-            self.sort_keys,
-            self.skipkeys,
-            _one_shot,
-        )
-        return _iterencode(o, 0)
-
-
-@dataclass
-class SwPipeResults:
-    """
-    Minimal results container for one `sw-pipe` run.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
-    """
-    directory: Path
-    recursive: bool
-    noclobber: bool
-    discovered_files: list[Path] = field(default_factory=list)
-    processed_files: list[Path] = field(default_factory=list)
-    failed_files: list[Path] = field(default_factory=list)
-    skipped_files: list[Path] = field(default_factory=list)
-    computed_results: dict[str, dict[str, object]] = field(default_factory=dict)
-    state_file: Path | None = None
-
-
-# Recorder capture and normalization
-class _SwRecordHandler(logging.Handler):
-    """
-    Capture `sw_record` payloads from log records into a per-file results mapping.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-
-    def __init__(
-        self,
-        target: dict[str, object],
-        *,
-        file_key: str,
-        artifacts_root: str | Path,
-        array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
-    ):
-        """
-        Initialize a handler that writes captured record payloads into `target`.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        super().__init__(level=logging.NOTSET)
-        self.target = target
-        self.file_key = file_key
-        self.artifacts_root = Path(artifacts_root)
-        self.array_offload_min_bytes = int(array_offload_min_bytes)
-
-    def emit(self, record: logging.LogRecord) -> None:
-        """
-        Pull record payloads from logger template/args and store them by key.
-        Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-        """
-        parsed = _parse_record_payload(record)
-        if parsed is None:
-            return
-        key, value = parsed
-        module_name = record.name[len("recorder.") :] if record.name.startswith("recorder.") else record.name
-        normalized = _normalize_recorded_value(
-            value,
-            file_key=self.file_key,
-            field_key=key,
-            artifacts_root=self.artifacts_root,
-            array_offload_min_bytes=self.array_offload_min_bytes,
-        )
-        self.target[key] = {
-            "value": normalized,
-            "source": {
-                "module": module_name,
-                "function": record.funcName,
-                "line": int(record.lineno),
-            },
-        }
-
-
-def _parse_record_payload(record: logging.LogRecord) -> tuple[str, object] | None:
-    """
-    Parse `<key> ...` logger template and args into a key/value payload.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    if not isinstance(record.msg, str):
-        return None
-    match = _RECORD_PATTERN.match(record.msg)
-    if match is None:
-        return None
-    key = match.group(1)
-    args = record.args
-    if isinstance(args, tuple):
-        if len(args) == 0:
-            return key, None
-        if len(args) == 1:
-            return key, args[0]
-        return key, list(args)
-    if isinstance(args, dict):
-        return key, dict(args)
-    if args is None:
-        return key, None
-    return key, args
-
-
 def _utc_now_iso() -> str:
     """
     Return the current UTC time in ISO-8601 format with `Z`.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _safe_name(text: str) -> str:
-    """
-    Convert arbitrary text to a filesystem-safe token.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return _SAFE_NAME_PATTERN.sub("_", str(text)).strip("._") or "value"
-
-
-def _normalize_recorded_value(
-    value: object,
-    *,
-    file_key: str,
-    field_key: str,
-    artifacts_root: str | Path,
-    array_offload_min_bytes: int,
-) -> object:
-    """
-    Convert recorded values into JSON-safe payloads with array offloading support.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    if isinstance(value, np.ndarray):
-        if value.nbytes >= int(array_offload_min_bytes):
-            file_token = _safe_name(str(file_key).replace("/", "__"))
-            field_token = _safe_name(field_key)
-            rel_path = f"sw-pipe.artifacts/{file_token}__{field_token}.npy"
-            out_path = Path(artifacts_root).parent / rel_path
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            np.save(out_path, value)
-            return {"path": rel_path}
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
-    if isinstance(value, list):
-        return [
-            _normalize_recorded_value(
-                item,
-                file_key=file_key,
-                field_key=field_key,
-                artifacts_root=artifacts_root,
-                array_offload_min_bytes=array_offload_min_bytes,
-            )
-            for item in value
-        ]
-    if isinstance(value, tuple):
-        return [
-            _normalize_recorded_value(
-                item,
-                file_key=file_key,
-                field_key=field_key,
-                artifacts_root=artifacts_root,
-                array_offload_min_bytes=array_offload_min_bytes,
-            )
-            for item in value
-        ]
-    if isinstance(value, dict):
-        return {
-            str(k): _normalize_recorded_value(
-                v,
-                file_key=file_key,
-                field_key=field_key,
-                artifacts_root=artifacts_root,
-                array_offload_min_bytes=array_offload_min_bytes,
-            )
-            for k, v in value.items()
-        }
-    return value
-
-
-def _sha256_file(path: str | Path) -> str:
-    """
-    Compute SHA-256 for a file.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as stream:
-        while True:
-            chunk = stream.read(1024 * 1024)
-            if not chunk:
-                break
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 # Human/recorder logging setup
@@ -358,71 +125,6 @@ def configure_recorder_logger(level_name: str = "WARNING") -> None:
     recorder_logger.propagate = False
 
 
-def _state_file_path(directory: str | Path, *, pipeline_name: str) -> Path:
-    """
-    Default per-pipeline state-file path for processed `.plt` tracking.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return Path(directory) / f"sw-pipe.{_safe_name(pipeline_name)}.processed.json"
-
-
-def _relative_file_key(file_path: str | Path, *, base_dir: str | Path) -> str:
-    """
-    Stable relative key for a processed file inside the tracked directory.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return Path(file_path).resolve().relative_to(Path(base_dir).resolve()).as_posix()
-
-
-def _load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, object]]]:
-    """
-    Load processed-file keys and computed results from state file.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    path = Path(state_file)
-    if not path.exists():
-        return set(), {}
-    try:
-        payload = json.loads(path.read_text())
-    except Exception:
-        return set(), {}
-    files = payload.get("processed_files", [])
-    processed_keys = {str(item) for item in files} if isinstance(files, list) else set()
-    computed = payload.get("computed_results", {})
-    if isinstance(computed, dict):
-        return processed_keys, {str(key): value for key, value in computed.items() if isinstance(value, dict)}
-    return processed_keys, {}
-
-
-def _save_state(
-    state_file: str | Path,
-    *,
-    processed_keys: set[str],
-    computed_results: dict[str, dict[str, object]],
-    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
-) -> None:
-    """
-    Save processed keys and computed results to state file.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    path = Path(state_file)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "processed_files": sorted(processed_keys),
-        "computed_results": computed_results,
-    }
-    payload_text = json.dumps(payload, indent=2, cls=_ScientificFloatEncoder)
-    payload_size_bytes = len(payload_text.encode("utf-8"))
-    if int(json_warn_bytes) > 0 and payload_size_bytes >= int(json_warn_bytes):
-        log.warning(
-            "sw-pipe state file is large: %d bytes (threshold=%d bytes) at %s",
-            payload_size_bytes,
-            int(json_warn_bytes),
-            path,
-        )
-    path.write_text(payload_text)
-
-
 # File discovery and pipeline routing
 def discover_input_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
     """
@@ -462,16 +164,16 @@ def _select_pipeline_work(
             from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as dummy_process_file
 
             process_functions["dummy"] = dummy_process_file
-            state_files["dummy"] = _state_file_path(directory, pipeline_name="dummy")
-            known_processed, known_computed = _load_state(state_files["dummy"])
+            state_files["dummy"] = state_file_path(directory, pipeline_name="dummy")
+            known_processed, known_computed = load_state(state_files["dummy"])
             known_processed_by_pipeline["dummy"] = known_processed
             known_computed_by_pipeline["dummy"] = known_computed
             for file_path in files:
                 selected.append((file_path, "dummy", process_functions["dummy"], "dummy"))
         elif pipeline is not None:
             pipeline_name = str(pipeline)
-            state_files[pipeline_name] = _state_file_path(directory, pipeline_name=pipeline_name)
-            known_processed, known_computed = _load_state(state_files[pipeline_name])
+            state_files[pipeline_name] = state_file_path(directory, pipeline_name=pipeline_name)
+            known_processed, known_computed = load_state(state_files[pipeline_name])
             known_processed_by_pipeline[pipeline_name] = known_processed
             known_computed_by_pipeline[pipeline_name] = known_computed
             if pipeline_name == "slice":
@@ -520,15 +222,15 @@ def _select_pipeline_work(
                         from starwinds_analysis.pipelines.volume import process_plt_file as selected_process_file
                     process_functions[resolved_pipeline] = selected_process_file
                 if resolved_pipeline not in state_files:
-                    state_files[resolved_pipeline] = _state_file_path(directory, pipeline_name=resolved_pipeline)
-                    known_processed, known_computed = _load_state(state_files[resolved_pipeline])
+                    state_files[resolved_pipeline] = state_file_path(directory, pipeline_name=resolved_pipeline)
+                    known_processed, known_computed = load_state(state_files[resolved_pipeline])
                     known_processed_by_pipeline[resolved_pipeline] = known_processed
                     known_computed_by_pipeline[resolved_pipeline] = known_computed
                 selected.append((file_path, resolved_pipeline, process_functions[resolved_pipeline], resolved_pipeline))
     else:
         process_label = f"{process_file.__module__}.{process_file.__name__}"
-        state_files["custom"] = _state_file_path(directory, pipeline_name="custom")
-        known_processed, known_computed = _load_state(state_files["custom"])
+        state_files["custom"] = state_file_path(directory, pipeline_name="custom")
+        known_processed, known_computed = load_state(state_files["custom"])
         known_processed_by_pipeline["custom"] = known_processed
         known_computed_by_pipeline["custom"] = known_computed
         for file_path in files:
@@ -560,7 +262,7 @@ def _run_one_file(
     Run one pipeline step for one file and update in-memory results/state.
     Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    file_key = _relative_file_key(file_path, base_dir=directory)
+    file_key = relative_file_key(file_path, base_dir=directory)
     processed_keys = known_processed_by_pipeline[state_pipeline_name]
     if noclobber and file_key in processed_keys:
         results.skipped_files.append(file_path)
@@ -575,9 +277,9 @@ def _run_one_file(
         }
     }
     if include_file_hash:
-        file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
+        file_results["meta"]["file_hash_sha256"] = sha256_file(file_path)
 
-    recorder_handler = _SwRecordHandler(
+    recorder_handler = SwRecordHandler(
         file_results,
         file_key=file_key,
         artifacts_root=artifacts_root,
@@ -608,7 +310,7 @@ def _run_one_file(
         recorder_handler.close()
         results.computed_results[file_key] = file_results
         known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-        _save_state(
+        save_state(
             state_file,
             processed_keys=processed_keys,
             computed_results=known_computed_by_pipeline[state_pipeline_name],
@@ -625,8 +327,8 @@ def run_sw_pipe(
     recursive: bool = False,
     noclobber: bool = False,
     include_file_hash: bool = False,
-    array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
-    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
+    array_offload_min_bytes: int = DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+    json_warn_bytes: int = DEFAULT_JSON_WARN_BYTES,
     fail_fast: bool = False,
     process_file: Callable[[Path], None] | None = None,
 ) -> SwPipeResults:
@@ -668,7 +370,7 @@ def run_sw_pipe(
     )
     if not selected:
         for state_pipeline_name, state_file in state_files.items():
-            _save_state(
+            save_state(
                 state_file,
                 processed_keys=known_processed_by_pipeline[state_pipeline_name],
                 computed_results=known_computed_by_pipeline[state_pipeline_name],
@@ -748,13 +450,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--array-offload-min-bytes",
         type=int,
-        default=_DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+        default=DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
         help="Offload recorded NumPy arrays at or above this byte size to .npy artifacts.",
     )
     parser.add_argument(
         "--json-warn-bytes",
         type=int,
-        default=_DEFAULT_JSON_WARN_BYTES,
+        default=DEFAULT_JSON_WARN_BYTES,
         help="Warn if the per-pipeline sw-pipe state JSON is at or above this byte size (0 disables).",
     )
     parser.add_argument(

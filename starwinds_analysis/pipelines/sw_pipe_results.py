@@ -4,18 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
-
-def _load_state(path: str | Path) -> dict[str, object]:
-    """
-    Load a sw-pipe state JSON payload from disk.
-    Used by: `starwinds_analysis/pipelines/sw_pipe_results.py`
-    """
-    payload = json.loads(Path(path).read_text())
-    if isinstance(payload, dict):
-        return payload
-    return {}
+from starwinds_analysis.pipelines.recorder import load_state_payload
 
 
 def _computed_results(payload: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -140,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    payload = _load_state(args.state)
+    payload = load_state_payload(args.state)
     computed = _computed_results(payload)
     available_files = _iter_file_keys(payload, computed)
     available_fields = _iter_fields(computed)
