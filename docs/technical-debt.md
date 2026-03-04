@@ -106,7 +106,7 @@ Coordinate/vector naming note:
 - `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. Still a large mixed-responsibility CLI module (dispatch, recorder schema, state persistence, stdout logging, fail-fast policy) and remains the main monolith in `pipelines/`.
 - `starwinds_analysis/pipelines/recorder.py` — **Debt**. Recorder capture + JSON normalization + persistence are now split out cleanly, but the file is still large and schema-heavy; keep it from becoming a second monolith.
 - `starwinds_analysis/pipelines/shell.py` — **Debt**. The shell pipeline is readable, but it is still the largest pipeline and still contains significant shell-specific compute logic; keep pushing pointwise parts down into recipes/physics and avoid further local growth.
-- `starwinds_analysis/param_in.py` — **Debt**. Still uses `_ensure_component(...)`; this is the same `_ensure*` helper pattern already called out as a bad smell and should be replaced with direct structure population.
+- `starwinds_analysis/param_in.py` — **Reviewed**. Nearby `PARAM.in` lookup + stellar parameter parsing are in place; the `_ensure_component(...)` helper has been removed.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
 - `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).

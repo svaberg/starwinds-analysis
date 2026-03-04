@@ -94,6 +94,5 @@ Current focused checks that should stay healthy:
 
 - Continue shrinking real debt in `docs/technical-debt.md`, especially:
   - `SmartDs.resolve(...)`
-  - `param_in._ensure_component(...)`
   - quantity-specific `*_vs_radius` wrappers in `physics/`
   - keeping `shell.py` from growing into another logic blob
