@@ -59,36 +59,29 @@ def configure_logger(level_name: str) -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(getattr(logging, str(level_name).upper()))
     handler.addFilter(PipelineSourceFilter())
-    color_backend = None
-    color_fallback_notes: list[tuple[int, str]] = []
+    color_enabled = False
     if bool(getattr(sys.stdout, "isatty", lambda: False)()):
-        for module_name in ("colorlog", "coloredlogs"):
-            try:
-                formatter_class = __import__(module_name, fromlist=["ColoredFormatter"]).ColoredFormatter
-                handler.setFormatter(
-                    formatter_class(
-                        PIPELINE_COLOR_LOG_FORMAT,
-                        secondary_log_colors={},
-                        reset=True,
-                        style="%",
-                    )
+        try:
+            formatter_class = __import__("colorlog", fromlist=["ColoredFormatter"]).ColoredFormatter
+            handler.setFormatter(
+                formatter_class(
+                    PIPELINE_COLOR_LOG_FORMAT,
+                    secondary_log_colors={},
+                    reset=True,
+                    style="%",
                 )
-            except ImportError:
-                color_fallback_notes.append((logging.INFO, f"Pipeline color logging backend not available: {module_name}"))
-                continue
-            except AttributeError:
-                color_fallback_notes.append((logging.WARNING, f"Pipeline color logging backend missing ColoredFormatter: {module_name}"))
-                continue
-            color_backend = module_name
-            break
+            )
+            color_enabled = True
+        except ImportError:
+            log.info("Pipeline color logging backend not available: colorlog")
+        except AttributeError:
+            log.warning("Pipeline color logging backend missing ColoredFormatter: colorlog")
     if handler.formatter is None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
     logger.addHandler(handler)
-    if color_backend is not None:
-        log.info("Using colored pipeline logging via %s", color_backend)
-    elif color_fallback_notes:
-        for level, message in color_fallback_notes:
-            log.log(level, "%s", message)
+    if color_enabled:
+        log.info("Using colored pipeline logging via colorlog")
+    elif bool(getattr(sys.stdout, "isatty", lambda: False)()):
         log.info("Using plain pipeline logging (no color backend available)")
 
 
