@@ -376,8 +376,11 @@ class SmartDs:
         """
         if not isinstance(name, str):
             raise TypeError("SmartDs fields must be requested by name")
-        if self._cache_enabled and name in self._cache:
-            return self._cache[name]
+        if self._cache_enabled:
+            try:
+                return self._cache[name]
+            except KeyError:
+                pass
 
         raw_name = self._resolve_raw_name(name)
         if raw_name is not None:
@@ -388,11 +391,15 @@ class SmartDs:
 
         try:
             value = self._compute_via_graph(name)
-        except (IndexError, UnresolvableFieldError):
-            func = self._field_functions.get(name)
-            if func is None:
-                raise
-            value = np.array(func(self))
+        except (IndexError, UnresolvableFieldError) as exc:
+            try:
+                value = np.array(self._field_functions[name](self))
+            except KeyError:
+                raise exc
+            if self._cache_enabled:
+                self._cache[name] = value
+            return value
+
         if self._cache_enabled:
             self._cache[name] = value
         return value
