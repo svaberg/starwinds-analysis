@@ -303,8 +303,7 @@ class SmartDs:
     def variable(self, name: str):
         """
         Main name-based field accessor. Raw loader fields win when present; otherwise
-        SmartDs produces the field from the attached graph (with local field functions as
-        an escape hatch for instance-local custom fields).
+        SmartDs produces the field from the attached graph.
         Used by: `SmartDs` users and internal methods
         """
         if not isinstance(name, str):
@@ -316,7 +315,7 @@ class SmartDs:
             value = self._dataset.variable(name)
         else:
             try:
-                value = self._compute_via_graph(name)
+                value = _compute_via_graph(self, name)
             except UnresolvableFieldError as exc:
                 raise IndexError(str(exc)) from exc
 
@@ -330,13 +329,6 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         return _explain_field(self, name, return_tree=return_tree)
-
-    def _compute_via_graph(self, name: str):
-        """
-        Evaluate a field via the attached griblet graph.
-        Used by: `SmartDs` users and internal methods
-        """
-        return _compute_via_graph(self, name)
 
     def resample(
         self,
