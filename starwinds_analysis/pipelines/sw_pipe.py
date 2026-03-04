@@ -13,7 +13,7 @@ from pathlib import Path
 import sys
 from typing import Callable
 
-from starwinds_analysis.pipelines.orchestration_helpers import log_pipeline_event
+from starwinds_analysis.pipelines.utils import log_pipeline_event
 from starwinds_analysis.pipelines.recorder import DEFAULT_ARRAY_OFFLOAD_MIN_BYTES
 from starwinds_analysis.pipelines.recorder import DEFAULT_JSON_WARN_BYTES
 from starwinds_analysis.pipelines.recorder import SwPipeResults
@@ -59,7 +59,7 @@ def configure_logger(level_name: str) -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(getattr(logging, str(level_name).upper()))
     handler.addFilter(PipelineSourceFilter())
-    color_enabled = False
+
     if sys.stdout.isatty():
         try:
             formatter_class = __import__("colorlog", fromlist=["ColoredFormatter"]).ColoredFormatter
@@ -71,18 +71,14 @@ def configure_logger(level_name: str) -> None:
                     style="%",
                 )
             )
-            color_enabled = True
         except ImportError:
             log.info("Install colorlog for colored logs.")
         except AttributeError:
             log.warning("Could not set up colorlog formatter, falling back to plain logging.")
+
     if handler.formatter is None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
     logger.addHandler(handler)
-    if color_enabled:
-        log.info("Using colored pipeline logging via colorlog")
-    elif sys.stdout.isatty():
-        log.info("Using plain pipeline logging (no color backend available)")
 
 
 def configure_recorder(level_name: str = "WARNING") -> None:

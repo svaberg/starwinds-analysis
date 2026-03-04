@@ -11,7 +11,7 @@ from matplotlib.colors import LogNorm
 from matplotlib.colors import SymLogNorm
 
 from starwinds_analysis.constants import B_R_SYMLOG_LINTHRESH_T
-from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
+from starwinds_analysis.pipelines.utils import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_cross_quantiles
 

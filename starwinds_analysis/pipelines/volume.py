@@ -13,7 +13,7 @@ from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
 from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
 from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.physics.torque import torque_vs_radius
-from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
+from starwinds_analysis.pipelines.utils import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)

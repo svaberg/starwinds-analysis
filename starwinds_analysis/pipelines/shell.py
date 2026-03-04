@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from starwinds_analysis.constants import MU0
-from starwinds_analysis.pipelines.orchestration_helpers import output_prefix_from_input_file
+from starwinds_analysis.pipelines.utils import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)

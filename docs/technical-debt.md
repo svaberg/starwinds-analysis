@@ -39,7 +39,7 @@ Current practical fit:
 - The existing folders already mostly match this structure.
 - No major folder reorg is required right now.
 - The main remaining structural risks are:
-  - generic logic drifting into `pipelines/orchestration_helpers.py`
+  - generic logic drifting into `pipelines/utils.py`
   - quantity-specific workflow wrappers living too deep in `physics/`
   - extra side folders (`sampling/`, `algorithms/`, `data/`) becoming architectural clutter if they grow without a clear boundary
 
