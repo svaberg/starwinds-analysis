@@ -8,7 +8,7 @@ from pathlib import Path
 def log_pipeline_event(logger, message: str, **fields) -> None:
     """
     Emit one normalized pipeline progress message on the provided logger.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
     text = message
     if fields:
@@ -20,7 +20,6 @@ def log_pipeline_event(logger, message: str, **fields) -> None:
 def slug_key(text: str) -> str:
     """
     Create a filesystem-safe-ish slug from arbitrary text.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     out = []
     for ch in str(text):
@@ -37,7 +36,7 @@ def slug_key(text: str) -> str:
 def output_prefix_from_input_file(input_file) -> str:
     """
     Build a quicklook output prefix from an input filename.
-    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
+    Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/shell.py`, `starwinds_analysis/pipelines/volume.py`
     """
     path = Path(str(input_file))
     stem = path.name
