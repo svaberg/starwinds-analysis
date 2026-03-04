@@ -25,12 +25,6 @@ from starwinds_analysis.pipelines.recorder import sha256_file
 from starwinds_analysis.pipelines.recorder import state_file_path
 
 log = logging.getLogger(__name__)
-def _utc_now_iso() -> str:
-    """
-    Return the current UTC time in ISO-8601 format with `Z`.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 # Human/recorder logging setup
@@ -315,7 +309,7 @@ def run_sw_pipe(
             "meta": {
                 "input_file": str(file_path.resolve()),
                 "pipeline": process_label,
-                "start_time_utc": _utc_now_iso(),
+                "start_time_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
         }
         if include_file_hash:
@@ -347,7 +341,7 @@ def run_sw_pipe(
         finally:
             meta = file_results.get("meta")
             if isinstance(meta, dict):
-                meta["end_time_utc"] = _utc_now_iso()
+                meta["end_time_utc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             recorder_logger.removeHandler(recorder_handler)
             recorder_handler.close()
             results.computed_results[file_key] = file_results
