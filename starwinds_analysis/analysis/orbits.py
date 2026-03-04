@@ -205,16 +205,7 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    return sampled.append_fields(
-        {
-            "X [sample]": points[:, 0],
-            "Y [sample]": points[:, 1],
-            "Z [sample]": points[:, 2],
-            "R [sample]": radius_r,
-            "R [m]": radius_m,
-        },
-        zone_suffix="orbit samples",
-    )
+    return sampled.append_fields({"R [m]": radius_m}, zone_suffix="orbit samples")
 
 def sample_trajectory(
     smart_ds,

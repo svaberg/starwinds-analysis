@@ -51,14 +51,14 @@ def compare_curve_mass_loss_to_shell(
     body_radius_m = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    r_sample_r = np.array(curve("R [sample]"))
-    r_m = r_sample_r * body_radius_m
+    r_m = np.array(curve("R [m]"))
+    r_r = r_m / body_radius_m
     estimates = mass_loss_from_curve(curve)
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
-        [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
+        [float(np.nanmean(r_r))] if shell_radii is None else shell_radii,
         source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
         shell_field="mass_flux [kg/m^2/s]",
         body_radius_m=body_radius_m,
@@ -71,14 +71,14 @@ def compare_curve_mass_loss_to_shell(
         shell_value = float(shell_values[0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_r)
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
         mean_to_shell = stats["mean"] / shell_value if shell_value != 0 else np.nan
 
     out = {
-        "radius [R]": float(np.nanmean(r_sample_r)),
+        "radius [R]": float(np.nanmean(r_r)),
         "radius [m]": float(np.nanmean(r_m)),
         "mass_flux [kg/m^2/s]": mass_flux,
         "local_mass_loss [kg/s]": estimates,
@@ -105,14 +105,14 @@ def compare_curve_torque_to_shell(
     """Compare local curve torque estimates against shell-integrated values."""
     body_radius_m = float(curve("star_radius [m]"))
     weights = curve.get("time_weight [none]")
-    r_sample_r = np.array(curve("R [sample]"))
-    r_m = r_sample_r * body_radius_m
+    r_m = np.array(curve("R [m]"))
+    r_r = r_m / body_radius_m
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
     curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
     local_magnetic, local_dynamic, local_total = torque_from_curve(curve)
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
-        [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
+        [float(np.nanmean(r_r))] if shell_radii is None else shell_radii,
         source_fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
@@ -136,7 +136,7 @@ def compare_curve_torque_to_shell(
         shell_total = float(shell_values[0])
         shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
-        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
     stats = summarize_samples(local_total, weights=weights)
@@ -144,7 +144,7 @@ def compare_curve_torque_to_shell(
         mean_to_shell = stats["mean"] / shell_total if shell_total != 0 else np.nan
 
     out = {
-        "radius [R]": float(np.nanmean(r_sample_r)),
+        "radius [R]": float(np.nanmean(r_r)),
         "radius [m]": float(np.nanmean(r_m)),
         "magnetic_torque_density [N/m]": curve_magnetic_density,
         "dynamic_torque_density [N/m]": curve_dynamic_density,
@@ -197,6 +197,7 @@ def test_orbital_period_is_approximately_one_year_for_1au_solar_mass():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    star_radius_m = float(sds.aux["Star_radius_m"])
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -206,14 +207,15 @@ def test_sample_zero_eccentricity_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert np.array(out("R [sample]")).shape == (72,)
+    assert np.array(out("R [m]")).shape == (72,)
     assert np.array(out("Rho [g/cm^3]")).shape == (72,)
-    assert np.allclose(out("R [sample]"), 10.0, rtol=0, atol=1e-12)
+    np.testing.assert_allclose(out("R [m]"), 10.0 * star_radius_m, rtol=1e-12, atol=0.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_elliptic_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    star_radius_m = float(sds.aux["Star_radius_m"])
     out = sample_elliptic_orbit(
         sds,
         10.0,
@@ -223,13 +225,13 @@ def test_sample_elliptic_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert np.array(out("R [sample]")).shape == (96,)
+    assert np.array(out("R [m]")).shape == (96,)
     assert np.array(out("Rho [g/cm^3]")).shape == (96,)
     assert np.array(out("phase [turns]")).shape == (96,)
     assert np.array(out("time_weight [none]")).shape == (96,)
     assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
-    assert np.nanmin(out("R [sample]")) < 10.0
-    assert np.nanmax(out("R [sample]")) > 10.0
+    assert np.nanmin(out("R [m]")) < 10.0 * star_radius_m
+    assert np.nanmax(out("R [m]")) > 10.0 * star_radius_m
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

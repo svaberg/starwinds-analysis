@@ -58,7 +58,7 @@ def pressure_components_from_curve(
         phase = np.array(curve.get("phase [turns]"))
         if phase.shape == (len(rho),):
             points_r = np.column_stack(
-                [curve("X [sample]"), curve("Y [sample]"), curve("Z [sample]")]
+                [curve("X [R]"), curve("Y [R]"), curve("Z [R]")]
             )
             V_xyz = periodic_curve_velocity(points_r, phase, float(period_s), body_radius_m)
 
