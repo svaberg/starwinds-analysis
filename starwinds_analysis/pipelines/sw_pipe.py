@@ -493,29 +493,28 @@ def _resolve_pipeline_process_file(
     raise KeyError(f"Unknown pipeline '{pipeline}'")
 
 
-def run_sw_pipe(
-    directory: str | Path = ".",
+def _select_pipeline_work(
+    files: list[Path],
     *,
-    pipeline: str | None = None,
-    recursive: bool = False,
-    noclobber: bool = False,
-    include_file_hash: bool = False,
-    array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
-    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
-    fail_fast: bool = False,
-    process_file: Callable[[Path], None] | None = None,
-) -> SwPipeResults:
+    directory: str | Path,
+    pipeline: str | None,
+    process_file: Callable[[Path], None] | None,
+) -> tuple[
+    dict[str, Path],
+    dict[str, set[str]],
+    dict[str, dict[str, dict[str, object]]],
+    list[tuple[Path, str, Callable[[Path], None], str]],
+]:
     """
-    Run `sw-pipe` over all discovered `.plt` files in a directory.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
+    Build the per-file work list together with per-pipeline state snapshots.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
     """
-    files = discover_input_files(directory, recursive=recursive)
     state_files: dict[str, Path] = {}
     known_processed_by_pipeline: dict[str, set[str]] = {}
     known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]] = {}
     process_functions: dict[str, Callable[[Path], None]] = {}
     selected: list[tuple[Path, str, Callable[[Path], None], str]] = []
-    pipeline_label = "auto" if pipeline is None else str(pipeline)
+
     if process_file is None:
         if pipeline == "dummy":
             process_functions["dummy"] = _resolve_pipeline_process_file("dummy")
@@ -526,15 +525,16 @@ def run_sw_pipe(
             for file_path in files:
                 selected.append((file_path, "dummy", process_functions["dummy"], "dummy"))
         elif pipeline is not None:
-            state_files[str(pipeline)] = _state_file_path(directory, pipeline_name=str(pipeline))
-            known_processed, known_computed = _load_state(state_files[str(pipeline)])
-            known_processed_by_pipeline[str(pipeline)] = known_processed
-            known_computed_by_pipeline[str(pipeline)] = known_computed
-            process_functions[str(pipeline)] = _resolve_pipeline_process_file(str(pipeline))
+            pipeline_name = str(pipeline)
+            state_files[pipeline_name] = _state_file_path(directory, pipeline_name=pipeline_name)
+            known_processed, known_computed = _load_state(state_files[pipeline_name])
+            known_processed_by_pipeline[pipeline_name] = known_processed
+            known_computed_by_pipeline[pipeline_name] = known_computed
+            process_functions[pipeline_name] = _resolve_pipeline_process_file(pipeline_name)
             for file_path in files:
-                if _pipeline_name_for_file(file_path) != str(pipeline):
+                if _pipeline_name_for_file(file_path) != pipeline_name:
                     continue
-                selected.append((file_path, str(pipeline), process_functions[str(pipeline)], str(pipeline)))
+                selected.append((file_path, pipeline_name, process_functions[pipeline_name], pipeline_name))
         else:
             for file_path in files:
                 resolved_pipeline = _pipeline_name_for_file(file_path)
@@ -556,6 +556,123 @@ def run_sw_pipe(
         known_computed_by_pipeline["custom"] = known_computed
         for file_path in files:
             selected.append((file_path, process_label, process_file, "custom"))
+
+    return state_files, known_processed_by_pipeline, known_computed_by_pipeline, selected
+
+
+def _run_one_file(
+    file_path: Path,
+    *,
+    directory: str | Path,
+    process_label: str,
+    active_process_file: Callable[[Path], None],
+    state_pipeline_name: str,
+    results: SwPipeResults,
+    known_processed_by_pipeline: dict[str, set[str]],
+    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
+    recorder_logger: logging.Logger,
+    artifacts_root: Path,
+    noclobber: bool,
+    include_file_hash: bool,
+    array_offload_min_bytes: int,
+    fail_fast: bool,
+) -> None:
+    """
+    Run one pipeline step for one file and update in-memory results/state.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    file_key = _relative_file_key(file_path, base_dir=directory)
+    processed_keys = known_processed_by_pipeline[state_pipeline_name]
+    if noclobber and file_key in processed_keys:
+        results.skipped_files.append(file_path)
+        log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
+        return
+
+    file_results: dict[str, object] = {
+        "meta": {
+            "input_file": str(file_path.resolve()),
+            "pipeline": process_label,
+            "start_time_utc": _utc_now_iso(),
+        }
+    }
+    if include_file_hash:
+        file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
+
+    recorder_handler = _SwRecordHandler(
+        file_results,
+        file_key=file_key,
+        artifacts_root=artifacts_root,
+        array_offload_min_bytes=array_offload_min_bytes,
+    )
+    recorder_logger.addHandler(recorder_handler)
+    try:
+        active_process_file(file_path)
+    except Exception as exc:
+        results.failed_files.append(file_path)
+        file_results["meta"]["status"] = "failed"
+        file_results["meta"]["error"] = str(exc)
+        if fail_fast:
+            raise
+        log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
+    else:
+        file_results["meta"]["status"] = "processed"
+        results.processed_files.append(file_path)
+        processed_keys.add(file_key)
+    finally:
+        meta = file_results.get("meta")
+        if isinstance(meta, dict):
+            meta["end_time_utc"] = _utc_now_iso()
+        recorder_logger.removeHandler(recorder_handler)
+        recorder_handler.close()
+
+    results.computed_results[file_key] = file_results
+    known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
+
+
+def _write_all_state_files(
+    state_files: dict[str, Path],
+    *,
+    known_processed_by_pipeline: dict[str, set[str]],
+    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
+    json_warn_bytes: int,
+) -> None:
+    """
+    Persist all per-pipeline state files after the run completes.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    for state_pipeline_name, state_file in state_files.items():
+        _save_state(
+            state_file,
+            processed_keys=known_processed_by_pipeline[state_pipeline_name],
+            computed_results=known_computed_by_pipeline[state_pipeline_name],
+            json_warn_bytes=int(json_warn_bytes),
+        )
+
+
+def run_sw_pipe(
+    directory: str | Path = ".",
+    *,
+    pipeline: str | None = None,
+    recursive: bool = False,
+    noclobber: bool = False,
+    include_file_hash: bool = False,
+    array_offload_min_bytes: int = _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES,
+    json_warn_bytes: int = _DEFAULT_JSON_WARN_BYTES,
+    fail_fast: bool = False,
+    process_file: Callable[[Path], None] | None = None,
+) -> SwPipeResults:
+    """
+    Run `sw-pipe` over all discovered `.plt` files in a directory.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `test/test_sw_pipe.py`
+    """
+    files = discover_input_files(directory, recursive=recursive)
+    pipeline_label = "auto" if pipeline is None else str(pipeline)
+    state_files, known_processed_by_pipeline, known_computed_by_pipeline, selected = _select_pipeline_work(
+        files,
+        directory=directory,
+        pipeline=pipeline,
+        process_file=process_file,
+    )
 
     results = SwPipeResults(
         directory=Path(directory),
@@ -584,57 +701,28 @@ def run_sw_pipe(
     recorder_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
     for file_path, process_label, active_process_file, state_pipeline_name in selected:
-        file_key = _relative_file_key(file_path, base_dir=directory)
-        processed_keys = known_processed_by_pipeline[state_pipeline_name]
-        if noclobber and file_key in processed_keys:
-            results.skipped_files.append(file_path)
-            log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
-            continue
-        file_results: dict[str, object] = {
-            "meta": {
-                "input_file": str(file_path.resolve()),
-                "pipeline": process_label,
-                "start_time_utc": _utc_now_iso(),
-            }
-        }
-        if include_file_hash:
-            file_results["meta"]["file_hash_sha256"] = _sha256_file(file_path)
-        recorder_handler = _SwRecordHandler(
-            file_results,
-            file_key=file_key,
+        _run_one_file(
+            file_path,
+            directory=directory,
+            process_label=process_label,
+            active_process_file=active_process_file,
+            state_pipeline_name=state_pipeline_name,
+            results=results,
+            known_processed_by_pipeline=known_processed_by_pipeline,
+            known_computed_by_pipeline=known_computed_by_pipeline,
+            recorder_logger=recorder_logger,
             artifacts_root=artifacts_root,
+            noclobber=noclobber,
+            include_file_hash=include_file_hash,
             array_offload_min_bytes=array_offload_min_bytes,
+            fail_fast=fail_fast,
         )
-        recorder_logger.addHandler(recorder_handler)
-        try:
-            active_process_file(file_path)
-        except Exception as exc:
-            results.failed_files.append(file_path)
-            file_results["meta"]["status"] = "failed"
-            file_results["meta"]["error"] = str(exc)
-            if fail_fast:
-                raise
-            log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
-        else:
-            file_results["meta"]["status"] = "processed"
-            results.processed_files.append(file_path)
-            processed_keys.add(file_key)
-        finally:
-            meta = file_results.get("meta")
-            if isinstance(meta, dict):
-                meta["end_time_utc"] = _utc_now_iso()
-            recorder_logger.removeHandler(recorder_handler)
-            recorder_handler.close()
-        results.computed_results[file_key] = file_results
-        known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-    for state_pipeline_name, state_file in state_files.items():
-        pipeline_computed = known_computed_by_pipeline[state_pipeline_name]
-        _save_state(
-            state_file,
-            processed_keys=known_processed_by_pipeline[state_pipeline_name],
-            computed_results=pipeline_computed,
-            json_warn_bytes=int(json_warn_bytes),
-        )
+    _write_all_state_files(
+        state_files,
+        known_processed_by_pipeline=known_processed_by_pipeline,
+        known_computed_by_pipeline=known_computed_by_pipeline,
+        json_warn_bytes=int(json_warn_bytes),
+    )
     return results
 
 
