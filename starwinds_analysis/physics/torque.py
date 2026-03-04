@@ -325,14 +325,8 @@ def surface_torque_vs_radius(
     shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
 
     rho = np.array(shells(rho_name))
-    u_xyz = np.stack(
-        [np.array(shells(ux_name)), np.array(shells(uy_name)), np.array(shells(uz_name))],
-        axis=-1,
-    )
-    b_xyz = np.stack(
-        [np.array(shells(bx_name)), np.array(shells(by_name)), np.array(shells(bz_name))],
-        axis=-1,
-    )
+    u_xyz = np.array(shells("U_xyz [m/s]"))
+    b_xyz = np.array(shells("B_xyz [T]"))
     p = None if p_name is None else np.array(shells(p_name))
 
     terms = surface_torque_terms_on_shell_samples(

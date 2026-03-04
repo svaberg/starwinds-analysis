@@ -247,6 +247,10 @@ def sample_orbit_surface_revolution(
         arr = np.array(sampled_curve(key))
         if arr.shape == (n_phase * n_lon,):
             sampled[key] = arr.reshape(n_phase, n_lon)
+    if all(name in sampled for name in ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")):
+        sampled["U_xyz [m/s]"] = np.array(sampled_curve("U_xyz [m/s]")).reshape(n_phase, n_lon, 3)
+    if all(name in sampled for name in ("B_x [T]", "B_y [T]", "B_z [T]")):
+        sampled["B_xyz [T]"] = np.array(sampled_curve("B_xyz [T]")).reshape(n_phase, n_lon, 3)
     log.info(
         "sample_orbit_surface_revolution done: n_phase=%d, n_lon=%d",
         n_phase,
@@ -299,9 +303,7 @@ def pressure_components_on_orbit_surface(
     )
 
     rho = np.array(sampled[rho_name])
-    u_xyz = np.stack(
-        [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
-    )
+    u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
     b = np.array(sampled["B [T]"])
     magnetic_pressure = np.array(sampled["magnetic_pressure [Pa]"])
@@ -426,12 +428,8 @@ def torque_components_on_orbit_surface(
     )
 
     rho = np.array(sampled[rho_name])
-    u_xyz = np.stack(
-        [sampled[ux_name], sampled[uy_name], sampled[uz_name]], axis=-1
-    )
-    b_xyz = np.stack(
-        [sampled[bx_name], sampled[by_name], sampled[bz_name]], axis=-1
-    )
+    u_xyz = np.array(sampled["U_xyz [m/s]"])
+    b_xyz = np.array(sampled["B_xyz [T]"])
     p = None if p_name is None else np.array(sampled[p_name])
 
     points_m = np.array(sampled["surface_points"]) * float(body_radius_m)

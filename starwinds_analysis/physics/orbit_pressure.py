@@ -46,9 +46,7 @@ def pressure_components_from_orbit_sample(
         rho.size,
         include_relative_ram,
     )
-    u_xyz = np.column_stack(
-        [orbit("U_x [m/s]"), orbit("U_y [m/s]"), orbit("U_z [m/s]")]
-    )
+    u_xyz = np.array(orbit("U_xyz [m/s]"))
 
     object_velocity = None
     if (

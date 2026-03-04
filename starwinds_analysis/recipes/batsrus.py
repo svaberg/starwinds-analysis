@@ -229,7 +229,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     varset = set(variable_names)
 
     # Vector magnitudes (generic scan)
-    graph.merge(build_griblet_vector_magnitude_graph(varset))
+    graph.merge(build_griblet_vector_cartesian_graph(varset))
     # Add explicit U_xyz -> U and B_xyz -> B.
     for prefix, unit, description in (
         ("U", "m/s", "Flow speed magnitude"),
@@ -401,14 +401,17 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 
     return graph
 
-def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
+def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
     """
-    Add vector-magnitude recipes (e.g. `|U|`, `|B|`) for available Cartesian triplets.
+    Add stacked Cartesian-vector and magnitude recipes for available triplets.
     Adds:
-    - `prefix_xyz -> prefix`
+    - `prefix_x/y/z -> prefix_xyz`
+    - `prefix_x/y/z -> prefix`
     Example:
-    - `U_xyz -> U`
-    - `B_xyz -> B`
+    - `U_x/U_y/U_z -> U_xyz`
+    - `U_x/U_y/U_z -> U`
+    - `B_x/B_y/B_z -> B_xyz`
+    - `B_x/B_y/B_z -> B`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     graph = griblet.ComputationGraph()
@@ -427,6 +430,13 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
         if comps != {"x", "y", "z"}:
             continue
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
+        graph.add_recipe(
+            f"{prefix}_xyz [{unit}]",
+            lambda x, y, z: np.stack([np.array(x), np.array(y), np.array(z)], axis=-1),
+            deps=deps,
+            cost=0.05,
+            metadata={"description": f"{prefix} Cartesian vector"},
+        )
         graph.add_recipe(
             f"{prefix} [{unit}]",
             lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
