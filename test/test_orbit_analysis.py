@@ -7,8 +7,8 @@ from scipy import constants as const
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbit_local import local_mass_loss_from_curve
-from starwinds_analysis.physics.orbit_local import local_torque_from_curve
+from starwinds_analysis.physics.curve import mass_loss_from_curve
+from starwinds_analysis.physics.curve import torque_from_curve
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbits import orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
@@ -99,7 +99,7 @@ def test_local_mass_loss_from_curve_runs_and_compares_to_shell():
         n_points=96,
         method="nearest",
     )
-    out = local_mass_loss_from_curve(
+    out = mass_loss_from_curve(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -131,7 +131,7 @@ def test_local_torque_from_curve_runs_and_compares_to_shell():
         n_points=96,
         method="nearest",
     )
-    out = local_torque_from_curve(
+    out = torque_from_curve(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -163,7 +163,7 @@ def test_local_mass_loss_from_elliptic_curve_runs_and_compares_to_shell_profile(
         method="nearest",
     )
     shell_radii = np.linspace(8.0, 12.0, 8)
-    out = local_mass_loss_from_curve(
+    out = mass_loss_from_curve(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -200,7 +200,7 @@ def test_local_torque_from_elliptic_curve_runs_and_compares_to_shell_profile():
         method="nearest",
     )
     shell_radii = np.linspace(8.5, 11.5, 8)
-    out = local_torque_from_curve(
+    out = torque_from_curve(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,

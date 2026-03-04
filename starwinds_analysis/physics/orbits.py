@@ -36,10 +36,8 @@ SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
 def orbital_period(semi_major_axis_m, star_mass_kg):
     """
     Keplerian orbital period for a test particle around a point mass.
-    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/test/test_orbit_analysis.py`,
-      `/Users/dagfev/Documents/starwinds/starwinds-analysis/test/test_planetary_orbits.py`,
-      `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/orbit_surface.py`,
-      `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/orbit_pressure.py`
+    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/orbit_surface.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/curve.py`
     """
     a = float(semi_major_axis_m)
     m = float(star_mass_kg)

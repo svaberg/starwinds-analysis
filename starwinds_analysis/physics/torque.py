@@ -44,7 +44,7 @@ def spherical_wind_torque_density_terms(
 def local_torque_estimates(radius_m, magnetic_torque_density, dynamic_torque_density):
     """
     Pointwise local torque estimates from local torque densities.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`
+    Used by: `starwinds_analysis/physics/curve.py`
     """
     rest_integral = (np.pi**2) * np.square(radius_m)
     magnetic = magnetic_torque_density * rest_integral

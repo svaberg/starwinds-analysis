@@ -73,8 +73,7 @@ def weighted_quantile(values, quantiles, weights=None):
 def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
     """
     Weighted quantiles + mean/std summary for 1D samples.
-    Used by: `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
-      `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`
+    Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     v = np.array(values)
     qv = weighted_quantile(v, quantiles, weights=weights)

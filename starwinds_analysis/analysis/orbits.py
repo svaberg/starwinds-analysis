@@ -75,7 +75,7 @@ def _phase_from_weights(weights):
 def periodic_curve_velocity(points_r, phase_turns, period_s, body_radius_m):
     """
     Velocity along a periodic sampled curve from point positions and phase turns.
-    Used by: `starwinds_analysis/physics/orbit_pressure.py`, `starwinds_analysis/physics/orbit_surface.py`
+    Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points_r) * float(body_radius_m)
     phase = np.array(phase_turns)
@@ -267,7 +267,7 @@ def sample_elliptic_orbit(
     """
     Sample requested fields along an elliptic orbit path and return a curve SmartDs.
     The circular case is `eccentricity=0`.
-    Used by: `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`
+    Used by: `starwinds_analysis/physics/curve.py`
     """
     info = elliptic_orbit_points(
         semi_major_axis,

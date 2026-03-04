@@ -330,7 +330,7 @@ def sample_shell_field(
 ):
     """
     Sample one shell field over a shell series and return shells, values, areas, and radii.
-    Used by: `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/pipelines/volume.py`
+    Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/pipelines/volume.py`
     """
     if body_radius_m is None:
         body_radius_m = float(smart_ds("star_radius [m]"))

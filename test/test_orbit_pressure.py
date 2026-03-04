@@ -5,7 +5,7 @@ import pytest
 
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbit_pressure import pressure_components_from_curve
+from starwinds_analysis.physics.curve import pressure_components_from_curve
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure

@@ -1,27 +1,100 @@
-"""THIS FILE contains local diagnostics built from sampled curves.
+"""THIS FILE contains diagnostics evaluated on sampled curves.
 
-It compares local mass-loss/torque estimates against shell profiles along sampled
-curves. This is still workflow-heavy and remains debt while the library is being
-split into stricter primitives.
+It operates on already sampled curve `SmartDs` objects. Curve geometry belongs
+in `analysis/orbits.py`. Pressure formulas belong in `pressure.py`.
 """
-
-# TODO(debt): This file is workflow-heavy and quantity-specific in a deep layer.
-# It now consumes sampled curves instead of constructing orbit geometry, but the
-# comparison workflow and bundle-shaped outputs still need to move upward or shrink.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
+from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
+from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
+from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.physics.torque import local_torque_estimates
 
-def interp_profile(radii, values, x):
-    """
-    1D interpolate a shell profile onto orbit sample radii (with NaNs outside range).
-    """
+log = logging.getLogger(__name__)
+
+
+def body_radius_from_curve(curve, body_radius_m=None):
+    """Return the physical body radius for a sampled curve."""
+    if body_radius_m is None:
+        return float(curve("star_radius [m]"))
+    return float(body_radius_m)
+
+
+def pressure_components_from_curve(
+    curve,
+    *,
+    body_radius_m: float | None = None,
+    period_s: float | None = None,
+    include_relative_ram: bool = True,
+    standoff_b0_t: float = 0.7e-4,
+):
+    """Assemble pressure components and standoff proxies from a sampled curve."""
+    body_radius_m = body_radius_from_curve(curve, body_radius_m)
+    rho = np.array(curve("Rho [kg/m^3]"))
+    log.debug(
+        "pressure_components_from_curve: n_points=%d, include_relative=%s",
+        rho.size,
+        include_relative_ram,
+    )
+    U_xyz = np.array(curve("U_xyz [m/s]"))
+
+    V_xyz = None
+    if include_relative_ram and period_s is not None and np.isfinite(period_s):
+        phase = np.array(curve.get("phase [turns]"))
+        if phase.shape == (len(rho),):
+            points_r = np.column_stack(
+                [curve("X [sample]"), curve("Y [sample]"), curve("Z [sample]")]
+            )
+            V_xyz = periodic_curve_velocity(points_r, phase, float(period_s), body_radius_m)
+
+    comps = {
+        "U [m/s]": np.array(curve("U [m/s]")),
+        "B [T]": np.array(curve("B [T]")),
+        "magnetic_pressure [Pa]": np.array(curve("magnetic_pressure [Pa]")),
+        "ram_pressure [Pa]": np.array(curve("ram_pressure [Pa]")),
+        "thermal_pressure [Pa]": np.array(curve("thermal_pressure [Pa]")),
+        "standoff_distance [m]": np.array(curve("standoff_distance [m]")),
+    }
+
+    # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
+    # local workflow logic because they depend on the trajectory velocity.
+    if V_xyz is not None:
+        U_minus_V = U_xyz - V_xyz
+        U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
+        comps["V [m/s]"] = np.sqrt(np.sum(V_xyz * V_xyz, axis=-1))
+        comps["U_minus_V [m/s]"] = U_minus_V_m_s
+        comps["relative_ram_pressure [Pa]"] = ram_pressure(rho, U_minus_V_m_s)
+        comps["standoff_distance [m]"] = magnetospheric_standoff_distance(
+            rho,
+            U_minus_V_m_s,
+            b0_t=standoff_b0_t,
+        )
+        log.debug("pressure_components_from_curve: using relative velocity for standoff")
+
+    weights = curve.get("time_weight [none]")
+    summary = {}
+    for key, value in comps.items():
+        arr = np.array(value)
+        if arr.ndim == 1:
+            summary[key] = summarize_samples(arr, weights=weights)
+    return {
+        "rho [kg/m^3]": rho,
+        "curve_samples": curve,
+        **comps,
+        "summary": summary,
+    }
+
+
+def interpolate_profile(radii, values, x):
+    """Interpolate one shell profile onto curve radii, using NaN outside range."""
     r = np.array(radii)
     y = np.array(values)
     x = np.array(x)
@@ -37,7 +110,8 @@ def interp_profile(radii, values, x):
     out[(x < r[0]) | (x > r[-1])] = np.nan
     return out
 
-def local_mass_loss_from_curve(
+
+def mass_loss_from_curve(
     smart_ds,
     curve,
     *,
@@ -47,13 +121,8 @@ def local_mass_loss_from_curve(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    """
-    Compute local mass-loss estimates on one sampled curve and compare to shell profile values.
-    """
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    """Compute local mass-loss estimates on one sampled curve."""
+    body_radius_m = body_radius_from_curve(curve, body_radius_m)
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
@@ -76,7 +145,7 @@ def local_mass_loss_from_curve(
         shell_value = float(shell_values[0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_interp = interp_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -97,7 +166,8 @@ def local_mass_loss_from_curve(
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
     return out
 
-def local_torque_from_curve(
+
+def torque_from_curve(
     smart_ds,
     curve,
     *,
@@ -107,14 +177,8 @@ def local_torque_from_curve(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    """
-    Compute local torque estimates on one sampled curve and compare to shell torque profile
-      values.
-    """
-    if body_radius_m is None:
-        body_radius_m = float(curve("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
+    """Compute local torque estimates on one sampled curve."""
+    body_radius_m = body_radius_from_curve(curve, body_radius_m)
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     orbit_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
@@ -152,7 +216,7 @@ def local_torque_from_curve(
         shell_total = float(shell_values[0])
         shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
-        shell_interp = interp_profile(shell_profile_radii, shell_values, r_sample_r)
+        shell_interp = interpolate_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
     stats = summarize_samples(local_total, weights=weights)
