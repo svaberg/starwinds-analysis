@@ -9,6 +9,19 @@ The goal is not "purity". The goal is:
 - notebooks/examples that demonstrate easy usage
 - SI-first analysis (with explicit exceptions like `R` and Gauss-for-plotting)
 
+## Standards Rule: Treat Standards As Constraints
+
+Rule:
+
+- The project standards in this file are constraints, not suggestions.
+- Do not keep code that violates these rules just because it is already there.
+- Do not rationalize a violation because it is small, familiar, or already tested.
+
+Preferred pattern:
+
+- When code clearly violates a project rule, delete it, inline it, or move it to the correct layer.
+- Treat repeated user correction on the same pattern as a sign that the pattern should be removed immediately, not defended.
+
 ## Core Style Rule: Prefer Short Code
 
 Rule:
@@ -150,6 +163,8 @@ Rule:
   - reusable
   - composable
 - The library should **not** contain functions that are only used once (especially notebook-only helpers/wrappers).
+- The library should **not** contain functions or modules that are only used by tests.
+- Tiny modules must earn their existence; a file with one trivial helper or one shim is a code smell unless the boundary is clearly real.
 
 What goes where:
 
@@ -166,6 +181,13 @@ Litmus test:
 
 - If a function exists only to make one notebook cell shorter, it probably does **not** belong in the library.
 - If code is specific to one example narrative and not reused elsewhere, keep it in the notebook/script.
+- If a function is only imported by tests, it belongs in the test file or in a test helper module under `test/`, not in `starwinds_analysis/...`.
+- If a module is only a re-export, a test-only helper, or a single trivial utility, it should usually be deleted.
+
+Test organization rule:
+
+- Do not split one feature family into a pile of small test modules.
+- Prefer one test module per coherent feature area unless there is a real boundary that justifies the split.
 
 ## 1. Hard-Coded Quantity-Specific Plot Functions (Primary Anti-Pattern)
 
