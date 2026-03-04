@@ -89,7 +89,7 @@ def local_mass_loss_from_orbit_sample(
         "local_mass_loss_std [kg/s]": float(stats["std"]),
         "shell_mass_loss [kg/s]": float(shell_value),
         "mean_to_shell [none]": float(mean_to_shell),
-        "orbit_samples": orbit,
+        "curve_samples": orbit,
     }
     if shell_radii is not None:
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
@@ -166,7 +166,7 @@ def local_torque_from_orbit_sample(
         "local_total_torque_std [Nm]": float(stats["std"]),
         "shell_total_torque [Nm]": float(shell_total),
         "mean_to_shell [none]": float(mean_to_shell),
-        "orbit_samples": orbit,
+        "curve_samples": orbit,
     }
     if shell_radii is not None:
         out["shell_total_torque_interp [Nm]"] = shell_interp

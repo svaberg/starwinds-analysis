@@ -1,14 +1,11 @@
-"""THIS FILE contains pressure diagnostics evaluated on orbit samples.
+"""THIS FILE contains pressure diagnostics evaluated on sampled curves.
 
-It orchestrates orbit sampling with pressure formulas and includes temporary BATSRUS field-resolution glue.
+It operates on already sampled curve `SmartDs` objects.
 Pressure formulas themselves belong in pressure.py.
 """
 
-# TODO(debt): This file is an orbit workflow/pipeline (sampling + field resolution +
-# summaries) but currently lives in `physics`.
-# TODO(debt): It is a workflow-heavy module in `physics`; keep moving shared
-# orbit/sampling pieces into neutral primitives and use SmartDs/griblet SI requests
-# internally.
+# TODO(debt): This file still returns a large summary bundle in a deep layer.
+# The curve sampling boundary is now correct; the remaining debt is bundle shape.
 
 from __future__ import annotations
 
@@ -17,64 +14,58 @@ import logging
 import numpy as np
 
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
-from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
-from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.pressure import ram_pressure
 
 log = logging.getLogger(__name__)
 
-def pressure_components_from_orbit_sample(
-    orbit,
+def pressure_components_from_curve(
+    curve,
     *,
-    body_radius_m: float,
-    star_mass_kg: float | None = None,
-    semi_major_axis_r: float | None = None,
+    body_radius_m: float | None = None,
+    period_s: float | None = None,
     include_relative_ram: bool = True,
     standoff_b0_t: float = 0.7e-4,
 ):
     """
-    Assemble orbit-sampled pressure components and standoff proxies from sampled fields.
-    Used by: `starwinds_analysis/physics/orbit_pressure.py`
+    Assemble pressure components and standoff proxies from a sampled curve `SmartDs`.
     """
-    rho = np.array(orbit("Rho [kg/m^3]"))
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+
+    rho = np.array(curve("Rho [kg/m^3]"))
     log.debug(
-        "pressure_components_from_orbit_sample: n_points=%d, include_relative=%s",
+        "pressure_components_from_curve: n_points=%d, include_relative=%s",
         rho.size,
         include_relative_ram,
     )
-    u_xyz = np.array(orbit("U_xyz [m/s]"))
+    U_xyz = np.array(curve("U_xyz [m/s]"))
 
-    object_velocity = None
-    if (
-        include_relative_ram
-        and star_mass_kg is not None
-        and semi_major_axis_r is not None
-        and np.isfinite(semi_major_axis_r)
-    ):
-        phase = np.array(orbit.get("phase [turns]"))
+    V_xyz = None
+    if include_relative_ram and period_s is not None and np.isfinite(period_s):
+        phase = np.array(curve.get("phase [turns]"))
         if phase.shape == (len(rho),):
-            period_s = orbital_period(float(semi_major_axis_r) * body_radius_m, star_mass_kg)
             points_r = np.column_stack(
-                [orbit("X [sample]"), orbit("Y [sample]"), orbit("Z [sample]")]
+                [curve("X [sample]"), curve("Y [sample]"), curve("Z [sample]")]
             )
-            object_velocity = periodic_curve_velocity(points_r, phase, period_s, body_radius_m)
+            V_xyz = periodic_curve_velocity(points_r, phase, float(period_s), body_radius_m)
 
     comps = {
-        "U [m/s]": np.array(orbit("U [m/s]")),
-        "B [T]": np.array(orbit("B [T]")),
-        "magnetic_pressure [Pa]": np.array(orbit("magnetic_pressure [Pa]")),
-        "ram_pressure [Pa]": np.array(orbit("ram_pressure [Pa]")),
-        "thermal_pressure [Pa]": np.array(orbit("thermal_pressure [Pa]")),
-        "standoff_distance [m]": np.array(orbit("standoff_distance [m]")),
+        "U [m/s]": np.array(curve("U [m/s]")),
+        "B [T]": np.array(curve("B [T]")),
+        "magnetic_pressure [Pa]": np.array(curve("magnetic_pressure [Pa]")),
+        "ram_pressure [Pa]": np.array(curve("ram_pressure [Pa]")),
+        "thermal_pressure [Pa]": np.array(curve("thermal_pressure [Pa]")),
+        "standoff_distance [m]": np.array(curve("standoff_distance [m]")),
     }
 
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
-    # local workflow logic because they depend on the orbit-derived object velocity.
-    if object_velocity is not None:
-        V_xyz = object_velocity
-        U_minus_V = u_xyz - V_xyz
+    # local workflow logic because they depend on the trajectory velocity.
+    if V_xyz is not None:
+        U_minus_V = U_xyz - V_xyz
         U_minus_V_m_s = np.sqrt(np.sum(U_minus_V * U_minus_V, axis=-1))
         comps["V [m/s]"] = np.sqrt(np.sum(V_xyz * V_xyz, axis=-1))
         comps["U_minus_V [m/s]"] = U_minus_V_m_s
@@ -84,9 +75,9 @@ def pressure_components_from_orbit_sample(
             U_minus_V_m_s,
             b0_t=standoff_b0_t,
         )
-        log.debug("pressure_components_from_orbit_sample: using relative velocity for standoff")
+        log.debug("pressure_components_from_curve: using relative velocity for standoff")
 
-    weights = orbit.get("time_weight [none]")
+    weights = curve.get("time_weight [none]")
     summary = {}
     for key, value in comps.items():
         arr = np.array(value)
@@ -94,111 +85,7 @@ def pressure_components_from_orbit_sample(
             summary[key] = summarize_samples(arr, weights=weights)
     return {
         "rho [kg/m^3]": rho,
-        "orbit_samples": orbit,
+        "curve_samples": curve,
         **comps,
         "summary": summary,
     }
-
-def pressure_components_on_circular_orbit(
-    smart_ds,
-    radius,
-    *,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    method: str = "nearest",
-    star_mass_kg: float | None = None,
-    include_relative_ram: bool = True,
-):
-    """
-    Sample a circular orbit and compute pressure-component diagnostics.
-    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    log.info(
-        "pressure_components_on_circular_orbit delegates to elliptic path: radius=%s, n_points=%d, method=%s, plane=%s",
-        radius,
-        n_points,
-        method,
-        plane,
-    )
-    return pressure_components_on_elliptic_orbit(
-        smart_ds,
-        radius,
-        eccentricity=0.0,
-        body_radius_m=body_radius_m,
-        n_points=n_points,
-        plane=plane,
-        angle0=0.0,
-        sample="eccentric_anomaly",
-        method=method,
-        star_mass_kg=star_mass_kg,
-        include_relative_ram=include_relative_ram,
-    )
-
-def pressure_components_on_elliptic_orbit(
-    smart_ds,
-    semi_major_axis,
-    *,
-    eccentricity: float = 0.0,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    angle0: float = 0.0,
-    sample: str = "eccentric_anomaly",
-    method: str = "nearest",
-    star_mass_kg: float | None = None,
-    include_relative_ram: bool = True,
-):
-    """
-    Sample an elliptic orbit and compute pressure-component diagnostics.
-    Used by: `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    log.info(
-        "pressure_components_on_elliptic_orbit start: a=%s, e=%s, n_points=%d, method=%s, plane=%s",
-        semi_major_axis,
-        eccentricity,
-        n_points,
-        method,
-        plane,
-    )
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
-    rho_name = "Rho [kg/m^3]"
-    u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
-    derived = (
-        "U [m/s]",
-        "B [T]",
-        "magnetic_pressure [Pa]",
-        "ram_pressure [Pa]",
-        "thermal_pressure [Pa]",
-        "standoff_distance [m]",
-    )
-    orbit = sample_elliptic_orbit(
-        smart_ds,
-        semi_major_axis,
-        eccentricity=eccentricity,
-        fields=(rho_name, *u_xyz, *derived),
-        n_points=n_points,
-        plane=plane,
-        angle0=angle0,
-        sample=sample,
-        method=method,
-    )
-    out = pressure_components_from_orbit_sample(
-        orbit,
-        body_radius_m=body_radius_m,
-        star_mass_kg=star_mass_kg,
-        semi_major_axis_r=float(semi_major_axis),
-        include_relative_ram=include_relative_ram,
-    )
-    out["semi_major_axis [R]"] = float(semi_major_axis)
-    out["eccentricity [none]"] = float(eccentricity)
-    out["radius [R]"] = float(np.nanmean(np.array(orbit("R [sample]"))))
-    out["radius [m]"] = out["radius [R]"] * body_radius_m
-    log.info(
-        "pressure_components_on_elliptic_orbit done: finite_ram=%d",
-        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
-    )
-    return out

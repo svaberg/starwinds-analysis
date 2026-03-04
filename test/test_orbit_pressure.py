@@ -3,9 +3,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbit_pressure import pressure_components_on_circular_orbit
-from starwinds_analysis.physics.orbit_pressure import pressure_components_on_elliptic_orbit
+from starwinds_analysis.physics.orbit_pressure import pressure_components_from_curve
+from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.smart_ds import SmartDs
@@ -24,16 +25,33 @@ def test_magnetospheric_standoff_distance_decreases_with_speed():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_pressure_components_on_circular_orbit_runs_on_example():
+def test_pressure_components_from_curve_runs_on_circular_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = pressure_components_on_circular_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
-        body_radius_m=SOLAR_RADIUS_M,
+        eccentricity=0.0,
+        fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "U [m/s]",
+            "B [T]",
+            "magnetic_pressure [Pa]",
+            "ram_pressure [Pa]",
+            "thermal_pressure [Pa]",
+            "standoff_distance [m]",
+        ),
         n_points=96,
         method="nearest",
-        star_mass_kg=SUN_MASS_KG,
+    )
+    out = pressure_components_from_curve(
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
+        period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
+        include_relative_ram=True,
     )
 
     for key in (
@@ -53,24 +71,38 @@ def test_pressure_components_on_circular_orbit_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_pressure_components_on_elliptic_orbit_runs_on_example():
+def test_pressure_components_from_curve_runs_on_elliptic_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = pressure_components_on_elliptic_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
         eccentricity=0.2,
-        body_radius_m=SOLAR_RADIUS_M,
+        fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "U [m/s]",
+            "B [T]",
+            "magnetic_pressure [Pa]",
+            "ram_pressure [Pa]",
+            "thermal_pressure [Pa]",
+            "standoff_distance [m]",
+        ),
         n_points=96,
         method="nearest",
-        star_mass_kg=SUN_MASS_KG,
+    )
+    out = pressure_components_from_curve(
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
+        period_s=orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG),
+        include_relative_ram=True,
     )
 
-    assert np.isclose(out["semi_major_axis [R]"], 10.0)
-    assert np.isclose(out["eccentricity [none]"], 0.2)
     assert "relative_ram_pressure [Pa]" in out
     assert "V [m/s]" in out
     assert "U_minus_V [m/s]" in out
-    assert np.array(out["orbit_samples"]("time_weight [none]")).shape == (96,)
-    assert np.isclose(np.sum(out["orbit_samples"]("time_weight [none]")), 1.0)
+    assert np.array(out["curve_samples"]("time_weight [none]")).shape == (96,)
+    assert np.isclose(np.sum(out["curve_samples"]("time_weight [none]")), 1.0)
     assert np.count_nonzero(np.isfinite(out["relative_ram_pressure [Pa]"])) > 0
