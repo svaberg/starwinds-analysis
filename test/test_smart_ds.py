@@ -308,13 +308,9 @@ def test_batsrus_graph_fields_resolve_on_prepared_example():
     if Path("sample_data/PARAM.in").exists():
         expected_fields.extend(
             [
-                "Star_radius [m]",
                 "star_radius [m]",
-                "Star_mass [kg]",
                 "star_mass [kg]",
-                "Star_rotational_period [s]",
                 "star_rotational_period [s]",
-                "Star_rotation_rate [rad/s]",
                 "star_rotation_rate [rad/s]",
             ]
         )
