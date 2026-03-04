@@ -7,7 +7,7 @@ This plan is derived from `/Users/dagfev/Documents/starwinds/starwinds-analysis/
 - Do not reduce notebook clutter by moving one-off code into the library.
 - Deep layers must have smaller API surfaces and higher quality.
 - Same algorithm + different physical quantity is not a new function/module.
-- `SmartDs` + griblet should provide SI quantities; new `resolve_*` usage is not acceptable.
+- `SmartDs` + griblet should provide SI quantities directly; do not reintroduce `resolve_*`-style helper naming or wrapper APIs.
 - `analysis` should not import from `physics` (target direction), and circular imports must be removed by changing boundaries, not by lazy imports alone.
 
 ## Phase 0 (Completed Low-Hanging Fruit)
@@ -29,7 +29,7 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 
 2. Continue removing stale debt markers by fixing or deleting the underlying patterns.
 - DONE: `analysis/__init__.py` (`analysis` re-exporting `physics`) removed.
-- PARTIAL: `analysis/fluxes.py` moved to `physics/fluxes.py`; quantity-specific wrapper debt remains and top-level TODOs still apply there.
+- DONE: quantity-specific shell profile wrappers were removed; callers now use `analysis.shells` primitives directly.
 - DONE (intermediate): `analysis/surface_torque.py` removed; torque code is currently consolidated in `physics/torque.py`.
 - NEXT: shrink `physics/torque.py` so only local torque terms remain in the deep layer and shell/surface wrappers move upward or become generic reducers.
 
@@ -57,10 +57,10 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
  - NEXT: migrate more pointwise quantities (e.g. pressure-component bundle pieces,
    explicit-surface torque terms where geometry inputs are explicit fields).
 
-2. DONE (current pass): Replace `resolve_*` usage in callers with direct SmartDs requests.
-- Shell profile workflows (`physics/fluxes.py`, `physics/mass_loss.py`, torque wrappers in `physics/torque.py`)
-- Orbit workflows (`physics/orbit_pressure.py`, `physics/orbit_surface.py`, `physics/orbit_local.py`)
-- Dead `resolve_*` helper definitions removed from `analysis/shells.py`
+2. DONE (current pass): Replace wrapper-style field resolution with direct SmartDs requests.
+- Shell profile workflows now use `analysis.shells` primitives plus direct SmartDs/griblet quantities.
+- Orbit workflows (`physics/orbit_pressure.py`, `physics/orbit_surface.py`, `physics/orbit_local.py`) request SI quantities directly from SmartDs/griblet.
+- Dead `resolve_*` helper definitions were removed.
 
 3. NEXT: Rename/clarify internal SmartDs graph resolve naming if needed.
 - Keep graph-path resolution distinct from user quantity requests.
@@ -106,6 +106,10 @@ Goal: stop inventing per-function containers and use shared abstractions.
 - Structured grids/shell grids first.
 - Native mesh (`corners`) later with documented assumptions.
 
+4. Improve linear interpolation performance in resampling.
+- Observed case: a 1D trajectory sampled from a 3D file took about 11 minutes with linear interpolation.
+- Keep nearest-neighbour as the practical default for interactive workflows until this is fixed.
+
 ## Phase 5 (Plotting and Quicklook API Reduction)
 
 Goal: stop hardening quantity-specific plotting/orchestration wrappers into library APIs.
@@ -139,13 +143,13 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 
 Recommended next implementation batches:
 
-1. `physics/fluxes.py` + `physics/mass_loss.py` + torque wrappers in `physics/torque.py`
-- DONE (partial): `resolve_*` field-resolution helpers removed from these files; SI fields are now requested through SmartDs/griblet.
-- NEXT: Introduce shared shell reduction primitive usage and remove local `B_r`/`U_r`/flux-density recomputation where possible.
+1. Shell profile workflows + torque wrappers in `physics/torque.py`
+- DONE: standard shell profile wrappers were removed and replaced with shared shell primitives in `analysis.shells`.
+- NEXT: remove the remaining quantity-specific `surface_torque_vs_radius(...)` wrapper.
 
-2. `physics/orbit_pressure.py` + `physics/orbit_surface.py`
-- DONE (partial): `resolve_*` calls removed in favor of SI SmartDs/griblet requests.
-- NEXT: separate orbit geometry/sampling from quantity assembly and reduce `physics -> analysis` dependencies.
+2. `physics/orbit_pressure.py` + `physics/orbit_surface.py` + `physics/orbit_local.py`
+- DONE (partial): orbit workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
+- NEXT: reduce dict-bundle outputs and move more workflow composition upward.
 
 3. `visualisation/profile_plots.py` + current pipelines
 - DONE (partial): quantity-specific shell mass-flux plotting wrapper removed.
