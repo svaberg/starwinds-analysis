@@ -92,7 +92,6 @@ Coordinate/vector naming note:
 - `starwinds_analysis/data/samples.py` — **Reviewed**. Sample-data path helper; no bad-practice hit found.
 - `starwinds_analysis/physics/__init__.py` — **Reviewed**. Deep-layer package boundary is now minimal (`__all__ = []`).
 - `starwinds_analysis/physics/curve.py` — **Debt**. This file now contains only pure curve diagnostics and no shell comparison logic. Remaining debt is the large returned summary bundle and the local relative-velocity/standoff assembly that still sits outside griblet. Code TODO: existing TODO(griblet).
-- `starwinds_analysis/physics/curve_shell.py` — **Debt**. This file explicitly owns the curve-vs-shell comparison workflows. The boundary is now honest, but it still returns large comparison bundles in a deep layer. Code TODO: none yet; file is intentionally explicit but still workflow-heavy.
 - `starwinds_analysis/physics/orbit_surface.py` — **Debt**. This file no longer constructs orbit geometry internally; it consumes explicit path points and sampled surfaces. Remaining debt is that it still mixes surface sampling, pressure/torque diagnostics, and large result bundles in one workflow-heavy module. Code TODO: added TODO.
 - `starwinds_analysis/physics/orbits.py` — **Reviewed**. Kepler orbit kinematics primitives and named orbit presets now live together in one shared module.
 - `starwinds_analysis/visualisation/profile_plots.py` — **Reviewed**. Generic shell-profile plotting helpers moved out of `physics` into the visualisation layer.

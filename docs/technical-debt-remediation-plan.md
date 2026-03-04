@@ -36,8 +36,7 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - DONE (updated): orbit geometry/sampling primitives live in `analysis.orbits`,
   which is generic enough for the current tree.
-- NEXT: reduce workflow debt in `physics/curve_shell.py` (still quantity-specific, but now
-  explicitly separated from pure curve diagnostics and depends on the generic `analysis.orbits` layer).
+- DONE: curve-vs-shell comparison logic was removed from the library and kept in tests only.
 
 ## Phase 2 (SmartDs / griblet Migration)
 
@@ -59,7 +58,7 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
 
 2. DONE (current pass): Replace wrapper-style field resolution with direct SmartDs requests.
 - Shell profile workflows now use `analysis.shells` primitives plus direct SmartDs/griblet quantities.
-- Orbit workflows (`physics/curve.py`, `physics/curve_shell.py`, `physics/orbit_surface.py`) request SI quantities directly from SmartDs/griblet.
+- Orbit workflows (`physics/curve.py`, `physics/orbit_surface.py`) request SI quantities directly from SmartDs/griblet.
 - Dead `resolve_*` helper definitions were removed.
 
 3. NEXT: Rename/clarify internal SmartDs graph resolve naming if needed.
@@ -147,7 +146,7 @@ Recommended next implementation batches:
 - DONE: standard shell profile wrappers were removed and replaced with shared shell primitives in `analysis.shells`.
 - NEXT: remove the remaining quantity-specific `surface_torque_vs_radius(...)` wrapper.
 
-2. `physics/curve.py` + `physics/curve_shell.py` + `physics/orbit_surface.py`
+2. `physics/curve.py` + `physics/orbit_surface.py`
 - DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
 - DONE (partial): `orbit_surface.py` no longer constructs orbit geometry internally; callers now provide explicit path points and sampled surfaces.
 - NEXT: reduce dict-bundle outputs further and move more workflow composition upward.
