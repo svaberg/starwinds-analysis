@@ -84,6 +84,13 @@ Terminology rule:
 - In this project, `U` means velocity in the stellar rest frame.
 - Use `V` for a velocity that is not in the stellar rest frame (for example an object/orbital velocity used in ram-pressure comparisons).
 
+Vector stacking rule:
+
+- For public vector-like fields and point arrays (`*_xyz`, `*_rpa`, sampled points, trajectories), stack with `np.stack(..., axis=-1)`.
+- This gives the project-standard shape `(..., 3)`.
+- Do not use `axis=0` for public vector field layout.
+- `axis=0` is only acceptable for internal reductions over a list of same-shaped arrays (for example stacking several component totals just to reduce them).
+
 ## Logging (Good and Bad)
 
 Logging is required for workflow visibility, especially in pipeline and analysis entry points.
