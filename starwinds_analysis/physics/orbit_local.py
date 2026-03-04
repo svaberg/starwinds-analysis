@@ -1,19 +1,18 @@
-"""THIS FILE contains local orbit diagnostics built from sampled orbit points.
+"""THIS FILE contains local diagnostics built from sampled curves.
 
-It compares local mass-loss/torque estimates against shell profiles along circular
-or elliptic orbits. This is a workflow-heavy module and remains debt while the
-library is being split into stricter primitives.
+It compares local mass-loss/torque estimates against shell profiles along sampled
+curves. This is still workflow-heavy and remains debt while the library is being
+split into stricter primitives.
 """
 
-# TODO(debt): This file is workflow-heavy and quantity-specific (`local_mass_loss_*`,
-# `local_torque_*`) in a deep layer. It now uses generic shell primitives, but the
-# orbit comparison workflow still needs to move upward or be reduced further.
+# TODO(debt): This file is workflow-heavy and quantity-specific in a deep layer.
+# It now consumes sampled curves instead of constructing orbit geometry, but the
+# comparison workflow and bundle-shaped outputs still need to move upward or shrink.
 
 from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
@@ -38,9 +37,9 @@ def interp_profile(radii, values, x):
     out[(x < r[0]) | (x > r[-1])] = np.nan
     return out
 
-def local_mass_loss_from_orbit_sample(
+def local_mass_loss_from_curve(
     smart_ds,
-    orbit,
+    curve,
     *,
     body_radius_m,
     method: str,
@@ -49,14 +48,17 @@ def local_mass_loss_from_orbit_sample(
     shell_radii=None,
 ):
     """
-    Compute local mass-loss estimates on one sampled orbit and compare to shell profile values.
-    Used by: `starwinds_analysis/physics/orbit_local.py`
+    Compute local mass-loss estimates on one sampled curve and compare to shell profile values.
     """
-    mass_flux = np.array(orbit("mass_flux [kg/m^2/s]"))
-    r_sample_r = np.array(orbit("R [sample]"))
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
+    r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     estimates = 4.0 * np.pi * np.square(r_m) * mass_flux
-    weights = orbit.get("time_weight [none]")
+    weights = curve.get("time_weight [none]")
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
@@ -89,15 +91,15 @@ def local_mass_loss_from_orbit_sample(
         "local_mass_loss_std [kg/s]": float(stats["std"]),
         "shell_mass_loss [kg/s]": float(shell_value),
         "mean_to_shell [none]": float(mean_to_shell),
-        "curve_samples": orbit,
+        "curve_samples": curve,
     }
     if shell_radii is not None:
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
     return out
 
-def local_torque_from_orbit_sample(
+def local_torque_from_curve(
     smart_ds,
-    orbit,
+    curve,
     *,
     body_radius_m,
     method: str,
@@ -106,20 +108,23 @@ def local_torque_from_orbit_sample(
     shell_radii=None,
 ):
     """
-    Compute local torque estimates on one sampled orbit and compare to shell torque profile
+    Compute local torque estimates on one sampled curve and compare to shell torque profile
       values.
-    Used by: `starwinds_analysis/physics/orbit_local.py`
     """
-    r_sample_r = np.array(orbit("R [sample]"))
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    orbit_magnetic_density = np.array(orbit("magnetic_torque_density [N/m]"))
-    orbit_dynamic_density = np.array(orbit("dynamic_torque_density [N/m]"))
+    orbit_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
+    orbit_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
     local_magnetic, local_dynamic, local_total = local_torque_estimates(
         r_m,
         orbit_magnetic_density,
         orbit_dynamic_density,
     )
-    weights = orbit.get("time_weight [none]")
+    weights = curve.get("time_weight [none]")
 
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
@@ -166,181 +171,8 @@ def local_torque_from_orbit_sample(
         "local_total_torque_std [Nm]": float(stats["std"]),
         "shell_total_torque [Nm]": float(shell_total),
         "mean_to_shell [none]": float(mean_to_shell),
-        "curve_samples": orbit,
+        "curve_samples": curve,
     }
     if shell_radii is not None:
         out["shell_total_torque_interp [Nm]"] = shell_interp
-    return out
-
-def local_mass_loss_on_circular_orbit(
-    smart_ds,
-    radius,
-    *,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    method: str = "nearest",
-    shell_n_polar: int = 24,
-    shell_n_azimuth: int = 48,
-):
-    """
-    Sample a circular orbit and compute local-vs-shell mass-loss comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    return local_mass_loss_on_elliptic_orbit(
-        smart_ds,
-        radius,
-        eccentricity=0.0,
-        body_radius_m=body_radius_m,
-        n_points=n_points,
-        plane=plane,
-        angle0=0.0,
-        sample="eccentric_anomaly",
-        method=method,
-        shell_n_polar=shell_n_polar,
-        shell_n_azimuth=shell_n_azimuth,
-        shell_n_radii=2,
-    )
-
-def local_torque_on_circular_orbit(
-    smart_ds,
-    radius,
-    *,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    method: str = "nearest",
-    shell_n_polar: int = 24,
-    shell_n_azimuth: int = 48,
-):
-    """
-    Sample a circular orbit and compute local-vs-shell torque comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    return local_torque_on_elliptic_orbit(
-        smart_ds,
-        radius,
-        eccentricity=0.0,
-        body_radius_m=body_radius_m,
-        n_points=n_points,
-        plane=plane,
-        angle0=0.0,
-        sample="eccentric_anomaly",
-        method=method,
-        shell_n_polar=shell_n_polar,
-        shell_n_azimuth=shell_n_azimuth,
-        shell_n_radii=2,
-    )
-
-def local_mass_loss_on_elliptic_orbit(
-    smart_ds,
-    semi_major_axis,
-    *,
-    eccentricity: float = 0.0,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    angle0: float = 0.0,
-    sample: str = "eccentric_anomaly",
-    method: str = "nearest",
-    shell_n_polar: int = 24,
-    shell_n_azimuth: int = 48,
-    shell_n_radii: int = 12,
-):
-    """
-    Sample an elliptic orbit and compute local-vs-shell mass-loss comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
-    fields = (
-        "mass_flux [kg/m^2/s]",
-    )
-    orbit = sample_elliptic_orbit(
-        smart_ds,
-        semi_major_axis,
-        eccentricity=eccentricity,
-        fields=fields,
-        n_points=n_points,
-        plane=plane,
-        angle0=angle0,
-        sample=sample,
-        method=method,
-    )
-    rmin = max(0.0, float(semi_major_axis) * (1.0 - float(eccentricity)))
-    rmax = float(semi_major_axis) * (1.0 + float(eccentricity))
-    if np.isclose(rmin, rmax):
-        shell_radii = None
-    else:
-        shell_radii = np.linspace(rmin, rmax, max(2, int(shell_n_radii)))
-    out = local_mass_loss_from_orbit_sample(
-        smart_ds,
-        orbit,
-        body_radius_m=body_radius_m,
-        method=method,
-        shell_n_polar=shell_n_polar,
-        shell_n_azimuth=shell_n_azimuth,
-        shell_radii=shell_radii,
-    )
-    out["semi_major_axis [R]"] = float(semi_major_axis)
-    out["eccentricity [none]"] = float(eccentricity)
-    return out
-
-def local_torque_on_elliptic_orbit(
-    smart_ds,
-    semi_major_axis,
-    *,
-    eccentricity: float = 0.0,
-    body_radius_m: float | None = None,
-    n_points: int = 360,
-    plane: str = "xy",
-    angle0: float = 0.0,
-    sample: str = "eccentric_anomaly",
-    method: str = "nearest",
-    shell_n_polar: int = 24,
-    shell_n_azimuth: int = 48,
-    shell_n_radii: int = 12,
-):
-    """
-    Sample an elliptic orbit and compute local-vs-shell torque comparisons.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
-    """
-    if body_radius_m is None:
-        body_radius_m = float(smart_ds("star_radius [m]"))
-    else:
-        body_radius_m = float(body_radius_m)
-    fields = (
-        "magnetic_torque_density [N/m]",
-        "dynamic_torque_density [N/m]",
-    )
-    orbit = sample_elliptic_orbit(
-        smart_ds,
-        semi_major_axis,
-        eccentricity=eccentricity,
-        fields=fields,
-        n_points=n_points,
-        plane=plane,
-        angle0=angle0,
-        sample=sample,
-        method=method,
-    )
-    rmin = max(0.0, float(semi_major_axis) * (1.0 - float(eccentricity)))
-    rmax = float(semi_major_axis) * (1.0 + float(eccentricity))
-    if np.isclose(rmin, rmax):
-        shell_radii = None
-    else:
-        shell_radii = np.linspace(rmin, rmax, max(2, int(shell_n_radii)))
-    out = local_torque_from_orbit_sample(
-        smart_ds,
-        orbit,
-        body_radius_m=body_radius_m,
-        method=method,
-        shell_n_polar=shell_n_polar,
-        shell_n_azimuth=shell_n_azimuth,
-        shell_radii=shell_radii,
-    )
-    out["semi_major_axis [R]"] = float(semi_major_axis)
-    out["eccentricity [none]"] = float(eccentricity)
     return out

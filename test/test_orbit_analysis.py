@@ -9,10 +9,8 @@ from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import sample_circular_orbit
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbit_local import local_mass_loss_on_circular_orbit
-from starwinds_analysis.physics.orbit_local import local_mass_loss_on_elliptic_orbit
-from starwinds_analysis.physics.orbit_local import local_torque_on_circular_orbit
-from starwinds_analysis.physics.orbit_local import local_torque_on_elliptic_orbit
+from starwinds_analysis.physics.orbit_local import local_mass_loss_from_curve
+from starwinds_analysis.physics.orbit_local import local_torque_from_curve
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbits import orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
@@ -91,17 +89,24 @@ def test_sample_elliptic_orbit_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
+def test_local_mass_loss_from_curve_runs_and_compares_to_shell():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = local_mass_loss_on_circular_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
-        body_radius_m=SOLAR_RADIUS_M,
+        eccentricity=0.0,
+        fields=("mass_flux [kg/m^2/s]",),
         n_points=96,
         method="nearest",
+    )
+    out = local_mass_loss_from_curve(
+        sds,
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
         shell_n_polar=12,
         shell_n_azimuth=24,
+        method="nearest",
     )
 
     local_vals = np.array(out["local_mass_loss [kg/s]"])
@@ -113,17 +118,27 @@ def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
+def test_local_torque_from_curve_runs_and_compares_to_shell():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = local_torque_on_circular_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
-        body_radius_m=SOLAR_RADIUS_M,
+        eccentricity=0.0,
+        fields=(
+            "magnetic_torque_density [N/m]",
+            "dynamic_torque_density [N/m]",
+        ),
         n_points=96,
         method="nearest",
+    )
+    out = local_torque_from_curve(
+        sds,
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
         shell_n_polar=12,
         shell_n_azimuth=24,
+        method="nearest",
     )
 
     tot = np.array(out["local_total_torque [Nm]"])
@@ -137,19 +152,26 @@ def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
+def test_local_mass_loss_from_elliptic_curve_runs_and_compares_to_shell_profile():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = local_mass_loss_on_elliptic_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
         eccentricity=0.2,
-        body_radius_m=SOLAR_RADIUS_M,
+        fields=("mass_flux [kg/m^2/s]",),
         n_points=96,
+        method="nearest",
+    )
+    shell_radii = np.linspace(8.0, 12.0, 8)
+    out = local_mass_loss_from_curve(
+        sds,
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
         method="nearest",
         shell_n_polar=12,
         shell_n_azimuth=24,
-        shell_n_radii=8,
+        shell_radii=shell_radii,
     )
 
     local_vals = np.array(out["local_mass_loss [kg/s]"])
@@ -161,24 +183,32 @@ def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
     assert np.isfinite(out["local_mass_loss_mean [kg/s]"])
     assert np.isfinite(out["shell_mass_loss [kg/s]"])
     assert np.isfinite(out["mean_to_shell [none]"])
-    assert np.isclose(out["semi_major_axis [R]"], 10.0)
-    assert np.isclose(out["eccentricity [none]"], 0.2)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_torque_on_elliptic_orbit_runs_and_compares_to_shell_profile():
+def test_local_torque_from_elliptic_curve_runs_and_compares_to_shell_profile():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
-    out = local_torque_on_elliptic_orbit(
+    curve = sample_elliptic_orbit(
         sds,
         10.0,
         eccentricity=0.15,
-        body_radius_m=SOLAR_RADIUS_M,
+        fields=(
+            "magnetic_torque_density [N/m]",
+            "dynamic_torque_density [N/m]",
+        ),
         n_points=96,
+        method="nearest",
+    )
+    shell_radii = np.linspace(8.5, 11.5, 8)
+    out = local_torque_from_curve(
+        sds,
+        curve,
+        body_radius_m=SOLAR_RADIUS_M,
         method="nearest",
         shell_n_polar=12,
         shell_n_azimuth=24,
-        shell_n_radii=8,
+        shell_radii=shell_radii,
     )
 
     tot = np.array(out["local_total_torque [Nm]"])
