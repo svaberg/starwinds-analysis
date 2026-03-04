@@ -1,21 +1,45 @@
 """THIS FILE contains Kepler orbit kinematics primitives.
 
-It defines reusable local/scalar formulas (period, vis-viva speed) without orbit
+It defines reusable local/scalar formulas and named orbital constants without orbit
 sampling workflows or dataset access.
 """
 
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.constants import G as GRAVITATIONAL_CONSTANT
+from scipy.constants import au as AU_M
+
+
+@dataclass(frozen=True)
+class PlanetOrbitElements:
+    """
+    Typed container for named orbital constants.
+    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/test/test_planetary_orbits.py`
+    """
+    semi_major_axis_m: float
+    eccentricity: float
+    argument_of_periapsis_deg: float = 0.0
+    inclination_deg: float = 0.0
+
+
+SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
+    "Mercury": PlanetOrbitElements(0.387098 * AU_M, 0.205630, 0.0, 3.38),
+    "Venus": PlanetOrbitElements(0.723332 * AU_M, 0.006772, 0.0, 3.86),
+    "Earth": PlanetOrbitElements(1.00000102 * AU_M, 0.0167086, 288.1, 7.155),
+    "Mars": PlanetOrbitElements(1.523679 * AU_M, 0.0934, 0.0, 5.65),
+}
 
 def orbital_period(semi_major_axis_m, star_mass_kg):
     """
     Keplerian orbital period for a test particle around a point mass.
-    Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
-      `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`
+    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/test/test_orbit_analysis.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/test/test_planetary_orbits.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/orbit_surface.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/starwinds_analysis/physics/orbit_pressure.py`
     """
     a = float(semi_major_axis_m)
     m = float(star_mass_kg)
@@ -39,4 +63,3 @@ def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
         raise ValueError("semi_major_axis_m must be > 0")
     with np.errstate(invalid="ignore"):
         return np.sqrt(GRAVITATIONAL_CONSTANT * m * (2.0 / r - 1.0 / a))
-

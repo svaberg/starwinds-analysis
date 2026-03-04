@@ -1,9 +1,9 @@
 import numpy as np
 from scipy import constants as const
 
-from starwinds_analysis.physics.planetary_orbits import PlanetOrbitElements
-from starwinds_analysis.physics.planetary_orbits import SOLAR_SYSTEM_PLANETS
 from starwinds_analysis.physics.orbits import orbital_period
+from starwinds_analysis.physics.orbits import PlanetOrbitElements
+from starwinds_analysis.physics.orbits import SOLAR_SYSTEM_PLANETS
 
 
 def test_planet_table_has_known_names():
