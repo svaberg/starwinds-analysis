@@ -106,11 +106,12 @@ Coordinate/vector naming note:
 - `starwinds_analysis/pipelines/sw_pipe.py` — **Debt**. Still a large mixed-responsibility CLI module (dispatch, recorder schema, state persistence, stdout logging, fail-fast policy) and remains the main monolith in `pipelines/`.
 - `starwinds_analysis/pipelines/recorder.py` — **Debt**. Recorder capture + JSON normalization + persistence are now split out cleanly, but the file is still large and schema-heavy; keep it from becoming a second monolith.
 - `starwinds_analysis/pipelines/shell.py` — **Debt**. The shell pipeline is readable, but it is still the largest pipeline and still contains significant shell-specific compute logic; keep pushing pointwise parts down into recipes/physics and avoid further local growth.
+- `starwinds_analysis/pipelines/recorder.py` — **Debt**. `load_state(...)` and `load_state_payload(...)` still use broad `except Exception` for JSON/file parse fallbacks; narrow the expected failure types instead of swallowing everything.
 - `starwinds_analysis/param_in.py` — **Reviewed**. Nearby `PARAM.in` lookup + stellar parameter parsing are in place; the `_ensure_component(...)` helper has been removed.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
 - `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).
-- `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and incomplete unit/centering-aware quantity request path; multiple TODOs already track this. Code TODO: existing TODOs.
+- `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and incomplete unit/centering-aware quantity request path; `prepare(...)` also still uses a broad `except Exception` around spherical-graph fallback. Code TODO: existing TODOs.
 - `starwinds_analysis/utils.py` — **Reviewed**. General small helpers; no clear current bad-practice hit recorded in this pass.
 - `starwinds_analysis/visualisation/histograms.py` — **Reviewed**. Visualisation layer; plotting functions belong here more than in analysis/physics. Some quantity defaults exist but no code TODO added in this pass.
 - `starwinds_analysis/vtk_utils.py` — **Reviewed**. Optional 3D visualisation bridge (separate integration layer); no additional debt marker added in this pass.
