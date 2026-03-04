@@ -30,9 +30,9 @@ def shell_spherical_components(
     sin_lon = np.sin(lon_rad)
     cos_lat = np.cos(lat_rad)
     sin_lat = np.sin(lat_rad)
-    x_component = vector[0]
-    y_component = vector[1]
-    z_component = vector[2]
+    x_component = vector[..., 0]
+    y_component = vector[..., 1]
+    z_component = vector[..., 2]
     radial = x_component * cos_lat * cos_lon + y_component * cos_lat * sin_lon + z_component * sin_lat
     polar = -x_component * sin_lat * cos_lon - y_component * sin_lat * sin_lon + z_component * cos_lat
     azimuth = -x_component * sin_lon + y_component * cos_lon
@@ -214,7 +214,7 @@ def process_plt_file(file_path: str | Path) -> None:
             np.ravel(smart_ds("U_y [m/s]")),
             np.ravel(smart_ds("U_z [m/s]")),
         ),
-        axis=0,
+        axis=-1,
     )
     u_r, _u_polar, u_phi = shell_spherical_components(
         u_vector,
@@ -267,7 +267,7 @@ def process_plt_file(file_path: str | Path) -> None:
             np.ravel(smart_ds("B_y [T]")),
             np.ravel(smart_ds("B_z [T]")),
         ),
-        axis=0,
+        axis=-1,
     )
     b_r, _b_polar, b_phi = shell_spherical_components(
         b_vector,
