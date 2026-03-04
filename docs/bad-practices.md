@@ -677,6 +677,31 @@ Rule:
 - Default to not returning dictionaries from library functions.
 - If returning a dict, document why a map-shaped result is the right abstraction.
 
+## 13. Underscore Helpers And Constants Must Earn Their Keep
+
+Bad:
+
+- adding `_helper(...)` functions for trivial one-liners or simple branches
+- adding `_CONSTANT` values that are only used once or only hide an obvious literal
+- using leading underscores to move code around without reducing complexity
+
+Why this is bad:
+
+- adds private indirection without adding clarity
+- makes code harder to read because behavior is hidden behind low-value names
+- encourages wrapper churn instead of direct code
+
+Preferred pattern:
+
+- inline trivial one-use logic
+- keep constants public/shared only when they are genuinely reused or semantically important
+- add a private helper only when it removes real repetition or isolates a real concern
+
+Rule:
+
+- Do not add underscore-prefixed helpers or constants unless they clearly reduce repetition or complexity.
+- If a private helper is only naming a simple branch or one-liner, inline it.
+
 ## Review Checklist (Use Before Adding New Code)
 
 - Is this function general/parameterized, or is it hard-coded to one quantity?
@@ -693,6 +718,7 @@ Rule:
 - Is this function mostly boilerplate around 1-3 lines of actual computation?
 - Am I adding a shim/re-export module instead of fixing internal imports?
 - Am I returning a dict where a clearer return shape should exist?
+- Am I adding a `_helper` or `_CONSTANT` that does not really earn its existence?
 
 ## Current Priority Enforcement
 
