@@ -92,24 +92,17 @@ Status note:
 - `local_torque_on_elliptic_orbit`: Sample an elliptic orbit and compute local-vs-shell torque comparisons. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 
 ## `starwinds_analysis/physics/orbit_pressure.py`
-- `_pressure_field_name_and_scale`: Choose a thermal-pressure field name and conversion scale from available orbit/surface sample fields. Used in `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `_periodic_orbit_velocity`: Compute periodic orbit-frame velocity components from sampled points/phase for relative-speed calculations. Used in `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `_summaries_from_arrays`: Build weighted summary dicts (mean/std/quantiles) for a dict of arrays. Used in `starwinds_analysis/physics/orbit_pressure.py`.
-- `pressure_components_from_orbit_sample`: Assemble orbit-sampled pressure components and standoff proxies from sampled fields. Used in `starwinds_analysis/physics/orbit_pressure.py`.
-- `pressure_components_on_circular_orbit`: Sample a circular orbit and compute pressure-component diagnostics. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `pressure_components_on_elliptic_orbit`: Sample an elliptic orbit and compute pressure-component diagnostics. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+- Removed from the current tree; trajectory pressure diagnostics now live in `starwinds_analysis/physics/curve.py` and `starwinds_analysis/physics/orbit_surface.py`.
 
 ## `starwinds_analysis/physics/orbit_surface.py`
-- `_pressure_field_name_and_scale`: Choose a thermal-pressure field name and conversion scale from available orbit/surface sample fields. Used in `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `surface_of_revolution_from_path`: Surface of revolution around the z-axis from a sampled orbit path. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `_periodic_orbit_velocity`: Compute periodic orbit-frame velocity components from sampled points/phase for relative-speed calculations. Used in `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `_make_surface_sample_weights`: Build integration/summary weights for orbit-surface sampled data. Used in `starwinds_analysis/physics/orbit_surface.py`.
-- `_phase_quantiles`: Compute phase-binned quantiles for 2D orbit-surface sampled values. Used in `starwinds_analysis/physics/orbit_surface.py`.
+- `surface_of_revolution_from_trajectory`: Surface of revolution around the z-axis from explicit trajectory points. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `surface_sample_weights`: Build integration/summary weights for orbit-surface sampled data. Used in `starwinds_analysis/physics/orbit_surface.py`.
+- `phase_quantile_rows`: Compute phase-binned quantiles for 2D orbit-surface sampled values. Used in `starwinds_analysis/physics/orbit_surface.py`.
 - `surface_point_normals_and_areas`: Estimate point normals and point-associated areas on a periodic structured surface. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `_phase_line_integrals`: Integrate sampled surface density values over longitude for each orbit phase. Used in `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_orbit_surface_revolution`: Sample explicit fields on a surface of revolution generated from an orbit path. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `pressure_components_on_orbit_surface`: Pressure-component analytics on a surface of revolution around an orbit path. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `torque_components_on_orbit_surface`: Explicit-surface torque diagnostics on an orbit surface of revolution (no dedicated 3D visualisation dependency). Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+- `phase_line_integrals`: Integrate sampled surface density values over longitude for each orbit phase. Used in `starwinds_analysis/physics/orbit_surface.py`.
+- `sample_surface_revolution`: Sample explicit fields on a surface of revolution generated from trajectory points. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `pressure_components_on_surface`: Pressure-component analytics on a sampled surface of revolution. Used in `test/test_orbit_surface_analysis.py`, `examples/orbit_surface_revolution.ipynb`.
+- `torque_components_on_surface`: Explicit-surface torque diagnostics on a sampled surface of revolution. Used in `test/test_orbit_surface_analysis.py`, `examples/orbit_surface_revolution.ipynb`.
 
 ## `starwinds_analysis/physics/orbits.py`
 - `orbital_period`: Keplerian orbital period for a test particle around a point mass. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`.
