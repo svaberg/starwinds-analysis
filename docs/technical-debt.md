@@ -107,6 +107,7 @@ Coordinate/vector naming note:
 - `starwinds_analysis/pipelines/recorder.py` — **Debt**. Recorder capture + JSON normalization + persistence are now split out cleanly, but the file is still large and schema-heavy; keep it from becoming a second monolith.
 - `starwinds_analysis/pipelines/shell.py` — **Debt**. The shell pipeline is readable, but it is still the largest pipeline and still contains significant shell-specific compute logic; keep pushing pointwise parts down into recipes/physics and avoid further local growth.
 - `starwinds_analysis/pipelines/recorder.py` — **Debt**. `load_state(...)` and `load_state_payload(...)` still use broad `except Exception` for JSON/file parse fallbacks; narrow the expected failure types instead of swallowing everything.
+- Broad `except Exception` remains in other active paths too (`smart_ds.prepare(...)`, `analysis/shells.py` body-radius inference, `visualisation/slice.py` field probing, `recipes/batsrus.py` body-radius parsing, and the main per-file execution path in `pipelines/sw_pipe.py`). These should be narrowed deliberately, not patched mechanically.
 - `starwinds_analysis/param_in.py` — **Reviewed**. Nearby `PARAM.in` lookup + stellar parameter parsing are in place; the `_ensure_component(...)` helper has been removed.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
