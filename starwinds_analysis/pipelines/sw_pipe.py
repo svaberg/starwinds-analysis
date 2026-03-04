@@ -60,7 +60,7 @@ def configure_logger(level_name: str) -> None:
     handler.setLevel(getattr(logging, str(level_name).upper()))
     handler.addFilter(PipelineSourceFilter())
     color_enabled = False
-    if bool(getattr(sys.stdout, "isatty", lambda: False)()):
+    if sys.stdout.isatty():
         try:
             formatter_class = __import__("colorlog", fromlist=["ColoredFormatter"]).ColoredFormatter
             handler.setFormatter(
@@ -73,15 +73,15 @@ def configure_logger(level_name: str) -> None:
             )
             color_enabled = True
         except ImportError:
-            log.info("Pipeline color logging backend not available: colorlog")
+            log.info("Install colorlog for colored logs.")
         except AttributeError:
-            log.warning("Pipeline color logging backend missing ColoredFormatter: colorlog")
+            log.warning("Could not set up colorlog formatter, falling back to plain logging.")
     if handler.formatter is None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
     logger.addHandler(handler)
     if color_enabled:
         log.info("Using colored pipeline logging via colorlog")
-    elif bool(getattr(sys.stdout, "isatty", lambda: False)()):
+    elif sys.stdout.isatty():
         log.info("Using plain pipeline logging (no color backend available)")
 
 
