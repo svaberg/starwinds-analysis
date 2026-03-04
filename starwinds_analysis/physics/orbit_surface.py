@@ -1,6 +1,6 @@
 """THIS FILE contains surface-of-revolution sampling and diagnostics.
 
-It builds explicit surfaces from path points and evaluates pressure/torque
+It builds explicit surfaces from trajectory points and evaluates pressure/torque
 components on them. It should reuse pressure/torque core functions rather
 than redefining those quantities.
 """
@@ -27,14 +27,14 @@ from starwinds_analysis.physics.torque import surface_torque_density_terms
 
 log = logging.getLogger(__name__)
 
-def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
-    """Surface of revolution around the z-axis from explicit path points."""
+def surface_of_revolution_from_trajectory(points, *, n_longitudes: int = 199):
+    """Surface of revolution around the z-axis from explicit trajectory points."""
     pts = np.array(points)
     if pts.ndim != 2 or pts.shape[1] != 3:
         raise ValueError("points must have shape (n, 3)")
     n = pts.shape[0]
     if n < 2:
-        raise ValueError("at least 2 path points are required")
+        raise ValueError("at least 2 trajectory points are required")
     n_longitudes = int(n_longitudes)
     if n_longitudes < 4:
         raise ValueError("n_longitudes must be >= 4")
@@ -52,8 +52,8 @@ def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):
     return {
         "points": surface,
         "azimuth [rad]": az,
-        "cyl_radius [surface]": rxy[:, None] * np.ones((1, n_longitudes), dtype=float),
-        "radius [surface]": np.sqrt(np.sum(surface * surface, axis=-1)),
+        "cyl_radius [R]": rxy[:, None] * np.ones((1, n_longitudes), dtype=float),
+        "R [R]": np.sqrt(np.sum(surface * surface, axis=-1)),
     }
 
 def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
@@ -184,7 +184,7 @@ def sample_surface_revolution(
             raise ValueError("velocity_xyz must have shape (n_phase, 3)")
 
     meta = dict(trajectory_meta or {})
-    surf = surface_of_revolution_from_path(trajectory_points, n_longitudes=n_longitudes)
+    surf = surface_of_revolution_from_trajectory(trajectory_points, n_longitudes=n_longitudes)
     pts = surf["points"].reshape(-1, 3)
 
     sampled_curve = sample_curve(
@@ -198,11 +198,11 @@ def sample_surface_revolution(
     n_lon = surf["points"].shape[1]
     sampled = {
         "surface_points": surf["points"],
-        "X [surface]": surf["points"][..., 0],
-        "Y [surface]": surf["points"][..., 1],
-        "Z [surface]": surf["points"][..., 2],
-        "R [surface]": surf["radius [surface]"],
-        "C [surface]": surf["cyl_radius [surface]"],
+        "X [R]": surf["points"][..., 0],
+        "Y [R]": surf["points"][..., 1],
+        "Z [R]": surf["points"][..., 2],
+        "R [R]": surf["R [R]"],
+        "cyl_radius [R]": surf["cyl_radius [R]"],
         "azimuth [rad]": surf["azimuth [rad]"],
         "phase [turns]": phase_arr,
         "time_weight [none]": time_weight_arr,

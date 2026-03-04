@@ -9,7 +9,7 @@ from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbit_surface import pressure_components_on_surface
 from starwinds_analysis.physics.orbit_surface import sample_surface_revolution
-from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_path
+from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_trajectory
 from starwinds_analysis.physics.orbit_surface import surface_point_normals_and_areas
 from starwinds_analysis.physics.orbit_surface import torque_components_on_surface
 from starwinds_analysis.smart_ds import SmartDs
@@ -19,7 +19,7 @@ EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 SUN_MASS_KG = 1.98847e30
 
 
-def test_surface_of_revolution_from_path_preserves_cyl_radius_and_z():
+def test_surface_of_revolution_from_trajectory_preserves_cyl_radius_and_z():
     path = np.array(
         [
             [2.0, 0.0, -1.0],
@@ -28,7 +28,7 @@ def test_surface_of_revolution_from_path_preserves_cyl_radius_and_z():
         ],
         dtype=float,
     )
-    out = surface_of_revolution_from_path(path, n_longitudes=16)
+    out = surface_of_revolution_from_trajectory(path, n_longitudes=16)
     pts = out["points"]
     assert pts.shape == (3, 16, 3)
     cyl = np.sqrt(pts[..., 0] ** 2 + pts[..., 1] ** 2)
@@ -44,7 +44,7 @@ def test_surface_point_normals_and_areas_on_cylinder_like_surface_are_finite():
             np.linspace(-1.0, 1.0, 16, endpoint=False),
         ]
     )
-    surf = surface_of_revolution_from_path(path, n_longitudes=24)
+    surf = surface_of_revolution_from_trajectory(path, n_longitudes=24)
     normals, area = surface_point_normals_and_areas(surf["points"])
     assert normals.shape == surf["points"].shape
     assert area.shape == surf["points"].shape[:2]
