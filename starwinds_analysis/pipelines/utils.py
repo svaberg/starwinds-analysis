@@ -5,18 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def log_pipeline_event(logger, message: str, **fields) -> None:
-    """
-    Emit one normalized pipeline progress message on the provided logger.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    text = message
-    if fields:
-        suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
-        text = f"{message} | {suffix}"
-    logger.debug(text)
-
-
 def slug_key(text: str) -> str:
     """
     Create a filesystem-safe-ish slug from arbitrary text.

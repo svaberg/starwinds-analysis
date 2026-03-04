@@ -13,7 +13,6 @@ from pathlib import Path
 import sys
 from typing import Callable
 
-from starwinds_analysis.pipelines.utils import log_pipeline_event
 from starwinds_analysis.pipelines.recorder import DEFAULT_ARRAY_OFFLOAD_MIN_BYTES
 from starwinds_analysis.pipelines.recorder import DEFAULT_JSON_WARN_BYTES
 from starwinds_analysis.pipelines.recorder import SwPipeResults
@@ -27,6 +26,18 @@ from starwinds_analysis.pipelines.recorder import state_file_path
 log = logging.getLogger(__name__)
 PIPELINE_LOG_FORMAT = "[%(levelname)s] %(pipeline_source)s %(message)s"
 PIPELINE_COLOR_LOG_FORMAT = "%(log_color)s[%(levelname)s]%(reset)s %(pipeline_source)s %(message)s"
+
+
+def log_pipeline_event(logger, message: str, **fields) -> None:
+    """
+    Emit one normalized pipeline progress message on the provided logger.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    text = message
+    if fields:
+        suffix = ", ".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        text = f"{message} | {suffix}"
+    logger.debug(text)
 
 
 # Human/recorder logging setup
