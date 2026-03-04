@@ -116,7 +116,46 @@ def discover_input_files(directory: str | Path = ".", *, recursive: bool = False
     return sorted(files)
 
 
-def _select_pipeline_work(
+def pipeline_name_for_file(file_path: str | Path) -> str | None:
+    """
+    Infer the built-in pipeline from the input filename prefix.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    file_name = Path(file_path).name.lower()
+    if file_name.startswith("3d"):
+        return "volume"
+    if file_name.startswith("shl"):
+        return "shell"
+    if file_name.startswith("x=0") or file_name.startswith("y=0") or file_name.startswith("z=0"):
+        return "slice"
+    return None
+
+
+def process_file_for_pipeline(pipeline_name: str) -> Callable[[Path], None]:
+    """
+    Return the built-in per-file process function for one pipeline name.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    if pipeline_name == "dummy":
+        from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file
+
+        return process_plt_file
+    if pipeline_name == "slice":
+        from starwinds_analysis.pipelines.slice import process_plt_file
+
+        return process_plt_file
+    if pipeline_name == "shell":
+        from starwinds_analysis.pipelines.shell import process_plt_file
+
+        return process_plt_file
+    if pipeline_name == "volume":
+        from starwinds_analysis.pipelines.volume import process_plt_file
+
+        return process_plt_file
+    raise KeyError(f"Unknown pipeline '{pipeline_name}'")
+
+
+def select_pipeline_work(
     files: list[Path],
     *,
     directory: str | Path,
@@ -140,9 +179,7 @@ def _select_pipeline_work(
 
     if process_file is None:
         if pipeline == "dummy":
-            from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as dummy_process_file
-
-            process_functions["dummy"] = dummy_process_file
+            process_functions["dummy"] = process_file_for_pipeline("dummy")
             state_files["dummy"] = state_file_path(directory, pipeline_name="dummy")
             known_processed, known_computed = load_state(state_files["dummy"])
             known_processed_by_pipeline["dummy"] = known_processed
@@ -155,51 +192,18 @@ def _select_pipeline_work(
             known_processed, known_computed = load_state(state_files[pipeline_name])
             known_processed_by_pipeline[pipeline_name] = known_processed
             known_computed_by_pipeline[pipeline_name] = known_computed
-            if pipeline_name == "slice":
-                from starwinds_analysis.pipelines.slice import process_plt_file as selected_process_file
-            elif pipeline_name == "shell":
-                from starwinds_analysis.pipelines.shell import process_plt_file as selected_process_file
-            elif pipeline_name == "volume":
-                from starwinds_analysis.pipelines.volume import process_plt_file as selected_process_file
-            elif pipeline_name == "dummy":
-                from starwinds_analysis.pipelines.dummy_pipeline import process_plt_file as selected_process_file
-            else:
-                raise KeyError(f"Unknown pipeline '{pipeline_name}'")
-            process_functions[pipeline_name] = selected_process_file
+            process_functions[pipeline_name] = process_file_for_pipeline(pipeline_name)
             for file_path in files:
-                file_name = Path(file_path).name.lower()
-                if file_name.startswith("3d"):
-                    inferred_pipeline = "volume"
-                elif file_name.startswith("shl"):
-                    inferred_pipeline = "shell"
-                elif file_name.startswith("x=0") or file_name.startswith("y=0") or file_name.startswith("z=0"):
-                    inferred_pipeline = "slice"
-                else:
-                    inferred_pipeline = None
-                if inferred_pipeline != pipeline_name:
+                if pipeline_name_for_file(file_path) != pipeline_name:
                     continue
                 selected.append((file_path, pipeline_name, process_functions[pipeline_name], pipeline_name))
         else:
             for file_path in files:
-                file_name = Path(file_path).name.lower()
-                if file_name.startswith("3d"):
-                    resolved_pipeline = "volume"
-                elif file_name.startswith("shl"):
-                    resolved_pipeline = "shell"
-                elif file_name.startswith("x=0") or file_name.startswith("y=0") or file_name.startswith("z=0"):
-                    resolved_pipeline = "slice"
-                else:
-                    resolved_pipeline = None
+                resolved_pipeline = pipeline_name_for_file(file_path)
                 if resolved_pipeline is None:
                     continue
                 if resolved_pipeline not in process_functions:
-                    if resolved_pipeline == "slice":
-                        from starwinds_analysis.pipelines.slice import process_plt_file as selected_process_file
-                    elif resolved_pipeline == "shell":
-                        from starwinds_analysis.pipelines.shell import process_plt_file as selected_process_file
-                    else:
-                        from starwinds_analysis.pipelines.volume import process_plt_file as selected_process_file
-                    process_functions[resolved_pipeline] = selected_process_file
+                    process_functions[resolved_pipeline] = process_file_for_pipeline(resolved_pipeline)
                 if resolved_pipeline not in state_files:
                     state_files[resolved_pipeline] = state_file_path(directory, pipeline_name=resolved_pipeline)
                     known_processed, known_computed = load_state(state_files[resolved_pipeline])
@@ -236,7 +240,7 @@ def run_sw_pipe(
     """
     files = discover_input_files(directory, recursive=recursive)
     pipeline_label = "auto" if pipeline is None else str(pipeline)
-    state_files, known_processed_by_pipeline, known_computed_by_pipeline, selected = _select_pipeline_work(
+    state_files, known_processed_by_pipeline, known_computed_by_pipeline, selected = select_pipeline_work(
         files,
         directory=directory,
         pipeline=pipeline,
