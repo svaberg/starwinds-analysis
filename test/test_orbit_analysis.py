@@ -11,9 +11,10 @@ from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.curve import curve_context
+from starwinds_analysis.physics.curve import mass_loss_from_curve
+from starwinds_analysis.physics.curve import torque_from_curve
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbits import orbital_velocity
-from starwinds_analysis.physics.torque import local_torque_estimates
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -53,7 +54,7 @@ def compare_curve_mass_loss_to_shell(
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    estimates = 4.0 * np.pi * np.square(r_m) * mass_flux
+    estimates = mass_loss_from_curve(curve, body_radius_m=body_radius_m)
     stats = summarize_samples(estimates, weights=weights)
 
     _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
@@ -109,10 +110,9 @@ def compare_curve_torque_to_shell(
     r_m = r_sample_r * body_radius_m
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
     curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
-    local_magnetic, local_dynamic, local_total = local_torque_estimates(
-        r_m,
-        curve_magnetic_density,
-        curve_dynamic_density,
+    local_magnetic, local_dynamic, local_total = torque_from_curve(
+        curve,
+        body_radius_m=body_radius_m,
     )
     torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
         smart_ds,
@@ -234,6 +234,47 @@ def test_sample_elliptic_orbit_runs_on_example():
     assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
     assert np.nanmin(out("R [sample]")) < 10.0
     assert np.nanmax(out("R [sample]")) > 10.0
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_mass_loss_from_curve_runs():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    curve = sample_elliptic_orbit(
+        sds,
+        10.0,
+        eccentricity=0.1,
+        fields=("mass_flux [kg/m^2/s]",),
+        n_points=96,
+        method="nearest",
+    )
+    values = np.array(mass_loss_from_curve(curve, body_radius_m=SOLAR_RADIUS_M))
+    assert values.shape == (96,)
+    assert np.count_nonzero(np.isfinite(values)) > 0
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_torque_from_curve_runs():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+    curve = sample_elliptic_orbit(
+        sds,
+        10.0,
+        eccentricity=0.1,
+        fields=(
+            "magnetic_torque_density [N/m]",
+            "dynamic_torque_density [N/m]",
+        ),
+        n_points=96,
+        method="nearest",
+    )
+    magnetic, dynamic, total = torque_from_curve(curve, body_radius_m=SOLAR_RADIUS_M)
+    magnetic = np.array(magnetic)
+    dynamic = np.array(dynamic)
+    total = np.array(total)
+    assert magnetic.shape == (96,)
+    assert dynamic.shape == (96,)
+    np.testing.assert_allclose(total, magnetic + dynamic, rtol=1e-12, atol=1e-12)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
