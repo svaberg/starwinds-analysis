@@ -14,7 +14,7 @@ except ImportError:
 
 
 @pytest.mark.interactive
-def test_slice(file='sample_data/3d__var_1_n00060000.plt'):
+def test_slice(file='sample_data/3d__var_4_n00000000.plt'):
     grid = reader.read(file)
     grid.set_active_scalars("U [m/s]")
     slices = grid.slice_orthogonal()
@@ -22,7 +22,7 @@ def test_slice(file='sample_data/3d__var_1_n00060000.plt'):
 
 
 @pytest.mark.interactive
-def test_isosurface(file='sample_data/3d__var_1_n00060000.plt'):
+def test_isosurface(file='sample_data/3d__var_4_n00000000.plt'):
 
     grid = reader.read(file)
     grid.set_active_vectors("U [m/s]")
@@ -40,7 +40,7 @@ def test_isosurface(file='sample_data/3d__var_1_n00060000.plt'):
     
 
 @pytest.mark.interactive
-def test_alfven_surface(file='sample_data/3d__var_1_n00060000.plt'):
+def test_alfven_surface(file='sample_data/3d__var_4_n00000000.plt'):
 
     grid = reader.read(file)
     # grid.compute_connectivity()  # TODO what does this do? Does it remove the seam?

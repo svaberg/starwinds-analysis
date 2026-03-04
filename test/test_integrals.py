@@ -73,7 +73,7 @@ def mass_loss_at_radius(grid, radius, direction=(1,0,0)):
     return integrated_data['Mass flux [kg/m^2/s]'] * SOLAR_RADIUS_M**2
 
 
-def test_flux_integral(file='sample_data/3d__var_1_n00060000.plt'):
+def test_flux_integral(file='sample_data/3d__var_4_n00000000.plt'):
     grid = reader.read(file)
 
     unique_radii = get_unique_radii(grid)

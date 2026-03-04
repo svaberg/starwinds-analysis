@@ -11,7 +11,7 @@ from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 DAT_EQUIV_STEMS = (
     "3d__var_4_n00000000",
     "x=0_var_2_n00000000",

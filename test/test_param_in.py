@@ -77,7 +77,7 @@ def test_param_in_parses_sample_file():
 def test_param_in_extracts_stellar_params_and_nearby_lookup():
     config = ParamIn.from_file(SAMPLE_PARAM_IN)
     star = config.stellar_params()
-    nearby = stellar_aux_from_nearby_param_in("sample_data/3d__var_1_n00060000.plt")
+    nearby = stellar_aux_from_nearby_param_in("sample_data/3d__var_4_n00000000.plt")
 
     assert star["Star_name"] == "tau Boötis"
     assert star["Star_radius_m"] > 1.0e9

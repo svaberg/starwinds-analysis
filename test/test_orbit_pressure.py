@@ -15,7 +15,7 @@ from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 SUN_MASS_KG = 1.98847e30
 
 def test_magnetospheric_standoff_distance_decreases_with_speed():

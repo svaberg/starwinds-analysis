@@ -8,7 +8,7 @@ from starwinds_analysis.analysis.shells import sample_spherical_shells
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 
 
 @pytest.mark.skipif(

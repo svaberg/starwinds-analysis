@@ -14,14 +14,14 @@ def test_sample_data_dir_exists():
 
 
 def test_get_sample_returns_existing_tracked_fixture():
-    path = get_sample("3d__var_1_n00060000.plt")
+    path = get_sample("3d__var_4_n00000000.plt")
     assert isinstance(path, Path)
     assert path.exists()
-    assert path.name == "3d__var_1_n00060000.plt"
+    assert path.name == "3d__var_4_n00000000.plt"
 
 
 def test_smartds_from_file_accepts_pathlike():
-    sds = SmartDs.from_file(get_sample("3d__var_1_n00060000.plt"))
+    sds = SmartDs.from_file(get_sample("3d__var_4_n00000000.plt"))
     assert sds.title
 
 
@@ -31,4 +31,4 @@ def test_get_sample_missing_lists_available_fixtures():
 
     msg = str(exc.value)
     assert "Available .plt files:" in msg
-    assert "3d__var_1_n00060000.plt" in msg
+    assert "3d__var_4_n00000000.plt" in msg

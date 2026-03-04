@@ -29,7 +29,7 @@ def basic_read(file):
 
 
 @pytest.mark.interactive
-def test_read_dataset(file='sample_data/3d__var_1_n00060000.plt'):
+def test_read_dataset(file='sample_data/3d__var_4_n00000000.plt'):
 
     ds = Dataset.from_file(file)
 
@@ -38,7 +38,7 @@ def test_read_dataset(file='sample_data/3d__var_1_n00060000.plt'):
 
 
 @pytest.mark.interactive
-def test_read_dataset(file='sample_data/3d__var_1_n00060000.plt'):
+def test_read_dataset(file='sample_data/3d__var_4_n00000000.plt'):
 
     grid = basic_read(file)
     
@@ -47,22 +47,22 @@ def test_read_dataset(file='sample_data/3d__var_1_n00060000.plt'):
         show_edges=True,
     )
 
-def test_rename_variable(file='sample_data/3d__var_1_n00060000.plt'):
+def test_rename_variable(file='sample_data/3d__var_4_n00000000.plt'):
     grid = basic_read(file)
     grid.rename_array('te [K]', 'te (K)')
 
 
-def test_create_new_variable(file='sample_data/3d__var_1_n00060000.plt'):
+def test_create_new_variable(file='sample_data/3d__var_4_n00000000.plt'):
     grid = basic_read(file)
     grid.point_data['fdfds te [K]'] = 40 * grid.point_data['te [K]']
 
 
-def test_set_vector(file='sample_data/3d__var_1_n00060000.plt'):
+def test_set_vector(file='sample_data/3d__var_4_n00000000.plt'):
     grid = basic_read(file)
 
     vectors = np.stack([grid.point_data[f'U_{c} [km/s]'] for c in "xyz"], axis=-1)
     grid.point_data.set_array(vectors, 'U [km/s]')
 
 
-def test_scalar_vector_read(file='sample_data/3d__var_1_n00060000.plt'):
+def test_scalar_vector_read(file='sample_data/3d__var_4_n00000000.plt'):
     grid = reader.read(file)

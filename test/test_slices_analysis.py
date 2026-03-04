@@ -9,7 +9,7 @@ from starwinds_analysis.analysis.slices import structured_quad_corners
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 
 
 def test_structured_quad_corners_shape_and_values():

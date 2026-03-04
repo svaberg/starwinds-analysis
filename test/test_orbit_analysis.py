@@ -17,7 +17,7 @@ from starwinds_analysis.physics.orbits import orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 
 
 def interpolate_profile(radii, values, x):

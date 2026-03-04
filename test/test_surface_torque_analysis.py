@@ -14,7 +14,7 @@ from starwinds_analysis.physics.torque import surface_torque_vs_radius
 from starwinds_analysis.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_1_n00060000.plt")
+EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
 
 
 def _cart_from_spherical_components(v_r, v_phi, xyz):

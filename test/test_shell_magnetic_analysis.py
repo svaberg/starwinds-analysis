@@ -15,7 +15,7 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 def _example_3d():
-    return Path(get_sample("3d__var_1_n00060000.plt"))
+    return Path(get_sample("3d__var_4_n00000000.plt"))
 
 
 EXAMPLE_3D = _example_3d()
