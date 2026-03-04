@@ -93,6 +93,7 @@ Bad:
 Rule:
 
 - Use flat imports only, one import per line.
+- If an `except Exception` block is intentionally kept and it actually handles a triggered exception path, emit a log message at `INFO` or higher (or `WARNING`/`ERROR` when warranted). Silent broad fallbacks are not acceptable.
 
 ## Pipeline Rule: Keep Pipelines Clean And Simple
 
