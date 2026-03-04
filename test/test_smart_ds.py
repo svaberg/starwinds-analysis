@@ -88,6 +88,39 @@ def test_call_uses_smartds_resolution():
         sds("Q2 [none]")
 
 
+def test_one_off_field_can_be_added_directly_to_griblet_graph():
+    points = np.array(
+        [
+            [1.0, 10.0],
+            [2.0, 20.0],
+            [3.0, 30.0],
+        ],
+        dtype=float,
+    )
+    dataset = Dataset(
+        points,
+        np.empty((0, 0), dtype=int),
+        aux={},
+        title="demo-graph",
+        variables=["B_x [T]", "U_x [m/s]"],
+        zone="z-graph",
+    )
+    sds = SmartDs(dataset)
+
+    import griblet
+
+    graph = griblet.ComputationGraph()
+    graph.add_recipe(
+        "Bx_plus_Ux [mixed]",
+        lambda bx, ux: np.array(bx) + np.array(ux),
+        deps=["B_x [T]", "U_x [m/s]"],
+        cost=0.1,
+    )
+    sds.set_computation_graph(graph)
+
+    np.testing.assert_allclose(sds("Bx_plus_Ux [mixed]"), [11.0, 22.0, 33.0])
+
+
 def test_smartds_field_access_is_name_only():
     sds = SmartDs(make_dataset_2d())
 
