@@ -86,10 +86,10 @@ Terminology rule:
 
 Vector stacking rule:
 
-- For public vector-like fields and point arrays (`*_xyz`, `*_rpa`, sampled points, trajectories), stack with `np.stack(..., axis=-1)`.
+- Use `np.stack(..., axis=-1)` by default for public vector-like fields and point arrays (`*_xyz`, `*_rpa`, sampled points, trajectories).
 - This gives the project-standard shape `(..., 3)`.
-- Do not use `axis=0` for public vector field layout.
-- `axis=0` is only acceptable for internal reductions over a list of same-shaped arrays (for example stacking several component totals just to reduce them).
+- Use `axis=0` only when it is genuinely preferred by the consuming math or algorithm.
+- `axis=0` is commonly acceptable for internal reductions over a list of same-shaped arrays (for example stacking several component totals just to reduce them).
 
 ## Logging (Good and Bad)
 
