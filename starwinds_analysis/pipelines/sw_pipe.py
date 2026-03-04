@@ -239,87 +239,6 @@ def _select_pipeline_work(
     return state_files, known_processed_by_pipeline, known_computed_by_pipeline, selected
 
 
-def _run_one_file(
-    file_path: Path,
-    *,
-    directory: str | Path,
-    process_label: str,
-    active_process_file: Callable[[Path], None],
-    state_pipeline_name: str,
-    results: SwPipeResults,
-    known_processed_by_pipeline: dict[str, set[str]],
-    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
-    recorder_logger: logging.Logger,
-    artifacts_root: Path,
-    state_file: Path,
-    noclobber: bool,
-    include_file_hash: bool,
-    array_offload_min_bytes: int,
-    json_warn_bytes: int,
-    fail_fast: bool,
-) -> None:
-    """
-    Run one pipeline step for one file and update in-memory results/state.
-    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
-    """
-    file_key = relative_file_key(file_path, base_dir=directory)
-    processed_keys = known_processed_by_pipeline[state_pipeline_name]
-    if noclobber and file_key in processed_keys:
-        results.skipped_files.append(file_path)
-        log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
-        return
-
-    file_results: dict[str, object] = {
-        "meta": {
-            "input_file": str(file_path.resolve()),
-            "pipeline": process_label,
-            "start_time_utc": _utc_now_iso(),
-        }
-    }
-    if include_file_hash:
-        file_results["meta"]["file_hash_sha256"] = sha256_file(file_path)
-
-    recorder_handler = SwRecordHandler(
-        file_results,
-        file_key=file_key,
-        artifacts_root=artifacts_root,
-        array_offload_min_bytes=array_offload_min_bytes,
-    )
-    recorder_logger.addHandler(recorder_handler)
-    failure: Exception | None = None
-    failure_tb = None
-    try:
-        active_process_file(file_path)
-    except Exception as exc:
-        failure = exc
-        failure_tb = exc.__traceback__
-        results.failed_files.append(file_path)
-        file_results["meta"]["status"] = "failed"
-        file_results["meta"]["error"] = str(exc)
-        if not fail_fast:
-            log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
-    else:
-        file_results["meta"]["status"] = "processed"
-        results.processed_files.append(file_path)
-        processed_keys.add(file_key)
-    finally:
-        meta = file_results.get("meta")
-        if isinstance(meta, dict):
-            meta["end_time_utc"] = _utc_now_iso()
-        recorder_logger.removeHandler(recorder_handler)
-        recorder_handler.close()
-        results.computed_results[file_key] = file_results
-        known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-        save_state(
-            state_file,
-            processed_keys=processed_keys,
-            computed_results=known_computed_by_pipeline[state_pipeline_name],
-            json_warn_bytes=int(json_warn_bytes),
-        )
-    if failure is not None and fail_fast:
-        raise failure.with_traceback(failure_tb)
-
-
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
@@ -380,25 +299,70 @@ def run_sw_pipe(
     recorder_logger = logging.getLogger("recorder")
     recorder_logger.setLevel(logging.DEBUG)
     artifacts_root = Path(directory) / "sw-pipe.artifacts"
-    for file_path, process_label, active_process_file, state_pipeline_name in selected:
-        _run_one_file(
-            file_path,
-            directory=directory,
-            process_label=process_label,
-            active_process_file=active_process_file,
-            state_pipeline_name=state_pipeline_name,
-            results=results,
-            known_processed_by_pipeline=known_processed_by_pipeline,
-            known_computed_by_pipeline=known_computed_by_pipeline,
-            recorder_logger=recorder_logger,
+
+    def run_one_file(file_path: Path, process_label: str, active_process_file: Callable[[Path], None], state_pipeline_name: str) -> None:
+        """
+        Run one pipeline step for one file and update in-memory results/state.
+        """
+        file_key = relative_file_key(file_path, base_dir=directory)
+        processed_keys = known_processed_by_pipeline[state_pipeline_name]
+        if noclobber and file_key in processed_keys:
+            results.skipped_files.append(file_path)
+            log_pipeline_event(log, "sw_pipe.skip_processed", file=file_path.name)
+            return
+
+        file_results: dict[str, object] = {
+            "meta": {
+                "input_file": str(file_path.resolve()),
+                "pipeline": process_label,
+                "start_time_utc": _utc_now_iso(),
+            }
+        }
+        if include_file_hash:
+            file_results["meta"]["file_hash_sha256"] = sha256_file(file_path)
+
+        recorder_handler = SwRecordHandler(
+            file_results,
+            file_key=file_key,
             artifacts_root=artifacts_root,
-            state_file=state_files[state_pipeline_name],
-            noclobber=noclobber,
-            include_file_hash=include_file_hash,
             array_offload_min_bytes=array_offload_min_bytes,
-            json_warn_bytes=int(json_warn_bytes),
-            fail_fast=fail_fast,
         )
+        recorder_logger.addHandler(recorder_handler)
+        failure: Exception | None = None
+        failure_tb = None
+        try:
+            active_process_file(file_path)
+        except Exception as exc:
+            failure = exc
+            failure_tb = exc.__traceback__
+            results.failed_files.append(file_path)
+            file_results["meta"]["status"] = "failed"
+            file_results["meta"]["error"] = str(exc)
+            if not fail_fast:
+                log.error("sw-pipe file failed: %s (%s)", file_path.name, exc)
+        else:
+            file_results["meta"]["status"] = "processed"
+            results.processed_files.append(file_path)
+            processed_keys.add(file_key)
+        finally:
+            meta = file_results.get("meta")
+            if isinstance(meta, dict):
+                meta["end_time_utc"] = _utc_now_iso()
+            recorder_logger.removeHandler(recorder_handler)
+            recorder_handler.close()
+            results.computed_results[file_key] = file_results
+            known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
+            save_state(
+                state_files[state_pipeline_name],
+                processed_keys=processed_keys,
+                computed_results=known_computed_by_pipeline[state_pipeline_name],
+                json_warn_bytes=int(json_warn_bytes),
+            )
+        if failure is not None and fail_fast:
+            raise failure.with_traceback(failure_tb)
+
+    for file_path, process_label, active_process_file, state_pipeline_name in selected:
+        run_one_file(file_path, process_label, active_process_file, state_pipeline_name)
     return results
 
 
