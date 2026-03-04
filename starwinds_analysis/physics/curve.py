@@ -18,19 +18,13 @@ from starwinds_analysis.physics.torque import local_torque_estimates
 
 log = logging.getLogger(__name__)
 
-def curve_context(curve, body_radius_m):
-    """Return the shared body-radius and time-weight context for one sampled curve."""
+
+def mass_loss_from_curve(curve, *, body_radius_m: float | None = None):
+    """Compute local mass-loss estimates along a sampled curve."""
     if body_radius_m is None:
         body_radius_m = float(curve("star_radius [m]"))
     else:
         body_radius_m = float(body_radius_m)
-    weights = curve.get("time_weight [none]")
-    return body_radius_m, weights
-
-
-def mass_loss_from_curve(curve, *, body_radius_m: float | None = None):
-    """Compute local mass-loss estimates along a sampled curve."""
-    body_radius_m, _weights = curve_context(curve, body_radius_m)
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_m = np.array(curve("R [sample]")) * body_radius_m
     return 4.0 * np.pi * np.square(r_m) * mass_flux
@@ -38,7 +32,10 @@ def mass_loss_from_curve(curve, *, body_radius_m: float | None = None):
 
 def torque_from_curve(curve, *, body_radius_m: float | None = None):
     """Compute local magnetic, dynamic, and total torque estimates along a curve."""
-    body_radius_m, _weights = curve_context(curve, body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     r_m = np.array(curve("R [sample]")) * body_radius_m
     magnetic_torque_density = np.array(curve("magnetic_torque_density [N/m]"))
     dynamic_torque_density = np.array(curve("dynamic_torque_density [N/m]"))
@@ -58,7 +55,11 @@ def pressure_components_from_curve(
     standoff_b0_t: float = 0.7e-4,
 ):
     """Assemble pressure components and standoff proxies from a sampled curve."""
-    body_radius_m, weights = curve_context(curve, body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    weights = curve.get("time_weight [none]")
     rho = np.array(curve("Rho [kg/m^3]"))
     log.debug(
         "pressure_components_from_curve: n_points=%d, include_relative=%s",

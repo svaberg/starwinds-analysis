@@ -10,7 +10,6 @@ from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.curve import curve_context
 from starwinds_analysis.physics.curve import mass_loss_from_curve
 from starwinds_analysis.physics.curve import torque_from_curve
 from starwinds_analysis.physics.orbits import orbital_period
@@ -50,7 +49,11 @@ def compare_curve_mass_loss_to_shell(
     shell_radii=None,
 ):
     """Compare local curve mass-loss estimates against shell-integrated values."""
-    body_radius_m, weights = curve_context(curve, body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    weights = curve.get("time_weight [none]")
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
@@ -105,7 +108,11 @@ def compare_curve_torque_to_shell(
     shell_radii=None,
 ):
     """Compare local curve torque estimates against shell-integrated values."""
-    body_radius_m, weights = curve_context(curve, body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(curve("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
+    weights = curve.get("time_weight [none]")
     r_sample_r = np.array(curve("R [sample]"))
     r_m = r_sample_r * body_radius_m
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
