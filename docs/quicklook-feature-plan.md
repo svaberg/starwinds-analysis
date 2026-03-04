@@ -276,7 +276,7 @@ This keeps physics, sampling, and plotting separate.
   - area weights / quadrature
   - generic shell integral helper
 - `starwinds_analysis/analysis/mass_loss.py`
-  - `mass_loss_vs_radius(...)`
+  - `sample_shell_field(...)` + `integrate_shell_scalar(...)`
   - local mass-loss estimates
 - `starwinds_analysis/analysis/torque.py`
   - spherical-shell torque components and totals
@@ -297,7 +297,7 @@ This keeps physics, sampling, and plotting separate.
 
 - add weighted stats helpers
 - add shell sampler + area-weighted integration
-- implement `mass_loss_vs_radius(...)`
+- implement generic shell primitives and call them directly
 - implement shell mass-loss plot helper
 - tests on example `.plt` data in `/sample_data`
 

@@ -77,8 +77,8 @@ Goal: one primitive pipeline + parameterized quantities, not `*_vs_radius` dupli
 - `mass_loss`, `energy flux`, `torque`, `open flux` should reuse the same shell reduction primitive.
 
 3. Eliminate quantity-specific shell profile wrappers where they only differ by integrand.
-- `mass_loss_vs_radius`, `torque_vs_radius`, `open_magnetic_flux_vs_radius`, `energy_flux_vs_radius`
-- Keep only truly distinct algorithms (for example axisymmetric reductions requiring grid structure).
+- DONE for standard shell profiles: callers now use `sample_shell_field(...)` + `integrate_shell_scalar(...)`.
+- Remaining special case: `surface_torque_vs_radius(...)` in `physics/torque.py`.
 
 4. Apply the same split to explicit-surface torque.
 - Keep local `T1..T4` physics in `physics.torque`

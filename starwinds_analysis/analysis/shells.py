@@ -358,6 +358,49 @@ def sample_spherical_shells_by_strategy(
         )
     raise ValueError("sampling must be 'fibonacci' or 'grid'")
 
+def sample_shell_field(
+    smart_ds,
+    radii,
+    *,
+    source_fields,
+    shell_field: str,
+    body_radius_m: float | None = None,
+    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    n_polar: int = 24,
+    n_azimuth: int = 48,
+    sampling: str = "fibonacci",
+    fibonacci_randomize: bool = False,
+    method: str = "nearest",
+    fill_value: float = np.nan,
+):
+    """
+    Sample one shell field over a shell series and return shells, values, areas, and radii.
+    Used by: `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/pipelines/volume.py`
+    """
+    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
+    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+
+    shells = sample_spherical_shells_by_strategy(
+        smart_ds,
+        radii,
+        fields=tuple(dict.fromkeys(source_fields)),
+        coordinate_fields=coordinate_fields,
+        n_polar=n_polar,
+        n_azimuth=n_azimuth,
+        sampling=sampling,
+        fibonacci_randomize=fibonacci_randomize,
+        method=method,
+        fill_value=fill_value,
+        length_unit_to_m=body_radius_m,
+    )
+    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
+
+    values = np.array(shells(shell_field))
+    area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
+    return shells, values, area, radii_profile
+
 def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
     """
     Integrate scalar values over shell surfaces and return sum + coverage.

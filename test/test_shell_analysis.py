@@ -4,22 +4,18 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.fluxes import axisymmetric_open_flux_vs_radius
-from starwinds_analysis.physics.fluxes import energy_flux_vs_radius
-from starwinds_analysis.physics.fluxes import open_magnetic_flux_vs_radius
 from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
 from starwinds_analysis.physics.local_estimates import local_torque_estimates
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
 from starwinds_analysis.analysis.shell_summary import boxcar_shell_weights
 from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
 from starwinds_analysis.analysis.shell_summary import summarize_shell_series
 from starwinds_analysis.analysis.shells import infer_cartesian_axis_radii
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.shells import sample_spherical_shells
 from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
-from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
 from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
 from starwinds_analysis.physics.wind_scaling import surface_escape_speed
@@ -83,17 +79,17 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    profile = mass_loss_vs_radius(
+    shells, mass_flux, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        shell_field="mass_flux [kg/m^2/s]",
         n_polar=12,
         n_azimuth=24,
         method="nearest",
     )
-
-    m = np.array(profile["mass_loss [kg/s]"])
-    c = np.array(profile["coverage [none]"])
+    m, c = integrate_shell_scalar(mass_flux, area)
 
     assert m.shape == (4,)
     assert c.shape == (4,)
@@ -101,7 +97,8 @@ def test_mass_loss_profile_runs_on_example():
     assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
-    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
+    assert radii_profile.shape == (4,)
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -140,26 +137,37 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    profile = torque_vs_radius(
+    shells, magnetic_density, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
+        ),
+        shell_field="magnetic_torque_density [N/m]",
         n_polar=12,
         n_azimuth=24,
         method="nearest",
     )
-
-    mag = np.array(profile["magnetic_torque [Nm]"])
-    dyn = np.array(profile["dynamic_torque [Nm]"])
-    tot = np.array(profile["total_torque [Nm]"])
-    cov = np.array(profile["coverage [none]"])
+    dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
+    mag, cov_mag = integrate_shell_scalar(magnetic_density, area)
+    dyn, cov_dyn = integrate_shell_scalar(dynamic_density, area)
+    tot = mag + dyn
+    cov = np.minimum(cov_mag, cov_dyn)
 
     assert mag.shape == dyn.shape == tot.shape == (4,)
     np.testing.assert_allclose(tot, mag + dyn, rtol=1e-12, atol=1e-12)
     assert np.all(np.isfinite(cov))
     assert np.all((cov > 0.90) & (cov <= 1.0 + 1e-12))
     assert np.any(np.isfinite(tot))
-    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
+    assert radii_profile.shape == (4,)
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -167,40 +175,61 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
     # Adapted from batplotlib's test_unsigned_magnetic_flux: compare signed flux from
     # B_r with signed flux from B·n, and compute unsigned/open flux.
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    profile = open_magnetic_flux_vs_radius(
+    shells, b_r, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
+        shell_field="B_r [T]",
         n_polar=16,
         n_azimuth=32,
         method="nearest",
     )
-
-    signed_scalar = np.array(profile["signed_flux [Wb]"])
-    signed_vector = np.array(profile["signed_flux_from_vector [Wb]"])
-    open_flux = np.array(profile["open_flux [Wb]"])
-    cov = np.array(profile["coverage [none]"])
+    bx = np.array(shells("B_x [T]"))
+    by = np.array(shells("B_y [T]"))
+    bz = np.array(shells("B_z [T]"))
+    x = np.array(shells("X [R]"))
+    y = np.array(shells("Y [R]"))
+    z = np.array(shells("Z [R]"))
+    r_norm = np.sqrt(x * x + y * y + z * z)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        nx = x / r_norm
+        ny = y / r_norm
+        nz = z / r_norm
+    bdotn = bx * nx + by * ny + bz * nz
+    signed_scalar, cov_signed = integrate_shell_scalar(b_r, area)
+    signed_vector, cov_vec = integrate_shell_scalar(bdotn, area)
+    open_flux, cov_open = integrate_shell_scalar(np.abs(b_r), area)
+    cov = np.minimum(np.minimum(cov_signed, cov_open), cov_vec)
 
     np.testing.assert_allclose(signed_scalar, signed_vector, rtol=1e-10, atol=1e-10)
     assert np.all(open_flux >= np.abs(signed_scalar) - 1e-12)
     assert np.all((cov > 0.95) & (cov <= 1.0 + 1e-12))
+    assert radii_profile.shape == (4,)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    profile = axisymmetric_open_flux_vs_radius(
+    shells, b_r, area, _ = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
+        shell_field="B_r [T]",
         n_polar=16,
         n_azimuth=32,
+        sampling="grid",
         method="nearest",
     )
+    with np.errstate(invalid="ignore"):
+        b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
+    b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
+    axi, _ = integrate_shell_scalar(np.abs(b_r_axi), area)
+    total, _ = integrate_shell_scalar(np.abs(b_r), area)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        frac = np.divide(axi, total, out=np.full_like(axi, np.nan), where=total != 0)
 
-    axi = np.array(profile["axisymmetric_open_flux [Wb]"])
-    total = np.array(profile["open_flux [Wb]"])
-    frac = np.array(profile["axisymmetric_open_flux_fraction [none]"])
     finite = np.isfinite(frac)
 
     assert np.any(finite)
@@ -208,26 +237,28 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
     assert np.all(total[finite] >= 0)
     assert np.all(frac[finite] >= -1e-12)
     assert np.all(frac[finite] <= 1.0 + 1e-12)
-    assert np.array(profile["shell_samples"]("X [R]"), dtype=float).shape[-1] > 1  # grid sampler retained for axisymmetry
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] > 1  # grid sampler retained for axisymmetry
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    profile = energy_flux_vs_radius(
+    energy_source = "E [J/m^3]" if sds.has_field("E [J/m^3]") else "E [erg/cm^3]"
+    _, energy_flux_density, area, radii_profile = sample_shell_field(
         sds,
         [2.0, 4.0, 8.0, 16.0],
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=(energy_source, "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        shell_field="energy_flux [W/m^2]",
         n_polar=12,
         n_azimuth=24,
         method="nearest",
     )
-
-    y = np.array(profile["energy_flux [W]"])
-    c = np.array(profile["coverage [none]"])
+    y, c = integrate_shell_scalar(energy_flux_density, area)
     assert y.shape == (4,)
     assert np.count_nonzero(np.isfinite(y)) == 4
     assert np.all((c > 0.95) & (c <= 1.0 + 1e-12))
+    assert radii_profile.shape == (4,)
 
 
 def test_integrate_shell_scalar_reports_coverage():

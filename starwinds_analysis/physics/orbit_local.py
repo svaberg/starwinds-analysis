@@ -6,8 +6,8 @@ library is being split into stricter primitives.
 """
 
 # TODO(debt): This file is workflow-heavy and quantity-specific (`local_mass_loss_*`,
-# `local_torque_*`) in a deep layer. Keep moving shared pieces into neutral
-# primitives and request SI quantities directly from SmartDs/griblet where feasible.
+# `local_torque_*`) in a deep layer. It now uses generic shell primitives, but the
+# orbit comparison workflow still needs to move upward or be reduced further.
 
 from __future__ import annotations
 
@@ -15,16 +15,15 @@ import numpy as np
 
 from starwinds_analysis.analysis.orbits import sample_circular_orbit, sample_elliptic_orbit
 from starwinds_analysis.analysis.shells import infer_body_radius_m
+from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.local_estimates import local_mass_loss_estimates
 from starwinds_analysis.physics.local_estimates import local_torque_estimates
-from starwinds_analysis.physics.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.physics.torque import torque_vs_radius
 
 def _interp_profile(radii, values, x):
     """
     1D interpolate a shell profile onto orbit sample radii (with NaNs outside range).
-    Used by: `starwinds_analysis/physics/orbit_local.py`
     """
     r = np.array(radii)
     y = np.array(values)
@@ -64,30 +63,22 @@ def _local_mass_loss_from_orbit_sample(
     weights = orbit.get("time_weight [none]")
     summary = summarize_samples(estimates, weights=weights)
 
+    _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
+        smart_ds,
+        [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
+        source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        shell_field="mass_flux [kg/m^2/s]",
+        body_radius_m=body_radius_m,
+        n_polar=shell_n_polar,
+        n_azimuth=shell_n_azimuth,
+        method=method,
+    )
+    shell_values, _ = integrate_shell_scalar(shell_mass_flux, shell_area)
     if shell_radii is None:
-        shell = mass_loss_vs_radius(
-            smart_ds,
-            [float(np.nanmean(r_sample_r))],
-            body_radius_m=body_radius_m,
-            n_polar=shell_n_polar,
-            n_azimuth=shell_n_azimuth,
-            method=method,
-        )
-        shell_value = float(shell["mass_loss [kg/s]"][0])
+        shell_value = float(shell_values[0])
         shell_interp = np.full_like(estimates, shell_value, dtype=float)
     else:
-        shell_radii = np.array(shell_radii)
-        shell = mass_loss_vs_radius(
-            smart_ds,
-            shell_radii,
-            body_radius_m=body_radius_m,
-            n_polar=shell_n_polar,
-            n_azimuth=shell_n_azimuth,
-            method=method,
-        )
-        shell_interp = _interp_profile(
-            shell["radius [R]"], shell["mass_loss [kg/s]"], r_sample_r
-        )
+        shell_interp = _interp_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_value = summarize_samples(shell_interp, weights=weights)["mean"]
 
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -103,7 +94,6 @@ def _local_mass_loss_from_orbit_sample(
         "shell_mass_loss [kg/s]": float(shell_value),
         "mean_to_shell [none]": float(mean_to_shell),
         "orbit_samples": orbit,
-        "shell_profile": shell,
     }
     if shell_radii is not None:
         out["shell_mass_loss_interp [kg/s]"] = shell_interp
@@ -135,30 +125,33 @@ def _local_torque_from_orbit_sample(
     local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_a, b_r, b_a)
     weights = orbit.get("time_weight [none]")
 
+    torque_shells, magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
+        smart_ds,
+        [float(np.nanmean(r_sample_r))] if shell_radii is None else shell_radii,
+        source_fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
+        ),
+        shell_field="magnetic_torque_density [N/m]",
+        body_radius_m=body_radius_m,
+        n_polar=shell_n_polar,
+        n_azimuth=shell_n_azimuth,
+        method=method,
+    )
+    dynamic_density = np.array(torque_shells("dynamic_torque_density [N/m]"))
+    shell_magnetic, _ = integrate_shell_scalar(magnetic_density, shell_area)
+    shell_dynamic, _ = integrate_shell_scalar(dynamic_density, shell_area)
+    shell_values = shell_magnetic + shell_dynamic
     if shell_radii is None:
-        shell = torque_vs_radius(
-            smart_ds,
-            [float(np.nanmean(r_sample_r))],
-            body_radius_m=body_radius_m,
-            n_polar=shell_n_polar,
-            n_azimuth=shell_n_azimuth,
-            method=method,
-        )
-        shell_total = float(shell["total_torque [Nm]"][0])
+        shell_total = float(shell_values[0])
         shell_interp = np.full_like(local_total, shell_total, dtype=float)
     else:
-        shell_radii = np.array(shell_radii)
-        shell = torque_vs_radius(
-            smart_ds,
-            shell_radii,
-            body_radius_m=body_radius_m,
-            n_polar=shell_n_polar,
-            n_azimuth=shell_n_azimuth,
-            method=method,
-        )
-        shell_interp = _interp_profile(
-            shell["radius [R]"], shell["total_torque [Nm]"], r_sample_r
-        )
+        shell_interp = _interp_profile(shell_profile_radii, shell_values, r_sample_r)
         shell_total = summarize_samples(shell_interp, weights=weights)["mean"]
 
     summary = summarize_samples(local_total, weights=weights)
@@ -180,7 +173,6 @@ def _local_torque_from_orbit_sample(
         "shell_total_torque [Nm]": float(shell_total),
         "mean_to_shell [none]": float(mean_to_shell),
         "orbit_samples": orbit,
-        "shell_profile": shell,
     }
     if shell_radii is not None:
         out["shell_total_torque_interp [Nm]"] = shell_interp

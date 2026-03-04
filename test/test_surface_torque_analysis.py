@@ -6,10 +6,11 @@ import pytest
 from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
 from starwinds_analysis.constants import MU0
 from starwinds_analysis.constants import SOLAR_RADIUS_M
+from starwinds_analysis.analysis.shells import integrate_shell_scalar
+from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
 from starwinds_analysis.physics.torque import surface_torque_vs_radius
-from starwinds_analysis.physics.torque import torque_vs_radius
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -82,15 +83,29 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     radii = [2.0, 4.0, 8.0, 16.0]
 
-    shell = torque_vs_radius(
+    shells, magnetic_density, area, _ = sample_shell_field(
         sds,
         radii,
         body_radius_m=SOLAR_RADIUS_M,
+        source_fields=(
+            "Rho [kg/m^3]",
+            "U_x [m/s]",
+            "U_y [m/s]",
+            "U_z [m/s]",
+            "B_x [T]",
+            "B_y [T]",
+            "B_z [T]",
+        ),
+        shell_field="magnetic_torque_density [N/m]",
         n_polar=12,
         n_azimuth=24,
         sampling="fibonacci",
         method="nearest",
     )
+    dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
+    shell_magnetic, _ = integrate_shell_scalar(magnetic_density, area)
+    shell_dynamic, _ = integrate_shell_scalar(dynamic_density, area)
+    shell_total = shell_magnetic + shell_dynamic
     surf = surface_torque_vs_radius(
         sds,
         radii,
@@ -105,19 +120,19 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
 
     np.testing.assert_allclose(
         surf["T1_magnetic [Nm]"],
-        shell["magnetic_torque [Nm]"],
+        shell_magnetic,
         rtol=2e-10,
         atol=1e-10,
     )
     np.testing.assert_allclose(
         surf["T4_dynamic [Nm]"],
-        shell["dynamic_torque [Nm]"],
+        shell_dynamic,
         rtol=2e-10,
         atol=1e-10,
     )
     np.testing.assert_allclose(
         surf["total [Nm]"],
-        shell["total_torque [Nm]"],
+        shell_total,
         rtol=2e-10,
         atol=1e-10,
     )
