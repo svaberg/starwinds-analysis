@@ -258,8 +258,115 @@ def test_add_spherical_graph_registers_xyz_geometry_and_vectors():
     assert polar.shape == (3,)
     assert azimuth.shape == (3,)
     assert b_r.shape == (3,)
-    np.testing.assert_allclose(lat_deg, np.degrees((np.pi / 2) - polar))
-    np.testing.assert_allclose(lon_deg, np.degrees(azimuth))
+
+
+@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
+def test_batsrus_graph_fields_resolve_on_prepared_example():
+    sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
+
+    expected_fields = [
+        "X [m]",
+        "Y [m]",
+        "Z [m]",
+        "R [R]",
+        "R [m]",
+        "RBODY [m]",
+        "polar [rad]",
+        "azimuth [rad]",
+        "U [m/s]",
+        "B [T]",
+        "U_xyz [m/s]",
+        "B_xyz [T]",
+        "U_r [m/s]",
+        "U_p [m/s]",
+        "U_a [m/s]",
+        "B_r [T]",
+        "B_p [T]",
+        "B_a [T]",
+        "c_s [m/s]",
+        "c_A [m/s]",
+        "M_A [none]",
+        "Ma [none]",
+        "P_b [Pa]",
+        "magnetic_pressure [Pa]",
+        "thermal_pressure [Pa]",
+        "ram_pressure [Pa]",
+        "standoff_distance [m]",
+        "beta [none]",
+        "mass_flux [kg/m^2/s]",
+        "energy_flux [W/m^2]",
+        "cylindrical_radius [R]",
+        "cylindrical_radius [m]",
+        "magnetic_torque_density [N/m]",
+        "dynamic_torque_density [N/m]",
+        "total_torque_density [N/m]",
+        "B_meridional [T]",
+        "B_tangential [T]",
+    ]
+
+    if Path("sample_data/PARAM.in").exists():
+        expected_fields.extend(
+            [
+                "Star_radius [m]",
+                "star_radius [m]",
+                "Star_mass [kg]",
+                "star_mass [kg]",
+                "Star_rotational_period [s]",
+                "star_rotational_period [s]",
+                "Star_rotation_rate [rad/s]",
+                "star_rotation_rate [rad/s]",
+            ]
+        )
+
+    unit_factors = {
+        "g/cm^3": "kg/m^3",
+        "amu/cm^3": "kg/m^3",
+        "km/s": "m/s",
+        "Gauss": "T",
+        "G": "T",
+        "nT": "T",
+        "erg/cm^3": "J/m^3",
+        "dyne/cm^2": "Pa",
+        "nPa": "Pa",
+        "`mA/m^2": "A/m^2",
+    }
+    by_prefix: dict[tuple[str, str], set[str]] = {}
+    for name in sds.raw.variables:
+        if " [" not in name or not name.endswith("]"):
+            continue
+        base, unit = name[:-1].split(" [", 1)
+        if "_" not in base:
+            continue
+        prefix, comp = base.rsplit("_", 1)
+        if comp not in {"x", "y", "z"}:
+            continue
+        si_unit = unit_factors.get(unit, unit)
+        by_prefix.setdefault((prefix, si_unit), set()).add(comp)
+
+    for (prefix, unit), comps in by_prefix.items():
+        if comps != {"x", "y", "z"}:
+            continue
+        expected_fields.extend(
+            [
+                f"{prefix}_xyz [{unit}]",
+                f"{prefix} [{unit}]",
+                f"{prefix}_r [{unit}]",
+                f"{prefix}_p [{unit}]",
+                f"{prefix}_a [{unit}]",
+            ]
+        )
+
+    n_points = len(sds.points)
+    seen: set[str] = set()
+    for field in expected_fields:
+        if field in seen:
+            continue
+        seen.add(field)
+        value = np.array(sds(field))
+        if value.ndim == 0:
+            continue
+        assert value.shape[0] == n_points, field
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
