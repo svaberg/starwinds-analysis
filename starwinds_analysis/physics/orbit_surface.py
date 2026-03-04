@@ -18,7 +18,6 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_curve
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
@@ -129,17 +128,19 @@ def sample_surface_revolution(
     smart_ds,
     *,
     fields,
-    path_points,
+    trajectory_points,
     phase=None,
+    time=None,
     time_weight=None,
-    path_meta=None,
+    velocity_xyz=None,
+    trajectory_meta=None,
     coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
     method: str = "nearest",
     fill_value: float = np.nan,
     zone: str = "surface",
     n_longitudes: int = 199,
 ):
-    """Sample explicit fields on a surface of revolution generated from explicit path points."""
+    """Sample explicit fields on a surface of revolution generated from explicit trajectory points."""
     fields = tuple(fields)
     log.info(
         "sample_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
@@ -147,12 +148,12 @@ def sample_surface_revolution(
         n_longitudes,
         method,
     )
-    path_points = np.array(path_points)
-    if path_points.ndim != 2 or path_points.shape[1] != 3:
-        raise ValueError("path_points must have shape (n_phase, 3)")
-    n_phase = path_points.shape[0]
+    trajectory_points = np.array(trajectory_points)
+    if trajectory_points.ndim != 2 or trajectory_points.shape[1] != 3:
+        raise ValueError("trajectory_points must have shape (n_phase, 3)")
+    n_phase = trajectory_points.shape[0]
     if n_phase < 2:
-        raise ValueError("path_points must contain at least 2 points")
+        raise ValueError("trajectory_points must contain at least 2 points")
 
     if phase is None:
         phase_arr = np.linspace(0.0, 1.0, n_phase, endpoint=False)
@@ -161,6 +162,13 @@ def sample_surface_revolution(
         if phase_arr.shape != (n_phase,):
             raise ValueError("phase must have shape (n_phase,)")
 
+    if time is None:
+        time_arr = None
+    else:
+        time_arr = np.array(time)
+        if time_arr.shape != (n_phase,):
+            raise ValueError("time must have shape (n_phase,)")
+
     if time_weight is None:
         time_weight_arr = np.full(n_phase, 1.0 / float(n_phase), dtype=float)
     else:
@@ -168,8 +176,15 @@ def sample_surface_revolution(
         if time_weight_arr.shape != (n_phase,):
             raise ValueError("time_weight must have shape (n_phase,)")
 
-    meta = dict(path_meta or {})
-    surf = surface_of_revolution_from_path(path_points, n_longitudes=n_longitudes)
+    if velocity_xyz is None:
+        velocity = None
+    else:
+        velocity = np.array(velocity_xyz)
+        if velocity.shape != (n_phase, 3):
+            raise ValueError("velocity_xyz must have shape (n_phase, 3)")
+
+    meta = dict(trajectory_meta or {})
+    surf = surface_of_revolution_from_path(trajectory_points, n_longitudes=n_longitudes)
     pts = surf["points"].reshape(-1, 3)
 
     sampled_curve = sample_curve(
@@ -191,9 +206,16 @@ def sample_surface_revolution(
         "azimuth [rad]": surf["azimuth [rad]"],
         "phase [turns]": phase_arr,
         "time_weight [none]": time_weight_arr,
-        "path_meta": meta,
+        "trajectory_meta": meta,
         "zone": zone,
     }
+    if time_arr is not None:
+        sampled["t [s]"] = time_arr
+    if velocity is not None:
+        sampled["V_x [m/s]"] = np.repeat(velocity[:, 0][:, None], n_lon, axis=1)
+        sampled["V_y [m/s]"] = np.repeat(velocity[:, 1][:, None], n_lon, axis=1)
+        sampled["V_z [m/s]"] = np.repeat(velocity[:, 2][:, None], n_lon, axis=1)
+        sampled["V_xyz [m/s]"] = np.repeat(velocity[:, None, :], n_lon, axis=1)
     for key in fields:
         arr = np.array(sampled_curve(key))
         if arr.shape == (n_phase * n_lon,):
@@ -214,7 +236,6 @@ def pressure_components_on_surface(
     sampled,
     *,
     body_radius: float,
-    period: float | None = None,
     include_relative_ram: bool = True,
     standoff_b0: float = 0.7e-4,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
@@ -235,14 +256,8 @@ def pressure_components_on_surface(
     standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
-    if include_relative_ram and period is not None and np.isfinite(period):
-        path_points = np.column_stack(
-            [sampled["X [surface]"][:, 0], sampled["Y [surface]"][:, 0], sampled["Z [surface]"][:, 0]]
-        )
-        phase = np.array(sampled["phase [turns]"])
-        if phase.shape == (path_points.shape[0],):
-            v_path = periodic_curve_velocity(path_points, phase, float(period), body_radius)
-            object_velocity = np.repeat(v_path[:, None, :], sampled["X [surface]"].shape[1], axis=1)
+    if include_relative_ram and "V_xyz [m/s]" in sampled:
+        object_velocity = np.array(sampled["V_xyz [m/s]"])
 
     comps = {
         "U [m/s]": u,
@@ -290,7 +305,7 @@ def pressure_components_on_surface(
         "summary": summaries,
         "phase_quantiles": phase_profiles,
     }
-    meta = sampled.get("path_meta", {})
+    meta = sampled.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
         out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
@@ -393,7 +408,7 @@ def torque_components_on_surface(
         "coverage [none]": np.array(totals["coverage [none]"]),
         "surface_terms": terms,
     }
-    meta = sampled.get("path_meta", {})
+    meta = sampled.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
         out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
