@@ -235,7 +235,6 @@ def sample_surface_revolution(
 def pressure_components_on_surface(
     sampled,
     *,
-    body_radius: float,
     include_relative_ram: bool = True,
     standoff_b0: float = 0.7e-4,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
@@ -245,7 +244,6 @@ def pressure_components_on_surface(
         "pressure_components_on_surface start: include_relative=%s",
         include_relative_ram,
     )
-    body_radius = float(body_radius)
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])

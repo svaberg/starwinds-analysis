@@ -169,9 +169,9 @@ def elliptic_orbit_points(
         "eccentric_anomaly [rad]": e_anom,
         "mean_anomaly [rad]": mean_anom,
         "true_anomaly [rad]": true_anom,
-        "radius [orbit]": radius,
-        "semi_major_axis [orbit]": float(a),
-        "eccentricity [orbit]": float(e),
+        "radius [R]": radius,
+        "semi_major_axis [R]": float(a),
+        "eccentricity [none]": float(e),
         "plane": plane,
         "sample": sample,
     }

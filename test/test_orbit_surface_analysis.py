@@ -77,7 +77,7 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
         "standoff_distance [m]": np.full((n_phase, n_lon), 4.2e8, dtype=float),
     }
 
-    out = pressure_components_on_surface(sampled, body_radius=SOLAR_RADIUS_M)
+    out = pressure_components_on_surface(sampled)
     assert "relative_ram_pressure [Pa]" not in out
     assert "U_minus_V [m/s]" not in out
     assert "V [m/s]" not in out
@@ -152,7 +152,6 @@ def test_pressure_components_on_surface_runs_on_example():
     )
     out = pressure_components_on_surface(
         sampled,
-        body_radius=SOLAR_RADIUS_M,
     )
     for key in (
         "ram_pressure [Pa]",
