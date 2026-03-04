@@ -11,6 +11,7 @@ from os import PathLike
 from pathlib import Path
 
 import numpy as np
+from griblet.dependency_solver import UnresolvableFieldError
 
 from starwinds_readplt.dataset import Dataset
 from starwinds_analysis._smart_ds_graph import compute_via_graph as _compute_via_graph
@@ -385,11 +386,13 @@ class SmartDs:
                 self._cache[name] = value
             return value
 
-        func = self._field_functions.get(name)
-        if func is not None:
-            value = np.array(func(self))
-        else:
+        try:
             value = self._compute_via_graph(name)
+        except (IndexError, UnresolvableFieldError):
+            func = self._field_functions.get(name)
+            if func is None:
+                raise
+            value = np.array(func(self))
         if self._cache_enabled:
             self._cache[name] = value
         return value
