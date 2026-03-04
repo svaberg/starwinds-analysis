@@ -195,8 +195,6 @@ def sample_curve(
     Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
-    radius_r = np.sqrt(np.sum(points * points, axis=1))
-    radius_m = radius_r * float(smart_ds.aux["Star_radius_m"])
     sampled = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
@@ -205,7 +203,7 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    return sampled.append_fields({"R [m]": radius_m}, zone_suffix="orbit samples")
+    return sampled
 
 def sample_trajectory(
     smart_ds,
