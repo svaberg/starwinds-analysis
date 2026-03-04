@@ -629,15 +629,14 @@ def _run_one_file(
             meta["end_time_utc"] = _utc_now_iso()
         recorder_logger.removeHandler(recorder_handler)
         recorder_handler.close()
-
-    results.computed_results[file_key] = file_results
-    known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-    _save_state(
-        state_file,
-        processed_keys=processed_keys,
-        computed_results=known_computed_by_pipeline[state_pipeline_name],
-        json_warn_bytes=int(json_warn_bytes),
-    )
+        results.computed_results[file_key] = file_results
+        known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
+        _save_state(
+            state_file,
+            processed_keys=processed_keys,
+            computed_results=known_computed_by_pipeline[state_pipeline_name],
+            json_warn_bytes=int(json_warn_bytes),
+        )
     if failure is not None and fail_fast:
         raise failure.with_traceback(failure_tb)
 
