@@ -164,7 +164,7 @@ class SmartDs:
     @property
     def field_functions(self) -> Mapping[str, FieldFunction]:
         """
-        Registered local field functions (lazy computed fields, no griblet).
+        Registered instance-local field functions (custom escape hatch outside griblet).
         Used by: `SmartDs` users and internal methods
         """
         return self._field_functions
@@ -179,7 +179,7 @@ class SmartDs:
 
     def keys(self) -> tuple[str, ...]:
         """
-        Known field names from raw variables, local fields, and the attached graph.
+        Known field names from raw variables, attached graph fields, and local custom fields.
         Used by: `SmartDs` users and internal methods
         """
         names = list(self._dataset.variables)
@@ -214,7 +214,7 @@ class SmartDs:
 
     def has_field(self, name: str) -> bool:
         """
-        Check whether a field is available from raw data, local fields, or griblet.
+        Check whether a field is available from raw data, the attached graph, or local custom fields.
         Used by: `SmartDs` users and internal methods
         """
         if self.has_raw_field(name) or name in self._field_functions:
@@ -283,7 +283,7 @@ class SmartDs:
         vectors: Sequence[str] | None = None,
     ):
         """
-        Add local (non-griblet) spherical geometry/vector component fields.
+        Add local spherical geometry/vector component fields when explicit local registration is desired.
         Used by: `SmartDs` users and internal methods
         """
         from starwinds_analysis.recipes.spherical import _vector_triplets
@@ -374,7 +374,9 @@ class SmartDs:
 
     def variable(self, name: str):
         """
-        Main name-based field accessor: raw passthrough, then local fields, then griblet graph.
+        Main name-based field accessor. Raw loader fields win when present; otherwise
+        SmartDs produces the field from the attached graph (with local field functions as
+        an escape hatch for instance-local custom fields).
         Used by: `SmartDs` users and internal methods
         """
         if not isinstance(name, str):
