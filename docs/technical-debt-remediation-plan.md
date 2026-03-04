@@ -16,7 +16,7 @@ Completed in this pass:
 
 - Moved named planetary orbit presets/helpers out of `analysis` and into `physics`.
 - Added deep Kepler primitives in `physics.orbits` (`orbital_period`, `orbital_velocity`) and rewired callers.
-- Centralized `MU0` in `physics.constants` and removed local redefinitions.
+- Centralized `MU0` in `starwinds_analysis.constants` and removed local redefinitions.
 - Removed `open_wind_magnetisation_from_profiles` from `physics` (profile-bundle helper moved to local quicklook logic).
 
 ## Phase 1 (Low-Hanging, Next)
@@ -125,7 +125,7 @@ Goal: stop hardening quantity-specific plotting/orchestration wrappers into libr
 Goal: enforce one-way layer direction and eliminate circular import pressure.
 
 1. Remove `analysis -> physics` imports where the split is wrong.
-- Move shared primitives deeper (for example `physics.constants`, `physics.orbits`) or sideways into a true primitive module.
+- Move shared primitives deeper (for example `physics.orbits`) or sideways into a true primitive module.
  - DONE (current pass): `starwinds_analysis/analysis/` no longer imports from `starwinds_analysis/physics/`.
 
 2. Remove `physics -> analysis` imports in workflow-heavy modules by either:

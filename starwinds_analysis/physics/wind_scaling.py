@@ -6,7 +6,7 @@ magnetisation) without profile-bundle orchestration.
 
 # DONE(debt): Profile-bundle/orchestration helper was removed; keep only local formulas
 # in this module.
-# DONE(debt): `MU0` is imported from `physics.constants` (single shared source).
+# DONE(debt): `MU0` is imported from `starwinds_analysis.constants` (single shared source).
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import scipy.constants as c
 
 from starwinds_analysis.constants import MU0
 
-# DONE(debt): Reuse the shared `MU0` constant from `physics.constants`.
+# DONE(debt): Reuse the shared `MU0` constant from `starwinds_analysis.constants`.
 
 def surface_escape_speed(star_mass_kg, star_radius_m):
     """

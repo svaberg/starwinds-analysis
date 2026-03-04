@@ -10,7 +10,6 @@ import numpy as np
 from starwinds_analysis.analysis.shells import integrate_shell_scalar, sample_spherical_shells
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.data.samples import get_sample
-from starwinds_analysis.physics.magnetic import magnetic_field_unit_scale
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -19,6 +18,20 @@ def _example_3d():
 
 
 EXAMPLE_3D = _example_3d()
+
+
+def magnetic_field_unit_scale(unit: str) -> tuple[float, str]:
+    key = str(unit).strip()
+    table = {
+        "T": (1.0, "T"),
+        "Tesla": (1.0, "T"),
+        "G": (1e4, "G"),
+        "Gauss": (1e4, "G"),
+        "nT": (1e9, "nT"),
+    }
+    if key not in table:
+        raise ValueError(f"Unsupported magnetic display unit '{unit}'")
+    return table[key]
 
 
 def _sample_shell_magnetic_components(*, n_polar=12, n_azimuth=24):
