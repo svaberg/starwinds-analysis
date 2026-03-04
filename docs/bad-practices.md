@@ -81,6 +81,8 @@ Terminology rule:
 
 - Unless code is directly reading file-provided latitude/longitude fields or labeling a plot, prefer `polar` and `azimuth` over `latitudinal`.
 - Use `lat` / `lon` when the file fields are explicitly latitude/longitude.
+- In this project, `U` means velocity in the stellar rest frame.
+- Use `V` for a velocity that is not in the stellar rest frame (for example an object/orbital velocity used in ram-pressure comparisons).
 
 ## Logging (Good and Bad)
 

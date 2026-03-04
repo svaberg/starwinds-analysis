@@ -25,7 +25,7 @@ def test_pressure_components_static_and_relative_ram():
     v_obj = np.array([[0.0, 0.0, 0.0], [0.0, 3.0, 0.0]])
 
     out = pressure_components(
-        rho, u, b, thermal_pressure_pa=p, object_velocity_xyz_m_s=v_obj
+        rho, u, b, thermal_pressure_pa=p, V_xyz_m_s=v_obj
     )
 
     np.testing.assert_allclose(out["U [m/s]"], [5.0, 5.0])
@@ -34,6 +34,8 @@ def test_pressure_components_static_and_relative_ram():
         out["magnetic_pressure [Pa]"], np.square(np.array([1e-4, 2e-4])) / (2.0 * MU0)
     )
     np.testing.assert_allclose(out["thermal_pressure [Pa]"], p)
+    np.testing.assert_allclose(out["V [m/s]"], [0.0, 3.0])
+    np.testing.assert_allclose(out["U_minus_V [m/s]"], [5.0, 2.0])
     assert np.all(out["relative_ram_pressure [Pa]"] >= 0)
     assert out["relative_ram_pressure [Pa]"][1] < out["ram_pressure [Pa]"][1]
 
