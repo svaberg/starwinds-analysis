@@ -111,20 +111,6 @@ def build_loader_graph(smart_ds):
             metadata={"description": "Dataset raw field"},
         )
 
-    for alias_name, candidates in smart_ds._aliases.items():
-        if alias_name in smart_ds._dataset.variables:
-            continue
-        raw_name = next((c for c in candidates if c in smart_ds._dataset.variables), None)
-        if raw_name is None:
-            continue
-        graph.add_recipe(
-            field=alias_name,
-            func=lambda raw_name=raw_name: smart_ds._dataset.variable(raw_name),
-            deps=[],
-            cost=0.0,
-            metadata={"description": f"Alias for {raw_name}"},
-        )
-
     if smart_ds._include_aux_in_loader:
         for key, value in smart_ds._dataset.aux.items():
             graph.add_recipe(

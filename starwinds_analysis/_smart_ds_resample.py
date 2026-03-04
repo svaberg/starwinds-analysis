@@ -143,7 +143,6 @@ def resample_smart_ds(
     return type(smart_ds)(
         new_dataset,
         field_functions=smart_ds._field_functions,
-        aliases=smart_ds._aliases,
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
         include_aux_in_loader=smart_ds._include_aux_in_loader,

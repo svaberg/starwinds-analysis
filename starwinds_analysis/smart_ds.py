@@ -47,25 +47,20 @@ class SmartDs:
         dataset: Dataset,
         *,
         field_functions: Mapping[str, FieldFunction] | None = None,
-        aliases: Mapping[str, str | Sequence[str]] | None = None,
         cache_enabled: bool = True,
         computation_graph=None,
         include_aux_in_loader: bool = True,
     ) -> None:
         """
-        Wrap a raw Dataset and initialize aliases, local field functions, and graph hooks.
+        Wrap a raw Dataset and initialize local field functions plus graph hooks.
         Used by: `SmartDs` users and internal methods
         """
         self._dataset = dataset
         self._field_functions: dict[str, FieldFunction] = dict(field_functions or {})
-        self._aliases: dict[str, tuple[str, ...]] = {}
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = computation_graph
         self._include_aux_in_loader = bool(include_aux_in_loader)
-
-        for name, candidates in (aliases or {}).items():
-            self.set_alias(name, candidates)
 
     def __repr__(self) -> str:
         """
@@ -205,12 +200,10 @@ class SmartDs:
 
     def has_raw_field(self, name: str) -> bool:
         """
-        Check only raw dataset fields (including alias fallback).
+        Check only raw dataset fields.
         Used by: `SmartDs` users and internal methods
         """
-        if name in self._dataset.variables:
-            return True
-        return any(candidate in self._dataset.variables for candidate in self._aliases.get(name, ()))
+        return name in self._dataset.variables
 
     def has_field(self, name: str) -> bool:
         """
@@ -233,22 +226,12 @@ class SmartDs:
         except (IndexError, KeyError):
             return default
 
-    def set_alias(self, name: str, candidates: str | Sequence[str]) -> None:
-        """
-        Map a canonical field name to one or more raw field candidates.
-        Used by: `SmartDs` users and internal methods
-        """
-        if isinstance(candidates, str):
-            candidates = (candidates,)
-        self._aliases[name] = tuple(candidates)
-
     def register_field(
         self,
         name: str,
         func: FieldFunction,
         *,
         overwrite: bool = False,
-        aliases: str | Sequence[str] | None = None,
     ) -> None:
         """
         Register a lazy local field function on this SmartDs instance.
@@ -257,8 +240,6 @@ class SmartDs:
         if (not overwrite) and (name in self._field_functions):
             raise KeyError(f"Field function for '{name}' is already registered")
         self._field_functions[name] = func
-        if aliases is not None:
-            self.set_alias(name, aliases)
         self._cache.pop(name, None)
 
     def set_computation_graph(self, graph, *, merge: bool = False):
@@ -380,10 +361,8 @@ class SmartDs:
         if self._cache_enabled and name in self._cache:
             return self._cache[name]
 
-        for candidate in (name, *self._aliases.get(name, ())):
-            if candidate in self._dataset.variables:
-                value = self._dataset.variable(candidate)
-                break
+        if name in self._dataset.variables:
+            value = self._dataset.variable(name)
         else:
             try:
                 value = self._compute_via_graph(name)
@@ -482,7 +461,6 @@ class SmartDs:
         return type(self)(
             new_dataset,
             field_functions=self._field_functions,
-            aliases=self._aliases,
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
             include_aux_in_loader=self._include_aux_in_loader,

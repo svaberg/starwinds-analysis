@@ -114,12 +114,6 @@ def test_smartds_field_access_is_name_only():
     with pytest.raises(TypeError):
         sds(0)
 
-
-def test_alias_passthrough_to_existing_raw_field():
-    sds = SmartDs(make_dataset_2d(), aliases={"q": "Q [none]"})
-    np.testing.assert_allclose(sds.variable("q"), [0.0, 1.0, 1.0, 2.0])
-
-
 @pytest.mark.skipif(
     importlib.util.find_spec("scipy") is None,
     reason="scipy is required for SmartDs.resample()",
