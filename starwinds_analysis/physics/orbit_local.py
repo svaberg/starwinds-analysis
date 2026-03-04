@@ -15,7 +15,6 @@ import numpy as np
 
 from starwinds_analysis.analysis.orbits import sample_circular_orbit
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
-from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples
@@ -189,8 +188,10 @@ def local_mass_loss_on_circular_orbit(
     Sample a circular orbit and compute local-vs-shell mass-loss comparisons.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
@@ -226,8 +227,10 @@ def local_torque_on_circular_orbit(
     Sample a circular orbit and compute local-vs-shell torque comparisons.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
@@ -268,8 +271,10 @@ def local_mass_loss_on_elliptic_orbit(
     Sample an elliptic orbit and compute local-vs-shell mass-loss comparisons.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     fields = (
         "mass_flux [kg/m^2/s]",
     )
@@ -319,8 +324,10 @@ def local_torque_on_elliptic_orbit(
     Sample an elliptic orbit and compute local-vs-shell torque comparisons.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     fields = (
         "magnetic_torque_density [N/m]",
         "dynamic_torque_density [N/m]",

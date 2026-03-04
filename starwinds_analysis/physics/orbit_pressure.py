@@ -19,7 +19,6 @@ import numpy as np
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.pressure import ram_pressure
@@ -162,7 +161,10 @@ def pressure_components_on_elliptic_orbit(
         method,
         plane,
     )
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     rho_name = "Rho [kg/m^3]"
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
     derived = (

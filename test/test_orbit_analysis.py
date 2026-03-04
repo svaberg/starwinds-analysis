@@ -93,6 +93,7 @@ def test_sample_elliptic_orbit_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = local_mass_loss_on_circular_orbit(
         sds,
         10.0,
@@ -114,6 +115,7 @@ def test_local_mass_loss_on_circular_orbit_runs_and_compares_to_shell():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = local_torque_on_circular_orbit(
         sds,
         10.0,
@@ -137,6 +139,7 @@ def test_local_torque_on_circular_orbit_runs_and_compares_to_shell():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = local_mass_loss_on_elliptic_orbit(
         sds,
         10.0,
@@ -165,6 +168,7 @@ def test_local_mass_loss_on_elliptic_orbit_runs_and_compares_to_shell_profile():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_local_torque_on_elliptic_orbit_runs_and_compares_to_shell_profile():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = local_torque_on_elliptic_orbit(
         sds,
         10.0,

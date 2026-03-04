@@ -12,8 +12,6 @@ import numpy as np
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid
 from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-
 log = logging.getLogger(__name__)
 
 
@@ -54,50 +52,6 @@ def resample_shell_points(
         fill_value=fill_value,
         title=f"{getattr(smart_ds, 'title', 'dataset')} ({title_suffix})",
         zone="shell-samples",
-    )
-
-def float_or_none(value) -> float | None:
-    """
-    Parse an aux value into float, returning None on parse failure.
-    Used by: `starwinds_analysis/analysis/shells.py`
-    """
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-def infer_body_radius_m(smart_ds, body_radius_m: float | None = None) -> float:
-    """
-    Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI.
-    Used by: `starwinds_analysis/physics/orbit_local.py`,
-      `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`,
-      `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py` (+1 more)
-    """
-    if body_radius_m is not None:
-        return float(body_radius_m)
-
-    for name in ("star_radius [m]", "Star_radius [m]", "RBODY [m]"):
-        if not smart_ds.has_field(name):
-            continue
-        value = float_or_none(smart_ds.variable(name))
-        if value is not None and np.isfinite(value) and value > 0:
-            return value
-
-    aux = getattr(smart_ds, "aux", {})
-    for key in ("Star_radius_m", "Planet_radius_m", "BODY_RADIUS_M", "RBODY [m]", "RBODY_M", "RSTAR [m]", "RPLANET [m]"):
-        if key in aux:
-            value = float_or_none(aux[key])
-            if value is not None and np.isfinite(value) and value > 0:
-                return value
-
-    for key in ("RBODY", "RBODY [R]", "BODY_RADIUS_R", "RSTAR [R]", "RPLANET [R]"):
-        if key in aux:
-            value = float_or_none(aux[key])
-            if value is not None and np.isfinite(value) and value > 0:
-                return value * SOLAR_RADIUS_M
-
-    raise ValueError(
-        "Could not infer body radius in meters. Pass body_radius_m explicitly."
     )
 
 def infer_cartesian_axis_radii(
@@ -378,8 +332,10 @@ def sample_shell_field(
     Sample one shell field over a shell series and return shells, values, areas, and radii.
     Used by: `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/pipelines/volume.py`
     """
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
 
     shells = sample_spherical_shells_by_strategy(
         smart_ds,
@@ -394,8 +350,6 @@ def sample_shell_field(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
-
     values = np.array(shells(shell_field))
     area = np.array(shells("dA [m^2]"))
     r_field = np.array(shells("R [R]"))

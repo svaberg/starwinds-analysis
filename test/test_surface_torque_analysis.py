@@ -81,6 +81,7 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     radii = [2.0, 4.0, 8.0, 16.0]
 
     shells, magnetic_density, area, _ = sample_shell_field(

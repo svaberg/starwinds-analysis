@@ -11,7 +11,6 @@ import logging
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_spherical_shells_by_strategy
 from starwinds_analysis.constants import MU0
@@ -308,8 +307,10 @@ def surface_torque_vs_radius(
         method,
         include_pressure_term,
     )
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -333,8 +334,6 @@ def surface_torque_vs_radius(
         fill_value=fill_value,
         length_unit_to_m=body_radius_m,
     )
-    shells.add_batsrus_graph(body_radius_m=body_radius_m, merge=False)
-
     rho = np.array(shells(rho_name))
     u_xyz = np.array(shells("U_xyz [m/s]"))
     b_xyz = np.array(shells("B_xyz [T]"))

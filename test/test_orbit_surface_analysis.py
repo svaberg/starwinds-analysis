@@ -71,6 +71,7 @@ def test_sample_orbit_surface_revolution_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_pressure_components_on_orbit_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = pressure_components_on_orbit_surface(
         sds,
         {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},
@@ -97,6 +98,7 @@ def test_pressure_components_on_orbit_surface_runs_on_example():
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_components_on_orbit_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
+    sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     out = torque_components_on_orbit_surface(
         sds,
         {"semi_major_axis": 10.0, "eccentricity": 0.2, "n_points": 64},

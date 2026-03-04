@@ -26,7 +26,6 @@ from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
-from starwinds_analysis.analysis.shells import infer_body_radius_m
 from starwinds_analysis.analysis.stats import weighted_quantile
 
 log = logging.getLogger(__name__)
@@ -288,8 +287,10 @@ def pressure_components_on_orbit_surface(
         method,
         include_relative_ram,
     )
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
@@ -415,8 +416,10 @@ def torque_components_on_orbit_surface(
         method,
         include_pressure_term,
     )
-    smart_ds.add_batsrus_graph(body_radius_m=body_radius_m)
-    body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
+    if body_radius_m is None:
+        body_radius_m = float(smart_ds("star_radius [m]"))
+    else:
+        body_radius_m = float(body_radius_m)
     rho_name = "Rho [kg/m^3]"
     ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
     bx_name, by_name, bz_name = "B_x [T]", "B_y [T]", "B_z [T]"
