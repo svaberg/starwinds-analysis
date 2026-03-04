@@ -224,7 +224,7 @@ def elliptic_orbit_points(
         "sample": sample,
     }
 
-def sample_points(
+def sample_curve(
     smart_ds,
     points,
     *,
@@ -256,6 +256,42 @@ def sample_points(
         zone_suffix="orbit samples",
     )
 
+def sample_trajectory(
+    smart_ds,
+    points,
+    *,
+    fields,
+    time_s,
+    velocity_xyz_m_s=None,
+    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    method: str = "nearest",
+    fill_value: float = np.nan,
+):
+    """
+    Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V_xyz`.
+    Used by: no external call sites found
+    """
+    curve = sample_curve(
+        smart_ds,
+        points,
+        fields=fields,
+        coordinate_fields=coordinate_fields,
+        method=method,
+        fill_value=fill_value,
+    )
+    time = np.array(time_s)
+    if time.ndim != 1 or time.shape[0] != curve.points.shape[0]:
+        raise ValueError("time_s must have shape (n_points,)")
+    extra_fields = {"t [s]": time}
+    if velocity_xyz_m_s is not None:
+        velocity = np.array(velocity_xyz_m_s)
+        if velocity.shape != (curve.points.shape[0], 3):
+            raise ValueError("velocity_xyz_m_s must have shape (n_points, 3)")
+        extra_fields["V_x [m/s]"] = velocity[:, 0]
+        extra_fields["V_y [m/s]"] = velocity[:, 1]
+        extra_fields["V_z [m/s]"] = velocity[:, 2]
+    return curve.append_fields(extra_fields, zone_suffix="trajectory")
+
 def sample_circular_orbit(
     smart_ds,
     radius,
@@ -277,7 +313,7 @@ def sample_circular_orbit(
     pts = circular_orbit_points(
         radius, n_points=n_points, plane=plane, phase0=phase0, center=center
     )
-    sampled = sample_points(
+    sampled = sample_curve(
         smart_ds,
         pts,
         fields=fields,
@@ -329,7 +365,7 @@ def sample_elliptic_orbit(
         sample=sample,
         return_info=True,
     )
-    sampled = sample_points(
+    sampled = sample_curve(
         smart_ds,
         info["points"],
         fields=fields,

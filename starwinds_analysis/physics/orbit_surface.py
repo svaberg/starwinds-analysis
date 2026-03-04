@@ -22,7 +22,7 @@ from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.analysis.orbits import circular_orbit_points
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import periodic_curve_velocity
-from starwinds_analysis.analysis.orbits import sample_points
+from starwinds_analysis.analysis.orbits import sample_curve
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
@@ -221,7 +221,7 @@ def sample_orbit_surface_revolution(
     surf = surface_of_revolution_from_path(path_points, n_longitudes=n_longitudes)
     pts = surf["points"].reshape(-1, 3)
 
-    sampled_curve = sample_points(
+    sampled_curve = sample_curve(
         smart_ds,
         pts,
         fields=fields,
