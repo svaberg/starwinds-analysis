@@ -29,6 +29,7 @@ _DEFAULT_ARRAY_OFFLOAD_MIN_BYTES = 1_000_000
 _DEFAULT_JSON_WARN_BYTES = 10_000_000
 
 
+# JSON/state helpers
 class _ScientificFloatEncoder(json.JSONEncoder):
     """
     JSON encoder that writes finite floats in scientific notation.
@@ -105,6 +106,7 @@ class SwPipeResults:
     state_file: Path | None = None
 
 
+# Recorder capture and normalization
 class _SwRecordHandler(logging.Handler):
     """
     Capture `sw_record` payloads from log records into a per-file results mapping.
@@ -280,6 +282,7 @@ def _sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+# Human/recorder logging setup
 class _PipelineLogFormatter(logging.Formatter):
     """
     Format pipeline logs as `[level] source message`.
@@ -436,6 +439,7 @@ def _save_state(
     path.write_text(payload_text)
 
 
+# File discovery and pipeline routing
 def discover_input_files(directory: str | Path = ".", *, recursive: bool = False) -> list[Path]:
     """
     Discover supported input files in a directory.
@@ -621,12 +625,8 @@ def run_sw_pipe(
                 meta["end_time_utc"] = _utc_now_iso()
             recorder_logger.removeHandler(recorder_handler)
             recorder_handler.close()
-        if file_results:
-            results.computed_results[file_key] = file_results
-            known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
-        else:
-            results.computed_results.pop(file_key, None)
-            known_computed_by_pipeline[state_pipeline_name].pop(file_key, None)
+        results.computed_results[file_key] = file_results
+        known_computed_by_pipeline[state_pipeline_name][file_key] = file_results
     for state_pipeline_name, state_file in state_files.items():
         pipeline_computed = known_computed_by_pipeline[state_pipeline_name]
         _save_state(
