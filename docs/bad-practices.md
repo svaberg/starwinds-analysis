@@ -702,6 +702,8 @@ Rule:
 - Do not add underscore-prefixed helpers or constants unless they clearly reduce repetition or complexity.
 - If a private helper is only naming a simple branch or one-liner, inline it.
 - If a function is utility-like or broadly meaningful, do not hide it behind a leading underscore; either inline it if it is trivial or give it a normal name in the right module.
+- Minimize `except Exception`; catch the narrowest real exception that fits the expected failure mode.
+- When expected fallback events occur (for example optional-import fallbacks), emit a log message at `INFO` level or higher if the situation warrants it.
 
 ## Review Checklist (Use Before Adding New Code)
 
