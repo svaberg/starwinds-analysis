@@ -7,8 +7,8 @@ from scipy import constants as const
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.curve import mass_loss_from_curve
-from starwinds_analysis.physics.curve import torque_from_curve
+from starwinds_analysis.physics.curve_shell import compare_curve_mass_loss_to_shell
+from starwinds_analysis.physics.curve_shell import compare_curve_torque_to_shell
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbits import orbital_velocity
 from starwinds_analysis.smart_ds import SmartDs
@@ -88,7 +88,7 @@ def test_sample_elliptic_orbit_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_mass_loss_from_curve_runs_and_compares_to_shell():
+def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
@@ -99,7 +99,7 @@ def test_local_mass_loss_from_curve_runs_and_compares_to_shell():
         n_points=96,
         method="nearest",
     )
-    out = mass_loss_from_curve(
+    out = compare_curve_mass_loss_to_shell(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -117,7 +117,7 @@ def test_local_mass_loss_from_curve_runs_and_compares_to_shell():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_torque_from_curve_runs_and_compares_to_shell():
+def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
@@ -131,7 +131,7 @@ def test_local_torque_from_curve_runs_and_compares_to_shell():
         n_points=96,
         method="nearest",
     )
-    out = torque_from_curve(
+    out = compare_curve_torque_to_shell(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -151,7 +151,7 @@ def test_local_torque_from_curve_runs_and_compares_to_shell():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_mass_loss_from_elliptic_curve_runs_and_compares_to_shell_profile():
+def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
@@ -163,7 +163,7 @@ def test_local_mass_loss_from_elliptic_curve_runs_and_compares_to_shell_profile(
         method="nearest",
     )
     shell_radii = np.linspace(8.0, 12.0, 8)
-    out = mass_loss_from_curve(
+    out = compare_curve_mass_loss_to_shell(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,
@@ -185,7 +185,7 @@ def test_local_mass_loss_from_elliptic_curve_runs_and_compares_to_shell_profile(
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_local_torque_from_elliptic_curve_runs_and_compares_to_shell_profile():
+def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius_m=SOLAR_RADIUS_M)
     curve = sample_elliptic_orbit(
@@ -200,7 +200,7 @@ def test_local_torque_from_elliptic_curve_runs_and_compares_to_shell_profile():
         method="nearest",
     )
     shell_radii = np.linspace(8.5, 11.5, 8)
-    out = torque_from_curve(
+    out = compare_curve_torque_to_shell(
         sds,
         curve,
         body_radius_m=SOLAR_RADIUS_M,

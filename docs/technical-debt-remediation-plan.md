@@ -36,8 +36,8 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
 - DONE (updated): orbit geometry/sampling primitives live in `analysis.orbits`,
   which is generic enough for the current tree.
-- NEXT: reduce workflow debt in `physics/curve.py` (still quantity-specific, but now
-  depends on the generic `analysis.orbits` layer instead of quantity-specific helpers).
+- NEXT: reduce workflow debt in `physics/curve_shell.py` (still quantity-specific, but now
+  explicitly separated from pure curve diagnostics and depends on the generic `analysis.orbits` layer).
 
 ## Phase 2 (SmartDs / griblet Migration)
 
@@ -59,7 +59,7 @@ Goal: stop computing physical quantities outside SmartDs/griblet.
 
 2. DONE (current pass): Replace wrapper-style field resolution with direct SmartDs requests.
 - Shell profile workflows now use `analysis.shells` primitives plus direct SmartDs/griblet quantities.
-- Orbit workflows (`physics/curve.py`, `physics/orbit_surface.py`) request SI quantities directly from SmartDs/griblet.
+- Orbit workflows (`physics/curve.py`, `physics/curve_shell.py`, `physics/orbit_surface.py`) request SI quantities directly from SmartDs/griblet.
 - Dead `resolve_*` helper definitions were removed.
 
 3. NEXT: Rename/clarify internal SmartDs graph resolve naming if needed.
