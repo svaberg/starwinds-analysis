@@ -105,6 +105,16 @@ def test_call_uses_smartds_resolution():
     np.testing.assert_allclose(sds("Q2 [none]"), [0.0, 1.0, 1.0, 4.0])
 
 
+def test_smartds_field_access_is_name_only():
+    sds = SmartDs(make_dataset_2d())
+
+    with pytest.raises(TypeError):
+        sds.variable(0)
+
+    with pytest.raises(TypeError):
+        sds(0)
+
+
 def test_alias_passthrough_to_existing_raw_field():
     sds = SmartDs(make_dataset_2d(), aliases={"q": "Q [none]"})
     np.testing.assert_allclose(sds.variable("q"), [0.0, 1.0, 1.0, 2.0])

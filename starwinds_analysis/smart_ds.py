@@ -198,12 +198,12 @@ class SmartDs:
         """
         return isinstance(name, str) and self.has_field(name)
 
-    def __call__(self, index_or_name):
+    def __call__(self, name: str):
         """
         `sds(name)` is shorthand for `sds.variable(name)`.
         Used by: `SmartDs` users and internal methods
         """
-        return self.variable(index_or_name)
+        return self.variable(name)
 
     def has_raw_field(self, name: str) -> bool:
         """
@@ -372,16 +372,13 @@ class SmartDs:
         for name in names:
             self._cache.pop(name, None)
 
-    def variable(self, index_or_name):
-        # Preserve Dataset behavior for integer indexing.
+    def variable(self, name: str):
         """
-        Main field accessor: raw passthrough, then local fields, then griblet graph.
+        Main name-based field accessor: raw passthrough, then local fields, then griblet graph.
         Used by: `SmartDs` users and internal methods
         """
-        if not isinstance(index_or_name, str):
-            return self._dataset.variable(index_or_name)
-
-        name = index_or_name
+        if not isinstance(name, str):
+            raise TypeError("SmartDs fields must be requested by name")
         if self._cache_enabled and name in self._cache:
             return self._cache[name]
 
