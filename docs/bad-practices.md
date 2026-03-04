@@ -701,6 +701,7 @@ Rule:
 
 - Do not add underscore-prefixed helpers or constants unless they clearly reduce repetition or complexity.
 - If a private helper is only naming a simple branch or one-liner, inline it.
+- If a function is utility-like or broadly meaningful, do not hide it behind a leading underscore; either inline it if it is trivial or give it a normal name in the right module.
 
 ## Review Checklist (Use Before Adding New Code)
 
