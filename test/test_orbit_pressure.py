@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
 from starwinds_analysis.analysis.orbits import sample_trajectory
+from starwinds_analysis.analysis.orbits import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.curve import relative_ram_pressure_from_trajectory
 from starwinds_analysis.physics.orbits import orbital_period
@@ -33,11 +33,11 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     info = elliptic_orbit_points(10.0, eccentricity=0.0, n_points=96, return_info=True)
-    velocity = periodic_curve_velocity(
+    time = info["phase [turns]"] * period_s
+    velocity = trajectory_velocity(
         info["points"],
-        info["phase [turns]"],
-        period_s,
-        SOLAR_RADIUS_M,
+        time,
+        coordinate_scale=SOLAR_RADIUS_M,
     )
     trajectory = sample_trajectory(
         sds,
@@ -48,7 +48,7 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
             "U_y [m/s]",
             "U_z [m/s]",
         ),
-        time=info["phase [turns]"] * period_s,
+        time=time,
         velocity_xyz=velocity,
         method="nearest",
     )
@@ -67,11 +67,11 @@ def test_relative_ram_pressure_from_trajectory_runs_on_elliptic_example():
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     info = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=96, return_info=True)
-    velocity = periodic_curve_velocity(
+    time = info["phase [turns]"] * period_s
+    velocity = trajectory_velocity(
         info["points"],
-        info["phase [turns]"],
-        period_s,
-        SOLAR_RADIUS_M,
+        time,
+        coordinate_scale=SOLAR_RADIUS_M,
     )
     trajectory = sample_trajectory(
         sds,
@@ -82,7 +82,7 @@ def test_relative_ram_pressure_from_trajectory_runs_on_elliptic_example():
             "U_y [m/s]",
             "U_z [m/s]",
         ),
-        time=info["phase [turns]"] * period_s,
+        time=time,
         velocity_xyz=velocity,
         method="nearest",
     )
