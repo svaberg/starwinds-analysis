@@ -205,11 +205,11 @@ def sample_points(
     fill_value: float = np.nan,
 ):
     """
-    Resample `fields` onto explicit Cartesian points.
+    Resample `fields` onto explicit Cartesian points and return a curve SmartDs.
     Used by: `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
-    out = smart_ds.resample(
+    sampled = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
         fields=tuple(dict.fromkeys(fields)),
@@ -217,12 +217,15 @@ def sample_points(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    data = {name: np.array(out.variable(name)) for name in fields}
-    data["X [sample]"] = points[:, 0]
-    data["Y [sample]"] = points[:, 1]
-    data["Z [sample]"] = points[:, 2]
-    data["R [sample]"] = np.sqrt(np.sum(points * points, axis=1))
-    return data
+    return sampled.append_fields(
+        {
+            "X [sample]": points[:, 0],
+            "Y [sample]": points[:, 1],
+            "Z [sample]": points[:, 2],
+            "R [sample]": np.sqrt(np.sum(points * points, axis=1)),
+        },
+        zone_suffix="orbit samples",
+    )
 
 def sample_circular_orbit(
     smart_ds,
@@ -238,7 +241,7 @@ def sample_circular_orbit(
     fill_value: float = np.nan,
 ):
     """
-    Sample requested fields along a circular orbit path using generic point resampling.
+    Sample requested fields along a circular orbit path and return a curve SmartDs.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
       `starwinds_analysis/physics/orbit_pressure.py`
     """
@@ -253,10 +256,16 @@ def sample_circular_orbit(
         method=method,
         fill_value=fill_value,
     )
-    sampled["plane"] = plane
-    sampled["phase [turns]"] = np.arange(n_points, dtype=float) / max(1, n_points)
-    sampled["time_weight [none]"] = np.full(n_points, 1.0 / n_points, dtype=float)
-    sampled["kind"] = "circular"
+    sampled = sampled.append_fields(
+        {
+            "phase [turns]": np.arange(n_points, dtype=float) / max(1, n_points),
+            "time_weight [none]": np.full(n_points, 1.0 / n_points, dtype=float),
+        },
+        zone_suffix="circular orbit",
+    )
+    sampled.raw.aux["orbit_kind"] = "circular"
+    sampled.raw.aux["orbit_plane"] = plane
+    sampled.raw.aux["orbit_radius_R"] = float(radius)
     return sampled
 
 def sample_elliptic_orbit(
@@ -276,7 +285,7 @@ def sample_elliptic_orbit(
     fill_value: float = np.nan,
 ):
     """
-    Sample requested fields along an elliptic orbit path using generic point resampling.
+    Sample requested fields along an elliptic orbit path and return a curve SmartDs.
     Used by: `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`,
       `starwinds_analysis/physics/orbit_pressure.py`
     """
@@ -299,14 +308,19 @@ def sample_elliptic_orbit(
         method=method,
         fill_value=fill_value,
     )
-    sampled["plane"] = plane
-    sampled["kind"] = "elliptic"
-    sampled["phase [turns]"] = info["phase [turns]"]
-    sampled["time_weight [none]"] = info["time_weight [none]"]
-    sampled["true_anomaly [rad]"] = info["true_anomaly [rad]"]
-    sampled["mean_anomaly [rad]"] = info["mean_anomaly [rad]"]
-    sampled["eccentric_anomaly [rad]"] = info["eccentric_anomaly [rad]"]
-    sampled["semi_major_axis [sample]"] = float(semi_major_axis)
-    sampled["eccentricity [sample]"] = float(eccentricity)
-    sampled["sample_parameter"] = sample
+    sampled = sampled.append_fields(
+        {
+            "phase [turns]": info["phase [turns]"],
+            "time_weight [none]": info["time_weight [none]"],
+            "true_anomaly [rad]": info["true_anomaly [rad]"],
+            "mean_anomaly [rad]": info["mean_anomaly [rad]"],
+            "eccentric_anomaly [rad]": info["eccentric_anomaly [rad]"],
+        },
+        zone_suffix="elliptic orbit",
+    )
+    sampled.raw.aux["orbit_kind"] = "elliptic"
+    sampled.raw.aux["orbit_plane"] = plane
+    sampled.raw.aux["orbit_sample_parameter"] = sample
+    sampled.raw.aux["orbit_semi_major_axis_R"] = float(semi_major_axis)
+    sampled.raw.aux["orbit_eccentricity"] = float(eccentricity)
     return sampled

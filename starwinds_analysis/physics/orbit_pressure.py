@@ -83,14 +83,13 @@ def pressure_components_from_orbit_sample(
     """
     log.debug(
         "pressure_components_from_orbit_sample: n_points=%d, include_relative=%s",
-        len(orbit["Rho [kg/m^3]"]),
+        len(np.array(orbit("Rho [kg/m^3]"))),
         include_relative_ram,
     )
-    rho_name = "Rho [kg/m^3]"
-    ux_name, uy_name, uz_name = "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"
-
-    rho = np.array(orbit[rho_name])
-    u_xyz = np.column_stack([orbit[ux_name], orbit[uy_name], orbit[uz_name]])
+    rho = np.array(orbit("Rho [kg/m^3]"))
+    u_xyz = np.column_stack(
+        [orbit("U_x [m/s]"), orbit("U_y [m/s]"), orbit("U_z [m/s]")]
+    )
 
     object_velocity = None
     if (
@@ -103,17 +102,17 @@ def pressure_components_from_orbit_sample(
         if phase.shape == (len(rho),):
             period_s = orbital_period(float(semi_major_axis_r) * body_radius_m, star_mass_kg)
             points_r = np.column_stack(
-                [orbit["X [sample]"], orbit["Y [sample]"], orbit["Z [sample]"]]
+                [orbit("X [sample]"), orbit("Y [sample]"), orbit("Z [sample]")]
             )
             object_velocity = _periodic_orbit_velocity(points_r, phase, period_s, body_radius_m)
 
     comps = {
-        "U [m/s]": np.array(orbit["U [m/s]"]),
-        "B [T]": np.array(orbit["B [T]"]),
-        "magnetic_pressure [Pa]": np.array(orbit["magnetic_pressure [Pa]"]),
-        "ram_pressure [Pa]": np.array(orbit["ram_pressure [Pa]"]),
-        "thermal_pressure [Pa]": np.array(orbit["thermal_pressure [Pa]"]),
-        "standoff_distance [m]": np.array(orbit["standoff_distance [m]"]),
+        "U [m/s]": np.array(orbit("U [m/s]")),
+        "B [T]": np.array(orbit("B [T]")),
+        "magnetic_pressure [Pa]": np.array(orbit("magnetic_pressure [Pa]")),
+        "ram_pressure [Pa]": np.array(orbit("ram_pressure [Pa]")),
+        "thermal_pressure [Pa]": np.array(orbit("thermal_pressure [Pa]")),
+        "standoff_distance [m]": np.array(orbit("standoff_distance [m]")),
     }
 
     # TODO(griblet): Relative-speed/relative-ram and standoff quantities still use
@@ -166,7 +165,6 @@ def pressure_components_on_circular_orbit(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
-    b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
     derived = (
         "U [m/s]",
         "B [T]",
@@ -178,7 +176,7 @@ def pressure_components_on_circular_orbit(
     orbit = sample_circular_orbit(
         smart_ds,
         radius,
-        fields=(rho_name, *u_xyz, *b_xyz, *derived),
+        fields=(rho_name, *u_xyz, *derived),
         n_points=n_points,
         plane=plane,
         method=method,
@@ -228,7 +226,6 @@ def pressure_components_on_elliptic_orbit(
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name = "Rho [kg/m^3]"
     u_xyz = ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")
-    b_xyz = ("B_x [T]", "B_y [T]", "B_z [T]")
     derived = (
         "U [m/s]",
         "B [T]",
@@ -241,7 +238,7 @@ def pressure_components_on_elliptic_orbit(
         smart_ds,
         semi_major_axis,
         eccentricity=eccentricity,
-        fields=(rho_name, *u_xyz, *b_xyz, *derived),
+        fields=(rho_name, *u_xyz, *derived),
         n_points=n_points,
         plane=plane,
         angle0=angle0,
@@ -257,7 +254,7 @@ def pressure_components_on_elliptic_orbit(
     )
     out["semi_major_axis [R]"] = float(semi_major_axis)
     out["eccentricity [none]"] = float(eccentricity)
-    out["radius [R]"] = float(np.nanmean(np.array(orbit["R [sample]"])))
+    out["radius [R]"] = float(np.nanmean(np.array(orbit("R [sample]"))))
     out["radius [m]"] = out["radius [R]"] * body_radius_m
     log.info(
         "pressure_components_on_elliptic_orbit done: finite_ram=%d",

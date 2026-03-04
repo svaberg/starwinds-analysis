@@ -252,7 +252,7 @@ def sample_orbit_surface_revolution(
     surf = surface_of_revolution_from_path(path_points, n_longitudes=n_longitudes)
     pts = surf["points"].reshape(-1, 3)
 
-    sampled_flat = sample_points(
+    sampled_curve = sample_points(
         smart_ds,
         pts,
         fields=fields,
@@ -274,10 +274,8 @@ def sample_orbit_surface_revolution(
         "orbit_meta": path_meta,
         "zone": zone,
     }
-    for key, val in sampled_flat.items():
-        if key in {"X [sample]", "Y [sample]", "Z [sample]", "R [sample]"}:
-            continue
-        arr = np.array(val)
+    for key in fields:
+        arr = np.array(sampled_curve(key))
         if arr.shape == (n_phase * n_lon,):
             sampled[key] = arr.reshape(n_phase, n_lon)
     log.info(

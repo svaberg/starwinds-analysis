@@ -94,6 +94,6 @@ def test_pressure_components_on_elliptic_orbit_runs_on_example():
     assert np.isclose(out["eccentricity [none]"], 0.2)
     assert "relative_ram_pressure [Pa]" in out
     assert "object_speed [m/s]" in out
-    assert out["orbit_samples"]["time_weight [none]"].shape == (96,)
-    assert np.isclose(np.sum(out["orbit_samples"]["time_weight [none]"]), 1.0)
+    assert np.array(out["orbit_samples"]("time_weight [none]")).shape == (96,)
+    assert np.isclose(np.sum(out["orbit_samples"]("time_weight [none]")), 1.0)
     assert np.count_nonzero(np.isfinite(out["relative_ram_pressure [Pa]"])) > 0

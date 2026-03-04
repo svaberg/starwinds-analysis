@@ -63,9 +63,9 @@ def test_sample_circular_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert out["R [sample]"].shape == (72,)
-    assert out["Rho [g/cm^3]"].shape == (72,)
-    assert np.allclose(out["R [sample]"], 10.0, rtol=0, atol=1e-12)
+    assert np.array(out("R [sample]")).shape == (72,)
+    assert np.array(out("Rho [g/cm^3]")).shape == (72,)
+    assert np.allclose(out("R [sample]"), 10.0, rtol=0, atol=1e-12)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
@@ -80,13 +80,13 @@ def test_sample_elliptic_orbit_runs_on_example():
         method="nearest",
     )
 
-    assert out["R [sample]"].shape == (96,)
-    assert out["Rho [g/cm^3]"].shape == (96,)
-    assert out["phase [turns]"].shape == (96,)
-    assert out["time_weight [none]"].shape == (96,)
-    assert np.isclose(np.sum(out["time_weight [none]"]), 1.0)
-    assert np.nanmin(out["R [sample]"]) < 10.0
-    assert np.nanmax(out["R [sample]"]) > 10.0
+    assert np.array(out("R [sample]")).shape == (96,)
+    assert np.array(out("Rho [g/cm^3]")).shape == (96,)
+    assert np.array(out("phase [turns]")).shape == (96,)
+    assert np.array(out("time_weight [none]")).shape == (96,)
+    assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
+    assert np.nanmin(out("R [sample]")) < 10.0
+    assert np.nanmax(out("R [sample]")) > 10.0
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

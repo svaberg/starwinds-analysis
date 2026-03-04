@@ -54,10 +54,9 @@ def _local_mass_loss_from_orbit_sample(
     Compute local mass-loss estimates on one sampled orbit and compare to shell profile values.
     Used by: `starwinds_analysis/physics/orbit_local.py`
     """
-    rho_name = "Rho [kg/m^3]"
-    rho = orbit[rho_name]
-    u_r = orbit["U_r [m/s]"]
-    r_sample_r = np.array(orbit["R [sample]"])
+    rho = np.array(orbit("Rho [kg/m^3]"))
+    u_r = np.array(orbit("U_r [m/s]"))
+    r_sample_r = np.array(orbit("R [sample]"))
     r_m = r_sample_r * body_radius_m
     estimates = local_mass_loss_estimates(r_m, rho, u_r)
     weights = orbit.get("time_weight [none]")
@@ -114,14 +113,13 @@ def _local_torque_from_orbit_sample(
       values.
     Used by: `starwinds_analysis/physics/orbit_local.py`
     """
-    rho_name = "Rho [kg/m^3]"
-    r_sample_r = np.array(orbit["R [sample]"])
+    r_sample_r = np.array(orbit("R [sample]"))
     r_m = r_sample_r * body_radius_m
-    rho = orbit[rho_name]
-    u_r = orbit["U_r [m/s]"]
-    u_a = orbit["U_a [m/s]"]
-    b_r = orbit["B_r [T]"]
-    b_a = orbit["B_a [T]"]
+    rho = np.array(orbit("Rho [kg/m^3]"))
+    u_r = np.array(orbit("U_r [m/s]"))
+    u_a = np.array(orbit("U_a [m/s]"))
+    b_r = np.array(orbit("B_r [T]"))
+    b_a = np.array(orbit("B_a [T]"))
     local_magnetic, local_dynamic, local_total = local_torque_estimates(r_m, rho, u_r, u_a, b_r, b_a)
     weights = orbit.get("time_weight [none]")
 
