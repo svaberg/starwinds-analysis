@@ -54,6 +54,37 @@ def test_surface_point_normals_and_areas_on_cylinder_like_surface_are_finite():
     assert np.allclose(nmag[finite], 1.0, rtol=1e-6, atol=1e-6)
 
 
+def test_pressure_components_on_surface_skips_relative_when_no_trajectory_velocity():
+    n_phase = 5
+    n_lon = 7
+    phase = np.linspace(0.0, 1.0, n_phase, endpoint=False)
+    rho = np.full((n_phase, n_lon), 1e-13, dtype=float)
+    u_xyz = np.zeros((n_phase, n_lon, 3), dtype=float)
+    u_xyz[..., 0] = 3.0e5
+    b_xyz = np.zeros((n_phase, n_lon, 3), dtype=float)
+    b_xyz[..., 2] = 5.0e-5
+
+    sampled = {
+        "phase [turns]": phase,
+        "time_weight [none]": np.full(n_phase, 1.0 / n_phase, dtype=float),
+        "Rho [kg/m^3]": rho,
+        "U_xyz [m/s]": u_xyz,
+        "U [m/s]": np.sqrt(np.sum(u_xyz * u_xyz, axis=-1)),
+        "B [T]": np.sqrt(np.sum(b_xyz * b_xyz, axis=-1)),
+        "magnetic_pressure [Pa]": np.full((n_phase, n_lon), 2.0e-5, dtype=float),
+        "ram_pressure [Pa]": np.full((n_phase, n_lon), 9.0e-3, dtype=float),
+        "thermal_pressure [Pa]": np.full((n_phase, n_lon), 1.1e-3, dtype=float),
+        "standoff_distance [m]": np.full((n_phase, n_lon), 4.2e8, dtype=float),
+    }
+
+    out = pressure_components_on_surface(sampled, body_radius=SOLAR_RADIUS_M)
+    assert "relative_ram_pressure [Pa]" not in out
+    assert "U_minus_V [m/s]" not in out
+    assert "V [m/s]" not in out
+    assert out["phase_quantiles"]["ram_pressure [Pa]"]["values"].shape == (n_phase, 5)
+    assert np.isfinite(out["summary"]["ram_pressure [Pa]"]["mean"])
+
+
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_surface_revolution_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
