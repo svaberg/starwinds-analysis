@@ -149,6 +149,7 @@ Recommended next implementation batches:
 2. `physics/curve.py` + `physics/orbit_surface.py`
 - DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
 - DONE (partial): `orbit_surface.py` no longer constructs orbit geometry internally; callers now provide explicit path points and sampled surfaces.
+- DONE (partial): orbit-surface pressure diagnostics no longer require periodic-orbit reconstruction; trajectory velocity/time are now explicit inputs.
 - NEXT: reduce dict-bundle outputs further and move more workflow composition upward.
 
 3. `visualisation/profile_plots.py` + current pipelines
