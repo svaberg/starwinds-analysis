@@ -649,6 +649,26 @@ def _write_all_state_files(
         )
 
 
+def _write_one_state_file(
+    state_file: Path,
+    *,
+    state_pipeline_name: str,
+    known_processed_by_pipeline: dict[str, set[str]],
+    known_computed_by_pipeline: dict[str, dict[str, dict[str, object]]],
+    json_warn_bytes: int,
+) -> None:
+    """
+    Persist one per-pipeline state file during the run.
+    Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+    """
+    _save_state(
+        state_file,
+        processed_keys=known_processed_by_pipeline[state_pipeline_name],
+        computed_results=known_computed_by_pipeline[state_pipeline_name],
+        json_warn_bytes=int(json_warn_bytes),
+    )
+
+
 def run_sw_pipe(
     directory: str | Path = ".",
     *,
@@ -716,6 +736,13 @@ def run_sw_pipe(
             include_file_hash=include_file_hash,
             array_offload_min_bytes=array_offload_min_bytes,
             fail_fast=fail_fast,
+        )
+        _write_one_state_file(
+            state_files[state_pipeline_name],
+            state_pipeline_name=state_pipeline_name,
+            known_processed_by_pipeline=known_processed_by_pipeline,
+            known_computed_by_pipeline=known_computed_by_pipeline,
+            json_warn_bytes=int(json_warn_bytes),
         )
     _write_all_state_files(
         state_files,
