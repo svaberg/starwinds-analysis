@@ -8,13 +8,53 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import tri
 from matplotlib.colors import LogNorm
 from matplotlib.colors import SymLogNorm
 from matplotlib.ticker import FixedLocator
 from matplotlib.ticker import NullLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from starwinds_analysis.utils import auto_coords, triangles
+
+def auto_coords(ds, names=None):
+    """
+    Detect the two varying coordinates in a nominal 2D slice dataset.
+    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/examples/smartds_2d_xy_points.ipynb`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/examples/planet.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+    """
+    if names is None:
+        names = ("X [R]", "Y [R]", "Z [R]")
+
+    if np.allclose(ds.variable("X [R]"), 0):
+        return "Y [R]", "Z [R]"
+    if np.allclose(ds.variable("Y [R]"), 0):
+        return "X [R]", "Z [R]"
+    if np.allclose(ds.variable("Z [R]"), 0):
+        return "X [R]", "Y [R]"
+
+    spread = [np.nanmax(np.abs(np.array(ds.variable(name)))) for name in names]
+    i, j = np.argsort(spread)[-2:]
+    return names[i], names[j]
+
+
+def triangles(ds, uname=None, vname=None):
+    """
+    Build a Matplotlib triangulation from 2D quad-cell connectivity.
+    Used by: `/Users/dagfev/Documents/starwinds/starwinds-analysis/examples/planet.py`,
+      `/Users/dagfev/Documents/starwinds/starwinds-analysis/examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
+    """
+    if uname is None and vname is None:
+        uname, vname = auto_coords(ds)
+
+    pu = ds.variable(uname)
+    pv = ds.variable(vname)
+
+    if ds.corners.shape[1] != 4:
+        raise ValueError("Can only triangulate a 2D dataset with 4 corners per element")
+
+    faces = np.vstack((ds.corners[:, [0, 1, 2]], ds.corners[:, [2, 3, 0]]))
+    return tri.Triangulation(pu, pv, faces)
 
 
 def _resolve_field(ds, var: str | None) -> str:

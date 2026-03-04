@@ -22,7 +22,7 @@ Recommended practical structure (using the folders that already mostly exist):
 - `physics/`: domain-specific diagnostics (`mass_loss`, `torque`, `pressure`, orbit diagnostics)
 - `visualisation/`: plotting primitives only
 - `pipelines/`: thin per-file workflows and CLI-facing glue
-- top-level modules (`smart_ds.py`, `utils.py`, `constants.py`-style modules): shared access/utilities
+- top-level modules (`smart_ds.py`, `constants.py`-style modules): shared access/utilities
 
 Recommended dependency direction:
 
@@ -110,9 +110,8 @@ Coordinate/vector naming note:
 - `starwinds_analysis/param_in.py` — **Reviewed**. Nearby `PARAM.in` lookup + stellar parameter parsing are in place; the `_ensure_component(...)` helper has been removed.
 - `starwinds_analysis/recipes/__init__.py` — **Reviewed**. Recipe exports; no bad-practice hit found in this pass.
 - `starwinds_analysis/recipes/batsrus.py` — **Reviewed**. griblet recipe definitions (preferred place for derived quantity paths).
-- `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet/local spherical quantity recipes (preferred place for coordinate transforms/components).
-- `starwinds_analysis/smart_ds.py` — **Debt**. Still carries `resolve` naming ambiguity and an incomplete unit/centering-aware quantity request path. Code TODO: existing TODOs.
-- `starwinds_analysis/utils.py` — **Reviewed**. General small helpers; no clear current bad-practice hit recorded in this pass.
+- `starwinds_analysis/recipes/spherical.py` — **Reviewed**. griblet spherical quantity recipes (preferred place for coordinate transforms/components).
+- `starwinds_analysis/smart_ds.py` — **Debt**. Core wrapper is now raw-fields plus graph-backed derived fields only; remaining debt is mainly incomplete unit/centering-aware quantity requests. Code TODO: existing TODOs.
 - `starwinds_analysis/visualisation/histograms.py` — **Reviewed**. Visualisation layer; plotting functions belong here more than in analysis/physics. Some quantity defaults exist but no code TODO added in this pass.
 - `starwinds_analysis/vtk_utils.py` — **Reviewed**. Optional 3D visualisation bridge (separate integration layer); no additional debt marker added in this pass.
 

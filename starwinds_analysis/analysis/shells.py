@@ -12,9 +12,20 @@ import numpy as np
 
 from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.utils import field_unit_from_brackets
 
 log = logging.getLogger(__name__)
+
+
+def field_unit_from_brackets(name: str) -> str | None:
+    """
+    Extract the unit token from a bracketed field name like `X [R]`.
+    """
+    text = str(name)
+    i = text.rfind("[")
+    j = text.rfind("]")
+    if i == -1 or j == -1 or j <= i:
+        return None
+    return text[i + 1 : j].strip() or None
 
 def _resample_shell_points(
     smart_ds,

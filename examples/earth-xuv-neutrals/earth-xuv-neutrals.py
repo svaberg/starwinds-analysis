@@ -71,9 +71,23 @@ output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
 
 from starwinds_readplt.dataset import Dataset
-from starwinds_analysis.utils import auto_coords, triangles, extract_index, sort_key
 from starwinds_analysis.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
-from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
+from starwinds_analysis.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
+
+
+def extract_index(p):
+    m = re.search(r"_n(\d+)(?:\D|$)", p.name)
+    return int(m.group(1)) if m else -1
+
+
+def sort_key(p):
+    m = re.search(r"_n(\d+)(?:\D|$)", p.name)
+    if not m:
+        return (0, -1)
+    num_str = m.group(1)
+    num = extract_index(p)
+    trailing_zeros = len(num_str) - len(num_str.rstrip("0"))
+    return (-trailing_zeros, num)
 
 files = list(pattern.parent.glob(pattern.name))
 
