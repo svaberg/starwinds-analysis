@@ -14,30 +14,27 @@ from starwinds_analysis.analysis.orbits import periodic_curve_velocity
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
-from starwinds_analysis.physics.torque import local_torque_estimates
 
 log = logging.getLogger(__name__)
 
 
 def mass_loss_from_curve(curve):
     """Compute local mass-loss estimates along a sampled curve."""
-    body_radius_m = float(curve("star_radius [m]"))
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    r_m = np.array(curve("R [sample]")) * body_radius_m
-    return 4.0 * np.pi * np.square(r_m) * mass_flux
+    radius_m = np.array(curve("R [sample]")) * float(curve("star_radius [m]"))
+    shell_area = 4.0 * np.pi * np.square(radius_m)
+    return shell_area * mass_flux
 
 
 def torque_from_curve(curve):
     """Compute local magnetic, dynamic, and total torque estimates along a curve."""
-    body_radius_m = float(curve("star_radius [m]"))
-    r_m = np.array(curve("R [sample]")) * body_radius_m
+    radius_m = np.array(curve("R [sample]")) * float(curve("star_radius [m]"))
+    shell_area = 4.0 * np.pi * np.square(radius_m)
     magnetic_torque_density = np.array(curve("magnetic_torque_density [N/m]"))
     dynamic_torque_density = np.array(curve("dynamic_torque_density [N/m]"))
-    return local_torque_estimates(
-        r_m,
-        magnetic_torque_density,
-        dynamic_torque_density,
-    )
+    magnetic = shell_area * magnetic_torque_density
+    dynamic = shell_area * dynamic_torque_density
+    return magnetic, dynamic, magnetic + dynamic
 
 
 def pressure_components_from_curve(
