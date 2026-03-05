@@ -177,6 +177,23 @@ Preferred pattern:
 - For anything richer, build points externally (for example with KeplerEllipse or user code), then call `sample_curve(...)` or `sample_trajectory(...)`.
 - Keep library responsibility focused on resampling and physics over provided geometry, not on orbital mechanics tooling.
 
+## Resampling Workflow Rule: Keep The Three-Step Pattern
+
+Rule:
+
+- Resampling workflows should follow this sequence:
+  - create new target points
+  - resample a parent `SmartDs` onto those points
+  - append extra fields to the resampled `SmartDs` only when needed
+- Do not hide this workflow behind quantity-specific wrappers.
+- Do not compute and return ad hoc dict payloads where a resampled `SmartDs` is the right abstraction.
+
+Preferred pattern:
+
+- point generation in analysis/algorithm helpers
+- one explicit `smart_ds.resample(...)` call
+- one explicit `append_fields(...)` call for context fields (for example `R/polar/azimuth`, `t`, weights)
+
 ## 0. Library Purity (Hard Boundary)
 
 Rule:

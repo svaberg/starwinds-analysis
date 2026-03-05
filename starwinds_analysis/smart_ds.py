@@ -397,6 +397,12 @@ class SmartDs:
     ) -> "SmartDs":
         """
         Generic resampling entry point returning a new SmartDs (flat or structured targets).
+
+        Expected workflow:
+        1. Create target points.
+        2. Resample this SmartDs onto those points.
+        3. Append any extra context fields to the returned SmartDs if needed.
+
         Used by: `SmartDs` users and internal methods
         """
         return resample_smart_ds(
