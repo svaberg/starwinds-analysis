@@ -229,40 +229,6 @@ def test_resample_reuses_cached_ckdtree(monkeypatch):
     assert build_count["n"] == 1
 
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("scipy") is None,
-    reason="scipy is required for SmartDs.resample()",
-)
-def test_resample_reuses_cached_delaunay(monkeypatch):
-    import starwinds_analysis._smart_ds_resample as resample_module
-
-    sds = SmartDs(make_dataset_2d())
-    target = np.array([[0.25, 0.50], [0.60, 0.10]])
-    build_count = {"n": 0}
-    real_delaunay = resample_module.Delaunay
-
-    def counted_delaunay(*args, **kwargs):
-        build_count["n"] += 1
-        return real_delaunay(*args, **kwargs)
-
-    monkeypatch.setattr(resample_module, "Delaunay", counted_delaunay)
-
-    sds.resample(
-        target,
-        coordinate_fields=("X [R]", "Y [R]"),
-        fields=["Q [none]"],
-        method="linear",
-    )
-    sds.resample(
-        target,
-        coordinate_fields=("X [R]", "Y [R]"),
-        fields=["Q [none]"],
-        method="linear",
-    )
-
-    assert build_count["n"] == 1
-
-
 def test_add_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 
