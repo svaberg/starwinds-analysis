@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 def data_dir() -> Path:
     """
     Return the repository's `sample_data` directory.
     Used by: `test/test_sample_data_helpers.py`, `starwinds_analysis/data/samples.py`
     """
-    return Path(__file__).resolve().parents[2] / "sample_data"
+    path = Path(__file__).resolve().parents[2] / "sample_data"
+    log.debug("data_dir resolved to %s", path)
+    return path
 
 def data_file(name: str, *, echo: bool = False) -> Path:
     """
@@ -23,9 +28,11 @@ def data_file(name: str, *, echo: bool = False) -> Path:
     if path.exists():
         if echo:
             print(f"Using: {path}")
+        log.info("data_file resolved %s", path)
         return path
 
     available = sorted(p.name for p in data_dir().glob("*.plt"))
+    log.error("data_file failed for %s", name)
     raise FileNotFoundError(
         f"Sample file not found: {name}. Available .plt files: {', '.join(available)}"
     )
