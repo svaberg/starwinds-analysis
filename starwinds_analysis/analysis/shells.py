@@ -279,48 +279,6 @@ def sample_spherical_shells_fibonacci(
     )
     return shell_ds
 
-def sample_spherical_shells_by_strategy(
-    smart_ds,
-    radii,
-    *,
-    fields=None,
-    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
-    n_polar: int = 24,
-    n_azimuth: int = 48,
-    sampling: str = "fibonacci",
-    fibonacci_randomize: bool = False,
-    method: str = "nearest",
-    fill_value: float = np.nan,
-    length_unit_to_m: float | None = None,
-):
-    """
-    Sample spherical shells using either the structured grid or Fibonacci sampler.
-    Used by: `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`,
-      `starwinds_analysis/physics/torque.py`
-    """
-    common_kwargs = dict(
-        smart_ds=smart_ds,
-        radii=radii,
-        fields=fields,
-        coordinate_fields=coordinate_fields,
-        method=method,
-        fill_value=fill_value,
-        length_unit_to_m=length_unit_to_m,
-    )
-    if sampling == "fibonacci":
-        return sample_spherical_shells_fibonacci(
-            **common_kwargs,
-            n_points=max(8, int(n_polar) * int(n_azimuth)),
-            randomize=fibonacci_randomize,
-        )
-    if sampling == "grid":
-        return sample_spherical_shells(
-            **common_kwargs,
-            n_polar=n_polar,
-            n_azimuth=n_azimuth,
-        )
-    raise ValueError("sampling must be 'fibonacci' or 'grid'")
-
 def sample_shell_field(
     smart_ds,
     radii,
@@ -345,19 +303,33 @@ def sample_shell_field(
     else:
         body_radius = float(body_radius)
 
-    shells = sample_spherical_shells_by_strategy(
-        smart_ds,
-        radii,
-        fields=tuple(dict.fromkeys(source_fields)),
-        coordinate_fields=coordinate_fields,
-        n_polar=n_polar,
-        n_azimuth=n_azimuth,
-        sampling=sampling,
-        fibonacci_randomize=fibonacci_randomize,
-        method=method,
-        fill_value=fill_value,
-        length_unit_to_m=body_radius,
-    )
+    fields = tuple(dict.fromkeys(source_fields))
+    if sampling == "fibonacci":
+        shells = sample_spherical_shells_fibonacci(
+            smart_ds,
+            radii,
+            fields=fields,
+            coordinate_fields=coordinate_fields,
+            n_points=max(8, int(n_polar) * int(n_azimuth)),
+            randomize=fibonacci_randomize,
+            method=method,
+            fill_value=fill_value,
+            length_unit_to_m=body_radius,
+        )
+    elif sampling == "grid":
+        shells = sample_spherical_shells(
+            smart_ds,
+            radii,
+            fields=fields,
+            coordinate_fields=coordinate_fields,
+            n_polar=n_polar,
+            n_azimuth=n_azimuth,
+            method=method,
+            fill_value=fill_value,
+            length_unit_to_m=body_radius,
+        )
+    else:
+        raise ValueError("sampling must be 'fibonacci' or 'grid'")
     values = np.array(shells(shell_field))
     area = np.array(shells("dA [m^2]"))
     r_field = np.array(shells("R [R]"))

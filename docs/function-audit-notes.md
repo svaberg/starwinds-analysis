@@ -49,7 +49,6 @@ Status note:
 - `infer_cartesian_axis_radii`: Infer available shell radii from points lying on a Cartesian axis. Used in `test/test_shell_analysis.py`.
 - `sample_spherical_shells`: Resample fields onto spherical shell cell centers. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+1 more).
 - `sample_spherical_shells_fibonacci`: Resample fields onto equal-area Fibonacci sphere points on each shell. Used in `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`, `starwinds_analysis/analysis/shells.py`.
-- `sample_spherical_shells_by_strategy`: Sample spherical shells using either the structured grid or Fibonacci sampler. Used in `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py`.
 - `integrate_shell_scalar`: Integrate scalar values over shell surfaces with NaN-safe area weighting. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `examples/smartds_inner_boundary_magnetic_zdi.ipynb`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more).
 - `shell_profile_radius_height`: Build standard radius/height profile arrays from a shell SmartDs. Used in `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py`.
 
