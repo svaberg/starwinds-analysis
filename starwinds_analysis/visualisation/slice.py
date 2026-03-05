@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import tri
@@ -15,6 +17,8 @@ from matplotlib.colors import SymLogNorm
 from matplotlib.ticker import FixedLocator
 from matplotlib.ticker import NullLocator
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+log = logging.getLogger(__name__)
 
 
 def auto_coords(ds, names=None):
@@ -36,6 +40,7 @@ def auto_coords(ds, names=None):
 
     spread = [np.nanmax(np.abs(np.array(ds.variable(name)))) for name in names]
     i, j = np.argsort(spread)[-2:]
+    log.debug("auto_coords fallback selected %s and %s", names[i], names[j])
     return names[i], names[j]
 
 
@@ -52,6 +57,7 @@ def triangles(ds, uname=None, vname=None):
     pv = ds.variable(vname)
 
     if ds.corners.shape[1] != 4:
+        log.error("triangles failed: expected 4 corners per element, got %d", ds.corners.shape[1])
         raise ValueError("Can only triangulate a 2D dataset with 4 corners per element")
 
     faces = np.vstack((ds.corners[:, [0, 1, 2]], ds.corners[:, [2, 3, 0]]))
@@ -68,6 +74,7 @@ def default_slice_field(ds, var: str | None) -> str:
     for candidate in ("Rho [kg/m^3]", "Rho [g/cm^3]", "Rho [amu/cm^3]"):
         if ds.has_field(candidate):
             return candidate
+    log.warning("default_slice_field falling back to first variable")
     return str(ds.variables[0])
 
 
@@ -140,6 +147,7 @@ def plot_xz_slice_tripcolor_with_marginals(ds, *, var: str | None = None, **kwar
 
     cbar = fig.colorbar(image, cax=ax_cbar, label=field)
     _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
+    log.info("plot_xz_slice_tripcolor_with_marginals done field=%s", field)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -178,6 +186,7 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(ds, *, var: str | None = None, 
 
     cbar = fig.colorbar(image, cax=ax_cbar, label=field)
     _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
+    log.info("plot_xz_slice_tripcolor_with_cross_quantiles done field=%s", field)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -216,6 +225,7 @@ def plot_xz_slice_with_marginal_points(ds, *, var: str | None = None, **kwargs):
 
     cbar = fig.colorbar(image, cax=ax_cbar, label=field)
     _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
+    log.info("plot_xz_slice_with_marginal_points done field=%s", field)
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -259,4 +269,5 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
 
     cbar = fig.colorbar(image, cax=ax_cbar, label=field)
     _match_field_ticks_to_colorbar(ax_left, ax_bottom, cbar)
+    log.info("plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords done field=%s", field)
     return fig, (ax_main, ax_left, ax_bottom), cbar

@@ -5,8 +5,12 @@
 # It should not define physics quantities or perform heavy analysis orchestration.
 
 
+import logging
+
 import numpy as np
 from starwinds_readplt.dataset import Dataset
+
+log = logging.getLogger(__name__)
 
 
 def plot_cumulative_hists(
@@ -30,12 +34,14 @@ def plot_cumulative_hists(
     """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
+        log.error("plot_cumulative_hists failed: axes=%d fields=%d", axes.size, len(fields))
         raise ValueError("Not enough axes for number of fields")
 
     for i, (ax, field) in enumerate(zip(axes, fields)):
         x = np.array(ds(field)).ravel()
         x = x[np.isfinite(x)]
         if x.size == 0:
+            log.warning("plot_cumulative_hists skipped field '%s' (no finite values)", field)
             continue
 
         if range is None:
@@ -59,6 +65,7 @@ def plot_cumulative_hists(
         ax.set_xlabel(field)
         if i == 0:
             ax.set_ylabel(ylabel)
+    log.info("plot_cumulative_hists done fields=%d", len(fields))
 
 
 
@@ -83,6 +90,7 @@ def plot_vs_radius(
     """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
+        log.error("plot_vs_radius failed: axes=%d fields=%d", axes.size, len(fields))
         raise ValueError("Not enough axes for number of fields")
 
     X = np.array(ds("X [R]")).ravel()
@@ -100,10 +108,8 @@ def plot_vs_radius(
         ax.scatter(r[mask], f[mask], s=s, color=color, alpha=alpha)
         ax.set_title(field)
         ax.set_xlabel("r [R]")
+    log.info("plot_vs_radius done fields=%d", len(fields))
 
-
-
-import numpy as np
 
 
 def plot_binned_vs_radius(
@@ -128,6 +134,7 @@ def plot_binned_vs_radius(
     """
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
+        log.error("plot_binned_vs_radius failed: axes=%d fields=%d", axes.size, len(fields))
         raise ValueError("Not enough axes for number of fields")
 
     X = np.array(ds("X [R]")).ravel()
@@ -139,6 +146,7 @@ def plot_binned_vs_radius(
     r = r[mask]
 
     if r.size == 0:
+        log.warning("plot_binned_vs_radius skipped: no finite radius values")
         return
 
     if range is None:
@@ -177,11 +185,13 @@ def plot_binned_vs_radius(
                 if vals.size > 0:
                     y[b] = np.median(vals)
         else:
+            log.error("plot_binned_vs_radius failed: statistic=%s", statistic)
             raise ValueError("statistic must be 'mean', 'median', or 'sum'")
 
         ax.plot(centers, y, color=color)
         ax.set_title(field)
         ax.set_xlabel("r [R]")
+    log.info("plot_binned_vs_radius done fields=%d statistic=%s", len(fields), statistic)
 
 
 def plot_radial_hist2d(
@@ -209,6 +219,7 @@ def plot_radial_hist2d(
 
     axes = np.array(axes).ravel()
     if axes.size < len(fields):
+        log.error("plot_radial_hist2d failed: axes=%d fields=%d", axes.size, len(fields))
         raise ValueError("Not enough axes for number of fields")
 
     X = np.array(ds("X [R]")).ravel()
@@ -218,6 +229,7 @@ def plot_radial_hist2d(
     rmask = np.isfinite(r)
     r = r[rmask]
     if r.size == 0:
+        log.warning("plot_radial_hist2d skipped: no finite radius values")
         return
 
     if radius_range is None:
@@ -276,6 +288,7 @@ def plot_radial_hist2d(
             with np.errstate(invalid="ignore", divide="ignore"):
                 H = np.divide(H, colsum, out=np.zeros_like(H), where=colsum > 0)
         elif normalize not in (None, "count"):
+            log.error("plot_radial_hist2d failed: normalize=%s", normalize)
             raise ValueError("normalize must be None, 'count', or 'per_radius'")
 
         plot_H = H.T
@@ -289,3 +302,4 @@ def plot_radial_hist2d(
         ax.set_xlabel("r [R]")
         ax.set_ylabel(field)
         ax.figure.colorbar(mesh, ax=ax, pad=0.01)
+    log.info("plot_radial_hist2d done fields=%d", len(fields))

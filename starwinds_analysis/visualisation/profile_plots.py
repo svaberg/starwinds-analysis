@@ -10,9 +10,12 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 SHELL_HEIGHT_XLABEL = "Height over surface [R]"
+log = logging.getLogger(__name__)
 
 def shell_profile_height(profile) -> np.ndarray:
     """
@@ -24,6 +27,7 @@ def shell_profile_height(profile) -> np.ndarray:
         return np.array(profile["height [R]"])
     if "radius [R]" in profile:
         return np.array(profile["radius [R]"]) - 1.0
+    log.error("shell_profile_height failed: missing height/radius keys")
     raise KeyError("Profile must contain 'height [R]' or 'radius [R]'")
 
 def plot_shell_height_series(
@@ -42,10 +46,13 @@ def plot_shell_height_series(
     """
     x = shell_profile_height(profile)
     y = np.array(profile[y_key])
+    if x.shape != y.shape:
+        log.error("plot_shell_height_series failed: x shape=%s y shape=%s key=%s", x.shape, y.shape, y_key)
+        raise ValueError("profile x and y arrays must have matching shapes")
     ax.plot(x, y, ".-", color=color, label=label)
     if show_negative:
         ax.plot(x, -y, ".--", color=color, fillstyle="none")
     ax.set_xlabel(SHELL_HEIGHT_XLABEL)
     ax.set_ylabel(ylabel)
+    log.info("plot_shell_height_series done key=%s n=%d", y_key, y.size)
     return ax
-
