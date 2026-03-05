@@ -178,7 +178,7 @@ def sample_curve(
     points = np.array(points)
     requested_fields = tuple(dict.fromkeys(fields))
     base_fields = smart_ds.base_fields_for_resample(requested_fields)
-    sampled = smart_ds.resample(
+    sampled_curve = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
         fields=base_fields,
@@ -186,7 +186,7 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    return sampled
+    return sampled_curve
 
 def sample_trajectory(
     smart_ds,
@@ -203,7 +203,8 @@ def sample_trajectory(
     Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V`.
     The returned SmartDs exposes `V_xyz` via graph recipes when `velocity_xyz` is provided.
     """
-    curve = sample_curve(
+    points = np.array(points)
+    sampled_curve = sample_curve(
         smart_ds,
         points,
         fields=fields,
@@ -212,23 +213,24 @@ def sample_trajectory(
         fill_value=fill_value,
     )
     time = np.array(time)
-    if time.ndim != 1 or time.shape[0] != curve.points.shape[0]:
+    if time.ndim != 1 or time.shape[0] != sampled_curve.points.shape[0]:
         raise ValueError("time must have shape (n_points,)")
-    extra_fields = {"t [s]": time}
-    if velocity_xyz is not None:
+    context_fields = {"t [s]": time}
+    has_velocity = velocity_xyz is not None
+    if has_velocity:
         velocity = np.array(velocity_xyz)
-        if velocity.shape != (curve.points.shape[0], 3):
+        if velocity.shape != (sampled_curve.points.shape[0], 3):
             raise ValueError("velocity_xyz must have shape (n_points, 3)")
-        extra_fields["V_x [m/s]"] = velocity[:, 0]
-        extra_fields["V_y [m/s]"] = velocity[:, 1]
-        extra_fields["V_z [m/s]"] = velocity[:, 2]
-    curve = curve.append_fields(extra_fields, zone_suffix="trajectory")
-    if velocity_xyz is not None:
-        curve.set_computation_graph(
-            build_griblet_vector_cartesian_graph(curve.variables),
+        context_fields["V_x [m/s]"] = velocity[:, 0]
+        context_fields["V_y [m/s]"] = velocity[:, 1]
+        context_fields["V_z [m/s]"] = velocity[:, 2]
+    sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
+    if has_velocity:
+        sampled_curve.set_computation_graph(
+            build_griblet_vector_cartesian_graph(sampled_curve.variables),
             merge=True,
         )
-    return curve
+    return sampled_curve
 
 def sample_elliptic_orbit(
     smart_ds,
@@ -251,7 +253,7 @@ def sample_elliptic_orbit(
     The circular case is `eccentricity=0`.
     Used by: `starwinds_analysis/physics/curve.py`
     """
-    info = elliptic_orbit_points(
+    orbit_info = elliptic_orbit_points(
         semi_major_axis,
         eccentricity=eccentricity,
         n_points=n_points,
@@ -262,27 +264,28 @@ def sample_elliptic_orbit(
         sample=sample,
         return_info=True,
     )
-    sampled = sample_curve(
+    sampled_curve = sample_curve(
         smart_ds,
-        info["points"],
+        orbit_info["points"],
         fields=fields,
         coordinate_fields=coordinate_fields,
         method=method,
         fill_value=fill_value,
     )
-    sampled = sampled.append_fields(
-        {
-            "phase [turns]": info["phase [turns]"],
-            "time_weight [none]": info["time_weight [none]"],
-            "true_anomaly [rad]": info["true_anomaly [rad]"],
-            "mean_anomaly [rad]": info["mean_anomaly [rad]"],
-            "eccentric_anomaly [rad]": info["eccentric_anomaly [rad]"],
-        },
+    context_fields = {
+        "phase [turns]": orbit_info["phase [turns]"],
+        "time_weight [none]": orbit_info["time_weight [none]"],
+        "true_anomaly [rad]": orbit_info["true_anomaly [rad]"],
+        "mean_anomaly [rad]": orbit_info["mean_anomaly [rad]"],
+        "eccentric_anomaly [rad]": orbit_info["eccentric_anomaly [rad]"],
+    }
+    sampled_curve = sampled_curve.append_fields(
+        context_fields,
         zone_suffix="elliptic orbit",
     )
-    sampled.raw.aux["orbit_kind"] = "elliptic"
-    sampled.raw.aux["orbit_plane"] = plane
-    sampled.raw.aux["orbit_sample_parameter"] = sample
-    sampled.raw.aux["orbit_semi_major_axis_R"] = float(semi_major_axis)
-    sampled.raw.aux["orbit_eccentricity"] = float(eccentricity)
-    return sampled
+    sampled_curve.raw.aux["orbit_kind"] = "elliptic"
+    sampled_curve.raw.aux["orbit_plane"] = plane
+    sampled_curve.raw.aux["orbit_sample_parameter"] = sample
+    sampled_curve.raw.aux["orbit_semi_major_axis_R"] = float(semi_major_axis)
+    sampled_curve.raw.aux["orbit_eccentricity"] = float(eccentricity)
+    return sampled_curve
