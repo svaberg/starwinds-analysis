@@ -26,6 +26,13 @@ from starwinds_analysis.physics.torque import surface_torque_density_terms
 
 log = logging.getLogger(__name__)
 
+
+# =============================================================================
+# SECTION: SURFACE GEOMETRY + SURFACE REDUCTION PRIMITIVES
+# =============================================================================
+# These helpers are geometry/math building blocks reused by the diagnostics below.
+# They do not touch SmartDs internals except through arrays passed by the caller.
+
 def surface_of_revolution_from_trajectory(points, *, n_longitudes: int = 199):
     """Surface of revolution around the z-axis from explicit trajectory points."""
     pts = np.array(points)
@@ -103,6 +110,12 @@ def phase_line_integrals(values_2d, area_2d):
     integ = np.sum(v * a, axis=1)
     total_area = np.sum(a, axis=1)
     return integ, total_area / total_area
+
+
+# =============================================================================
+# SECTION: SURFACE SAMPLING ORCHESTRATION
+# =============================================================================
+# This is the SmartDs-facing workflow that builds a surface and resamples fields.
 
 def sample_surface_revolution(
     smart_ds,
@@ -196,6 +209,11 @@ def sample_surface_revolution(
     return sampled_surface
 
 
+# =============================================================================
+# SECTION: PRESSURE DIAGNOSTICS ON A SAMPLED SURFACE
+# =============================================================================
+# These functions consume sampled SmartDs fields and produce pressure analytics.
+
 def pressure_components_on_surface(
     sampled,
     *,
@@ -287,6 +305,11 @@ def pressure_components_on_surface(
     log.info("pressure_components_on_surface done")
     return out
 
+
+# =============================================================================
+# SECTION: TORQUE DIAGNOSTICS ON A SAMPLED SURFACE
+# =============================================================================
+# These functions consume sampled SmartDs fields and produce torque analytics.
 
 def torque_components_on_surface(
     sampled,
