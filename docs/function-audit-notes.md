@@ -43,7 +43,7 @@ Status note:
 
 ## `starwinds_analysis/analysis/shells.py`
 - `_resample_shell_points`: Resample requested fields onto explicit shell points and return a shell SmartDs. Used in `starwinds_analysis/analysis/shells.py`.
-- `_field_unit_from_brackets`: Extract the unit substring from a bracketed field name like `X [R]`. Used in `starwinds_analysis/analysis/shells.py`.
+- `unit_from_brackets`: Extract the unit substring from a bracketed field name like `X [R]`. Used in `starwinds_analysis/analysis/shells.py`.
 - `_append_fields_to_smart_ds`: Attach derived arrays (free coords/areas/etc.) to a resampled shell SmartDs. Used in `starwinds_analysis/analysis/shells.py`.
 - `infer_body_radius_m`: Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI. Used in `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py` (+1 more).
 - `infer_cartesian_axis_radii`: Infer available shell radii from points lying on a Cartesian axis. Used in `test/test_shell_analysis.py`.
