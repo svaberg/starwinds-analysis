@@ -173,6 +173,28 @@ def test_resample_linear_interpolates_inside_hull():
     np.testing.assert_allclose(out.variable("Q [none]"), [0.75, 0.70], rtol=0, atol=1e-12)
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("scipy") is None,
+    reason="scipy is required for SmartDs.resample()",
+)
+def test_resample_nearest_propagates_nan_values():
+    dataset = make_dataset_2d()
+    dataset.points[3, 2] = np.nan
+    sds = SmartDs(dataset)
+    target = np.array([[1.0, 1.0], [0.0, 0.0]])
+
+    out = sds.resample(
+        target,
+        coordinate_fields=("X [R]", "Y [R]"),
+        fields=["Q [none]"],
+        method="nearest",
+    )
+
+    q = np.array(out.variable("Q [none]"))
+    assert np.isnan(q[0])
+    assert q[1] == 0.0
+
+
 def test_add_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 

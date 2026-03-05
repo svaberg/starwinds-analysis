@@ -11,7 +11,6 @@ from copy import deepcopy
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
-from scipy.interpolate import NearestNDInterpolator
 from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
@@ -94,36 +93,20 @@ def resample_smart_ds(
                 f"length {source_coords.shape[0]}"
             )
         values_valid = values[coord_mask]
-        finite_values_valid = np.isfinite(values_valid)
-        if not np.any(finite_values_valid):
-            continue
 
         if method == "nearest":
-            if np.all(finite_values_valid):
-                if nearest_indices is None:
-                    nearest_tree = cKDTree(source_coords_valid)
-                    nearest_indices = nearest_tree.query(flat_sample_points)[1]
-                out = values_valid[nearest_indices]
-            else:
-                valid = coord_mask & np.isfinite(values)
-                interpolator = NearestNDInterpolator(source_coords[valid], values[valid])
-                out = interpolator(flat_sample_points)
+            if nearest_indices is None:
+                nearest_tree = cKDTree(source_coords_valid)
+                nearest_indices = nearest_tree.query(flat_sample_points)[1]
+            out = values_valid[nearest_indices]
         elif method == "linear":
-            if np.all(finite_values_valid):
-                if linear_triangulation is None:
-                    linear_triangulation = Delaunay(source_coords_valid)
-                interpolator = LinearNDInterpolator(
-                    linear_triangulation,
-                    values_valid,
-                    fill_value=fill_value,
-                )
-            else:
-                valid = coord_mask & np.isfinite(values)
-                interpolator = LinearNDInterpolator(
-                    source_coords[valid],
-                    values[valid],
-                    fill_value=fill_value,
-                )
+            if linear_triangulation is None:
+                linear_triangulation = Delaunay(source_coords_valid)
+            interpolator = LinearNDInterpolator(
+                linear_triangulation,
+                values_valid,
+                fill_value=fill_value,
+            )
             out = interpolator(flat_sample_points)
         else:
             raise ValueError("method must be 'nearest' or 'linear'")
