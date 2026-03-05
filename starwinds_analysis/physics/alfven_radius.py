@@ -52,10 +52,7 @@ def alfven_radius_map(
             r1 = r_col[i + 1]
             m0 = m_col[i]
             m1 = m_col[i + 1]
-            if m1 == m0:
-                out[col] = 0.5 * (r0 + r1)
-            else:
-                out[col] = r0 + (target - m0) * (r1 - r0) / (m1 - m0)
+            out[col] = r0 + (target - m0) * (r1 - r0) / (m1 - m0)
 
     return out.reshape(radius.shape[1:])
 
@@ -70,14 +67,28 @@ def projected_solid_angle_weights(
     Compute projected angular weights dOmega = dA / R^2 from shell geometry.
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
-    area = np.array(shell_ds(area_field))[0]
-    radius = np.array(shell_ds(radius_field))[0]
+    area = np.array(shell_ds(area_field))
+    radius = np.array(shell_ds(radius_field))
+    if area.shape != radius.shape:
+        raise ValueError("area and radius fields must have the same shape")
+    if area.ndim < 2:
+        raise ValueError("shell fields must include angular dimensions")
+
+    if area.ndim == 2:
+        area_angular = area
+        radius_angular = radius
+    else:
+        # Shell samplers keep one radial axis + angular axes; angular grids are shared
+        # across radii, so one radial slice is sufficient for dOmega.
+        area_angular = area[0]
+        radius_angular = radius[0]
+
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.divide(
-            area,
-            np.square(radius),
-            out=np.full_like(area, np.nan, dtype=float),
-            where=np.isfinite(area) & np.isfinite(radius) & (radius != 0),
+            area_angular,
+            np.square(radius_angular),
+            out=np.full_like(area_angular, np.nan, dtype=float),
+            where=np.isfinite(area_angular) & np.isfinite(radius_angular) & (radius_angular != 0),
         )
 
 
