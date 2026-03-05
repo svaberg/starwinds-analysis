@@ -67,19 +67,30 @@ def resample_smart_ds(
             if name not in output_variables:
                 output_variables.append(name)
 
-    source_coords = np.column_stack(
-        [np.array(smart_ds.variable(name)).ravel() for name in coordinate_fields]
-    )
-    coord_mask = np.isfinite(source_coords).all(axis=1)
-    if not np.any(coord_mask):
-        raise ValueError("No finite source coordinates available for resampling")
-    n_coords_dropped = int(coord_mask.size - np.count_nonzero(coord_mask))
-    if n_coords_dropped > 0:
-        log.warning(
-            "resample dropped %d/%d source points with non-finite coordinates",
-            n_coords_dropped,
-            coord_mask.size,
+    spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
+    if spatial_cache is None:
+        source_coords = np.column_stack(
+            [np.array(smart_ds.variable(name)).ravel() for name in coordinate_fields]
         )
+        coord_mask = np.isfinite(source_coords).all(axis=1)
+        if not np.any(coord_mask):
+            raise ValueError("No finite source coordinates available for resampling")
+        n_coords_dropped = int(coord_mask.size - np.count_nonzero(coord_mask))
+        if n_coords_dropped > 0:
+            log.warning(
+                "resample dropped %d/%d source points with non-finite coordinates",
+                n_coords_dropped,
+                coord_mask.size,
+            )
+        spatial_cache = {
+            "coord_mask": coord_mask,
+            "source_coords_valid": source_coords[coord_mask],
+            "nearest_tree": None,
+            "linear_triangulation": None,
+        }
+        smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
+    else:
+        coord_mask = spatial_cache["coord_mask"]
 
     out_points = np.full((flat_sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
     out_index = {name: i for i, name in enumerate(output_variables)}
@@ -88,19 +99,17 @@ def resample_smart_ds(
         if coord_name in out_index:
             out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
-    source_coords_valid = source_coords[coord_mask]
     nearest_indices = None
-    linear_triangulation = None
 
     for name in output_variables:
         if name in coordinate_fields:
             continue
 
         values = np.array(smart_ds.variable(name)).ravel()
-        if values.shape[0] != source_coords.shape[0]:
+        if values.shape[0] != coord_mask.shape[0]:
             raise ValueError(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "
-                f"length {source_coords.shape[0]}"
+                f"length {coord_mask.shape[0]}"
             )
         values_valid = values[coord_mask]
         nan_in = int(np.count_nonzero(np.isnan(values_valid)))
@@ -113,13 +122,18 @@ def resample_smart_ds(
             )
 
         if method == "nearest":
+            nearest_tree = spatial_cache["nearest_tree"]
+            if nearest_tree is None:
+                nearest_tree = cKDTree(spatial_cache["source_coords_valid"])
+                spatial_cache["nearest_tree"] = nearest_tree
             if nearest_indices is None:
-                nearest_tree = cKDTree(source_coords_valid)
                 nearest_indices = nearest_tree.query(flat_sample_points)[1]
             out = values_valid[nearest_indices]
         elif method == "linear":
+            linear_triangulation = spatial_cache["linear_triangulation"]
             if linear_triangulation is None:
-                linear_triangulation = Delaunay(source_coords_valid)
+                linear_triangulation = Delaunay(spatial_cache["source_coords_valid"])
+                spatial_cache["linear_triangulation"] = linear_triangulation
             interpolator = LinearNDInterpolator(
                 linear_triangulation,
                 values_valid,

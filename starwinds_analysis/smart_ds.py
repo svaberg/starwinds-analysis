@@ -61,6 +61,7 @@ class SmartDs:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
+        self._resample_spatial_cache: dict[tuple[str, ...], dict[str, object]] = {}
         self._computation_graph = computation_graph
         self._include_aux_in_loader = bool(include_aux_in_loader)
 
@@ -303,6 +304,7 @@ class SmartDs:
         """
         if not names:
             self._cache.clear()
+            self._resample_spatial_cache.clear()
             return
         for name in names:
             self._cache.pop(name, None)
