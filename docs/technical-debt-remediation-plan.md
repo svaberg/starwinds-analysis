@@ -109,6 +109,10 @@ Goal: stop inventing per-function containers and use shared abstractions.
 - Observed case: a 1D trajectory sampled from a 3D file took about 11 minutes with linear interpolation.
 - Keep nearest-neighbour as the practical default for interactive workflows until this is fixed.
 
+5. NEXT: Permit direct resampling from one `SmartDs` onto another `SmartDs`.
+- Target workflow: `source_smart_ds.resample(target_smart_ds, ...)`.
+- Behavior: use target `SmartDs` coordinate fields as the resampling points, then return a new sampled `SmartDs`.
+
 ## Phase 5 (Plotting and Quicklook API Reduction)
 
 Goal: stop hardening quantity-specific plotting/orchestration wrappers into library APIs.

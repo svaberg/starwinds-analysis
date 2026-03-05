@@ -403,6 +403,10 @@ class SmartDs:
         2. Resample this SmartDs onto those points.
         3. Append any extra context fields to the returned SmartDs if needed.
 
+        Future implementation target:
+        - allow `sample_points` to be another `SmartDs` so one dataset can be resampled
+          directly onto another dataset's coordinate points.
+
         Used by: `SmartDs` users and internal methods
         """
         return resample_smart_ds(
