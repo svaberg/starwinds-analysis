@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 
 from starwinds_analysis.pipelines.recorder import load_state_payload
+
+log = logging.getLogger(__name__)
 
 
 def _computed_results(payload: dict[str, object]) -> dict[str, dict[str, object]]:
@@ -16,6 +19,7 @@ def _computed_results(payload: dict[str, object]) -> dict[str, dict[str, object]
     computed = payload.get("computed_results")
     if isinstance(computed, dict):
         return {str(key): value for key, value in computed.items() if isinstance(value, dict)}
+    log.warning("_computed_results: missing/invalid computed_results mapping")
     return {}
 
 
@@ -69,6 +73,7 @@ def _resolve_field_name(requested: str, available: list[str]) -> str:
         return f"{requested}s"
     if requested.endswith("s") and requested[:-1] in available:
         return requested[:-1]
+    log.error("_resolve_field_name failed for '%s'", requested)
     raise KeyError(requested)
 
 
@@ -129,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = build_parser()
     args = parser.parse_args(argv)
+    log.info("sw-pipe-results start state=%s", args.state)
 
     payload = load_state_payload(args.state)
     computed = _computed_results(payload)
@@ -136,11 +142,13 @@ def main(argv: list[str] | None = None) -> int:
     available_fields = _iter_fields(computed)
 
     if args.list_files:
+        log.info("sw-pipe-results listing files")
         for file_key in available_files:
             print(file_key)
         return 0
 
     if args.list_fields:
+        log.info("sw-pipe-results listing fields")
         for field in available_fields:
             print(field)
         return 0
@@ -161,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
                 parser.error("field '%s' not found in file '%s'" % (resolved, args.file_key))
                 return 2
             print(json.dumps(_extract_field_value(file_entry[resolved], with_source=bool(args.with_source)), indent=2))
+            log.info("sw-pipe-results field query done file=%s field=%s", args.file_key, resolved)
             return 0
 
         selected: dict[str, object] = {}
@@ -168,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
             if resolved in entry:
                 selected[file_key] = _extract_field_value(entry[resolved], with_source=bool(args.with_source))
         print(json.dumps(selected, indent=2))
+        log.info("sw-pipe-results field query done field=%s matches=%d", resolved, len(selected))
         return 0
 
     if args.file_key:
@@ -176,9 +186,11 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("file key '%s' not found" % args.file_key)
             return 2
         print(json.dumps(file_entry, indent=2))
+        log.info("sw-pipe-results dumped file=%s", args.file_key)
         return 0
 
     print(json.dumps(payload, indent=2))
+    log.info("sw-pipe-results dumped full payload")
     return 0
 
 

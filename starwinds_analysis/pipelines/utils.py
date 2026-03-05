@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 
 def slug_key(text: str) -> str:
@@ -18,7 +21,9 @@ def slug_key(text: str) -> str:
     slug = "".join(out)
     while "__" in slug:
         slug = slug.replace("__", "_")
-    return slug.strip("_") or "item"
+    out = slug.strip("_") or "item"
+    log.debug("slug_key '%s' -> '%s'", text, out)
+    return out
 
 
 def output_prefix_from_input_file(input_file) -> str:
@@ -32,4 +37,6 @@ def output_prefix_from_input_file(input_file) -> str:
         stem = path.stem
     else:
         stem = Path(stem).stem
-    return slug_key(stem)
+    out = slug_key(stem)
+    log.debug("output_prefix_from_input_file '%s' -> '%s'", input_file, out)
+    return out
