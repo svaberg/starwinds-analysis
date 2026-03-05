@@ -136,27 +136,34 @@ def sample_spherical_shells(
         azimuthal_edges = np.linspace(-math.pi, math.pi, n_azimuth + 1)
 
     ang_grid = PolarAzimuthalGrid(polar_edges, azimuthal_edges)
-    theta = np.array(ang_grid.polar_centres)
-    phi = np.array(ang_grid.azimuthal_centres)
-    area_unit_sphere = np.array(ang_grid.cell_solid_angle)
-    if theta.shape != area_unit_sphere.shape:
-        if theta.T.shape != area_unit_sphere.shape or phi.T.shape != area_unit_sphere.shape:
-            raise ValueError(
-                "Angular center arrays do not match cell-area shape "
-                f"{area_unit_sphere.shape}: theta={theta.shape}, phi={phi.shape}"
-            )
-        theta = theta.T
-        phi = phi.T
-
-    sin_theta = np.sin(theta)
-    xhat = sin_theta * np.cos(phi)
-    yhat = sin_theta * np.sin(phi)
-    zhat = np.cos(theta)
-
+    theta = np.array(ang_grid.polar_centres).T
+    phi = np.array(ang_grid.azimuthal_centres).T
     ntheta, nphi = theta.shape
-    xyz_unit = np.stack((xhat, yhat, zhat), axis=-1)  # (ntheta, nphi, 3)
-    xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]
-    sample_points = xyz
+
+    sample_points = np.stack(
+        [
+            np.transpose(
+                ang_grid.centres_cartesian(radius=float(radius)),
+                (1, 0, 2),
+            )
+            for radius in radii
+        ],
+        axis=0,
+    )
+    area = np.stack(
+        [ang_grid.cell_area(radius=float(radius)) for radius in radii],
+        axis=0,
+    )
+    if sample_points.shape != (radii.size, ntheta, nphi, 3):
+        raise ValueError(
+            "Angular center arrays do not match Cartesian center grid shape "
+            f"{sample_points.shape} for theta={theta.shape}, phi={phi.shape}"
+        )
+    if area.shape != (radii.size, ntheta, nphi):
+        raise ValueError(
+            "Angular center arrays do not match cell-area shape "
+            f"{area.shape} for theta={theta.shape}, phi={phi.shape}"
+        )
 
     resampled = resample_shell_points(
         smart_ds,
@@ -168,7 +175,6 @@ def sample_spherical_shells(
         title_suffix="shell samples (grid)",
     )
 
-    area = (radii[:, None, None] ** 2) * area_unit_sphere[None, :, :]
     if length_unit_to_m is not None:
         area = area * float(length_unit_to_m) ** 2
 
