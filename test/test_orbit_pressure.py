@@ -3,8 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.trajectories import elliptic_orbit_points
-from starwinds_analysis.analysis.trajectories import sample_elliptic_orbit
+from starwinds_analysis.analysis.trajectories import circular_orbit_points
 from starwinds_analysis.analysis.trajectories import sample_trajectory
 from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
@@ -32,7 +31,7 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    info = elliptic_orbit_points(10.0, eccentricity=0.0, n_points=96, return_info=True)
+    info = circular_orbit_points(10.0, n_points=96, return_info=True)
     time = info["phase [turns]"] * period_s
     velocity = trajectory_velocity(
         info["points"],
@@ -62,11 +61,11 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_relative_ram_pressure_from_trajectory_runs_on_elliptic_example():
+def test_relative_ram_pressure_from_trajectory_runs_on_circular_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    info = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=96, return_info=True)
+    info = circular_orbit_points(10.0, n_points=96, return_info=True)
     time = info["phase [turns]"] * period_s
     velocity = trajectory_velocity(
         info["points"],

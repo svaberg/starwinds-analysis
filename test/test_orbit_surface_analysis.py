@@ -5,7 +5,7 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.analysis.trajectories import elliptic_orbit_points
+from starwinds_analysis.analysis.trajectories import circular_orbit_points
 from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbits import orbital_period
@@ -124,7 +124,7 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_surface_revolution_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
     out = sample_surface_revolution(
         sds,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
@@ -133,7 +133,7 @@ def test_sample_surface_revolution_runs_on_example():
         time_weight=orbit["time_weight [none]"],
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
-            "eccentricity [none]": 0.2,
+            "eccentricity [none]": 0.0,
         },
         n_longitudes=32,
         method="nearest",
@@ -149,7 +149,7 @@ def test_sample_surface_revolution_runs_on_example():
 def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     time = orbit["phase [turns]"] * period_s
     velocity = trajectory_velocity(
@@ -181,7 +181,7 @@ def test_pressure_components_on_surface_runs_on_example():
         velocity_xyz=velocity,
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
-            "eccentricity [none]": 0.2,
+            "eccentricity [none]": 0.0,
         },
         n_longitudes=48,
         method="nearest",
@@ -208,7 +208,7 @@ def test_pressure_components_on_surface_runs_on_example():
 def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    orbit = elliptic_orbit_points(10.0, eccentricity=0.2, n_points=64, return_info=True)
+    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
     sampled = sample_surface_revolution(
         sds,
         fields=(
@@ -226,7 +226,7 @@ def test_torque_components_on_surface_runs_on_example():
         time_weight=orbit["time_weight [none]"],
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
-            "eccentricity [none]": 0.2,
+            "eccentricity [none]": 0.0,
         },
         n_longitudes=48,
         method="nearest",
