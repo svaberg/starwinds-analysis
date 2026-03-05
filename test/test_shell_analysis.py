@@ -10,7 +10,6 @@ from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostic
 from starwinds_analysis.analysis.shell_summary import summarize_shell_series
 from starwinds_analysis.analysis.shells import infer_cartesian_axis_radii
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.shells import sample_spherical_shells
 from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.analysis.stats import weighted_mean_std
@@ -79,16 +78,18 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    shells, mass_flux, area, radii_profile = sample_shell_field(
+    shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
-        shell_field="mass_flux [kg/m^2/s]",
-        n_polar=12,
-        n_azimuth=24,
+        fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        n_points=12 * 24,
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
+    area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     m, c = integrate_shell_scalar(mass_flux, area)
 
     assert m.shape == (4,)
@@ -138,11 +139,10 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    shells, magnetic_density, area, radii_profile = sample_shell_field(
+    shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=(
+        fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
             "U_y [m/s]",
@@ -151,11 +151,14 @@ def test_torque_profile_runs_on_example():
             "B_y [T]",
             "B_z [T]",
         ),
-        shell_field="magnetic_torque_density [N/m]",
-        n_polar=12,
-        n_azimuth=24,
+        n_points=12 * 24,
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    magnetic_density = np.array(shells("magnetic_torque_density [N/m]"))
+    area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
     mag, cov_mag = integrate_shell_scalar(magnetic_density, area)
     dyn, cov_dyn = integrate_shell_scalar(dynamic_density, area)
@@ -177,16 +180,18 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
     # B_r with signed flux from B·n, and compute unsigned/open flux.
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    shells, b_r, area, radii_profile = sample_shell_field(
+    shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
-        shell_field="B_r [T]",
-        n_polar=16,
-        n_azimuth=32,
+        fields=("B_x [T]", "B_y [T]", "B_z [T]"),
+        n_points=16 * 32,
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    b_r = np.array(shells("B_r [T]"))
+    area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     bx = np.array(shells("B_x [T]"))
     by = np.array(shells("B_y [T]"))
     bz = np.array(shells("B_z [T]"))
@@ -214,17 +219,17 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    shells, b_r, area, _ = sample_shell_field(
+    shells = sample_spherical_shells(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
-        shell_field="B_r [T]",
+        fields=("B_x [T]", "B_y [T]", "B_z [T]"),
         n_polar=16,
         n_azimuth=32,
-        sampling="grid",
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    b_r = np.array(shells("B_r [T]"))
+    area = np.array(shells("dA [m^2]"))
     with np.errstate(invalid="ignore"):
         b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
     b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
@@ -248,16 +253,18 @@ def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     energy_source = "E [J/m^3]" if sds.has_field("E [J/m^3]") else "E [erg/cm^3]"
-    _, energy_flux_density, area, radii_profile = sample_shell_field(
+    shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=(energy_source, "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
-        shell_field="energy_flux [W/m^2]",
-        n_polar=12,
-        n_azimuth=24,
+        fields=(energy_source, "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        n_points=12 * 24,
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    energy_flux_density = np.array(shells("energy_flux [W/m^2]"))
+    area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     y, c = integrate_shell_scalar(energy_flux_density, area)
     assert y.shape == (4,)
     assert np.count_nonzero(np.isfinite(y)) == 4

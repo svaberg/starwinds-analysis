@@ -8,7 +8,7 @@ from starwinds_analysis.analysis.trajectories import circular_orbit_points
 from starwinds_analysis.analysis.trajectories import sample_curve
 from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_shell_field
+from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.curve import mass_loss_from_curve
@@ -73,16 +73,18 @@ def compare_curve_mass_loss_to_shell(
     estimates = mass_loss_from_curve(curve)
     stats = summarize_samples(estimates, weights=weights)
 
-    _, shell_mass_flux, shell_area, shell_profile_radii = sample_shell_field(
+    shell_ds = sample_spherical_shells_fibonacci(
         smart_ds,
         [float(np.nanmean(radius_r))] if shell_radii is None else shell_radii,
-        source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
-        shell_field="mass_flux [kg/m^2/s]",
-        body_radius=body_radius,
-        n_polar=shell_n_polar,
-        n_azimuth=shell_n_azimuth,
+        fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        n_points=max(8, int(shell_n_polar) * int(shell_n_azimuth)),
         method=method,
+        length_unit_to_m=body_radius,
     )
+    shell_mass_flux = np.array(shell_ds("mass_flux [kg/m^2/s]"))
+    shell_area = np.array(shell_ds("dA [m^2]"))
+    shell_r = np.array(shell_ds("R [R]"))
+    shell_profile_radii = np.nanmean(shell_r.reshape(shell_r.shape[0], -1), axis=1)
     shell_values, _ = integrate_shell_scalar(shell_mass_flux, shell_area)
     if shell_radii is None:
         shell_value = float(shell_values[0])
@@ -127,10 +129,10 @@ def compare_curve_torque_to_shell(
     curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
     curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
     local_magnetic, local_dynamic, local_total = torque_from_curve(curve)
-    torque_shells, shell_magnetic_density, shell_area, shell_profile_radii = sample_shell_field(
+    torque_shells = sample_spherical_shells_fibonacci(
         smart_ds,
         [float(np.nanmean(radius_r))] if shell_radii is None else shell_radii,
-        source_fields=(
+        fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
             "U_y [m/s]",
@@ -139,12 +141,14 @@ def compare_curve_torque_to_shell(
             "B_y [T]",
             "B_z [T]",
         ),
-        shell_field="magnetic_torque_density [N/m]",
-        body_radius=body_radius,
-        n_polar=shell_n_polar,
-        n_azimuth=shell_n_azimuth,
+        n_points=max(8, int(shell_n_polar) * int(shell_n_azimuth)),
         method=method,
+        length_unit_to_m=body_radius,
     )
+    shell_magnetic_density = np.array(torque_shells("magnetic_torque_density [N/m]"))
+    shell_area = np.array(torque_shells("dA [m^2]"))
+    shell_r = np.array(torque_shells("R [R]"))
+    shell_profile_radii = np.nanmean(shell_r.reshape(shell_r.shape[0], -1), axis=1)
     shell_dynamic_density = np.array(torque_shells("dynamic_torque_density [N/m]"))
     shell_magnetic, _ = integrate_shell_scalar(shell_magnetic_density, shell_area)
     shell_dynamic, _ = integrate_shell_scalar(shell_dynamic_density, shell_area)

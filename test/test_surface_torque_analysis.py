@@ -7,7 +7,7 @@ from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
 from starwinds_analysis.constants import MU0
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_shell_field
+from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
 from starwinds_analysis.physics.torque import surface_torque_terms_on_shell_samples
@@ -84,11 +84,10 @@ def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example()
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     radii = [2.0, 4.0, 8.0, 16.0]
 
-    shells, magnetic_density, area, _ = sample_shell_field(
+    shells = sample_spherical_shells_fibonacci(
         sds,
         radii,
-        body_radius=SOLAR_RADIUS_M,
-        source_fields=(
+        fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
             "U_y [m/s]",
@@ -97,12 +96,12 @@ def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example()
             "B_y [T]",
             "B_z [T]",
         ),
-        shell_field="magnetic_torque_density [N/m]",
-        n_polar=12,
-        n_azimuth=24,
-        sampling="fibonacci",
+        n_points=12 * 24,
         method="nearest",
+        length_unit_to_m=SOLAR_RADIUS_M,
     )
+    magnetic_density = np.array(shells("magnetic_torque_density [N/m]"))
+    area = np.array(shells("dA [m^2]"))
     dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
     shell_magnetic, _ = integrate_shell_scalar(magnetic_density, area)
     shell_dynamic, _ = integrate_shell_scalar(dynamic_density, area)

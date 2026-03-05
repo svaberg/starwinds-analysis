@@ -11,7 +11,7 @@ import numpy as np
 
 from starwinds_analysis.constants import DEFAULT_QUICKLOOK_RADII_R
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_shell_field
+from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
 from starwinds_analysis.pipelines.utils import output_prefix_from_input_file
 from starwinds_analysis.smart_ds import SmartDs
 
@@ -57,15 +57,19 @@ def process_plt_file(file_path: str | Path) -> None:
         "B_z [T]",
         energy_source,
     )
-    shells, mass_flux, shell_area, shell_radii = sample_shell_field(
+    body_radius = float(smart_ds("star_radius [m]"))
+    shells = sample_spherical_shells_fibonacci(
         smart_ds,
         radii,
-        source_fields=shared_source_fields,
-        shell_field="mass_flux [kg/m^2/s]",
-        n_polar=24,
-        n_azimuth=48,
+        fields=shared_source_fields,
+        n_points=24 * 48,
         method="nearest",
+        length_unit_to_m=body_radius,
     )
+    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
+    shell_area = np.array(shells("dA [m^2]"))
+    r_field = np.array(shells("R [R]"))
+    shell_radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     log.info("Sampling shell grid once for all diagnostics complete.")
 
     # Start: compute, plot, and record wind mass loss.
