@@ -33,47 +33,6 @@ def _kepler_eccentric_anomaly(mean_anomaly_rad, eccentricity, *, max_iter: int =
             break
     return e_anom
 
-def _embed_plane_coords(x, y, *, plane: str, center=(0.0, 0.0, 0.0)):
-    """
-    Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates.
-    """
-    cx, cy, cz = map(float, center)
-    pts = np.empty((x.size, 3), dtype=float)
-    if plane == "xy":
-        pts[:, 0] = cx + x
-        pts[:, 1] = cy + y
-        pts[:, 2] = cz
-    elif plane == "xz":
-        pts[:, 0] = cx + x
-        pts[:, 1] = cy
-        pts[:, 2] = cz + y
-    elif plane == "yz":
-        pts[:, 0] = cx
-        pts[:, 1] = cy + x
-        pts[:, 2] = cz + y
-    else:
-        raise ValueError("plane must be 'xy', 'xz', or 'yz'")
-    return pts
-
-def _phase_from_weights(weights):
-    """
-    Convert periodic sample weights into cumulative phase turns.
-    """
-    w = np.array(weights)
-    if w.ndim != 1 or w.size == 0:
-        return np.array([])
-    w = np.where(np.isfinite(w) & (w >= 0), w, 0.0)
-    sw = float(np.sum(w))
-    if sw <= 0:
-        return np.arange(w.size, dtype=float) / max(1, w.size)
-    w = w / sw
-    phase = np.empty(w.size, dtype=float)
-    phase[0] = 0.0
-    if w.size > 1:
-        phase[1:] = np.cumsum(w[:-1])
-    return phase
-
-
 def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     """
     Velocity from explicit trajectory points and strictly increasing sample times.
@@ -146,7 +105,22 @@ def elliptic_orbit_points(
     s0 = math.sin(float(angle0))
     x_rot = c0 * x_plane - s0 * y_plane
     y_rot = s0 * x_plane + c0 * y_plane
-    points = _embed_plane_coords(x_rot, y_rot, plane=plane, center=center)
+    cx, cy, cz = map(float, center)
+    points = np.empty((x_rot.size, 3), dtype=float)
+    if plane == "xy":
+        points[:, 0] = cx + x_rot
+        points[:, 1] = cy + y_rot
+        points[:, 2] = cz
+    elif plane == "xz":
+        points[:, 0] = cx + x_rot
+        points[:, 1] = cy
+        points[:, 2] = cz + y_rot
+    elif plane == "yz":
+        points[:, 0] = cx
+        points[:, 1] = cy + x_rot
+        points[:, 2] = cz + y_rot
+    else:
+        raise ValueError("plane must be 'xy', 'xz', or 'yz'")
 
     radius = a * (1.0 - e * cos_e)
     true_anom = 2.0 * np.arctan2(
@@ -157,7 +131,19 @@ def elliptic_orbit_points(
     sw = np.sum(time_weight)
     if sw > 0:
         time_weight = time_weight / sw
-    phase = _phase_from_weights(time_weight)
+    if time_weight.ndim != 1 or time_weight.size == 0:
+        phase = np.array([])
+    else:
+        phase_weight = np.where(np.isfinite(time_weight) & (time_weight >= 0), time_weight, 0.0)
+        sw_phase = float(np.sum(phase_weight))
+        if sw_phase <= 0:
+            phase = np.arange(phase_weight.size, dtype=float) / max(1, phase_weight.size)
+        else:
+            phase_weight = phase_weight / sw_phase
+            phase = np.empty(phase_weight.size, dtype=float)
+            phase[0] = 0.0
+            if phase_weight.size > 1:
+                phase[1:] = np.cumsum(phase_weight[:-1])
 
     if not return_info:
         return points
