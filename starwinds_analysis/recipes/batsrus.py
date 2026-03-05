@@ -9,12 +9,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from collections.abc import Sequence
+import logging
 import griblet
 import math
 
 import numpy as np
 
 from starwinds_analysis.constants import MU0
+
+log = logging.getLogger(__name__)
 
 _AMU_KG = 1.66053906660e-27
 _DEFAULT_GAMMA = 5.0 / 3.0
@@ -54,14 +57,17 @@ def build_griblet_batsrus_graph(
       `magnetic_torque_density`, and `B_tangential`.
     Used by: `starwinds_analysis/smart_ds.py`
     """
+    log.info("build_griblet_batsrus_graph start")
     graph = griblet.ComputationGraph()
 
     vars_list = list(variable_names)
 
     if include_unit_normalization:
+        log.debug("build_griblet_batsrus_graph adding unit-normalization recipes")
         graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius=body_radius))
 
     if include_derived:
+        log.debug("build_griblet_batsrus_graph adding derived recipes")
         from starwinds_analysis.recipes.spherical import _vector_triplets
         from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
         from starwinds_analysis.recipes.spherical import build_griblet_vector_spherical_components_graph
@@ -97,6 +103,10 @@ def build_griblet_batsrus_graph(
             derived_names.update(graph.fields())
         graph.merge(build_griblet_common_derived_graph(derived_names))
 
+    if hasattr(graph, "fields"):
+        log.info("build_griblet_batsrus_graph done n_fields=%d", len(graph.fields()))
+    else:
+        log.info("build_griblet_batsrus_graph done")
     return graph
 
 def build_griblet_unit_normalization_graph(
@@ -116,6 +126,7 @@ def build_griblet_unit_normalization_graph(
     - `X [R] -> X [m]`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
+    log.info("build_griblet_unit_normalization_graph start")
     graph = griblet.ComputationGraph()
 
     for raw_name in variable_names:
@@ -156,6 +167,7 @@ def build_griblet_unit_normalization_graph(
 
         match = _UNIT_FACTORS.get(unit)
         if match is None:
+            log.debug("build_griblet_unit_normalization_graph no SI mapping for unit '%s'", unit)
             continue
 
         si_unit, factor = match
@@ -173,6 +185,7 @@ def build_griblet_unit_normalization_graph(
     # Optional coordinate scale: X/Y/Z [R] -> [m]
     body_radius = body_radius_from_inputs(aux=aux, body_radius=body_radius)
     if body_radius is not None:
+        log.info("build_griblet_unit_normalization_graph using body_radius=%g", body_radius)
         # Add XYZ [R] -> XYZ [m].
         for axis in ("X", "Y", "Z"):
             graph.add_recipe(
@@ -224,6 +237,10 @@ def build_griblet_unit_normalization_graph(
             metadata={"description": f"Parse {raw_name} from aux"},
         )
 
+    if hasattr(graph, "fields"):
+        log.info("build_griblet_unit_normalization_graph done n_fields=%d", len(graph.fields()))
+    else:
+        log.info("build_griblet_unit_normalization_graph done")
     return graph
 
 def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
@@ -243,6 +260,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
       shell-style magnetic torque density is built from those SI fields
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
+    log.info("build_griblet_common_derived_graph start")
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
 
@@ -414,6 +432,10 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )
 
+    if hasattr(graph, "fields"):
+        log.info("build_griblet_common_derived_graph done n_fields=%d", len(graph.fields()))
+    else:
+        log.info("build_griblet_common_derived_graph done")
     return graph
 
 def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
@@ -429,6 +451,7 @@ def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str
     - `B_x/B_y/B_z -> B`
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
+    log.debug("build_griblet_vector_cartesian_graph start")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
 
@@ -459,6 +482,8 @@ def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str
             cost=0.1,
             metadata={"description": f"{prefix} magnitude"},
         )
+    if hasattr(graph, "fields"):
+        log.debug("build_griblet_vector_cartesian_graph done n_fields=%d", len(graph.fields()))
     return graph
 
 def _parse_var_name(name: str):
@@ -520,6 +545,7 @@ def _safe_gamma(gamma):
     else:
         g = float(str(gamma).strip())
     if not np.isfinite(g) or g <= 0:
+        log.warning("_safe_gamma fallback to default gamma=%g from value=%r", _DEFAULT_GAMMA, gamma)
         return _DEFAULT_GAMMA
     return g
 
@@ -529,9 +555,11 @@ def body_radius_from_inputs(*, aux: Mapping[str, object] | None, body_radius: fl
     Used by: `starwinds_analysis/recipes/batsrus.py`
     """
     if body_radius is not None:
+        log.debug("body_radius_from_inputs using explicit body_radius=%g", float(body_radius))
         return float(body_radius)
 
     if aux is None:
+        log.debug("body_radius_from_inputs aux missing")
         return None
 
     for key in ("Star_radius_m", "Planet_radius_m", "RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
@@ -539,8 +567,12 @@ def body_radius_from_inputs(*, aux: Mapping[str, object] | None, body_radius: fl
             try:
                 value = aux[key]
                 if isinstance(value, (int, float, np.floating)):
+                    log.debug("body_radius_from_inputs resolved from aux key %s", key)
                     return float(value)
+                log.debug("body_radius_from_inputs resolved from aux key %s (string parse)", key)
                 return float(str(value).strip())
             except (TypeError, ValueError):
+                log.warning("body_radius_from_inputs invalid aux value for key %s", key)
                 return None
+    log.debug("body_radius_from_inputs no radius key in aux")
     return None

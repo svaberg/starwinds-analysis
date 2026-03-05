@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import logging
 
 import griblet
 import numpy as np
@@ -17,6 +18,8 @@ from starwinds_analysis.algorithms.spherical import latitude_longitude_to_polar_
 from starwinds_analysis.algorithms.spherical import polar_azimuth_to_latitude_longitude
 from starwinds_analysis.algorithms.spherical import spherical_to_cartesian_coordinates
 from starwinds_analysis.algorithms.spherical import spherical_vector_to_cartesian_components
+
+log = logging.getLogger(__name__)
 
 
 
@@ -40,6 +43,7 @@ def _vector_triplets(
         slot = by_prefix.setdefault(prefix, {"unit": unit})
         # Skip mixed-unit vectors for now.
         if slot["unit"] != unit:
+            log.warning("_vector_triplets skipped mixed-unit vector prefix '%s'", prefix)
             continue
         slot[comp] = name
 
@@ -51,6 +55,7 @@ def _vector_triplets(
         if not {"x", "y", "z"}.issubset(info):
             continue
         triplets.append((prefix, info["unit"]))
+    log.debug("_vector_triplets found %d triplets", len(triplets))
     return triplets
 
 
@@ -70,6 +75,7 @@ def build_griblet_spherical_geometry_graph(
     Used by: `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`,
       `starwinds_analysis/recipes/batsrus.py`
     """
+    log.info("build_griblet_spherical_geometry_graph start")
     x_name, y_name, z_name = coord_fields
     r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
     xyz_names = (x_name, y_name, z_name)
@@ -133,6 +139,10 @@ def build_griblet_spherical_geometry_graph(
             cost=0.25,
         )
 
+    if hasattr(graph, "fields"):
+        log.info("build_griblet_spherical_geometry_graph done n_fields=%d", len(graph.fields()))
+    else:
+        log.info("build_griblet_spherical_geometry_graph done")
     return graph
 
 
@@ -152,6 +162,7 @@ def build_griblet_vector_spherical_components_graph(
     - `B_xyz -> B_rpa`
     Used by: `starwinds_analysis/recipes/spherical.py`
     """
+    log.info("build_griblet_vector_spherical_components_graph start prefix=%s", prefix)
     x_name, y_name, z_name = coord_fields
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
@@ -174,6 +185,14 @@ def build_griblet_vector_spherical_components_graph(
         deps=list(rpa_names),
         cost=0.05,
     )
+    if hasattr(graph, "fields"):
+        log.info(
+            "build_griblet_vector_spherical_components_graph done prefix=%s n_fields=%d",
+            prefix,
+            len(graph.fields()),
+        )
+    else:
+        log.info("build_griblet_vector_spherical_components_graph done prefix=%s", prefix)
     return graph
 
 
