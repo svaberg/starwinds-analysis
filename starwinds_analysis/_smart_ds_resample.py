@@ -10,6 +10,10 @@ from __future__ import annotations
 from copy import deepcopy
 
 import numpy as np
+from scipy.interpolate import LinearNDInterpolator
+from scipy.interpolate import NearestNDInterpolator
+from scipy.spatial import Delaunay
+from scipy.spatial import cKDTree
 
 from starwinds_readplt.dataset import Dataset
 
@@ -74,17 +78,6 @@ def resample_smart_ds(
     for dim, coord_name in enumerate(coordinate_fields):
         if coord_name in out_index:
             out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
-
-    try:
-        from scipy.interpolate import LinearNDInterpolator
-        from scipy.interpolate import NearestNDInterpolator
-        from scipy.spatial import cKDTree
-        from scipy.spatial import Delaunay
-    except ImportError as e:
-        raise ImportError(
-            "Resampling requires scipy (scipy.interpolate). Install scipy to use "
-            "SmartDs.resample()."
-        ) from e
 
     source_coords_valid = source_coords[coord_mask]
     nearest_indices = None
