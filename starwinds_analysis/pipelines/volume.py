@@ -44,29 +44,44 @@ def process_plt_file(file_path: str | Path) -> None:
     radii = DEFAULT_QUICKLOOK_RADII_R
     log.info("Preparing volume dataset and figure canvas complete.")
 
-    # Start: compute, plot, and record wind mass loss.
-    log.debug("Computing wind mass loss...")
-    mass_loss_radius_ref = float("nan")
-    mass_loss_value_ref = float("nan")
-    _, mass_flux, mass_loss_area, mass_loss_radii = sample_shell_field(
+    # Start: sample shells once for all diagnostics.
+    log.debug("Sampling shell grid once for all diagnostics...")
+    energy_source = "E [J/m^3]" if smart_ds.has_field("E [J/m^3]") else "E [erg/cm^3]"
+    shared_source_fields = (
+        "Rho [kg/m^3]",
+        "U_x [m/s]",
+        "U_y [m/s]",
+        "U_z [m/s]",
+        "B_x [T]",
+        "B_y [T]",
+        "B_z [T]",
+        energy_source,
+    )
+    shells, mass_flux, shell_area, shell_radii = sample_shell_field(
         smart_ds,
         radii,
-        source_fields=("Rho [kg/m^3]", "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
+        source_fields=shared_source_fields,
         shell_field="mass_flux [kg/m^2/s]",
         n_polar=24,
         n_azimuth=48,
         method="nearest",
     )
-    mass_loss_values, mass_loss_coverage = integrate_shell_scalar(mass_flux, mass_loss_area)
-    axes[0, 0].plot(mass_loss_radii - 1.0, mass_loss_values, ".-", color="C0")
+    log.info("Sampling shell grid once for all diagnostics complete.")
+
+    # Start: compute, plot, and record wind mass loss.
+    log.debug("Computing wind mass loss...")
+    mass_loss_radius_ref = float("nan")
+    mass_loss_value_ref = float("nan")
+    mass_loss_values, mass_loss_coverage = integrate_shell_scalar(mass_flux, shell_area)
+    axes[0, 0].plot(shell_radii - 1.0, mass_loss_values, ".-", color="C0")
     axes[0, 0].set_title("Wind Mass Loss")
     axes[0, 0].set_ylabel("Mass flux [kg/s]")
     axes[0, 0].set_xlabel("Height [R]")
     axes[0, 0].grid(True, alpha=0.3)
-    add_record("radius_R %r", mass_loss_radii)
+    add_record("radius_R %r", shell_radii)
     add_record("mass_loss_kg_s %r", mass_loss_values)
     add_record("mass_loss_coverage %r", mass_loss_coverage)
-    for radius_value, mass_loss_value in zip(mass_loss_radii, mass_loss_values):
+    for radius_value, mass_loss_value in zip(shell_radii, mass_loss_values):
         if isfinite(radius_value) and isfinite(mass_loss_value):
             mass_loss_radius_ref = float(radius_value)
             mass_loss_value_ref = float(mass_loss_value)
@@ -79,29 +94,13 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing wind torque...")
     torque_radius_ref = float("nan")
     torque_value_ref = float("nan")
-    torque_shells, magnetic_density, torque_area, torque_radii = sample_shell_field(
-        smart_ds,
-        radii,
-        source_fields=(
-            "Rho [kg/m^3]",
-            "U_x [m/s]",
-            "U_y [m/s]",
-            "U_z [m/s]",
-            "B_x [T]",
-            "B_y [T]",
-            "B_z [T]",
-        ),
-        shell_field="magnetic_torque_density [N/m]",
-        n_polar=24,
-        n_azimuth=48,
-        method="nearest",
-    )
-    dynamic_density = torque_shells("dynamic_torque_density [N/m]")
-    magnetic_torque, torque_coverage_mag = integrate_shell_scalar(magnetic_density, torque_area)
-    dynamic_torque, torque_coverage_dyn = integrate_shell_scalar(dynamic_density, torque_area)
+    magnetic_density = shells("magnetic_torque_density [N/m]")
+    dynamic_density = shells("dynamic_torque_density [N/m]")
+    magnetic_torque, torque_coverage_mag = integrate_shell_scalar(magnetic_density, shell_area)
+    dynamic_torque, torque_coverage_dyn = integrate_shell_scalar(dynamic_density, shell_area)
     total_torque = magnetic_torque + dynamic_torque
     torque_coverage = np.minimum(torque_coverage_mag, torque_coverage_dyn)
-    axes[0, 1].plot(torque_radii - 1.0, total_torque, ".-", color="C1")
+    axes[0, 1].plot(shell_radii - 1.0, total_torque, ".-", color="C1")
     axes[0, 1].set_title("Wind Torque")
     axes[0, 1].set_ylabel("Torque [Nm]")
     axes[0, 1].set_xlabel("Height [R]")
@@ -110,7 +109,7 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("dynamic_torque_nm %r", dynamic_torque)
     add_record("total_torque_nm %r", total_torque)
     add_record("total_torque_coverage %r", torque_coverage)
-    for radius_value, torque_value in zip(torque_radii, total_torque):
+    for radius_value, torque_value in zip(shell_radii, total_torque):
         if isfinite(radius_value) and isfinite(torque_value):
             torque_radius_ref = float(radius_value)
             torque_value_ref = float(torque_value)
@@ -123,24 +122,16 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing open magnetic flux...")
     open_flux_radius_ref = float("nan")
     open_flux_value_ref = float("nan")
-    _, b_r, open_flux_area, open_flux_radii = sample_shell_field(
-        smart_ds,
-        radii,
-        source_fields=("B_x [T]", "B_y [T]", "B_z [T]"),
-        shell_field="B_r [T]",
-        n_polar=24,
-        n_azimuth=48,
-        method="nearest",
-    )
-    open_flux_values, open_flux_coverage = integrate_shell_scalar(np.abs(b_r), open_flux_area)
-    axes[1, 0].plot(open_flux_radii - 1.0, open_flux_values, ".-", color="C2")
+    b_r = shells("B_r [T]")
+    open_flux_values, open_flux_coverage = integrate_shell_scalar(np.abs(b_r), shell_area)
+    axes[1, 0].plot(shell_radii - 1.0, open_flux_values, ".-", color="C2")
     axes[1, 0].set_title("Open Magnetic Flux")
     axes[1, 0].set_ylabel("Open flux [Wb]")
     axes[1, 0].set_xlabel("Height [R]")
     axes[1, 0].grid(True, alpha=0.3)
     add_record("open_flux_wb %r", open_flux_values)
     add_record("open_flux_coverage %r", open_flux_coverage)
-    for radius_value, open_flux_value in zip(open_flux_radii, open_flux_values):
+    for radius_value, open_flux_value in zip(shell_radii, open_flux_values):
         if isfinite(radius_value) and isfinite(open_flux_value):
             open_flux_radius_ref = float(radius_value)
             open_flux_value_ref = float(open_flux_value)
@@ -153,25 +144,16 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing energy flux...")
     energy_flux_radius_ref = float("nan")
     energy_flux_value_ref = float("nan")
-    energy_source = "E [J/m^3]" if smart_ds.has_field("E [J/m^3]") else "E [erg/cm^3]"
-    _, energy_flux_density, energy_flux_area, energy_flux_radii = sample_shell_field(
-        smart_ds,
-        radii,
-        source_fields=(energy_source, "U_x [m/s]", "U_y [m/s]", "U_z [m/s]"),
-        shell_field="energy_flux [W/m^2]",
-        n_polar=24,
-        n_azimuth=48,
-        method="nearest",
-    )
-    energy_flux_values, energy_flux_coverage = integrate_shell_scalar(energy_flux_density, energy_flux_area)
-    axes[1, 1].plot(energy_flux_radii - 1.0, energy_flux_values, ".-", color="C3")
+    energy_flux_density = shells("energy_flux [W/m^2]")
+    energy_flux_values, energy_flux_coverage = integrate_shell_scalar(energy_flux_density, shell_area)
+    axes[1, 1].plot(shell_radii - 1.0, energy_flux_values, ".-", color="C3")
     axes[1, 1].set_title("Energy Flux")
     axes[1, 1].set_ylabel("Energy flux [W]")
     axes[1, 1].set_xlabel("Height [R]")
     axes[1, 1].grid(True, alpha=0.3)
     add_record("energy_flux_w %r", energy_flux_values)
     add_record("energy_flux_coverage %r", energy_flux_coverage)
-    for radius_value, energy_flux_value in zip(energy_flux_radii, energy_flux_values):
+    for radius_value, energy_flux_value in zip(shell_radii, energy_flux_values):
         if isfinite(radius_value) and isfinite(energy_flux_value):
             energy_flux_radius_ref = float(radius_value)
             energy_flux_value_ref = float(energy_flux_value)
