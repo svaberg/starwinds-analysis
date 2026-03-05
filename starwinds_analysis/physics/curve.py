@@ -1,8 +1,9 @@
-"""THIS FILE contains diagnostics evaluated on sampled curves and trajectories.
-
-It operates on already sampled curve `SmartDs` objects. Curve geometry belongs
-in `analysis/orbits.py`. Pressure formulas belong in `pressure.py`.
+"""Diagnostics evaluated on sampled curves and trajectories.
 """
+
+# It operates on already sampled curve `SmartDs` objects. Curve geometry belongs
+# in `analysis/orbits.py`. Pressure formulas belong in `pressure.py`.
+
 
 from __future__ import annotations
 

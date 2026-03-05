@@ -1,8 +1,9 @@
-"""THIS FILE contains the generic `sw-pipe` orchestration CLI.
-
-It discovers `.plt` files in a working directory and runs a per-file pipeline
-handler. Built-in handlers are `dummy`, `slice`, `shell`, and `volume`.
+"""Generic `sw-pipe` orchestration CLI.
 """
+
+# It discovers `.plt` files in a working directory and runs a per-file pipeline
+# handler. Built-in handlers are `dummy`, `slice`, `shell`, and `volume`.
+
 
 from __future__ import annotations
 

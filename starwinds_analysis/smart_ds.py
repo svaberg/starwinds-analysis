@@ -1,8 +1,9 @@
-"""THIS FILE contains the public SmartDs dataset wrapper API.
-
-It is the facade for raw field access, graph integration, and resampling delegation.
-It should not contain domain-specific physics formulas or plotting code.
+"""Public SmartDs dataset wrapper API.
 """
+
+# It is the facade for raw field access, graph integration, and resampling delegation.
+# It should not contain domain-specific physics formulas or plotting code.
+
 
 from __future__ import annotations
 

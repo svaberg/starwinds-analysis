@@ -1,9 +1,10 @@
-"""THIS FILE contains orbit geometry and 1D-curve sampling primitives.
-
-It provides ellipse-based orbit paths and SmartDs resampling along those paths.
-The circular case is the `eccentricity=0` case. This is analysis/sampling code
-(not local physics formulas).
+"""Orbit geometry and 1D-curve sampling primitives.
 """
+
+# It provides ellipse-based orbit paths and SmartDs resampling along those paths.
+# The circular case is the `eccentricity=0` case. This is analysis/sampling code
+# (not local physics formulas).
+
 
 from __future__ import annotations
 

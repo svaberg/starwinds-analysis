@@ -1,8 +1,9 @@
-"""THIS FILE contains the optional VTK/PyVista bridge for 3D conversion and visualization support.
-
-It converts datasets to VTK/PyVista structures and includes related unit-conversion helpers.
-Core analysis code should not depend on this file.
+"""Optional VTK/PyVista bridge for 3D conversion and visualization support.
 """
+
+# It converts datasets to VTK/PyVista structures and includes related unit-conversion helpers.
+# Core analysis code should not depend on this file.
+
 
 import pyvista as pv
 import numpy as np

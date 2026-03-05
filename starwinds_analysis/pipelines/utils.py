@@ -1,4 +1,4 @@
-"""THIS FILE contains shared lightweight helpers for pipeline modules."""
+"""Shared lightweight helpers for pipeline modules."""
 
 from __future__ import annotations
 

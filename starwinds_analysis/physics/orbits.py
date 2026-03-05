@@ -1,8 +1,9 @@
-"""THIS FILE contains Kepler orbit kinematics primitives.
-
-It defines reusable local/scalar formulas without orbit sampling workflows or
-dataset access.
+"""Kepler orbit kinematics primitives.
 """
+
+# It defines reusable local/scalar formulas without orbit sampling workflows or
+# dataset access.
+
 
 from __future__ import annotations
 

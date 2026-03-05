@@ -1,9 +1,10 @@
-"""THIS FILE contains surface-of-revolution sampling and diagnostics.
-
-It builds explicit surfaces from trajectory points and evaluates pressure/torque
-components on them. It should reuse pressure/torque core functions rather
-than redefining those quantities.
+"""Surface-of-revolution sampling and diagnostics.
 """
+
+# It builds explicit surfaces from trajectory points and evaluates pressure/torque
+# components on them. It should reuse pressure/torque core functions rather
+# than redefining those quantities.
+
 
 # TODO(debt): This file combines geometry generation, resampling, pressure/torque
 # quantity assembly, and summaries. It behaves like a workflow/pipeline but currently

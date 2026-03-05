@@ -1,8 +1,9 @@
-"""THIS FILE contains shared project constants used across layers.
-
-Keep repeated physical and workflow constants defined once here so code does
-not drift via copied literals.
+"""Shared project constants used across layers.
 """
+
+# Keep repeated physical and workflow constants defined once here so code does
+# not drift via copied literals.
+
 
 from scipy.constants import mu_0 as MU0
 

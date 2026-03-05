@@ -1,8 +1,9 @@
-"""THIS FILE contains reusable 2D slice plotting helpers.
-
-Pipelines and examples should call these helpers directly instead of carrying
-plot implementation details in pipeline modules.
+"""Reusable 2D slice plotting helpers.
 """
+
+# Pipelines and examples should call these helpers directly instead of carrying
+# plot implementation details in pipeline modules.
+
 
 from __future__ import annotations
 

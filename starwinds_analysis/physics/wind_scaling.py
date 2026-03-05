@@ -1,8 +1,9 @@
-"""THIS FILE contains wind-scaling formulas.
-
-It defines local/scalar array formulas (for example escape speed and open-wind
-magnetisation) without profile-bundle orchestration.
+"""Wind-scaling formulas.
 """
+
+# It defines local/scalar array formulas (for example escape speed and open-wind
+# magnetisation) without profile-bundle orchestration.
+
 
 # DONE(debt): Profile-bundle/orchestration helper was removed; keep only local formulas
 # in this module.

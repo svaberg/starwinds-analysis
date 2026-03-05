@@ -1,8 +1,9 @@
-"""THIS FILE contains structured 2D slice resampling helpers (for example XZ from 3D).
-
-It resamples onto structured planes and returns SmartDs-compatible datasets.
-It should not own plotting behavior.
+"""Structured 2D slice resampling helpers (for example XZ from 3D).
 """
+
+# It resamples onto structured planes and returns SmartDs-compatible datasets.
+# It should not own plotting behavior.
+
 
 from __future__ import annotations
 

@@ -1,8 +1,9 @@
-"""THIS FILE contains SmartDs <-> griblet graph integration internals.
-
-It owns graph attachment, path resolution, and evaluation glue for SmartDs.
-It should not contain domain physics formulas or plotting code.
+"""SmartDs <-> griblet graph integration internals.
 """
+
+# It owns graph attachment, path resolution, and evaluation glue for SmartDs.
+# It should not contain domain physics formulas or plotting code.
+
 
 from __future__ import annotations
 

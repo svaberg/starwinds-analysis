@@ -1,8 +1,9 @@
-"""THIS FILE contains small weighted-statistics primitives.
-
-It provides reusable numerical helpers (weighted mean/std/quantile).
-It should remain pure math with no dataset or plotting dependencies.
+"""Small weighted-statistics primitives.
 """
+
+# It provides reusable numerical helpers (weighted mean/std/quantile).
+# It should remain pure math with no dataset or plotting dependencies.
+
 
 from __future__ import annotations
 

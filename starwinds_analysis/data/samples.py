@@ -1,8 +1,4 @@
-"""THIS FILE contains helpers for locating repo sample_data fixtures.
-
-It is convenience glue for examples/tests only.
-It should not contain analysis logic.
-"""
+"""Helpers for locating sample_data fixtures in the repository."""
 
 from __future__ import annotations
 

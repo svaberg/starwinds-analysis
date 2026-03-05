@@ -1,7 +1,8 @@
-"""THIS FILE contains torque-related formulas and temporary torque workflows.
-
-It groups local torque-density formulas and explicit-surface integration helpers.
+"""Torque-related formulas and temporary torque workflows.
 """
+
+# It groups local torque-density formulas and explicit-surface integration helpers.
+
 
 from __future__ import annotations
 

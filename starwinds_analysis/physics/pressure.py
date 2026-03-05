@@ -1,8 +1,9 @@
-"""THIS FILE contains core pressure and standoff formulas.
-
-These are quantity definitions (ram, magnetic, component combinations, standoff distance).
-It should stay as pure math on arrays/scalars, not dataset-specific logic.
+"""Core pressure and standoff formulas.
 """
+
+# These are quantity definitions (ram, magnetic, component combinations, standoff distance).
+# It should stay as pure math on arrays/scalars, not dataset-specific logic.
+
 
 from __future__ import annotations
 

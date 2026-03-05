@@ -1,4 +1,4 @@
-"""THIS FILE contains the standalone dummy per-file pipeline step for `sw-pipe`."""
+"""The standalone dummy per-file pipeline step for `sw-pipe`."""
 
 from __future__ import annotations
 

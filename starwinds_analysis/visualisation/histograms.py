@@ -1,8 +1,9 @@
-"""THIS FILE contains Matplotlib histogram/scatter/radial-summary plotting helpers.
-
-It is a plotting layer that consumes arrays/datasets and produces figures.
-It should not define physics quantities or perform heavy analysis orchestration.
+"""Matplotlib histogram/scatter/radial-summary plotting helpers.
 """
+
+# It is a plotting layer that consumes arrays/datasets and produces figures.
+# It should not define physics quantities or perform heavy analysis orchestration.
+
 
 import numpy as np
 from starwinds_readplt.dataset import Dataset

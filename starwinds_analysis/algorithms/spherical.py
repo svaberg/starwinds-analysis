@@ -1,8 +1,9 @@
-"""THIS FILE contains pure spherical coordinate and vector transforms.
-
-It provides low-level Cartesian/spherical conversions only.
-It should stay independent of SmartDs, griblet recipe wiring, and plotting.
+"""Pure spherical coordinate and vector transforms.
 """
+
+# It provides low-level Cartesian/spherical conversions only.
+# It should stay independent of SmartDs, griblet recipe wiring, and plotting.
+
 
 import numpy as np
 

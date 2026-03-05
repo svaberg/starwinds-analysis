@@ -1,8 +1,9 @@
-"""THIS FILE contains plotting helpers currently used by shell/orbit diagnostics.
-
-These are plotting-only functions (Matplotlib fig/ax). They are kept out of the
-`analysis` layer to preserve the analysis/data-vs-plotting boundary.
+"""Plotting helpers currently used by shell/orbit diagnostics.
 """
+
+# These are plotting-only functions (Matplotlib fig/ax). They are kept out of the
+# `analysis` layer to preserve the analysis/data-vs-plotting boundary.
+
 
 # TODO(debt): Keep this plotting surface small and generic; do not rebuild
 # quantity-specific plotting wrappers here.

@@ -1,4 +1,4 @@
-"""THIS FILE contains recorder-backed state persistence for pipeline runs."""
+"""Recorder-backed state persistence for pipeline runs."""
 
 from __future__ import annotations
 

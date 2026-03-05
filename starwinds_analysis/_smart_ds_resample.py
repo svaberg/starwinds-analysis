@@ -1,8 +1,9 @@
-"""THIS FILE contains SmartDs resampling internals.
-
-It owns interpolation/resample implementation details and construction of new wrapped datasets.
-It should not contain domain-specific shell/orbit/slice analysis logic.
+"""SmartDs resampling internals.
 """
+
+# It owns interpolation/resample implementation details and construction of new wrapped datasets.
+# It should not contain domain-specific shell/orbit/slice analysis logic.
+
 
 from __future__ import annotations
 

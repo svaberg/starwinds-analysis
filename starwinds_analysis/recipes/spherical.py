@@ -1,8 +1,9 @@
-"""THIS FILE contains spherical field recipes built on low-level transforms.
-
-It provides SmartDs/griblet wiring for spherical geometry and vector fields.
-It should avoid owning the raw Cartesian/spherical transform math.
+"""Spherical field recipes built on low-level transforms.
 """
+
+# It provides SmartDs/griblet wiring for spherical geometry and vector fields.
+# It should avoid owning the raw Cartesian/spherical transform math.
+
 
 from __future__ import annotations
 

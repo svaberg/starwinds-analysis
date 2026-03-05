@@ -1,7 +1,8 @@
-"""THIS FILE contains spherical shell sampling and shell-integration primitives.
-
-It is the foundation layer for shell-based analyses (sampling geometry, integration, coverage).
+"""Spherical shell sampling and shell-integration primitives.
 """
+
+# It is the foundation layer for shell-based analyses (sampling geometry, integration, coverage).
+
 
 from __future__ import annotations
 
