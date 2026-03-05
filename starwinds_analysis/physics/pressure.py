@@ -28,5 +28,4 @@ def magnetospheric_standoff_distance(rho, V, *, b0: float = 0.7e-4):
     # SmartDs/griblet so orbit/surface diagnostics can request it directly in SI.
     p_ram = ram_pressure(rho, V)
     numer = (float(b0) ** 2) / (2.0 * MU0)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        return np.power(numer / p_ram, 1.0 / 6.0)
+    return np.power(numer / p_ram, 1.0 / 6.0)

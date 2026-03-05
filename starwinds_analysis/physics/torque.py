@@ -61,9 +61,7 @@ def normalize_surface_normals(normals_xyz):
     if n.shape[-1] != 3:
         raise ValueError("normals_xyz must have shape (..., 3)")
     nmag = np.sqrt(np.sum(n * n, axis=-1, keepdims=True))
-    with np.errstate(invalid="ignore", divide="ignore"):
-        out = np.divide(n, nmag, out=np.full_like(n, np.nan), where=nmag > 0)
-    return out
+    return n / nmag
 
 
 def radial_surface_normals(xyz):
@@ -151,26 +149,8 @@ def surface_torque_density_terms(
     t4 = (x * vy - y * vx) * rho * vdotn
     total = t1 + t2 + t3 + t4
 
-    mask = (
-        np.isfinite(area)
-        & np.isfinite(rho)
-        & np.isfinite(x)
-        & np.isfinite(y)
-        & np.isfinite(nx)
-        & np.isfinite(ny)
-        & np.isfinite(nz)
-        & np.isfinite(bx)
-        & np.isfinite(by)
-        & np.isfinite(bz)
-        & np.isfinite(vx)
-        & np.isfinite(vy)
-        & np.isfinite(vz)
-        & np.isfinite(p)
-    )
-
     return {
         "area [m^2]": area,
-        "mask": mask,
         "B_dot_n [T]": bdotn,
         "V_dot_n [m/s]": vdotn,
         "T1_magnetic [N/m]": t1,

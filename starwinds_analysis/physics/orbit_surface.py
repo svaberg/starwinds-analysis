@@ -64,9 +64,10 @@ def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
         t_w = np.array(time_weight)
         if t_w.shape != (int(n_phase),):
             raise ValueError("time_weight shape mismatch")
-        t_w = np.where(np.isfinite(t_w) & (t_w >= 0), t_w, 0.0)
         sw = float(np.sum(t_w))
-        t_w = t_w / sw if sw > 0 else np.full(int(n_phase), 1.0 / float(n_phase), dtype=float)
+        if not np.isfinite(sw) or sw <= 0:
+            raise ValueError("time_weight must have a positive finite sum")
+        t_w = t_w / sw
     return np.outer(t_w, az_w)
 
 def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
@@ -75,12 +76,7 @@ def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     if arr.ndim != 2:
         raise ValueError("values_2d must be 2D")
     q = np.array(q)
-    out = np.full((arr.shape[0], q.size), np.nan, dtype=float)
-    for i in range(arr.shape[0]):
-        row = arr[i]
-        m = np.isfinite(row)
-        if np.any(m):
-            out[i] = np.quantile(row[m], q)
+    out = np.quantile(arr, q, axis=1).T
     return q, out
 
 def surface_point_normals_and_areas(surface_points):
@@ -95,13 +91,7 @@ def surface_point_normals_and_areas(surface_points):
     d_lon = 0.5 * (np.roll(pts, -1, axis=1) - np.roll(pts, 1, axis=1))
     cross = np.cross(d_phase, d_lon, axis=-1)
     area = np.sqrt(np.sum(cross * cross, axis=-1))
-    with np.errstate(invalid="ignore", divide="ignore"):
-        normals = np.divide(
-            cross,
-            area[..., None],
-            out=np.full_like(cross, np.nan),
-            where=area[..., None] > 0,
-        )
+    normals = cross / area[..., None]
     return normals, area
 
 def phase_line_integrals(values_2d, area_2d):
@@ -110,18 +100,9 @@ def phase_line_integrals(values_2d, area_2d):
     a = np.array(area_2d)
     if v.shape != a.shape:
         a = np.broadcast_to(a, v.shape)
-    mask = np.isfinite(v) & np.isfinite(a)
-    integ = np.sum(np.where(mask, v * a, 0.0), axis=1)
-    covered = np.sum(np.where(mask, a, 0.0), axis=1)
-    total = np.sum(np.where(np.isfinite(a), a, 0.0), axis=1)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        cov = np.divide(
-            covered,
-            total,
-            out=np.full_like(integ, np.nan, dtype=float),
-            where=total > 0,
-        )
-    return integ, cov
+    integ = np.sum(v * a, axis=1)
+    total_area = np.sum(a, axis=1)
+    return integ, total_area / total_area
 
 def sample_surface_revolution(
     smart_ds,
@@ -299,13 +280,11 @@ def pressure_components_on_surface(
     meta = sampled.raw.aux.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
-        out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
+        if "eccentricity [none]" in meta:
+            out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     elif "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
-    log.info(
-        "pressure_components_on_surface done: finite_ram=%d",
-        np.count_nonzero(np.isfinite(out["ram_pressure [Pa]"])),
-    )
+    log.info("pressure_components_on_surface done")
     return out
 
 
@@ -410,7 +389,8 @@ def torque_components_on_surface(
     meta = sampled.raw.aux.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
-        out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
+        if "eccentricity [none]" in meta:
+            out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     if "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
     log.info(
