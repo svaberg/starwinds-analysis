@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
-from starwinds_analysis.analysis.orbits import trajectory_velocity
+from starwinds_analysis.analysis.trajectories import elliptic_orbit_points
+from starwinds_analysis.analysis.trajectories import sample_elliptic_orbit
+from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.analysis.stats import summarize_samples

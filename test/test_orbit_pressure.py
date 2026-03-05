@@ -3,10 +3,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import sample_elliptic_orbit
-from starwinds_analysis.analysis.orbits import sample_trajectory
-from starwinds_analysis.analysis.orbits import trajectory_velocity
+from starwinds_analysis.analysis.trajectories import elliptic_orbit_points
+from starwinds_analysis.analysis.trajectories import sample_elliptic_orbit
+from starwinds_analysis.analysis.trajectories import sample_trajectory
+from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.curve import relative_ram_pressure_from_trajectory
 from starwinds_analysis.physics.orbits import orbital_period

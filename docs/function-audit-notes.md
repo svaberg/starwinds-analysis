@@ -193,13 +193,13 @@ Status note:
 - `build_griblet_vector_spherical_components_graph`: Build spherical-component recipes for one detected vector triplet. Used in `starwinds_analysis/recipes/spherical.py`, `starwinds_analysis/smart_ds.py`, and `starwinds_analysis/recipes/batsrus.py`.
 - `_infer_radius_name_from_coord`: Infer the matching radius field name/unit from coordinate field names. Used in `starwinds_analysis/recipes/spherical.py`.
 
-## `starwinds_analysis/analysis/orbits.py`
-- `circular_orbit_points`: Cartesian points on a circular orbit (same coordinate unit as `radius`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `_kepler_eccentric_anomaly`: Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations. Used in `starwinds_analysis/analysis/orbits.py`.
-- `_embed_plane_coords`: Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates. Used in `starwinds_analysis/analysis/orbits.py`.
-- `_phase_from_weights`: Convert periodic sample weights into cumulative phase turns. Used in `starwinds_analysis/analysis/orbits.py`.
-- `elliptic_orbit_points`: Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_points`: Resample `fields` onto explicit Cartesian points. Used in `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/physics/orbit_surface.py`.
+## `starwinds_analysis/analysis/trajectories.py`
+- `circular_orbit_points`: Cartesian points on a circular orbit (same coordinate unit as `radius`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `_kepler_eccentric_anomaly`: Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations. Used in `starwinds_analysis/analysis/trajectories.py`.
+- `_embed_plane_coords`: Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates. Used in `starwinds_analysis/analysis/trajectories.py`.
+- `_phase_from_weights`: Convert periodic sample weights into cumulative phase turns. Used in `starwinds_analysis/analysis/trajectories.py`.
+- `elliptic_orbit_points`: Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `sample_points`: Resample `fields` onto explicit Cartesian points. Used in `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
 - `sample_circular_orbit`: Sample requested fields along a circular orbit path using generic point resampling. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`.
 - `sample_elliptic_orbit`: Sample requested fields along an elliptic orbit path using generic point resampling. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`.
 

@@ -340,7 +340,7 @@ class SmartDs:
     def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
         """
         Resolve requested fields to raw field dependencies for interpolation.
-        Used by: `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/analysis/shells.py`,
+        Used by: `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/analysis/shells.py`,
           `starwinds_analysis/analysis/slices.py`
         """
         base_fields: list[str] = []

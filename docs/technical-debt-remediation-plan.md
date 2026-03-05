@@ -34,7 +34,7 @@ Goal: remove clear layer violations and obvious API-surface bloat without changi
 - NEXT: shrink `physics/torque.py` so only local torque terms remain in the deep layer and shell/surface wrappers move upward or become generic reducers.
 
 3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
-- DONE (updated): orbit geometry/sampling primitives live in `analysis.orbits`,
+- DONE (updated): orbit geometry/sampling primitives live in `analysis.trajectories`,
   which is generic enough for the current tree.
 - DONE: curve-vs-shell comparison logic was removed from the library and kept in tests only.
 
@@ -134,7 +134,7 @@ Goal: enforce one-way layer direction and eliminate circular import pressure.
 2. Remove `physics -> analysis` imports in workflow-heavy modules by either:
 - moving workflows out of `physics`, or
 - extracting the needed primitive out of `analysis`.
- - DONE (partial): orbit workflows use the generic `analysis.orbits` layer.
+ - DONE (partial): orbit workflows use the generic `analysis.trajectories` layer.
 
 3. Only after boundaries are correct, remove lazy-import cycle workarounds.
 
@@ -147,7 +147,7 @@ Recommended next implementation batches:
 - NEXT: remove the remaining quantity-specific `surface_torque_vs_radius(...)` wrapper.
 
 2. `physics/curve.py` + `physics/orbit_surface.py`
-- DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.orbits`.
+- DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.trajectories`.
 - DONE (partial): `orbit_surface.py` no longer constructs orbit geometry internally; callers now provide explicit path points and sampled surfaces.
 - DONE (partial): orbit-surface pressure diagnostics no longer require periodic-orbit reconstruction; trajectory velocity/time are now explicit inputs.
 - NEXT: reduce dict-bundle outputs further and move more workflow composition upward.

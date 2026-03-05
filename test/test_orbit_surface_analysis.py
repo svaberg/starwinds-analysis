@@ -5,8 +5,8 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.analysis.orbits import elliptic_orbit_points
-from starwinds_analysis.analysis.orbits import trajectory_velocity
+from starwinds_analysis.analysis.trajectories import elliptic_orbit_points
+from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
 from starwinds_analysis.physics.orbits import orbital_period
 from starwinds_analysis.physics.orbit_surface import pressure_components_on_surface
