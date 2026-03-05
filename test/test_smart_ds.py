@@ -177,22 +177,55 @@ def test_resample_linear_interpolates_inside_hull():
     importlib.util.find_spec("scipy") is None,
     reason="scipy is required for SmartDs.resample()",
 )
-def test_resample_nearest_propagates_nan_values():
+def test_resample_fails_fast_on_non_finite_source_field_values():
     dataset = make_dataset_2d()
     dataset.points[3, 2] = np.nan
     sds = SmartDs(dataset)
     target = np.array([[1.0, 1.0], [0.0, 0.0]])
 
-    out = sds.resample(
-        target,
-        coordinate_fields=("X [R]", "Y [R]"),
-        fields=["Q [none]"],
-        method="nearest",
-    )
+    with pytest.raises(ValueError, match="source field 'Q \\[none\\]' contains non-finite values"):
+        sds.resample(
+            target,
+            coordinate_fields=("X [R]", "Y [R]"),
+            fields=["Q [none]"],
+            method="nearest",
+        )
 
-    q = np.array(out.variable("Q [none]"))
-    assert np.isnan(q[0])
-    assert q[1] == 0.0
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("scipy") is None,
+    reason="scipy is required for SmartDs.resample()",
+)
+def test_resample_fails_fast_on_non_finite_sample_points():
+    sds = SmartDs(make_dataset_2d())
+    target = np.array([[0.1, np.nan], [0.95, 0.85]])
+
+    with pytest.raises(ValueError, match="sample_points must be finite"):
+        sds.resample(
+            target,
+            coordinate_fields=("X [R]", "Y [R]"),
+            fields=["Q [none]"],
+            method="nearest",
+        )
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("scipy") is None,
+    reason="scipy is required for SmartDs.resample()",
+)
+def test_resample_fails_fast_on_non_finite_source_coordinates():
+    dataset = make_dataset_2d()
+    dataset.points[2, 0] = np.nan
+    sds = SmartDs(dataset)
+    target = np.array([[0.1, 0.2], [0.95, 0.85]])
+
+    with pytest.raises(ValueError, match="source coordinates contain non-finite values"):
+        sds.resample(
+            target,
+            coordinate_fields=("X [R]", "Y [R]"),
+            fields=["Q [none]"],
+            method="nearest",
+        )
 
 
 @pytest.mark.skipif(
