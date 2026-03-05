@@ -3,6 +3,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from starwinds_readplt.dataset import Dataset
+
 from starwinds_analysis.analysis.orbits import elliptic_orbit_points
 from starwinds_analysis.analysis.orbits import trajectory_velocity
 from starwinds_analysis.constants import SOLAR_RADIUS_M
@@ -64,18 +66,52 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
     b_xyz = np.zeros((n_phase, n_lon, 3), dtype=float)
     b_xyz[..., 2] = 5.0e-5
 
-    sampled = {
-        "phase [turns]": phase,
-        "time_weight [none]": np.full(n_phase, 1.0 / n_phase, dtype=float),
-        "Rho [kg/m^3]": rho,
-        "U_xyz [m/s]": u_xyz,
-        "U [m/s]": np.sqrt(np.sum(u_xyz * u_xyz, axis=-1)),
-        "B [T]": np.sqrt(np.sum(b_xyz * b_xyz, axis=-1)),
-        "magnetic_pressure [Pa]": np.full((n_phase, n_lon), 2.0e-5, dtype=float),
-        "ram_pressure [Pa]": np.full((n_phase, n_lon), 9.0e-3, dtype=float),
-        "thermal_pressure [Pa]": np.full((n_phase, n_lon), 1.1e-3, dtype=float),
-        "standoff_distance [m]": np.full((n_phase, n_lon), 4.2e8, dtype=float),
-    }
+    azimuth = np.linspace(0.0, 2.0 * np.pi, n_lon, endpoint=False)
+    xx = np.repeat(np.cos(azimuth)[None, :], n_phase, axis=0)
+    yy = np.repeat(np.sin(azimuth)[None, :], n_phase, axis=0)
+    zz = np.repeat((phase - 0.5)[:, None], n_lon, axis=1)
+    points = np.stack(
+        [
+            xx,
+            yy,
+            zz,
+            rho,
+            u_xyz[..., 0],
+            u_xyz[..., 1],
+            u_xyz[..., 2],
+            b_xyz[..., 0],
+            b_xyz[..., 1],
+            b_xyz[..., 2],
+            np.full((n_phase, n_lon), 1.1e-3, dtype=float),
+            np.repeat(phase[:, None], n_lon, axis=1),
+            np.repeat(np.full(n_phase, 1.0 / n_phase, dtype=float)[:, None], n_lon, axis=1),
+        ],
+        axis=-1,
+    )
+    sampled = SmartDs(
+        Dataset(
+            points,
+            np.empty((0, 0), dtype=int),
+            {"star_radius [m]": SOLAR_RADIUS_M},
+            "surface-demo",
+            [
+                "X [R]",
+                "Y [R]",
+                "Z [R]",
+                "Rho [kg/m^3]",
+                "U_x [m/s]",
+                "U_y [m/s]",
+                "U_z [m/s]",
+                "B_x [T]",
+                "B_y [T]",
+                "B_z [T]",
+                "P [Pa]",
+                "phase [turns]",
+                "time_weight [none]",
+            ],
+            "surface",
+        )
+    ).prepare(body_radius=SOLAR_RADIUS_M)
 
     out = pressure_components_on_surface(sampled)
     assert "relative_ram_pressure [Pa]" not in out
@@ -102,11 +138,11 @@ def test_sample_surface_revolution_runs_on_example():
         n_longitudes=32,
         method="nearest",
     )
-    assert out["Rho [g/cm^3]"].shape == (64, 32)
-    assert out["U_x [km/s]"].shape == (64, 32)
-    assert out["phase [turns]"].shape == (64,)
-    assert out["time_weight [none]"].shape == (64,)
-    assert np.isclose(np.sum(out["time_weight [none]"]), 1.0)
+    assert np.array(out("Rho [g/cm^3]")).shape == (64, 32)
+    assert np.array(out("U_x [km/s]")).shape == (64, 32)
+    assert np.array(out("phase [turns]")).shape == (64, 32)
+    assert np.array(out("time_weight [none]")).shape == (64, 32)
+    assert np.isclose(np.sum(np.array(out("time_weight [none]"))[:, 0]), 1.0)
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")

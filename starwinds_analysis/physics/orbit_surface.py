@@ -18,7 +18,6 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.orbits import sample_curve
 from starwinds_analysis.analysis.stats import summarize_samples
 from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
 from starwinds_analysis.physics.pressure import ram_pressure
@@ -140,7 +139,7 @@ def sample_surface_revolution(
     zone: str = "surface",
     n_longitudes: int = 199,
 ):
-    """Sample explicit fields on a surface of revolution generated from explicit trajectory points."""
+    """Sample explicit fields on a surface of revolution and return a surface SmartDs."""
     fields = tuple(fields)
     log.info(
         "sample_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
@@ -185,48 +184,35 @@ def sample_surface_revolution(
 
     meta = dict(trajectory_meta or {})
     surf = surface_of_revolution_from_trajectory(trajectory_points, n_longitudes=n_longitudes)
-    pts = surf["points"].reshape(-1, 3)
-
-    sampled_curve = sample_curve(
-        smart_ds,
-        pts,
-        fields=fields,
+    sampled_surface = smart_ds.resample(
+        surf["points"],
         coordinate_fields=coordinate_fields,
+        fields=smart_ds.base_fields_for_resample(fields),
         method=method,
         fill_value=fill_value,
+        zone=zone,
     )
     n_lon = surf["points"].shape[1]
-    sampled = {
-        "surface_points": surf["points"],
-        "X [R]": surf["points"][..., 0],
-        "Y [R]": surf["points"][..., 1],
-        "Z [R]": surf["points"][..., 2],
-        "R [R]": surf["R [R]"],
-        "cyl_radius [R]": surf["cyl_radius [R]"],
-        "azimuth [rad]": surf["azimuth [rad]"],
-        "phase [turns]": phase_arr,
-        "time_weight [none]": time_weight_arr,
-        "trajectory_meta": meta,
-        "zone": zone,
+    context_fields = {
+        "azimuth [rad]": np.repeat(surf["azimuth [rad]"][None, :], n_phase, axis=0),
+        "phase [turns]": np.repeat(phase_arr[:, None], n_lon, axis=1),
+        "time_weight [none]": np.repeat(time_weight_arr[:, None], n_lon, axis=1),
     }
     if time_arr is not None:
-        sampled["t [s]"] = time_arr
+        context_fields["t [s]"] = np.repeat(time_arr[:, None], n_lon, axis=1)
     if velocity is not None:
-        sampled["V_xyz [m/s]"] = np.repeat(velocity[:, None, :], n_lon, axis=1)
-    for key in fields:
-        arr = np.array(sampled_curve(key))
-        if arr.shape == (n_phase * n_lon,):
-            sampled[key] = arr.reshape(n_phase, n_lon)
-    if all(name in sampled for name in ("U_x [m/s]", "U_y [m/s]", "U_z [m/s]")):
-        sampled["U_xyz [m/s]"] = np.array(sampled_curve("U_xyz [m/s]")).reshape(n_phase, n_lon, 3)
-    if all(name in sampled for name in ("B_x [T]", "B_y [T]", "B_z [T]")):
-        sampled["B_xyz [T]"] = np.array(sampled_curve("B_xyz [T]")).reshape(n_phase, n_lon, 3)
+        context_fields["V_x [m/s]"] = np.repeat(velocity[:, 0][:, None], n_lon, axis=1)
+        context_fields["V_y [m/s]"] = np.repeat(velocity[:, 1][:, None], n_lon, axis=1)
+        context_fields["V_z [m/s]"] = np.repeat(velocity[:, 2][:, None], n_lon, axis=1)
+    sampled_surface = sampled_surface.append_fields(context_fields, zone_suffix="surface context")
+    sampled_surface.raw.aux["trajectory_meta"] = meta
+
     log.info(
         "sample_surface_revolution done: n_phase=%d, n_lon=%d",
         n_phase,
         n_lon,
     )
-    return sampled
+    return sampled_surface
 
 
 def pressure_components_on_surface(
@@ -236,23 +222,30 @@ def pressure_components_on_surface(
     standoff_b0: float = 0.7e-4,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
-    """Pressure-component analytics on an already sampled surface of revolution."""
+    """Pressure-component analytics on an already sampled surface SmartDs."""
     log.info(
         "pressure_components_on_surface start: include_relative=%s",
         include_relative_ram,
     )
-    rho = np.array(sampled["Rho [kg/m^3]"])
-    u_xyz = np.array(sampled["U_xyz [m/s]"])
-    u = np.array(sampled["U [m/s]"])
-    b = np.array(sampled["B [T]"])
-    magnetic_pressure = np.array(sampled["magnetic_pressure [Pa]"])
-    ram = np.array(sampled["ram_pressure [Pa]"])
-    thermal_pressure = np.array(sampled["thermal_pressure [Pa]"])
-    standoff = np.array(sampled["standoff_distance [m]"])
+    rho = np.array(sampled("Rho [kg/m^3]"))
+    u_xyz = np.array(sampled("U_xyz [m/s]"))
+    u = np.array(sampled("U [m/s]"))
+    b = np.array(sampled("B [T]"))
+    magnetic_pressure = np.array(sampled("magnetic_pressure [Pa]"))
+    ram = np.array(sampled("ram_pressure [Pa]"))
+    thermal_pressure = np.array(sampled("thermal_pressure [Pa]"))
+    standoff = np.array(sampled("standoff_distance [m]"))
 
     object_velocity = None
-    if include_relative_ram and "V_xyz [m/s]" in sampled:
-        object_velocity = np.array(sampled["V_xyz [m/s]"])
+    if include_relative_ram and sampled.has_field("V_x [m/s]"):
+        object_velocity = np.stack(
+            [
+                np.array(sampled("V_x [m/s]")),
+                np.array(sampled("V_y [m/s]")),
+                np.array(sampled("V_z [m/s]")),
+            ],
+            axis=-1,
+        )
 
     comps = {
         "U [m/s]": u,
@@ -277,9 +270,13 @@ def pressure_components_on_surface(
             b0=standoff_b0,
         )
 
-    weights = surface_sample_weights(
-        rho.shape[0], rho.shape[1], time_weight=sampled["time_weight [none]"]
-    )
+    time_weight = np.array(sampled("time_weight [none]"))
+    phase = np.array(sampled("phase [turns]"))
+    if time_weight.ndim == 2:
+        time_weight = time_weight[:, 0]
+    if phase.ndim == 2:
+        phase = phase[:, 0]
+    weights = surface_sample_weights(rho.shape[0], rho.shape[1], time_weight=time_weight)
     summaries = {}
     phase_profiles = {}
     q = np.array(quantiles)
@@ -288,19 +285,18 @@ def pressure_components_on_surface(
         summaries[key] = summarize_samples(flat, weights=weights.reshape(-1))
         qq, qarr = phase_quantile_rows(arr, q=q)
         phase_profiles[key] = {
-            "phase [turns]": np.array(sampled["phase [turns]"]),
+            "phase [turns]": phase,
             "quantiles [none]": qq,
             "values": qarr,
         }
 
     out = {
-        "sampled_surface": sampled,
         "rho [kg/m^3]": rho,
         **comps,
         "summary": summaries,
         "phase_quantiles": phase_profiles,
     }
-    meta = sampled.get("trajectory_meta", {})
+    meta = sampled.raw.aux.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
         out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
@@ -321,20 +317,27 @@ def torque_components_on_surface(
     angvel: float = 0.0,
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
-    """Explicit-surface torque diagnostics on an already sampled surface of revolution."""
+    """Explicit-surface torque diagnostics on an already sampled surface SmartDs."""
     log.info(
         "torque_components_on_surface start: include_pressure=%s",
         include_pressure_term,
     )
     body_radius = float(body_radius)
-    rho = np.array(sampled["Rho [kg/m^3]"])
-    u_xyz = np.array(sampled["U_xyz [m/s]"])
-    b_xyz = np.array(sampled["B_xyz [T]"])
+    rho = np.array(sampled("Rho [kg/m^3]"))
+    u_xyz = np.array(sampled("U_xyz [m/s]"))
+    b_xyz = np.array(sampled("B_xyz [T]"))
     p = None
-    if include_pressure_term and "thermal_pressure [Pa]" in sampled:
-        p = np.array(sampled["thermal_pressure [Pa]"])
+    if include_pressure_term and sampled.has_field("thermal_pressure [Pa]"):
+        p = np.array(sampled("thermal_pressure [Pa]"))
 
-    points = np.array(sampled["surface_points"]) * body_radius
+    points = np.stack(
+        [
+            np.array(sampled("X [R]")),
+            np.array(sampled("Y [R]")),
+            np.array(sampled("Z [R]")),
+        ],
+        axis=-1,
+    ) * body_radius
     normals, area = surface_point_normals_and_areas(points)
 
     terms = surface_torque_density_terms(
@@ -353,7 +356,9 @@ def torque_components_on_surface(
     q = np.array(quantiles)
     phase_quantiles = {}
     phase_integrals = {}
-    phase = np.array(sampled["phase [turns]"])
+    phase = np.array(sampled("phase [turns]"))
+    if phase.ndim == 2:
+        phase = phase[:, 0]
     for src_key, out_key in (
         ("T1_magnetic [N/m]", "T1_magnetic"),
         ("T2_pressure [N/m]", "T2_pressure"),
@@ -387,7 +392,6 @@ def torque_components_on_surface(
         summary[out_key] = summarize_samples(np.array(terms[src_key]).reshape(-1), weights=weights)
 
     out = {
-        "sampled_surface": sampled,
         "surface_points [m]": points,
         "surface_normals [none]": normals,
         "surface_area [m^2]": area,
@@ -403,7 +407,7 @@ def torque_components_on_surface(
         "coverage [none]": np.array(totals["coverage [none]"]),
         "surface_terms": terms,
     }
-    meta = sampled.get("trajectory_meta", {})
+    meta = sampled.raw.aux.get("trajectory_meta", {})
     if "semi_major_axis [R]" in meta:
         out["semi_major_axis [R]"] = float(meta["semi_major_axis [R]"])
         out["eccentricity [none]"] = float(meta.get("eccentricity [none]", np.nan))
