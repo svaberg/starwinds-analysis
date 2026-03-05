@@ -11,12 +11,15 @@
 
 from __future__ import annotations
 
+import logging
 import math
 
 import numpy as np
 import scipy.constants as c
 
 from starwinds_analysis.constants import MU0
+
+log = logging.getLogger(__name__)
 
 # DONE(debt): Reuse the shared `MU0` constant from `starwinds_analysis.constants`.
 
@@ -30,7 +33,11 @@ def surface_escape_speed(star_mass_kg, star_radius_m):
     m = np.array(star_mass_kg)
     r = np.array(star_radius_m)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return np.sqrt(2.0 * c.G * m / r)
+        out = np.sqrt(2.0 * c.G * m / r)
+    non_finite = int(np.count_nonzero(~np.isfinite(out)))
+    if non_finite > 0:
+        log.warning("surface_escape_speed output has %d/%d non-finite values", non_finite, int(np.size(out)))
+    return out
 
 def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_radius_m):
     """
@@ -44,4 +51,8 @@ def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_rad
     r = np.array(star_radius_m)
     vesc = surface_escape_speed(star_mass_kg, star_radius_m)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return (4.0 * math.pi / MU0) * phi * phi / (r * r * dotm * vesc)
+        out = (4.0 * math.pi / MU0) * phi * phi / (r * r * dotm * vesc)
+    non_finite = int(np.count_nonzero(~np.isfinite(out)))
+    if non_finite > 0:
+        log.warning("open_wind_magnetisation output has %d/%d non-finite values", non_finite, int(np.size(out)))
+    return out

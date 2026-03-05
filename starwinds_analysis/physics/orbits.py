@@ -7,12 +7,15 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.constants import G as GRAVITATIONAL_CONSTANT
 from scipy.constants import au as AU_M
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -40,10 +43,14 @@ def orbital_period(semi_major_axis_m, star_mass_kg):
     a = float(semi_major_axis_m)
     m = float(star_mass_kg)
     if a <= 0:
+        log.error("orbital_period failed: semi_major_axis_m=%g", a)
         raise ValueError("semi_major_axis_m must be > 0")
     if m <= 0:
+        log.error("orbital_period failed: star_mass_kg=%g", m)
         raise ValueError("star_mass_kg must be > 0")
-    return 2.0 * math.pi * math.sqrt(a**3 / (GRAVITATIONAL_CONSTANT * m))
+    period = 2.0 * math.pi * math.sqrt(a**3 / (GRAVITATIONAL_CONSTANT * m))
+    log.debug("orbital_period computed period=%g", period)
+    return period
 
 def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     """
@@ -54,8 +61,14 @@ def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     m = float(star_mass_kg)
     a = float(semi_major_axis_m)
     if m <= 0:
+        log.error("orbital_velocity failed: star_mass_kg=%g", m)
         raise ValueError("star_mass_kg must be > 0")
     if a <= 0:
+        log.error("orbital_velocity failed: semi_major_axis_m=%g", a)
         raise ValueError("semi_major_axis_m must be > 0")
     with np.errstate(invalid="ignore"):
-        return np.sqrt(GRAVITATIONAL_CONSTANT * m * (2.0 / r - 1.0 / a))
+        v = np.sqrt(GRAVITATIONAL_CONSTANT * m * (2.0 / r - 1.0 / a))
+    non_finite = int(np.count_nonzero(~np.isfinite(v)))
+    if non_finite > 0:
+        log.warning("orbital_velocity output has %d/%d non-finite values", non_finite, v.size)
+    return v

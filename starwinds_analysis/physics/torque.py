@@ -44,6 +44,7 @@ def rotational_frame_velocity(U_xyz, xyz, angvel):
     u = np.array(U_xyz)
     xyz = np.array(xyz)
     if u.shape != xyz.shape or u.shape[-1] != 3:
+        log.error("rotational_frame_velocity failed: U_xyz shape=%s xyz shape=%s", u.shape, xyz.shape)
         raise ValueError("U_xyz and xyz must have the same shape (..., 3)")
     omega = float(angvel)
     v = np.array(u, copy=True)
@@ -60,8 +61,12 @@ def normalize_surface_normals(normals_xyz):
     """
     n = np.array(normals_xyz)
     if n.shape[-1] != 3:
+        log.error("normalize_surface_normals failed: shape=%s", n.shape)
         raise ValueError("normals_xyz must have shape (..., 3)")
     nmag = np.sqrt(np.sum(n * n, axis=-1, keepdims=True))
+    if np.any(nmag == 0):
+        log.error("normalize_surface_normals failed: zero-length normals")
+        raise ValueError("normals_xyz contains zero-length vectors")
     return n / nmag
 
 
@@ -72,6 +77,7 @@ def radial_surface_normals(xyz):
     """
     xyz = np.array(xyz)
     if xyz.shape[-1] != 3:
+        log.error("radial_surface_normals failed: shape=%s", xyz.shape)
         raise ValueError("xyz must have shape (..., 3)")
     return normalize_surface_normals(xyz)
 
@@ -104,8 +110,16 @@ def surface_torque_density_terms(
     b = np.array(B_xyz)
 
     if xyz.shape != u.shape or xyz.shape != b.shape or xyz.shape != n.shape:
+        log.error(
+            "surface_torque_density_terms failed: xyz=%s normals=%s U=%s B=%s",
+            xyz.shape,
+            n.shape,
+            u.shape,
+            b.shape,
+        )
         raise ValueError("xyz, normals_xyz, U_xyz, and B_xyz must match shape (..., 3)")
     if xyz.shape[-1] != 3:
+        log.error("surface_torque_density_terms failed: vector inputs last dim=%d", xyz.shape[-1])
         raise ValueError("vector inputs must have shape (..., 3)")
 
     scalar_shape = xyz.shape[:-1]
@@ -150,7 +164,7 @@ def surface_torque_density_terms(
     t4 = (x * vy - y * vx) * rho * vdotn
     total = t1 + t2 + t3 + t4
 
-    return {
+    out = {
         "area [m^2]": area,
         "B_dot_n [T]": bdotn,
         "V_dot_n [m/s]": vdotn,
@@ -160,6 +174,11 @@ def surface_torque_density_terms(
         "T4_dynamic [N/m]": t4,
         "total [N/m]": total,
     }
+    non_finite = int(np.count_nonzero(~np.isfinite(total)))
+    if non_finite > 0:
+        log.warning("surface_torque_density_terms total has %d/%d non-finite values", non_finite, total.size)
+    log.info("surface_torque_density_terms done")
+    return out
 
 
 def integrate_surface_torque_terms(terms):
@@ -168,6 +187,7 @@ def integrate_surface_torque_terms(terms):
     Used by: `test/test_surface_torque_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`,
       `starwinds_analysis/physics/torque.py`
     """
+    log.info("integrate_surface_torque_terms start")
     area = np.array(terms["area [m^2]"])
     out = {}
     coverages = []
@@ -195,6 +215,7 @@ def integrate_surface_torque_terms(terms):
         len(component_keys),
         np.shape(out.get("coverage [none]")),
     )
+    log.info("integrate_surface_torque_terms done")
     return out
 
 
@@ -227,7 +248,7 @@ def surface_torque_terms_on_shell_samples(
     )
     xyz = xyz_r * float(body_radius)
     normals = radial_surface_normals(xyz) if normals_xyz is None else normals_xyz
-    return surface_torque_density_terms(
+    out = surface_torque_density_terms(
         xyz=xyz,
         normals_xyz=normals,
         area=np.array(shells(area_field)),
@@ -238,3 +259,7 @@ def surface_torque_terms_on_shell_samples(
         angvel=angvel,
         use_rotating_frame=use_rotating_frame,
     )
+    log.info("surface_torque_terms_on_shell_samples done")
+    return out
+    log.info("surface_torque_density_terms start")
+    log.info("surface_torque_terms_on_shell_samples start")
