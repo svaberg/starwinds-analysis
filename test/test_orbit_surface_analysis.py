@@ -124,13 +124,15 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_surface_revolution_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
+    points = circular_orbit_points(10.0, n_points=64)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
     out = sample_surface_revolution(
         sds,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
-        trajectory_points=orbit["points"],
-        phase=orbit["phase [turns]"],
-        time_weight=orbit["time_weight [none]"],
+        trajectory_points=points,
+        phase=phase,
+        time_weight=time_weight,
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
             "eccentricity [none]": 0.0,
@@ -149,11 +151,13 @@ def test_sample_surface_revolution_runs_on_example():
 def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
+    points = circular_orbit_points(10.0, n_points=64)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    time = orbit["phase [turns]"] * period_s
+    time = phase * period_s
     velocity = trajectory_velocity(
-        orbit["points"],
+        points,
         time,
         coordinate_scale=SOLAR_RADIUS_M,
     )
@@ -174,10 +178,10 @@ def test_pressure_components_on_surface_runs_on_example():
             "thermal_pressure [Pa]",
             "standoff_distance [m]",
         ),
-        trajectory_points=orbit["points"],
-        phase=orbit["phase [turns]"],
+        trajectory_points=points,
+        phase=phase,
         time=time,
-        time_weight=orbit["time_weight [none]"],
+        time_weight=time_weight,
         velocity_xyz=velocity,
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
@@ -208,7 +212,9 @@ def test_pressure_components_on_surface_runs_on_example():
 def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    orbit = circular_orbit_points(10.0, n_points=64, return_info=True)
+    points = circular_orbit_points(10.0, n_points=64)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
     sampled = sample_surface_revolution(
         sds,
         fields=(
@@ -221,9 +227,9 @@ def test_torque_components_on_surface_runs_on_example():
             "B_z [T]",
             "thermal_pressure [Pa]",
         ),
-        trajectory_points=orbit["points"],
-        phase=orbit["phase [turns]"],
-        time_weight=orbit["time_weight [none]"],
+        trajectory_points=points,
+        phase=phase,
+        time_weight=time_weight,
         trajectory_meta={
             "semi_major_axis [R]": 10.0,
             "eccentricity [none]": 0.0,

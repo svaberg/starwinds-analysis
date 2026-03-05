@@ -171,14 +171,11 @@ def test_circular_orbit_points_constant_radius():
 
 
 def test_circular_orbit_points_uniform_weights_and_radius():
-    info = circular_orbit_points(10.0, n_points=256, return_info=True)
-    pts = info["points"]
+    pts = circular_orbit_points(10.0, n_points=256)
     r = np.sqrt(np.sum(pts * pts, axis=1))
 
     np.testing.assert_allclose(np.nanmin(r), 10.0, rtol=0, atol=1e-10)
     np.testing.assert_allclose(np.nanmax(r), 10.0, rtol=0, atol=1e-10)
-    assert np.isclose(np.sum(info["time_weight [none]"]), 1.0)
-    assert np.isclose(np.max(info["time_weight [none]"]), np.min(info["time_weight [none]"]))
 
 
 def test_orbital_velocity_is_constant_for_circular_case():

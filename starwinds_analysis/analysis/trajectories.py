@@ -7,8 +7,6 @@
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from starwinds_analysis.recipes.batsrus import build_griblet_vector_cartesian_graph
@@ -38,9 +36,6 @@ def circular_orbit_points(
     radius,
     *,
     n_points: int = 360,
-    phase0: float = 0.0,
-    center=(0.0, 0.0, 0.0),
-    return_info: bool = False,
 ):
     """
     Cartesian points on a circular orbit in the XY plane.
@@ -52,24 +47,12 @@ def circular_orbit_points(
     if n_points < 8:
         raise ValueError("n_points must be >= 8")
 
-    theta = np.linspace(0.0, 2.0 * math.pi, n_points, endpoint=False) + float(phase0)
-    cx, cy, cz = map(float, center)
+    theta = np.linspace(0.0, 2.0 * np.pi, n_points, endpoint=False)
     points = np.empty((theta.size, 3), dtype=float)
-    points[:, 0] = cx + radius * np.cos(theta)
-    points[:, 1] = cy + radius * np.sin(theta)
-    points[:, 2] = cz
-    phase = np.arange(theta.size, dtype=float) / float(theta.size)
-    time_weight = np.full(theta.size, 1.0 / float(theta.size), dtype=float)
-
-    if not return_info:
-        return points
-
-    return {
-        "points": points,
-        "phase [turns]": phase,
-        "time_weight [none]": time_weight,
-        "radius [R]": np.full(theta.size, radius, dtype=float),
-    }
+    points[:, 0] = radius * np.cos(theta)
+    points[:, 1] = radius * np.sin(theta)
+    points[:, 2] = 0.0
+    return points
 
 def sample_curve(
     smart_ds,
@@ -169,27 +152,27 @@ def sample_elliptic_orbit(
         raise ValueError("sample_elliptic_orbit supports only plane='xy' in trajectories.py")
     if float(angle0) != 0.0:
         raise ValueError("sample_elliptic_orbit supports only angle0=0 in trajectories.py")
+    if float(phase0) != 0.0:
+        raise ValueError("sample_elliptic_orbit supports only phase0=0 in trajectories.py")
+    if tuple(center) != (0.0, 0.0, 0.0):
+        raise ValueError("sample_elliptic_orbit supports only center=(0,0,0) in trajectories.py")
     if sample != "eccentric_anomaly":
         raise ValueError("sample_elliptic_orbit supports only sample='eccentric_anomaly'")
 
-    orbit_info = circular_orbit_points(
-        semi_major_axis,
-        n_points=n_points,
-        phase0=phase0,
-        center=center,
-        return_info=True,
-    )
+    points = circular_orbit_points(semi_major_axis, n_points=n_points)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
     sampled_curve = sample_curve(
         smart_ds,
-        orbit_info["points"],
+        points,
         fields=fields,
         coordinate_fields=coordinate_fields,
         method=method,
         fill_value=fill_value,
     )
     context_fields = {
-        "phase [turns]": orbit_info["phase [turns]"],
-        "time_weight [none]": orbit_info["time_weight [none]"],
+        "phase [turns]": phase,
+        "time_weight [none]": time_weight,
     }
     sampled_curve = sampled_curve.append_fields(
         context_fields,

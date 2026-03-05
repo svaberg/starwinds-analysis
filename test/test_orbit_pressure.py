@@ -31,16 +31,17 @@ def test_relative_ram_pressure_from_trajectory_runs_on_zero_eccentricity_example
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    info = circular_orbit_points(10.0, n_points=96, return_info=True)
-    time = info["phase [turns]"] * period_s
+    points = circular_orbit_points(10.0, n_points=96)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time = phase * period_s
     velocity = trajectory_velocity(
-        info["points"],
+        points,
         time,
         coordinate_scale=SOLAR_RADIUS_M,
     )
     trajectory = sample_trajectory(
         sds,
-        info["points"],
+        points,
         fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
@@ -65,16 +66,17 @@ def test_relative_ram_pressure_from_trajectory_runs_on_circular_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
-    info = circular_orbit_points(10.0, n_points=96, return_info=True)
-    time = info["phase [turns]"] * period_s
+    points = circular_orbit_points(10.0, n_points=96)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time = phase * period_s
     velocity = trajectory_velocity(
-        info["points"],
+        points,
         time,
         coordinate_scale=SOLAR_RADIUS_M,
     )
     trajectory = sample_trajectory(
         sds,
-        info["points"],
+        points,
         fields=(
             "Rho [kg/m^3]",
             "U_x [m/s]",
