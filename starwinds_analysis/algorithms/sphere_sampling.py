@@ -19,6 +19,11 @@ def fibonacci_sphere(num_points, randomize=False):
     Generate approximately uniformly distributed points on the unit sphere
     Used by: `test/test_surface_torque_analysis.py`, `starwinds_analysis/analysis/shells.py`
     """
+    num_points = int(num_points)
+    if num_points <= 0:
+        log.error("fibonacci_sphere failed: num_points=%d", num_points)
+        raise ValueError("num_points must be > 0")
+    log.debug("fibonacci_sphere start num_points=%d randomize=%s", num_points, randomize)
     points = np.empty((num_points, 3))
 
     rnd = 1.
@@ -39,6 +44,7 @@ def fibonacci_sphere(num_points, randomize=False):
 
         points[i, :] = np.array((x, y, z))
 
+    log.info("fibonacci_sphere done num_points=%d", num_points)
     return points
 
 
@@ -64,7 +70,18 @@ class PolarAzimuthalGrid:
         """
         self._polar = np.array(polar_edge_1d, float)
         self._azimuthal = np.array(azimuthal_edge_1d, float)
+        if self._polar.ndim != 1 or self._azimuthal.ndim != 1:
+            log.error("PolarAzimuthalGrid failed: edges must be 1D")
+            raise ValueError("polar and azimuthal edges must be 1D")
+        if self._polar.size < 2 or self._azimuthal.size < 2:
+            log.error("PolarAzimuthalGrid failed: insufficient edge counts")
+            raise ValueError("polar and azimuthal edges must have at least two entries")
         self._meshgrid_kwargs = dict(indexing="ij")
+        log.debug(
+            "PolarAzimuthalGrid init n_polar_edges=%d n_azimuth_edges=%d",
+            self._polar.size,
+            self._azimuthal.size,
+        )
 
 
     @property
@@ -119,6 +136,9 @@ class PolarAzimuthalGrid:
         Used by: `PolarAzimuthalGrid` users and internal methods
         """
         radius = float(radius)
+        if radius <= 0:
+            log.error("cell_area failed: radius=%g", radius)
+            raise ValueError("radius must be > 0")
         return (radius**2) * self.cell_solid_angle
 
     @staticmethod
@@ -128,6 +148,9 @@ class PolarAzimuthalGrid:
         Used by: `PolarAzimuthalGrid` users and internal methods
         """
         radius = float(radius)
+        if radius <= 0:
+            log.error("_angles_to_cartesian failed: radius=%g", radius)
+            raise ValueError("radius must be > 0")
         sin_theta = np.sin(theta)
         x = radius * sin_theta * np.cos(phi)
         y = radius * sin_theta * np.sin(phi)
