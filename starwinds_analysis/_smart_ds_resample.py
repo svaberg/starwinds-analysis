@@ -86,6 +86,7 @@ def resample_smart_ds(
             "coord_mask": coord_mask,
             "source_coords_valid": source_coords[coord_mask],
             "nearest_tree": None,
+            "linear_triangulation": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
     else:
@@ -129,7 +130,10 @@ def resample_smart_ds(
                 nearest_indices = nearest_tree.query(flat_sample_points)[1]
             out = values_valid[nearest_indices]
         elif method == "linear":
-            linear_triangulation = Delaunay(spatial_cache["source_coords_valid"])
+            linear_triangulation = spatial_cache["linear_triangulation"]
+            if linear_triangulation is None:
+                linear_triangulation = Delaunay(spatial_cache["source_coords_valid"])
+                spatial_cache["linear_triangulation"] = linear_triangulation
             interpolator = LinearNDInterpolator(
                 linear_triangulation,
                 values_valid,
