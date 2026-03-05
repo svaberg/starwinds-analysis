@@ -163,6 +163,20 @@ Preferred pattern:
 - keep pipeline code as composition/orchestration only
 - keep one smoke test for the pipeline entrypoint and test the real logic elsewhere
 
+## Orbit Rule: Do Not Reinvent Orbit Generators In Library Code
+
+Rule:
+
+- In library code, keep orbit generation minimal: only circular XY point generation is built in.
+- Do not implement or maintain fancy/feature-rich orbit builders in `starwinds_analysis/...`.
+- For non-circular or custom trajectories, users should provide explicit points/time from notebooks/scripts.
+
+Preferred pattern:
+
+- Use `circular_orbit_points(...)` for the built-in simple case.
+- For anything richer, build points externally (for example with KeplerEllipse or user code), then call `sample_curve(...)` or `sample_trajectory(...)`.
+- Keep library responsibility focused on resampling and physics over provided geometry, not on orbital mechanics tooling.
+
 ## 0. Library Purity (Hard Boundary)
 
 Rule:
