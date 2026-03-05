@@ -42,15 +42,10 @@ Status note:
 - `summarize_shell_diagnostics_band`: Summarize all 1D shell-profile series in a diagnostics bundle over a shell-radius band. Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
 
 ## `starwinds_analysis/analysis/shells.py`
-- `_resample_shell_points`: Resample requested fields onto explicit shell points and return a shell SmartDs. Used in `starwinds_analysis/analysis/shells.py`.
-- `unit_from_brackets`: Extract the unit substring from a bracketed field name like `X [R]`. Used in `starwinds_analysis/analysis/shells.py`.
-- `_append_fields_to_smart_ds`: Attach derived arrays (free coords/areas/etc.) to a resampled shell SmartDs. Used in `starwinds_analysis/analysis/shells.py`.
-- `infer_body_radius_m`: Infer the body radius in meters from args/aux so shell/orbit lengths can be converted to SI. Used in `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py` (+1 more).
 - `infer_cartesian_axis_radii`: Infer available shell radii from points lying on a Cartesian axis. Used in `test/test_shell_analysis.py`.
 - `sample_spherical_shells`: Resample fields onto spherical shell cell centers. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+1 more).
 - `sample_spherical_shells_fibonacci`: Resample fields onto equal-area Fibonacci sphere points on each shell. Used in `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`, `starwinds_analysis/analysis/shells.py`.
 - `integrate_shell_scalar`: Integrate scalar values over shell surfaces with NaN-safe area weighting. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `examples/smartds_inner_boundary_magnetic_zdi.ipynb`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more).
-- `shell_profile_radius_height`: Build standard radius/height profile arrays from a shell SmartDs. Used in `starwinds_analysis/physics/fluxes.py`, `starwinds_analysis/physics/mass_loss.py`, `starwinds_analysis/physics/torque.py`.
 
 ## `starwinds_analysis/analysis/slices.py`
 - `structured_quad_corners`: Quad connectivity for a row-major `(nz, nx)` point grid. Used in `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`.
@@ -64,6 +59,9 @@ Status note:
 
 ## `starwinds_analysis/data/samples.py`
 - `sample_data_dir`: Return the repository's `sample_data` directory. Used in `test/test_sample_data_helpers.py`, `starwinds_analysis/data/samples.py`.
+
+## `starwinds_analysis/data/field_names.py`
+- `unit_from_brackets`: Extract the unit substring from a bracketed field name like `X [R]`. Used in `starwinds_analysis/analysis/shells.py`.
 - `get_sample`: Return an absolute `Path` to a file in `sample_data`. Used in `test/test_shell_magnetic_analysis.py`, `test/test_sample_data_helpers.py`, `examples/smartds_radial_histograms.ipynb`, `examples/smartds_inner_boundary_magnetic_zdi.ipynb`, `examples/smartds_quicklook_profiles.ipynb` (+2 more).
 
 ## `starwinds_analysis/physics/fluxes.py`

@@ -16,35 +16,6 @@ from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
 from starwinds_analysis.data.field_names import unit_from_brackets
 log = logging.getLogger(__name__)
 
-def resample_shell_points(
-    smart_ds,
-    sample_points,
-    *,
-    fields,
-    coordinate_fields,
-    method,
-    fill_value,
-    title_suffix="shell samples",
-):
-    """
-    Resample requested fields onto explicit shell points and return a shell SmartDs.
-    Used by: `starwinds_analysis/analysis/shells.py`
-    """
-    if fields is None:
-        fields_arg = None
-    else:
-        requested_fields = tuple(dict.fromkeys(fields))
-        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
-    return smart_ds.resample(
-        sample_points,
-        coordinate_fields=coordinate_fields,
-        fields=fields_arg,
-        method=method,
-        fill_value=fill_value,
-        title=f"{getattr(smart_ds, 'title', 'dataset')} ({title_suffix})",
-        zone="shell-samples",
-    )
-
 def infer_cartesian_axis_radii(
     smart_ds,
     *,
@@ -154,14 +125,20 @@ def sample_spherical_shells(
             f"{area.shape} for theta={theta.shape}, phi={phi.shape}"
         )
 
-    resampled = resample_shell_points(
-        smart_ds,
+    if fields is None:
+        fields_arg = None
+    else:
+        requested_fields = tuple(dict.fromkeys(fields))
+        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
+
+    resampled = smart_ds.resample(
         sample_points,
-        fields=fields,
         coordinate_fields=coordinate_fields,
+        fields=fields_arg,
         method=method,
         fill_value=fill_value,
-        title_suffix="shell samples (grid)",
+        title=f"{getattr(smart_ds, 'title', 'dataset')} (shell samples (grid))",
+        zone="shell-samples",
     )
 
     if length_unit_to_m is not None:
@@ -229,14 +206,20 @@ def sample_spherical_shells_fibonacci(
     xyz = radii[:, None, None, None] * xyz_unit[None, :, :, :]  # (nr, npts, 1, 3)
     sample_points = xyz
 
-    resampled = resample_shell_points(
-        smart_ds,
+    if fields is None:
+        fields_arg = None
+    else:
+        requested_fields = tuple(dict.fromkeys(fields))
+        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
+
+    resampled = smart_ds.resample(
         sample_points,
-        fields=fields,
         coordinate_fields=coordinate_fields,
+        fields=fields_arg,
         method=method,
         fill_value=fill_value,
-        title_suffix="shell samples (fibonacci)",
+        title=f"{getattr(smart_ds, 'title', 'dataset')} (shell samples (fibonacci))",
+        zone="shell-samples",
     )
 
     area_unit = (4.0 * math.pi) / float(n_points)
