@@ -204,7 +204,6 @@ def sample_trajectory(
     Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V`.
     The returned SmartDs exposes `V_xyz` via graph recipes when `velocity_xyz` is provided.
     """
-    points = np.array(points)
     sampled_curve = sample_curve(
         smart_ds,
         points,
@@ -213,24 +212,26 @@ def sample_trajectory(
         method=method,
         fill_value=fill_value,
     )
+
     time = np.array(time)
     if time.ndim != 1 or time.shape[0] != sampled_curve.points.shape[0]:
         raise ValueError("time must have shape (n_points,)")
+
     context_fields = {"t [s]": time}
-    has_velocity = velocity_xyz is not None
-    if has_velocity:
-        velocity = np.array(velocity_xyz)
-        if velocity.shape != (sampled_curve.points.shape[0], 3):
-            raise ValueError("velocity_xyz must have shape (n_points, 3)")
-        context_fields["V_x [m/s]"] = velocity[:, 0]
-        context_fields["V_y [m/s]"] = velocity[:, 1]
-        context_fields["V_z [m/s]"] = velocity[:, 2]
+    if velocity_xyz is None:
+        return sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
+
+    velocity = np.array(velocity_xyz)
+    if velocity.shape != (sampled_curve.points.shape[0], 3):
+        raise ValueError("velocity_xyz must have shape (n_points, 3)")
+    context_fields["V_x [m/s]"] = velocity[:, 0]
+    context_fields["V_y [m/s]"] = velocity[:, 1]
+    context_fields["V_z [m/s]"] = velocity[:, 2]
     sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
-    if has_velocity:
-        sampled_curve.set_computation_graph(
-            build_griblet_vector_cartesian_graph(sampled_curve.variables),
-            merge=True,
-        )
+    sampled_curve.set_computation_graph(
+        build_griblet_vector_cartesian_graph(sampled_curve.variables),
+        merge=True,
+    )
     return sampled_curve
 
 def sample_elliptic_orbit(
