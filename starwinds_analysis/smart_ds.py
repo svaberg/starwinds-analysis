@@ -336,6 +336,51 @@ class SmartDs:
         """
         return _explain_field(self, name, return_tree=return_tree)
 
+    def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
+        """
+        Resolve requested fields to raw field dependencies for interpolation.
+        Used by: `starwinds_analysis/analysis/orbits.py`, `starwinds_analysis/analysis/shells.py`,
+          `starwinds_analysis/analysis/slices.py`
+        """
+        base_fields: list[str] = []
+
+        def add(name: str) -> None:
+            """Append a field name once while preserving insertion order."""
+            if name not in base_fields:
+                base_fields.append(name)
+
+        def raw_leaves(node) -> list[str]:
+            """Collect raw dataset leaf fields from one resolved dependency tree node."""
+            deps = list(getattr(node, "deps", []) or [])
+            if not deps:
+                field = getattr(node, "field", None)
+                if isinstance(field, str) and field in self._dataset.variables:
+                    return [field]
+                return []
+            leaves: list[str] = []
+            for dep in deps:
+                for leaf in raw_leaves(dep):
+                    if leaf not in leaves:
+                        leaves.append(leaf)
+            return leaves
+
+        for field in tuple(dict.fromkeys(fields)):
+            if self.has_raw_field(field):
+                add(field)
+                continue
+            try:
+                _cost, tree = self.explain(field, return_tree=True)
+            except (IndexError, KeyError, RuntimeError):
+                add(field)
+                continue
+            leaves = raw_leaves(tree)
+            if leaves:
+                for leaf in leaves:
+                    add(leaf)
+            else:
+                add(field)
+        return tuple(base_fields)
+
     def resample(
         self,
         sample_points,

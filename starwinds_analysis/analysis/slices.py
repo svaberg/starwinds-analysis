@@ -85,6 +85,8 @@ def resample_structured_xz_slice(
 
     if fields is None:
         fields = tuple(smart_ds.variables)
+    else:
+        fields = smart_ds.base_fields_for_resample(tuple(dict.fromkeys(fields)))
 
     sliced = smart_ds.resample(
         points,
@@ -96,4 +98,3 @@ def resample_structured_xz_slice(
         zone=f"{smart_ds.zone} (XZ slice y={y_value:g})",
     )
     return sliced
-

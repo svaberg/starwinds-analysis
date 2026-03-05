@@ -43,7 +43,8 @@ def resample_shell_points(
     if fields is None:
         fields_arg = None
     else:
-        fields_arg = tuple(dict.fromkeys(fields))
+        requested_fields = tuple(dict.fromkeys(fields))
+        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
     return smart_ds.resample(
         sample_points,
         coordinate_fields=coordinate_fields,

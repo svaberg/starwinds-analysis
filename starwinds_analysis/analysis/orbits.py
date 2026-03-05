@@ -190,10 +190,12 @@ def sample_curve(
     Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
+    requested_fields = tuple(dict.fromkeys(fields))
+    base_fields = smart_ds.base_fields_for_resample(requested_fields)
     sampled = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
-        fields=tuple(dict.fromkeys(fields)),
+        fields=base_fields,
         method=method,
         fill_value=fill_value,
         zone="orbit-samples",
