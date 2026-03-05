@@ -7,7 +7,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import griblet
+
+log = logging.getLogger(__name__)
 
 def graph_field_names(smart_ds):
     """
@@ -16,14 +20,18 @@ def graph_field_names(smart_ds):
     """
     graph = smart_ds._computation_graph
     if graph is None or not hasattr(graph, "fields"):
+        log.debug("graph_field_names: no graph/fields available")
         return ()
-    return tuple(graph.fields())
+    out = tuple(graph.fields())
+    log.debug("graph_field_names: n_fields=%d", len(out))
+    return out
 
 def graph_path(smart_ds, name: str):
     """
     Return the chosen griblet dependency path for one field.
     Used by: `starwinds_analysis/_smart_ds_graph.py`
     """
+    log.debug("graph_path resolving field '%s'", name)
     graph = build_runtime_graph(smart_ds)
     solver = griblet.DependencySolver(graph)
     return solver.resolve_field(name)
@@ -34,6 +42,7 @@ def explain_field(smart_ds, name: str, *, return_tree: bool = False):
     Used by: no external call sites found
     """
     cost, tree = graph_path(smart_ds, name)
+    log.info("explain_field resolved '%s' total_cost=%s", name, cost)
     if return_tree:
         return cost, tree
 
@@ -66,6 +75,7 @@ def compute_via_graph(smart_ds, name: str):
     Used by: no external call sites found
     """
     if smart_ds._computation_graph is None:
+        log.error("compute_via_graph failed: no computation graph attached for '%s'", name)
         raise IndexError(
             f"Field '{name}' not available. Raw fields: {smart_ds._dataset.variables}. "
             "No computation graph attached."
@@ -74,6 +84,7 @@ def compute_via_graph(smart_ds, name: str):
     graph = build_runtime_graph(smart_ds)
     solver = griblet.DependencySolver(graph)
     _cost, tree = solver.resolve_field(name)
+    log.debug("compute_via_graph resolved '%s' cost=%s", name, _cost)
     return evaluate_resolved_tree(tree, graph)
 
 def build_runtime_graph(smart_ds):
@@ -82,6 +93,7 @@ def build_runtime_graph(smart_ds):
     Used by: `starwinds_analysis/_smart_ds_graph.py`
     """
     if smart_ds._computation_graph is None:
+        log.error("build_runtime_graph failed: no computation graph attached")
         raise RuntimeError("No computation graph attached")
     runtime_graph = griblet.ComputationGraph()
     loader_graph = build_loader_graph(smart_ds)
@@ -91,6 +103,11 @@ def build_runtime_graph(smart_ds):
         if field in loader_fields:
             continue
         runtime_graph.recipes.setdefault(field, []).extend(recipes)
+    log.debug(
+        "build_runtime_graph done loader_fields=%d runtime_fields=%d",
+        len(loader_fields),
+        len(runtime_graph.fields()) if hasattr(runtime_graph, "fields") else -1,
+    )
     return runtime_graph
 
 def build_loader_graph(smart_ds):
@@ -118,6 +135,11 @@ def build_loader_graph(smart_ds):
                 cost=0.0,
                 metadata={"description": "Dataset aux"},
             )
+    log.debug(
+        "build_loader_graph done raw_fields=%d aux_fields=%d",
+        len(smart_ds._dataset.variables),
+        len(smart_ds._dataset.aux) if smart_ds._include_aux_in_loader else 0,
+    )
     return graph
 
 
@@ -130,6 +152,7 @@ def evaluate_resolved_tree(node, graph):
         for recipe in graph.recipes[node.field]:
             if len(recipe["deps"]) == 0:
                 return recipe["func"]()
+        log.error("evaluate_resolved_tree failed: no zero-dependency recipe for %s", node.field)
         raise RuntimeError(f"No zero-dependency recipe for {node.field}")
 
     values = [evaluate_resolved_tree(dep, graph) for dep in node.deps]
@@ -137,4 +160,5 @@ def evaluate_resolved_tree(node, graph):
     for recipe in graph.recipes[node.field]:
         if tuple(recipe["deps"]) == dep_fields:
             return recipe["func"](*values)
+    log.error("evaluate_resolved_tree failed: no matching recipe for %s deps=%s", node.field, dep_fields)
     raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
