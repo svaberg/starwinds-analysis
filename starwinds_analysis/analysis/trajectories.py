@@ -7,9 +7,13 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from starwinds_analysis.recipes.batsrus import build_griblet_vector_cartesian_graph
+
+log = logging.getLogger(__name__)
 
 def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     """
@@ -19,17 +23,22 @@ def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     pts = np.array(points) * float(coordinate_scale)
     t = np.array(time)
     if pts.ndim != 2 or pts.shape[1] != 3:
+        log.error("trajectory_velocity failed: points shape=%s", pts.shape)
         raise ValueError("points must have shape (n, 3)")
     if t.ndim != 1 or t.shape[0] != pts.shape[0]:
+        log.error("trajectory_velocity failed: time shape=%s points=%s", t.shape, pts.shape)
         raise ValueError("time must have shape (n,)")
     if pts.shape[0] < 2:
+        log.warning("trajectory_velocity returned NaN: fewer than 2 points")
         return np.full_like(pts, np.nan, dtype=float)
 
     dt = np.diff(t)
     if np.any(~np.isfinite(dt)) or np.any(dt <= 0):
+        log.error("trajectory_velocity failed: time is not strictly increasing and finite")
         raise ValueError("time must be strictly increasing and finite")
 
     edge_order = 2 if pts.shape[0] > 2 else 1
+    log.debug("trajectory_velocity edge_order=%d n_points=%d", edge_order, pts.shape[0])
     return np.gradient(pts, t, axis=0, edge_order=edge_order)
 
 def circular_orbit_points(
@@ -43,6 +52,7 @@ def circular_orbit_points(
     """
     radius = float(radius)
     if radius <= 0:
+        log.error("circular_orbit_points failed: radius=%g", radius)
         raise ValueError("radius must be > 0")
 
     theta = np.linspace(0.0, 2.0 * np.pi, int(n_points), endpoint=False)
@@ -50,6 +60,7 @@ def circular_orbit_points(
     points[:, 0] = radius * np.cos(theta)
     points[:, 1] = radius * np.sin(theta)
     points[:, 2] = 0.0
+    log.info("circular_orbit_points done radius=%g n_points=%d", radius, points.shape[0])
     return points
 
 def sample_curve(
@@ -66,6 +77,7 @@ def sample_curve(
     Used by: `starwinds_analysis/physics/orbit_surface.py`
     """
     points = np.array(points)
+    log.info("sample_curve start method=%s n_points=%d", method, points.shape[0])
     requested_fields = tuple(dict.fromkeys(fields))
     base_fields = smart_ds.base_fields_for_resample(requested_fields)
     sampled_curve = smart_ds.resample(
@@ -76,6 +88,7 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
+    log.info("sample_curve done fields=%d base_fields=%d", len(requested_fields), len(base_fields))
     return sampled_curve
 
 def sample_trajectory(
@@ -104,14 +117,25 @@ def sample_trajectory(
 
     time = np.array(time)
     if time.ndim != 1 or time.shape[0] != sampled_curve.points.shape[0]:
+        log.error(
+            "sample_trajectory failed: time shape=%s expected=(%d,)",
+            time.shape,
+            sampled_curve.points.shape[0],
+        )
         raise ValueError("time must have shape (n_points,)")
 
     context_fields = {"t [s]": time}
     if velocity_xyz is None:
+        log.info("sample_trajectory done without velocity fields")
         return sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
 
     velocity = np.array(velocity_xyz)
     if velocity.shape != (sampled_curve.points.shape[0], 3):
+        log.error(
+            "sample_trajectory failed: velocity shape=%s expected=(%d, 3)",
+            velocity.shape,
+            sampled_curve.points.shape[0],
+        )
         raise ValueError("velocity_xyz must have shape (n_points, 3)")
     context_fields["V_x [m/s]"] = velocity[:, 0]
     context_fields["V_y [m/s]"] = velocity[:, 1]
@@ -121,4 +145,5 @@ def sample_trajectory(
         build_griblet_vector_cartesian_graph(sampled_curve.variables),
         merge=True,
     )
+    log.info("sample_trajectory done with velocity fields")
     return sampled_curve

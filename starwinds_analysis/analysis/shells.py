@@ -30,13 +30,16 @@ def infer_cartesian_axis_radii(
     Infer available shell radii from points lying on a Cartesian axis.
     Used by: `test/test_shell_analysis.py`
     """
+    log.info("infer_cartesian_axis_radii start axis=%s", axis)
     axis_key = str(axis).lower()
     axis_idx = {"x": 0, "y": 1, "z": 2}.get(axis_key)
     if axis_idx is None:
+        log.error("infer_cartesian_axis_radii failed: axis=%s", axis)
         raise ValueError("axis must be 'x', 'y', or 'z'")
 
     coords = [np.array(smart_ds.variable(name)).ravel() for name in coord_fields]
     if len(coords) != 3:
+        log.error("infer_cartesian_axis_radii failed: coord_fields=%s", coord_fields)
         raise ValueError("coord_fields must have length 3")
     x, y, z = coords
     arrays = (x, y, z)
@@ -61,7 +64,9 @@ def infer_cartesian_axis_radii(
     if r_max is not None:
         radii = radii[radii <= float(r_max)]
     if radii.size == 0:
+        log.error("infer_cartesian_axis_radii failed: no radii inferred")
         raise ValueError("Could not infer any axis-aligned radii from the dataset points")
+    log.info("infer_cartesian_axis_radii done n_radii=%d", radii.size)
     return radii
 
 def sample_spherical_shells(
@@ -84,10 +89,13 @@ def sample_spherical_shells(
       `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`,
       `examples/smartds_shell_mass_flux.ipynb` (+1 more)
     """
+    log.info("sample_spherical_shells start method=%s", method)
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
+        log.error("sample_spherical_shells failed: radii ndim=%d", radii.ndim)
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
+        log.error("sample_spherical_shells failed: non-positive radii present")
         raise ValueError("radii must be > 0")
 
     if polar_edges is None:
@@ -115,11 +123,13 @@ def sample_spherical_shells(
         axis=0,
     )
     if sample_points.shape != (radii.size, ntheta, nphi, 3):
+        log.error("sample_spherical_shells failed: sample_points shape=%s", sample_points.shape)
         raise ValueError(
             "Angular center arrays do not match Cartesian center grid shape "
             f"{sample_points.shape} for theta={theta.shape}, phi={phi.shape}"
         )
     if area.shape != (radii.size, ntheta, nphi):
+        log.error("sample_spherical_shells failed: area shape=%s", area.shape)
         raise ValueError(
             "Angular center arrays do not match cell-area shape "
             f"{area.shape} for theta={theta.shape}, phi={phi.shape}"
@@ -166,7 +176,7 @@ def sample_spherical_shells(
         },
         zone_suffix="shell-grid-structured",
     )
-
+    log.info("sample_spherical_shells done n_radii=%d n_theta=%d n_phi=%d", radii.size, ntheta, nphi)
     return shell_ds
 
 def sample_spherical_shells_fibonacci(
@@ -186,13 +196,17 @@ def sample_spherical_shells_fibonacci(
     Used by: `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`,
       `starwinds_analysis/analysis/shells.py`
     """
+    log.info("sample_spherical_shells_fibonacci start method=%s", method)
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
+        log.error("sample_spherical_shells_fibonacci failed: radii ndim=%d", radii.ndim)
         raise ValueError("radii must be 1D")
     if np.any(radii <= 0):
+        log.error("sample_spherical_shells_fibonacci failed: non-positive radii present")
         raise ValueError("radii must be > 0")
     n_points = int(n_points)
     if n_points < 8:
+        log.error("sample_spherical_shells_fibonacci failed: n_points=%d", n_points)
         raise ValueError("n_points must be >= 8")
 
     unit = np.array(fibonacci_sphere(n_points, randomize=randomize))
@@ -249,6 +263,7 @@ def sample_spherical_shells_fibonacci(
         },
         zone_suffix="shell-fibonacci-structured",
     )
+    log.info("sample_spherical_shells_fibonacci done n_radii=%d n_points=%d", radii.size, n_points)
     return shell_ds
 
 def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
@@ -261,13 +276,16 @@ def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
     v = np.array(values)
     a = np.array(area)
     if v.shape != a.shape:
+        log.debug("integrate_shell_scalar broadcasting area from %s to %s", a.shape, v.shape)
         a = np.broadcast_to(a, v.shape)
 
     if not ignore_nan:
         if not np.all(np.isfinite(v)) or not np.all(np.isfinite(a)):
+            log.error("integrate_shell_scalar failed: non-finite values with ignore_nan=False")
             raise ValueError("Non-finite values found; pass ignore_nan=True to ignore them")
         sum_val = np.sum(v * a, axis=(-2, -1))
         coverage = np.ones_like(sum_val, dtype=float)
+        log.info("integrate_shell_scalar done (strict finite path)")
         return sum_val, coverage
 
     mask = np.isfinite(v) & np.isfinite(a)
@@ -282,5 +300,8 @@ def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
             out=np.full_like(sum_area, np.nan, dtype=float),
             where=total_area > 0,
         )
-
+    low_coverage = int(np.count_nonzero(np.isfinite(coverage) & (coverage < 1.0)))
+    if low_coverage > 0:
+        log.warning("integrate_shell_scalar coverage below 1 for %d shells", low_coverage)
+    log.info("integrate_shell_scalar done")
     return sum_val, coverage

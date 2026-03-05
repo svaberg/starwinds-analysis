@@ -7,7 +7,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 def weighted_mean_std(values, weights=None):
     """
@@ -22,15 +26,18 @@ def weighted_mean_std(values, weights=None):
         w = np.array(weights)
         if w.shape != v.shape:
             w = np.broadcast_to(w, v.shape)
+            log.debug("weighted_mean_std broadcast weights to shape %s", v.shape)
 
     mask = np.isfinite(v) & np.isfinite(w) & (w >= 0)
     if not np.any(mask):
+        log.warning("weighted_mean_std: no active finite/non-negative samples")
         return np.nan, np.nan
 
     v = v[mask]
     w = w[mask]
     wsum = float(np.sum(w))
     if wsum <= 0:
+        log.warning("weighted_mean_std: non-positive total weight")
         return np.nan, np.nan
 
     mean = float(np.average(v, weights=w))
@@ -51,10 +58,12 @@ def weighted_quantile(values, quantiles, weights=None):
     else:
         w = np.array(weights).ravel()
         if w.shape != v.shape:
+            log.error("weighted_quantile failed: weights shape %s values shape %s", w.shape, v.shape)
             raise ValueError("weights must have the same shape as values")
 
     mask = np.isfinite(v) & np.isfinite(w) & (w > 0)
     if not np.any(mask):
+        log.warning("weighted_quantile: no active finite/positive-weight samples")
         out = np.full_like(q, np.nan, dtype=float)
         return float(out) if out.ndim == 0 else out
 
@@ -79,6 +88,7 @@ def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=
     v = np.array(values)
     qv = weighted_quantile(v, quantiles, weights=weights)
     mean, std = weighted_mean_std(v, weights=weights)
+    log.debug("summarize_samples done n=%d", v.size)
     return {
         "quantiles": np.array(quantiles),
         "values": np.array(qv),

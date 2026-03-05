@@ -7,10 +7,14 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 
 from starwinds_analysis.analysis.stats import weighted_mean_std
 from starwinds_analysis.analysis.stats import weighted_quantile
+
+log = logging.getLogger(__name__)
 
 def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | None = None):
     """
@@ -24,6 +28,7 @@ def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | No
     if rmax is not None:
         w = np.where(r <= float(rmax), w, 0.0)
     w = np.where(np.isfinite(r), w, 0.0)
+    log.debug("boxcar_shell_weights active=%d/%d", int(np.count_nonzero(w > 0)), w.size)
     return w
 
 def summarize_shell_series(
@@ -43,6 +48,7 @@ def summarize_shell_series(
     r = np.array(radii_r).ravel()
     v = np.array(values).ravel()
     if r.shape != v.shape:
+        log.error("summarize_shell_series failed: radii shape %s values shape %s", r.shape, v.shape)
         raise ValueError("radii and values must have the same shape")
 
     if weights is None:
@@ -50,11 +56,13 @@ def summarize_shell_series(
     else:
         w = np.array(weights).ravel()
         if w.shape != v.shape:
+            log.error("summarize_shell_series failed: weights shape %s values shape %s", w.shape, v.shape)
             raise ValueError("weights must have the same shape as values")
 
     if coverage is not None:
         c = np.array(coverage).ravel()
         if c.shape != v.shape:
+            log.error("summarize_shell_series failed: coverage shape %s values shape %s", c.shape, v.shape)
             raise ValueError("coverage must have the same shape as values")
         w = w * np.clip(c, 0.0, np.inf)
 
@@ -73,7 +81,9 @@ def summarize_shell_series(
         rmax_eff = np.nan
         n_active = 0
         weight_sum = 0.0
+        log.warning("summarize_shell_series: no active weighted samples")
 
+    log.info("summarize_shell_series done n_active=%d", n_active)
     return {
         "rmin [R]": rmin_eff,
         "rmax [R]": rmax_eff,
@@ -98,11 +108,14 @@ def summarize_shell_diagnostics_band(
     Used by: `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
     out = {}
+    log.info("summarize_shell_diagnostics_band start")
     for name, profile in diagnostics.items():
         if not isinstance(profile, dict):
+            log.debug("summarize_shell_diagnostics_band skipping %s (not a dict)", name)
             continue
         radii = profile.get("radius [R]")
         if radii is None:
+            log.debug("summarize_shell_diagnostics_band skipping %s (no radius [R])", name)
             continue
         coverage = profile.get("coverage [none]")
         per_profile = {}
@@ -111,8 +124,16 @@ def summarize_shell_diagnostics_band(
                 continue
             arr = np.array(value)
             if arr.ndim != 1:
+                log.debug("summarize_shell_diagnostics_band skipping %s/%s (ndim=%d)", name, key, arr.ndim)
                 continue
             if arr.shape != np.array(radii).shape:
+                log.debug(
+                    "summarize_shell_diagnostics_band skipping %s/%s shape=%s radii=%s",
+                    name,
+                    key,
+                    arr.shape,
+                    np.array(radii).shape,
+                )
                 continue
             per_profile[key] = summarize_shell_series(
                 radii,
@@ -125,4 +146,5 @@ def summarize_shell_diagnostics_band(
             )
         if per_profile:
             out[name] = per_profile
+    log.info("summarize_shell_diagnostics_band done groups=%d", len(out))
     return out

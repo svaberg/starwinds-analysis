@@ -7,7 +7,11 @@
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
+
+log = logging.getLogger(__name__)
 
 def structured_quad_corners(nx: int, nz: int):
     """
@@ -15,6 +19,7 @@ def structured_quad_corners(nx: int, nz: int):
     Used by: `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`
     """
     if nx < 2 or nz < 2:
+        log.error("structured_quad_corners failed: nx=%d nz=%d", nx, nz)
         raise ValueError("nx and nz must be >= 2")
 
     corners = np.empty(((nx - 1) * (nz - 1), 4), dtype=int)
@@ -35,6 +40,7 @@ def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
     v = np.array(values)
     v = v[np.isfinite(v)]
     if v.size == 0:
+        log.error("infer_range failed: no finite values")
         raise ValueError("No finite values to infer range from")
     lo = float(np.min(v))
     hi = float(np.max(v))
@@ -45,6 +51,7 @@ def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
         pad = (hi - lo) * float(padding_frac)
         lo -= pad
         hi += pad
+    log.debug("infer_range lo=%g hi=%g symmetric=%s padding_frac=%g", lo, hi, symmetric, padding_frac)
     return lo, hi
 
 def resample_structured_xz_slice(
@@ -65,7 +72,9 @@ def resample_structured_xz_slice(
     Resample a 3D dataset onto a structured XZ plane and return a new `SmartDs`.
     Used by: `test/test_slices_analysis.py`, `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`
     """
+    log.info("resample_structured_xz_slice start method=%s", method)
     if nx < 2 or nz < 2:
+        log.error("resample_structured_xz_slice failed: nx=%d nz=%d", nx, nz)
         raise ValueError("nx and nz must be >= 2")
 
     x = np.array(smart_ds.variable("X [R]"))
@@ -97,5 +106,12 @@ def resample_structured_xz_slice(
         fill_value=fill_value,
         corners=corners,
         zone=f"{smart_ds.zone} (XZ slice y={y_value:g})",
+    )
+    log.info(
+        "resample_structured_xz_slice done nx=%d nz=%d y=%g fields=%d",
+        nx,
+        nz,
+        float(y_value),
+        len(fields),
     )
     return sliced
