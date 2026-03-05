@@ -10,7 +10,7 @@ from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
 from starwinds_analysis.physics.torque import integrate_surface_torque_terms
 from starwinds_analysis.physics.torque import surface_torque_density_terms
-from starwinds_analysis.physics.torque import surface_torque_vs_radius
+from starwinds_analysis.physics.torque import surface_torque_terms_on_shell_samples
 from starwinds_analysis.smart_ds import SmartDs
 
 
@@ -79,7 +79,7 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_surface_torque_vs_radius_matches_shell_torque_on_example():
+def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     radii = [2.0, 4.0, 8.0, 16.0]
@@ -107,17 +107,17 @@ def test_surface_torque_vs_radius_matches_shell_torque_on_example():
     shell_magnetic, _ = integrate_shell_scalar(magnetic_density, area)
     shell_dynamic, _ = integrate_shell_scalar(dynamic_density, area)
     shell_total = shell_magnetic + shell_dynamic
-    surf = surface_torque_vs_radius(
-        sds,
-        radii,
-        body_radius=SOLAR_RADIUS_M,
-        n_polar=12,
-        n_azimuth=24,
-        sampling="fibonacci",
-        method="nearest",
-        include_pressure_term=True,
+
+    terms = surface_torque_terms_on_shell_samples(
+        shells,
+        rho=np.array(shells("Rho [kg/m^3]")),
+        U_xyz=np.array(shells("U_xyz [m/s]")),
+        B_xyz=np.array(shells("B_xyz [T]")),
+        pressure=None,
         angvel=0.0,
+        body_radius=SOLAR_RADIUS_M,
     )
+    surf = integrate_surface_torque_terms(terms)
 
     np.testing.assert_allclose(
         surf["T1_magnetic [Nm]"],
