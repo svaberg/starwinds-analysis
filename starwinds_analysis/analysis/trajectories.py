@@ -44,10 +44,10 @@ def circular_orbit_points(
     radius = float(radius)
     if radius <= 0:
         raise ValueError("radius must be > 0")
-    if n_points < 8:
-        raise ValueError("n_points must be >= 8")
+    if int(n_points) <= 0:
+        raise ValueError("n_points must be > 0")
 
-    theta = np.linspace(0.0, 2.0 * np.pi, n_points, endpoint=False)
+    theta = np.linspace(0.0, 2.0 * np.pi, int(n_points), endpoint=False)
     points = np.empty((theta.size, 3), dtype=float)
     points[:, 0] = radius * np.cos(theta)
     points[:, 1] = radius * np.sin(theta)
