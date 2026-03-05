@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from collections.abc import Sequence
+import logging
 from os import PathLike
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from starwinds_analysis._smart_ds_graph import graph_field_names as _graph_field
 from starwinds_analysis._smart_ds_resample import resample_smart_ds
 from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
 
+log = logging.getLogger(__name__)
 
 class SmartDs:
     """
@@ -97,6 +99,7 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         dataset = Dataset.from_file(str(file))
+        log.info("SmartDs.from_file loaded %s", str(file))
         for key, value in stellar_aux_from_nearby_param_in(Path(file)).items():
             dataset.aux.setdefault(key, value)
         return cls(dataset, **kwargs)
@@ -224,12 +227,15 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         if graph is None:
+            log.info("SmartDs graph cleared")
             self._computation_graph = None
             return self
 
         if merge and self._computation_graph is not None:
+            log.debug("SmartDs merging computation graph")
             self._computation_graph.merge(graph)
         else:
+            log.debug("SmartDs setting computation graph")
             self._computation_graph = graph
         return self
 
@@ -293,8 +299,10 @@ class SmartDs:
         from available metadata (for example nearby `PARAM.in` stellar parameters).
         Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/volume.py`, `starwinds_analysis/pipelines/shell.py`
         """
+        log.info("SmartDs.prepare start")
         self.add_batsrus_graph(body_radius=body_radius)
         self.add_spherical_graph()
+        log.info("SmartDs.prepare done")
         return self
 
     def clear_cache(self, *names: str) -> None:
@@ -303,10 +311,12 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         if not names:
+            log.debug("SmartDs clearing all field and spatial caches")
             self._cache.clear()
             self._resample_spatial_cache.clear()
             return
         for name in names:
+            log.debug("SmartDs clearing field cache entry '%s'", name)
             self._cache.pop(name, None)
 
     def variable(self, name: str):
@@ -316,16 +326,21 @@ class SmartDs:
         Used by: `SmartDs` users and internal methods
         """
         if not isinstance(name, str):
+            log.error("SmartDs.variable failed: non-string field key")
             raise TypeError("SmartDs fields must be requested by name")
         if self._cache_enabled and name in self._cache:
+            log.debug("SmartDs.variable cache hit '%s'", name)
             return self._cache[name]
 
         if name in self._dataset.variables:
+            log.debug("SmartDs.variable raw field '%s'", name)
             value = self._dataset.variable(name)
         else:
             try:
+                log.debug("SmartDs.variable graph field '%s'", name)
                 value = _compute_via_graph(self, name)
             except UnresolvableFieldError as exc:
+                log.error("SmartDs.variable failed: cannot resolve '%s'", name)
                 raise IndexError(str(exc)) from exc
 
         if self._cache_enabled:
