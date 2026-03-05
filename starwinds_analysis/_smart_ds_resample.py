@@ -75,6 +75,21 @@ def resample_smart_ds(
         if coord_name in out_index:
             out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
+    try:
+        from scipy.interpolate import LinearNDInterpolator
+        from scipy.interpolate import NearestNDInterpolator
+        from scipy.spatial import cKDTree
+        from scipy.spatial import Delaunay
+    except ImportError as e:
+        raise ImportError(
+            "Resampling requires scipy (scipy.interpolate). Install scipy to use "
+            "SmartDs.resample()."
+        ) from e
+
+    source_coords_valid = source_coords[coord_mask]
+    nearest_indices = None
+    linear_triangulation = None
+
     for name in output_variables:
         if name in coordinate_fields:
             continue
@@ -85,27 +100,37 @@ def resample_smart_ds(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "
                 f"length {source_coords.shape[0]}"
             )
-        valid = coord_mask & np.isfinite(values)
-        if not np.any(valid):
+        values_valid = values[coord_mask]
+        finite_values_valid = np.isfinite(values_valid)
+        if not np.any(finite_values_valid):
             continue
 
-        try:
-            from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-        except ImportError as e:
-            raise ImportError(
-                "Resampling requires scipy (scipy.interpolate). Install scipy to use "
-                "SmartDs.resample()."
-            ) from e
-
         if method == "nearest":
-            interpolator = NearestNDInterpolator(source_coords[valid], values[valid])
-            out = interpolator(flat_sample_points)
+            if np.all(finite_values_valid):
+                if nearest_indices is None:
+                    nearest_tree = cKDTree(source_coords_valid)
+                    nearest_indices = nearest_tree.query(flat_sample_points)[1]
+                out = values_valid[nearest_indices]
+            else:
+                valid = coord_mask & np.isfinite(values)
+                interpolator = NearestNDInterpolator(source_coords[valid], values[valid])
+                out = interpolator(flat_sample_points)
         elif method == "linear":
-            interpolator = LinearNDInterpolator(
-                source_coords[valid],
-                values[valid],
-                fill_value=fill_value,
-            )
+            if np.all(finite_values_valid):
+                if linear_triangulation is None:
+                    linear_triangulation = Delaunay(source_coords_valid)
+                interpolator = LinearNDInterpolator(
+                    linear_triangulation,
+                    values_valid,
+                    fill_value=fill_value,
+                )
+            else:
+                valid = coord_mask & np.isfinite(values)
+                interpolator = LinearNDInterpolator(
+                    source_coords[valid],
+                    values[valid],
+                    fill_value=fill_value,
+                )
             out = interpolator(flat_sample_points)
         else:
             raise ValueError("method must be 'nearest' or 'linear'")
