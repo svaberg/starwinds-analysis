@@ -194,14 +194,10 @@ Status note:
 - `_infer_radius_name_from_coord`: Infer the matching radius field name/unit from coordinate field names. Used in `starwinds_analysis/recipes/spherical.py`.
 
 ## `starwinds_analysis/analysis/trajectories.py`
-- `circular_orbit_points`: Cartesian points on a circular orbit (same coordinate unit as `radius`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `_kepler_eccentric_anomaly`: Solve `E - e sin(E) = M` for `E` with vectorized Newton iterations. Used in `starwinds_analysis/analysis/trajectories.py`.
-- `_embed_plane_coords`: Embed 2D orbit-plane coordinates into 3D (`xy`, `xz`, `yz`) Cartesian coordinates. Used in `starwinds_analysis/analysis/trajectories.py`.
-- `_phase_from_weights`: Convert periodic sample weights into cumulative phase turns. Used in `starwinds_analysis/analysis/trajectories.py`.
-- `elliptic_orbit_points`: Cartesian points on a Kepler ellipse (same coordinate unit as `semi_major_axis`). Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_points`: Resample `fields` onto explicit Cartesian points. Used in `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_circular_orbit`: Sample requested fields along a circular orbit path using generic point resampling. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `sample_elliptic_orbit`: Sample requested fields along an elliptic orbit path using generic point resampling. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_pressure.py`.
+- `trajectory_velocity`: Velocity from explicit trajectory points and strictly increasing time. Used in `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`.
+- `circular_orbit_points`: Cartesian points on a circular XY orbit (same coordinate unit as `radius`). Used in `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `sample_curve`: Resample requested fields onto explicit Cartesian points and return a curve `SmartDs`. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
+- `sample_trajectory`: Resample fields onto trajectory points and append `t` and optional `V_xyz` context fields. Used in `test/test_orbit_pressure.py`.
 
 ## `starwinds_analysis/smart_ds.py`
 - `SmartDs` (class): Lightweight wrapper around ``starwinds_readplt.Dataset``. Used across notebooks/tests and most physics/sampling workflows as the main dataset wrapper.

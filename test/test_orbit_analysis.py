@@ -5,7 +5,7 @@ import pytest
 from scipy import constants as const
 
 from starwinds_analysis.analysis.trajectories import circular_orbit_points
-from starwinds_analysis.analysis.trajectories import sample_elliptic_orbit
+from starwinds_analysis.analysis.trajectories import sample_curve
 from starwinds_analysis.analysis.trajectories import trajectory_velocity
 from starwinds_analysis.analysis.shells import integrate_shell_scalar
 from starwinds_analysis.analysis.shells import sample_shell_field
@@ -19,6 +19,22 @@ from starwinds_analysis.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+
+
+def sample_circular_curve(sds, radius_r, *, fields, n_points, method):
+    """Sample requested fields on a circular XY curve and append phase/weights."""
+    points = circular_orbit_points(radius_r, n_points=n_points)
+    curve = sample_curve(sds, points, fields=fields, method=method)
+    phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
+    time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
+    curve = curve.append_fields(
+        {"phase [turns]": phase, "time_weight [none]": time_weight},
+        zone_suffix="circular orbit",
+    )
+    curve.raw.aux["orbit_kind"] = "circular"
+    curve.raw.aux["orbit_plane"] = "xy"
+    curve.raw.aux["orbit_radius_R"] = float(radius_r)
+    return curve
 
 
 def interpolate_profile(radii, values, x):
@@ -221,10 +237,9 @@ def test_trajectory_velocity_rejects_nonincreasing_time():
 def test_sample_zero_eccentricity_orbit_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    out = sample_elliptic_orbit(
+    out = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
         n_points=72,
         method="nearest",
@@ -240,13 +255,12 @@ def test_sample_zero_eccentricity_orbit_runs_on_example():
 
 
 @pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_sample_elliptic_orbit_runs_on_example():
+def test_sample_circular_curve_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    out = sample_elliptic_orbit(
+    out = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
         n_points=96,
         method="nearest",
@@ -270,10 +284,9 @@ def test_sample_elliptic_orbit_runs_on_example():
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=("mass_flux [kg/m^2/s]",),
         n_points=96,
         method="nearest",
@@ -287,10 +300,9 @@ def test_mass_loss_from_curve_runs():
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=(
             "magnetic_torque_density [N/m]",
             "dynamic_torque_density [N/m]",
@@ -311,10 +323,9 @@ def test_torque_from_curve_runs():
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=("mass_flux [kg/m^2/s]",),
         n_points=96,
         method="nearest",
@@ -339,10 +350,9 @@ def test_compare_curve_mass_loss_to_shell_runs():
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=(
             "magnetic_torque_density [N/m]",
             "dynamic_torque_density [N/m]",
@@ -372,10 +382,9 @@ def test_compare_curve_torque_to_shell_runs():
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=("mass_flux [kg/m^2/s]",),
         n_points=96,
         method="nearest",
@@ -401,10 +410,9 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
-    curve = sample_elliptic_orbit(
+    curve = sample_circular_curve(
         sds,
         10.0,
-        eccentricity=0.0,
         fields=(
             "magnetic_torque_density [N/m]",
             "dynamic_torque_density [N/m]",
