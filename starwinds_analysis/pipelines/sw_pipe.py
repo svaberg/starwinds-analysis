@@ -396,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
 
     run_sw_pipe(
         args.directory,
-        pipeline=str(args.pipeline),
+        pipeline=args.pipeline,
         recursive=bool(args.recursive),
         noclobber=bool(args.noclobber),
         include_file_hash=bool(args.file_hash),
