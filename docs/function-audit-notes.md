@@ -1,233 +1,364 @@
-# Function Audit Notes (What They Do / Where Used)
+# Function Audit Notes (Current Snapshot)
 
-Short notes for library functions/classes in `starwinds_analysis`.
-Usage notes are direct caller locations (grep-based, then manually tightened for key APIs).
+Date: 2026-03-06  
+Branch: `dev`
 
-Status note:
-- This is a historical audit snapshot.
-- Entries mentioning removed `quicklook2d.py`, removed `test/test_quicklook2d.py`, or removed `theta`/`phi` field aliases are stale and should be treated as audit debt until this file is rerun against the current codebase.
-- Additional stale markers in this snapshot:
-  - Orbit-surface APIs were renamed to trajectory-oriented names (`sample_surface_revolution`, `pressure_components_on_surface`, `torque_components_on_surface`).
-  - `periodic_curve_velocity(...)` was removed; use `trajectory_velocity(...)` with explicit `time`.
+Generated metadata:
+
+- Generation method: repo-local static scan + manual caller review.
+- Scope: `starwinds_analysis/**/*.py` plus non-test callers in `examples/`.
+- Refresh rule: rerun after API moves/renames in `analysis/`, `physics/`, `pipelines/`, `recipes/`, or `smart_ds.py`.
+
+This file is a fresh snapshot of functions/classes currently present in
+`starwinds_analysis/`.
+
+Conventions used here:
+
+- "Used by" lists non-test, non-self callers in `starwinds_analysis/` and `examples/`.
+- If no such caller is found, it is marked as "No non-test call sites found".
+- This replaces the previous stale snapshot and tracks only the current tree.
 
 ## `starwinds_analysis/_smart_ds_graph.py`
-- `graph_field_names`: List available field names from the runtime griblet graph. Used in no external call sites found.
-- `resolve_field`: Resolve a field through the attached griblet computation graph. Used in `starwinds_analysis/_smart_ds_graph.py`.
-- `explain_field`: Build a human-readable explanation of the chosen graph path. Used in no external call sites found.
-- `compute_via_graph`: Compute a field by resolving + evaluating a griblet graph path. Used in no external call sites found.
-- `build_runtime_graph`: Merge loader graph and user graph into a runtime graph for one SmartDs instance. Used in `starwinds_analysis/_smart_ds_graph.py`.
-- `build_loader_graph`: Build a zero-dependency graph exposing raw dataset variables (+ selected aux). Used in `starwinds_analysis/_smart_ds_graph.py`.
-- `import_griblet`: Import griblet lazily and return required runtime pieces. Used in `starwinds_analysis/_smart_ds_graph.py`.
-- `evaluate_resolved_tree`: Evaluate a griblet-resolved computation tree. Used in `starwinds_analysis/_smart_ds_graph.py`.
+
+- `graph_field_names`: Lists available fields from the active runtime graph.  
+  Used by: `starwinds_analysis/smart_ds.py`
+- `graph_path`: Resolves the selected dependency path for a field.  
+  Used by: `explain_field`
+- `explain_field`: Returns human-readable graph path text (or tree).  
+  Used by: `starwinds_analysis/smart_ds.py`
+- `compute_via_graph`: Resolves + evaluates a graph field.  
+  Used by: `starwinds_analysis/smart_ds.py`
+- `build_runtime_graph`: Merges loader graph + attached graph recipes.  
+  Used by: `compute_via_graph`, `graph_path`
+- `build_loader_graph`: Exposes raw dataset variables and aux entries as zero-dependency recipes.  
+  Used by: `build_runtime_graph`
+- `evaluate_resolved_tree`: Evaluates one resolved dependency tree.  
+  Used by: `compute_via_graph`
 
 ## `starwinds_analysis/_smart_ds_resample.py`
-- `resample_smart_ds`: Resample scalar fields onto new point locations and return a new wrapped dataset. Used in `starwinds_analysis/smart_ds.py`.
-- `interpolate_nd`: Interpolate one field onto target points using SciPy nearest/linear ND interpolators. Used in `starwinds_analysis/_smart_ds_resample.py`.
+
+- `resample_smart_ds`: Interpolates requested fields onto target points and returns a new `SmartDs`.  
+  Used by: `starwinds_analysis/smart_ds.py`
 
 ## `starwinds_analysis/algorithms/sphere_sampling.py`
-- `fibonacci_sphere`: Generate approximately uniformly distributed points on the unit sphere Used in `test/test_surface_torque_analysis.py`, `starwinds_analysis/analysis/shells.py`.
-- `PolarAzimuthalGrid` (class): Spherical surface grid defined by polar (colatitude) and azimuthal edges. Used by shell map notebooks/tests and shell sampling geometry helpers for polar/azimuthal grids.
-  - `PolarAzimuthalGrid.polar_edges`: Returns the polar-angle edge grid (theta edges). Used by shell-map notebooks for edge geometry and plotting extents.
-  - `PolarAzimuthalGrid.azimuthal_edges`: Returns the azimuth edge grid (phi edges). Used with `polar_edges` for shell map corners.
-  - `PolarAzimuthalGrid.polar_centres`: Returns theta cell centres from polar edges. Used when centre sampling is desired on a polar/azimuth grid.
-  - `PolarAzimuthalGrid.azimuthal_centres`: Returns phi cell centres from azimuth edges. Used with `polar_centres` for centre grids.
-  - `PolarAzimuthalGrid.cell_solid_angle`: Returns per-cell solid angle on the unit sphere. Used to build shell areas and integration weights.
-  - `PolarAzimuthalGrid.cell_area`: Returns per-cell area for a supplied radius. Used by shell workflows that want explicit finite cell measures.
-  - `PolarAzimuthalGrid.corners_cartesian`: Maps edge-angle grid to Cartesian corner points at a radius. Used by the magnetic ZDI notebook and shell corner resampling.
-  - `PolarAzimuthalGrid.centres_cartesian`: Maps centre-angle grid to Cartesian centre points at a radius. Used in shell workflows/notebooks when centre sampling is chosen.
+
+- `fibonacci_sphere`: Generates approximately uniform unit-sphere points.  
+  Used by: `starwinds_analysis/analysis/shells.py`
+- `PolarAzimuthalGrid`: Structured polar/azimuth edge+center grid with area/cartesian helpers.  
+  Used by: `starwinds_analysis/analysis/shells.py`
+
+## `starwinds_analysis/algorithms/spherical.py`
+
+- `cartesian_to_spherical_coordinates`: Cartesian -> `(R, polar, azimuth)`.  
+  Used by: `starwinds_analysis/recipes/spherical.py`
+- `spherical_to_cartesian_coordinates`: `(R, polar, azimuth)` -> Cartesian.  
+  Used by: `starwinds_analysis/recipes/spherical.py`
+- `polar_azimuth_to_latitude_longitude`: `(polar, azimuth)` -> `(latitude, longitude)`.  
+  Used by: `starwinds_analysis/recipes/spherical.py`
+- `latitude_longitude_to_polar_azimuth`: `(latitude, longitude)` -> `(polar, azimuth)`.  
+  Used by: `starwinds_analysis/recipes/spherical.py`
+- `cartesian_vector_to_spherical_components`: Cartesian vector -> `(r, p, a)` components.  
+  Used by: `starwinds_analysis/recipes/spherical.py`
+- `spherical_vector_to_cartesian_components`: `(r, p, a)` vector -> Cartesian components.  
+  Used by: No non-test call sites found
 
 ## `starwinds_analysis/analysis/shell_summary.py`
-- `boxcar_shell_weights`: Boxcar weights over shell radii in units of body radii. Used in `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`.
-- `summarize_shell_series`: Weighted summary (mean/std/quantiles) for a 1D shell profile series. Used in `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`.
-- `summarize_shell_diagnostics_band`: Summarize all 1D shell-profile series in a diagnostics bundle over a shell-radius band. Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+
+- `boxcar_shell_weights`: Boxcar weighting over shell radii.  
+  Used by: No non-test call sites found
+- `summarize_shell_series`: Weighted mean/std/quantiles for one shell series.  
+  Used by: No non-test call sites found
+- `summarize_shell_diagnostics_band`: Band summary over shell diagnostics dicts.  
+  Used by: No non-test call sites found
 
 ## `starwinds_analysis/analysis/shells.py`
-- `infer_cartesian_axis_radii`: Infer available shell radii from points lying on a Cartesian axis. Used in `test/test_shell_analysis.py`.
-- `sample_spherical_shells`: Resample fields onto spherical shell cell centers. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `test/test_shell_resample_smartds_spec.py`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+1 more).
-- `sample_spherical_shells_fibonacci`: Resample fields onto equal-area Fibonacci sphere points on each shell. Used in `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`, `starwinds_analysis/analysis/shells.py`.
-- `integrate_shell_scalar`: Integrate scalar values over shell surfaces with NaN-safe area weighting. Used in `test/test_shell_magnetic_analysis.py`, `test/test_shell_analysis.py`, `examples/smartds_inner_boundary_magnetic_zdi.ipynb`, `examples/smartds_quicklook_profiles.ipynb`, `examples/smartds_shell_mass_flux.ipynb` (+3 more).
+
+- `infer_cartesian_axis_radii`: Infers shell radii from axis-aligned samples.  
+  Used by: No non-test call sites found
+- `sample_spherical_shells`: Resamples to structured polar/azimuth shell grids.  
+  Used by: notebooks/examples
+- `sample_spherical_shells_fibonacci`: Resamples to equal-area Fibonacci shell points.  
+  Used by: `starwinds_analysis/pipelines/volume.py`, notebooks/examples
+- `integrate_shell_scalar`: Area-integrates shell scalar fields and returns integral + coverage.  
+  Used by: `starwinds_analysis/physics/torque.py`, `starwinds_analysis/pipelines/volume.py`, notebooks/examples
 
 ## `starwinds_analysis/analysis/slices.py`
-- `structured_quad_corners`: Quad connectivity for a row-major `(nz, nx)` point grid. Used in `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`.
-- `infer_range`: Infer a plotting/resampling range from data with optional symmetry/padding. Used in `test/test_slices_analysis.py`, `starwinds_analysis/analysis/slices.py`.
-- `resample_structured_xz_slice`: Resample a 3D dataset onto a structured XZ plane and return a new `SmartDs`. Used in `test/test_slices_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+
+- `structured_quad_corners`: Builds quad connectivity for structured `(nz, nx)` grids.  
+  Used by: No non-test call sites found
+- `infer_range`: Infers plotting/resampling ranges with optional symmetry/padding.  
+  Used by: No non-test call sites found
+- `resample_structured_xz_slice`: Resamples 3D data to a structured XZ slice `SmartDs`.  
+  Used by: No non-test call sites found
 
 ## `starwinds_analysis/analysis/stats.py`
-- `weighted_mean_std`: Weighted mean and standard deviation over finite values. Used in `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`, `starwinds_analysis/analysis/stats.py`.
-- `weighted_quantile`: Weighted quantiles for 1D data. Used in `test/test_shell_analysis.py`, `starwinds_analysis/analysis/shell_summary.py`, `starwinds_analysis/analysis/stats.py`.
-- `summarize_samples`: Weighted quantiles + mean/std summary for 1D samples. Used in `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
 
-## `starwinds_analysis/data/samples.py`
-- `sample_data_dir`: Return the repository's `sample_data` directory. Used in `test/test_sample_data_helpers.py`, `starwinds_analysis/data/samples.py`.
-
-## `starwinds_analysis/data/field_names.py`
-- `unit_from_brackets`: Extract the unit substring from a bracketed field name like `X [R]`. Used in `starwinds_analysis/analysis/shells.py`.
-- `get_sample`: Return an absolute `Path` to a file in `sample_data`. Used in `test/test_shell_magnetic_analysis.py`, `test/test_sample_data_helpers.py`, `examples/smartds_radial_histograms.ipynb`, `examples/smartds_inner_boundary_magnetic_zdi.ipynb`, `examples/smartds_quicklook_profiles.ipynb` (+2 more).
-
-## `starwinds_analysis/physics/fluxes.py`
-- `open_magnetic_flux_vs_radius`: Signed/unsigned magnetic flux on spherical shells. Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/fluxes.py`.
-- `axisymmetric_open_flux_vs_radius`: Axisymmetric open magnetic flux and fraction using shell-sampled B_r. Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `energy_flux_vs_radius`: Radial energy flux profile using `E * U_r`. Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-
-## `starwinds_analysis/physics/local_estimates.py`
-- `local_mass_loss_estimates`: Pointwise local mass-loss estimates using `4*pi*r^2*rho*u_r`. Used in `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`.
-- `local_torque_estimates`: Pointwise local torque estimates using the spherical-shell scaling from old quicklook. Used in `test/test_shell_analysis.py`, `starwinds_analysis/physics/orbit_local.py`.
-
-## `starwinds_analysis/physics/magnetic.py`
-- `magnetic_field_unit_scale`: Return scale factor + label for plotting magnetic field in `T` or `G`. Used in `test/test_shell_magnetic_analysis.py`.
-
-## `starwinds_analysis/physics/mass_loss.py`
-- `mass_loss_vs_radius`: Wind mass-loss profile on spherical shells. Used in `test/test_shell_analysis.py`, `examples/smartds_shell_mass_flux.ipynb`, `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`.
-
-## `starwinds_analysis/physics/orbit_local.py`
-- `_interp_profile`: 1D interpolate a shell profile onto orbit sample radii (with NaNs outside range). Used in `starwinds_analysis/physics/orbit_local.py`.
-- `_local_mass_loss_from_orbit_sample`: Compute local mass-loss estimates on one sampled orbit and compare to shell profile values. Used in `starwinds_analysis/physics/orbit_local.py`.
-- `_local_torque_from_orbit_sample`: Compute local torque estimates on one sampled orbit and compare to shell torque profile values. Used in `starwinds_analysis/physics/orbit_local.py`.
-- `local_mass_loss_on_circular_orbit`: Sample a circular orbit and compute local-vs-shell mass-loss comparisons. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `local_torque_on_circular_orbit`: Sample a circular orbit and compute local-vs-shell torque comparisons. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `local_mass_loss_on_elliptic_orbit`: Sample an elliptic orbit and compute local-vs-shell mass-loss comparisons. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `local_torque_on_elliptic_orbit`: Sample an elliptic orbit and compute local-vs-shell torque comparisons. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-
-## `starwinds_analysis/physics/orbit_pressure.py`
-- Removed from the current tree; trajectory pressure diagnostics now live in `starwinds_analysis/physics/curve.py` and `starwinds_analysis/physics/orbit_surface.py`.
-
-## `starwinds_analysis/physics/orbit_surface.py`
-- `surface_of_revolution_from_trajectory`: Surface of revolution around the z-axis from explicit trajectory points. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `surface_sample_weights`: Build integration/summary weights for orbit-surface sampled data. Used in `starwinds_analysis/physics/orbit_surface.py`.
-- `phase_quantile_rows`: Compute phase-binned quantiles for 2D orbit-surface sampled values. Used in `starwinds_analysis/physics/orbit_surface.py`.
-- `surface_point_normals_and_areas`: Estimate point normals and point-associated areas on a periodic structured surface. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `phase_line_integrals`: Integrate sampled surface density values over longitude for each orbit phase. Used in `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_surface_revolution`: Sample explicit fields on a surface of revolution generated from trajectory points. Used in `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `pressure_components_on_surface`: Pressure-component analytics on a sampled surface of revolution. Used in `test/test_orbit_surface_analysis.py`, `examples/orbit_surface_revolution.ipynb`.
-- `torque_components_on_surface`: Explicit-surface torque diagnostics on a sampled surface of revolution. Used in `test/test_orbit_surface_analysis.py`, `examples/orbit_surface_revolution.ipynb`.
-
-## `starwinds_analysis/physics/orbits.py`
-- `orbital_period`: Keplerian orbital period for a test particle around a point mass. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `orbital_velocity`: Vis-viva orbital speed. Used in `test/test_orbit_analysis.py`.
-
-## `starwinds_analysis/physics/planetary_orbits.py`
-- `PlanetOrbitElements` (class): Typed container for orbital constants in the built-in table. Used in `test/test_planetary_orbits.py`, `starwinds_analysis/physics/planetary_orbits.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `SOLAR_SYSTEM_PLANETS` (constant): Built-in orbital constant table used directly by quicklook and tests.
-
-## `starwinds_analysis/physics/pressure.py`
-- `magnetic_pressure`: Magnetic pressure `B^2 / (2 mu0)` in Pa. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`.
-- `ram_pressure`: Ram pressure `rho * u^2` in Pa. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/physics/pressure.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-- `pressure_components`: Compute thermal/magnetic/ram pressure components from local samples. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `magnetospheric_standoff_distance`: Vidotto-style stand-off distance proxy from pressure balance. Used in `test/test_orbit_pressure.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/orbit_pressure.py`.
-
-## `starwinds_analysis/physics/torque.py`
-- `spherical_wind_torque_density_terms`: Spherical-shell wind torque-density terms about +z. Used in no external call sites found.
-- `torque_vs_radius`: Spherical-shell wind torque profile (magnetic + dynamic + total). Used in `test/test_surface_torque_analysis.py`, `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/physics/orbit_local.py`.
-- `rotational_frame_velocity`: Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r` Used in `starwinds_analysis/physics/torque.py`.
-- `normalize_surface_normals`: Normalize explicit surface normals safely for torque integration. Used in `starwinds_analysis/physics/torque.py`.
-- `radial_surface_normals`: Build radial normals from explicit Cartesian surface points. Used in `starwinds_analysis/physics/torque.py`.
-- `surface_torque_density_terms`: Mestel/Vidotto-like z-angular-momentum flux terms on an explicit surface. Used in `test/test_surface_torque_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/torque.py`.
-- `integrate_surface_torque_terms`: Integrate per-area torque-density terms from `surface_torque_density_terms(...)`. Used in `test/test_surface_torque_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`, `starwinds_analysis/physics/torque.py`.
-- `surface_torque_terms_on_shell_samples`: Convenience wrapper for explicit-surface torque terms on shell samples. Used in `starwinds_analysis/physics/torque.py`.
-- `surface_torque_vs_radius`: Explicit-surface torque profile on spherical shells using general T1..T4 terms. Used in `test/test_surface_torque_analysis.py`.
-
-## `starwinds_analysis/physics/wind_scaling.py`
-- `surface_escape_speed`: Surface escape speed `sqrt(2GM/R)`. Used in `test/test_shell_analysis.py`, `starwinds_analysis/physics/wind_scaling.py`.
-- `open_wind_magnetisation`: Reville-style open wind magnetisation used in the old quicklook (`Upsilon_open`). Used in `test/test_shell_analysis.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-
-## `starwinds_analysis/pipelines/quicklook2d.py`
-- `SlicePreset` (class): SlicePreset class. Used inside quicklook2d slice preset registries for field/plot configuration.
-- `_open_wind_magnetisation_from_diagnostics`: Local quicklook adapter from shell-profile dicts to the `Upsilon_open` formula. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_load_slice_styles`: Lazy-import slice plotting styles/helpers only when slice quicklooks are used. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_has_field`: Check if a SmartDs has a field without raising in quicklook field selection. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_resolve_first_field`: Pick the first available field from a candidate list. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_normalize_overlays`: Normalize overlay specs into a list for quicklook plotting. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_slice_quicklook`: Thin 2D quicklook wrapper over existing slice plotting helpers. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_radius_quicklook`: Radius/scatter/cumulative/hist2d quicklook wrapper over `visualisation.histograms`. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `compute_shell_diagnostics`: Compute a bundle of shell diagnostics used by 2D quicklook summaries. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_shell_diagnostics`: Plot a compact shell-diagnostics summary figure. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `quicklook_shell_figure`: Convenience shell-diagnostics figure builder used by quicklook and tests. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_orbit_mass_loss_comparison`: Plot local-vs-shell mass-loss comparison for one orbit result bundle. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_orbit_torque_comparison`: Plot local-vs-shell torque comparison for one orbit result bundle. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_orbit_phase`: Extract orbit phase array from result bundles with a safe empty fallback. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_orbit_result_title`: Build a compact title string for orbit quicklook result figures. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `plot_orbit_pressure_components`: Plot orbit pressure-component series and derived standoff proxy. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `orbit_pressure_figure`: Orbit pressure quicklook (thermal/magnetic/ram and stand-off proxy). Used in `test/test_quicklook2d.py`.
-- `_plot_phase_quantile_band`: Plot filled phase-quantile bands for orbit-surface diagnostics. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `orbit_surface_pressure_figure`: Surface-of-revolution orbit pressure quicklook (pure NumPy/SciPy resampling). Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `orbit_surface_torque_figure`: Surface-of-revolution torque quicklook (`T1..T4` + total), independent of dedicated 3D visualisation tooling. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `orbit_local_comparison_figure`: Compute and plot local-vs-shell comparisons for mass loss and torque on one orbit. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `summarize_shell_diagnostics`: JSON-friendly summary (stats only) of shell diagnostics. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `flatten_shell_diagnostics_arrays`: Flatten shell diagnostic arrays for `np.savez`. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `summarize_orbit_results`: JSON-friendly summary of orbit local-vs-shell comparison results. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `flatten_orbit_results_arrays`: Flatten selected orbit result arrays for `np.savez`. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `save_shell_diagnostics_json`: Save shell diagnostics summary JSON to disk. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `save_shell_diagnostics_npz`: Save shell diagnostics arrays to NPZ. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `save_orbit_results_json`: Save orbit-result summaries to JSON. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `save_orbit_results_npz`: Save orbit-result arrays to NPZ. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `save_quicklook2d_bundle`: Save figures and shell summaries (JSON/NPZ) as a small quicklook bundle. Used in `test/test_quicklook2d.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_slug_key`: Make a filesystem-safe-ish slug for summary/array keys. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_array_summary`: Return small summary stats for an array (shape/finite/min/max etc.). Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_summarize_result_object`: Recursively summarize nested result dicts into JSON-friendly metadata. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `_flatten_result_arrays`: Collect arrays from nested result objects into a flat dict for NPZ export. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `prepare_smartds_for_quicklook`: Best-effort setup of common BATSRUS + spherical derived fields. Used in `starwinds_analysis/pipelines/quicklook2d.py`.
-- `run_quicklook2d`: End-to-end non-3D quicklook runner (figures + shell diagnostics + optional save). Used in `test/test_quicklook2d.py`.
-
-## `starwinds_analysis/recipes/batsrus.py`
-- `build_griblet_batsrus_graph`: Build a griblet graph for BATSRUS-style fields. Used in `starwinds_analysis/smart_ds.py`.
-- `build_griblet_unit_normalization_graph`: Add raw->SI unit conversion recipes (BATSRUS naming conventions). Used in `starwinds_analysis/recipes/batsrus.py`.
-- `build_griblet_common_derived_graph`: Add common BATSRUS derived SI quantities (pressures, Mach numbers, fluxes, torque densities). Used in `starwinds_analysis/recipes/batsrus.py`.
-- `build_griblet_vector_magnitude_graph`: Add vector-magnitude recipes (e.g. `|U|`, `|B|`) for available Cartesian triplets. Used in `starwinds_analysis/recipes/batsrus.py`.
-- `_parse_var_name`: Parse BATSRUS variable names. Used in `starwinds_analysis/recipes/batsrus.py`.
-- `_parse_float`: Parse a float from aux/meta strings with safe fallback to `None`. Used in `starwinds_analysis/recipes/batsrus.py`.
-- `_safe_gamma`: Return a physically valid adiabatic index fallback when metadata is missing/bad. Used in `starwinds_analysis/recipes/batsrus.py`.
-- `_resolve_body_radius_m`: Resolve body radius in meters from explicit arg or BATSRUS aux metadata. Used in `starwinds_analysis/recipes/batsrus.py`.
-
-## `starwinds_analysis/recipes/spherical.py`
-- `cartesian_to_spherical_angles`: Convert Cartesian coordinates to spherical coordinates. Used in `starwinds_analysis/recipes/spherical.py`.
-- `radial_component`: Project a Cartesian vector onto the radial direction defined by `(x,y,z)`. Used in no external call sites found.
-- `spherical_vector_components`: Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``. Used in `test/test_shell_analysis.py`, `starwinds_analysis/recipes/spherical.py`.
-- `register_spherical_geometry_fields`: Register local on-demand spherical coordinate fields on a SmartDs wrapper. Used in `starwinds_analysis/smart_ds.py`.
-- `register_vector_spherical_components`: Register local on-demand spherical vector components for one Cartesian vector triplet. Used in `starwinds_analysis/recipes/spherical.py`.
-- `_vector_triplets`: Find vector component triplets named like ``prefix_x [unit]``. Used in `starwinds_analysis/recipes/spherical.py`, `starwinds_analysis/smart_ds.py`, and `starwinds_analysis/recipes/batsrus.py`.
-- `build_griblet_spherical_geometry_graph`: Build a griblet graph for spherical geometry fields. Used in `test/test_smart_ds.py`, `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`.
-- `build_griblet_vector_spherical_components_graph`: Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components. Used in `starwinds_analysis/recipes/spherical.py`.
-- `build_griblet_vector_spherical_components_graph`: Build spherical-component recipes for one detected vector triplet. Used in `starwinds_analysis/recipes/spherical.py`, `starwinds_analysis/smart_ds.py`, and `starwinds_analysis/recipes/batsrus.py`.
-- `_infer_radius_name_from_coord`: Infer the matching radius field name/unit from coordinate field names. Used in `starwinds_analysis/recipes/spherical.py`.
+- `weighted_mean_std`: Weighted mean and standard deviation.  
+  Used by: `starwinds_analysis/analysis/shell_summary.py`
+- `weighted_quantile`: Weighted quantiles for 1D samples.  
+  Used by: `starwinds_analysis/analysis/shell_summary.py`
+- `summarize_samples`: Combined weighted summary helper (quantiles + mean/std).  
+  Used by: `starwinds_analysis/physics/orbit_surface.py`
 
 ## `starwinds_analysis/analysis/trajectories.py`
-- `trajectory_velocity`: Velocity from explicit trajectory points and strictly increasing time. Used in `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`.
-- `circular_orbit_points`: Cartesian points on a circular XY orbit (same coordinate unit as `radius`). Used in `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_curve`: Resample requested fields onto explicit Cartesian points and return a curve `SmartDs`. Used in `test/test_orbit_analysis.py`, `starwinds_analysis/analysis/trajectories.py`, `starwinds_analysis/physics/orbit_surface.py`.
-- `sample_trajectory`: Resample fields onto trajectory points and append `t` and optional `V_xyz` context fields. Used in `test/test_orbit_pressure.py`.
+
+- `trajectory_velocity`: Finite-difference trajectory velocity from points + time.  
+  Used by: `examples/orbit_surface_revolution.ipynb`
+- `circular_orbit_points`: Circular XY orbit points.  
+  Used by: `examples/orbit_surface_revolution.ipynb`
+- `sample_curve`: Resamples fields onto an explicit 1D curve.  
+  Used by: notebooks/examples workflow
+- `sample_trajectory`: Resamples fields onto trajectory points and appends `t`/optional `V_*`.  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/data/field_names.py`
+
+- `unit_from_brackets`: Extracts unit token from bracketed field names (`X [R]` -> `R`).  
+  Used by: `starwinds_analysis/analysis/shells.py`
+
+## `starwinds_analysis/data/samples.py`
+
+- `data_dir`: Returns repository `sample_data` path.  
+  Used by: No non-test call sites found
+- `data_file`: Returns one `sample_data/<name>` path.  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/param_in.py`
+
+- `flatten_includes`: Flattens `#INCLUDE` trees into one line stream.  
+  Used by: `ParamIn.from_file`
+- `find_param_in`: Finds nearest `PARAM.in`/`param.in` up the folder chain.  
+  Used by: `stellar_aux_from_nearby_param_in`
+- `parse_sessions`: Parses command sessions/components from flat config lines.  
+  Used by: `ParamIn.from_file`
+- `ParamIn`: Parsed parameter-file object with command/parameter accessors (`get_*`, `stellar_params`).  
+  Used by: `stellar_aux_from_nearby_param_in`
+- `stellar_aux_from_nearby_param_in`: Reads nearby `PARAM.in` stellar values into aux-compatible keys.  
+  Used by: `starwinds_analysis/smart_ds.py`
+
+## `starwinds_analysis/physics/alfven_radius.py`
+
+- `alfven_radius_map`: Computes first outward `M_A` crossing radius map.  
+  Used by: `examples/alfven_radius_shell.ipynb`
+- `projected_solid_angle_weights`: Computes projected `dOmega` weights from shell `dA` and `R`.  
+  Used by: `examples/alfven_radius_shell.ipynb`
+- `summarize_alfven_radius`: Summarizes map min/max/mean/cyl-mean/coverage.  
+  Used by: `examples/alfven_radius_shell.ipynb`
+
+## `starwinds_analysis/physics/curve.py`
+
+- `mass_loss_from_curve`: Local mass-loss estimate from sampled curve fields.  
+  Used by: No non-test call sites found
+- `torque_from_curve`: Local magnetic/dynamic/total torque estimates from sampled curve fields.  
+  Used by: No non-test call sites found
+- `relative_ram_pressure_from_trajectory`: Trajectory-frame ram pressure + standoff estimate.  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/physics/orbit_surface.py`
+
+- `surface_of_revolution_from_trajectory`: Builds a 2D surface grid from trajectory revolution.  
+  Used by: `sample_surface_revolution`
+- `surface_sample_weights`: Builds phase/longitude integration weights.  
+  Used by: `pressure_components_on_surface`, `torque_components_on_surface`
+- `phase_quantile_rows`: Quantiles by phase row over a 2D sampled surface.  
+  Used by: `pressure_components_on_surface`, `torque_components_on_surface`
+- `surface_point_normals_and_areas`: Centered-difference normals + local area estimate.  
+  Used by: `torque_components_on_surface`
+- `phase_line_integrals`: Integrates 2D surface density along longitude per phase.  
+  Used by: `torque_components_on_surface`
+- `sample_surface_revolution`: Resamples `SmartDs` fields on a trajectory-derived revolution surface.  
+  Used by: `examples/orbit_surface_revolution.ipynb`
+- `pressure_components_on_surface`: Computes pressure diagnostics on sampled surfaces.  
+  Used by: `examples/orbit_surface_revolution.ipynb`
+- `torque_components_on_surface`: Computes explicit-surface torque diagnostics (`T1..T4`, totals, summaries).  
+  Used by: `examples/orbit_surface_revolution.ipynb`
+
+## `starwinds_analysis/physics/orbits.py`
+
+- `PlanetOrbitElements`: Named orbital element container + built-in solar-system table.  
+  Used by: No non-test call sites found
+- `orbital_period`: Kepler period from semi-major axis + stellar mass.  
+  Used by: No non-test call sites found
+- `orbital_velocity`: Vis-viva orbital speed.  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/physics/pressure.py`
+
+- `ram_pressure`: `rho * V^2`.  
+  Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
+- `magnetospheric_standoff_distance`: Stand-off proxy from pressure balance.  
+  Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
+
+## `starwinds_analysis/physics/torque.py`
+
+- `spherical_wind_torque_density_terms`: Pointwise shell-style magnetic/dynamic torque densities.  
+  Used by: No non-test call sites found
+- `rotational_frame_velocity`: Converts inertial velocity to rotating-frame velocity.  
+  Used by: `surface_torque_density_terms`
+- `normalize_surface_normals`: Normalizes explicit surface normals.  
+  Used by: `surface_torque_density_terms`, `radial_surface_normals`
+- `radial_surface_normals`: Builds radial normals from position vectors.  
+  Used by: `surface_torque_terms_on_shell_samples`
+- `surface_torque_density_terms`: Computes `T1..T4` torque density terms and total.  
+  Used by: `starwinds_analysis/physics/orbit_surface.py`, `surface_torque_terms_on_shell_samples`
+- `integrate_surface_torque_terms`: Integrates explicit-surface torque density terms over area.  
+  Used by: `starwinds_analysis/physics/orbit_surface.py`
+- `surface_torque_terms_on_shell_samples`: Convenience wrapper for torque terms on shell sampled fields.  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/physics/wind_scaling.py`
+
+- `surface_escape_speed`: Escape speed from stellar mass/radius.  
+  Used by: `open_wind_magnetisation`
+- `open_wind_magnetisation`: Reville-style open wind magnetisation (`Upsilon_open`).  
+  Used by: No non-test call sites found
+
+## `starwinds_analysis/pipelines/dummy_pipeline.py`
+
+- `name_letter_counts`: Emits vowel/consonant counts for file stem.
+- `name_profile_payload`: Emits float/string/array payload for file stem.
+- `name_codepoints_payload`: Emits codepoint array payload.
+- `name_waveform_payload`: Emits large waveform array payload (sidecar test path).
+- `process_plt_file`: Dummy per-file pipeline entrypoint.
+
+Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+
+## `starwinds_analysis/pipelines/recorder.py`
+
+- `ScientificFloatEncoder`: JSON encoder with scientific float formatting.
+- `SwPipeResults`: In-memory run result container.
+- `safe_name`: Safe filesystem tokenization helper.
+- `relative_file_key`: Relative, stable file keys for state payload.
+- `state_file_path`: Per-pipeline state filename builder.
+- `sha256_file`: Input file hashing helper.
+- `parse_record_payload`: Parses logger message payload into record key/value.
+- `normalize_recorded_value`: JSON-normalizes payloads and offloads large arrays.
+- `SwRecordHandler`: Logging handler that captures and stores recorded payloads.
+- `load_state`: Loads processed/computed state.
+- `load_state_payload`: Loads raw state payload for inspector CLI.
+- `save_state`: Writes per-pipeline state JSON.
+
+Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `starwinds_analysis/pipelines/sw_pipe_results.py`
+
+## `starwinds_analysis/pipelines/shell.py`
+
+- `shell_cell_values`: Converts nodal values to cell-centered shell map values.
+- `load_shell_grid`: Loads shell radii/grid nodes/masks/areas from `SmartDs`.
+- `shell_map_and_profile`: Computes outer shell map + radial integral profile.
+- `process_plt_file`: Shell pipeline entrypoint.
+
+Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+
+## `starwinds_analysis/pipelines/slice.py`
+
+- `process_plt_file`: Slice pipeline entrypoint (`rho`, `U`, `B`, `B_r` figures + records).
+
+Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+
+## `starwinds_analysis/pipelines/sw_pipe.py`
+
+- `PipelineSourceFilter`: Injects `pipeline_source` for unified logging format.
+- `configure_logger`: Human stdout logger setup (colorlog when available).
+- `configure_recorder`: Recorder logger setup.
+- `discover_input_files`: Finds `.plt`/`.dat` files.
+- `pipeline_name_for_file`: Filename-prefix pipeline selection (`3d`, `shl`, `x=0/y=0/z=0`).
+- `process_file_for_pipeline`: Resolves built-in pipeline process function.
+- `run_sw_pipe`: Core orchestrator over selected files.
+- `build_parser`: CLI parser for `sw-pipe`.
+- `main`: CLI entrypoint.
+
+Used by: CLI
+
+## `starwinds_analysis/pipelines/sw_pipe_results.py`
+
+- `_computed_results`: Extracts the computed-results mapping.
+- `_iter_file_keys`: Lists file keys in display order.
+- `_iter_fields`: Lists available recorded field names.
+- `_resolve_field_name`: Singular/plural convenience field resolution.
+- `_extract_field_value`: Returns value-only or full payload with source metadata.
+- `build_parser`: CLI parser for results inspection.
+- `main`: CLI entrypoint for querying/listing state payload contents.
+
+Used by: CLI
+
+## `starwinds_analysis/pipelines/utils.py`
+
+- `slug_key`: Slugifies text for output naming.
+- `output_prefix_from_input_file`: Output prefix builder from input filename.
+
+Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/shell.py`, `starwinds_analysis/pipelines/volume.py`
+
+## `starwinds_analysis/pipelines/volume.py`
+
+- `process_plt_file`: Volume pipeline entrypoint (shell sampling + mass/torque/open-flux/energy plots and records).
+
+Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+
+## `starwinds_analysis/recipes/batsrus.py`
+
+- `build_griblet_batsrus_graph`: Top-level BATSRUS recipe graph builder (normalization + derived).
+- `build_griblet_unit_normalization_graph`: Raw-unit -> SI conversions + scalar aux parsing recipes.
+- `build_griblet_common_derived_graph`: Derived SI recipes (Mach, pressure, fluxes, torque densities, helpers).
+- `build_griblet_vector_cartesian_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
+- `body_radius_from_inputs`: Resolves body radius from explicit input or aux keys.
+
+Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/analysis/trajectories.py`
+
+## `starwinds_analysis/recipes/spherical.py`
+
+- `_vector_triplets`: Finds Cartesian vector triplets (`*_x/_y/_z`) by prefix/unit.
+- `build_griblet_spherical_geometry_graph`: Adds coordinate recipes (`XYZ <-> R/polar/azimuth`, `lat/lon`).
+- `build_griblet_vector_spherical_components_graph`: Adds vector component recipes (`xyz -> r/p/a`, stacked `*_rpa`).
+
+Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
 
 ## `starwinds_analysis/smart_ds.py`
-- `SmartDs` (class): Lightweight wrapper around ``starwinds_readplt.Dataset``. Used across notebooks/tests and most physics/sampling workflows as the main dataset wrapper.
-  - `SmartDs.from_file`: Constructs a wrapper from a BATSRUS output file path. Used by tests and all example notebooks.
-  - `SmartDs.__str__`: Prints a compact summary (title/zone/points/variables). Used in example notebooks via `print(sds)`.
-  - `SmartDs.__call__`: Shorthand for `variable(...)` (full SmartDs/griblet path). Used heavily in notebooks and shell/orbit workflows.
-  - `SmartDs.__getitem__`: Raw-only field access passthrough to the underlying dataset. Used when callers explicitly want base/raw fields only.
-  - `SmartDs.has_field`: Checks raw/alias/computed availability of a field name. Used by recipes/quicklook field selection and diagnostics setup.
-  - `SmartDs.add_spherical_fields`: Registers local spherical derived fields without griblet graphs. Used in some notebooks/resampled shell workflows when local spherical fields are enough.
-  - `SmartDs.add_spherical_graph`: Attaches spherical griblet recipes (geometry + vector components). Used when graph-based resolution/explainability is desired.
-  - `SmartDs.add_batsrus_graph`: Attaches BATSRUS SI/unit/derived recipes into the computation graph. Used by most SI analysis workflows and notebooks before requesting derived SI fields.
-  - `SmartDs.variable`: Primary field request API (raw -> alias -> local fields -> griblet). Called across the codebase by analysis/physics modules and notebooks.
-  - `SmartDs.resolve`: Returns a griblet resolution/explanation object for a target field. Used mainly for graph introspection/debugging, not ordinary analysis math.
-  - `SmartDs.explain`: Human-readable graph path explanation for a requested field. Used in tests and debugging of recipe paths.
-  - `SmartDs.resample`: Interpolates onto flat or structured target points and returns a new SmartDs. Used by shell/slice/orbit sampling paths and example notebooks.
 
-## `starwinds_analysis/utils.py`
-- `auto_coords`: Detect the two varying coordinates in a nominal 2D slice dataset. Used in `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`, `starwinds_analysis/utils.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `triangles`: Build a Matplotlib triangulation from 2D quad-cell connectivity. Used in `examples/smartds_2d_xy_points.ipynb`, `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `extract_index`: Extract the step number from a filename of the form '..._n00060000.dat'. Used in `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `sort_key`: Sort by the number in the filename, with trailing zeros prioritized. Used in no external call sites found.
+- `SmartDs`: Main wrapper around `starwinds_readplt.Dataset`.
+- `SmartDs.from_file`: File loader + nearby `PARAM.in` stellar aux ingestion.
+- `SmartDs.prepare`: Attaches BATSRUS + spherical recipe graphs.
+- `SmartDs.variable`: Main field accessor (`raw -> graph`, with cache).
+- `SmartDs.explain`: Dependency-path explanation for a requested field.
+- `SmartDs.base_fields_for_resample`: Expands requested fields to raw interpolation dependencies.
+- `SmartDs.resample`: Generic resampling entrypoint returning a new `SmartDs`.
+- `SmartDs.append_fields`: Appends structured extra fields into a new dataset/wrapper.
+- `SmartDs.has_field` / `has_raw_field` / `keys`: Field availability and discoverability helpers.
+- `SmartDs.clear_cache`: Clears field cache + resample spatial caches.
+
+Used by: all pipelines, recipes, analysis primitives, and examples/notebooks.
 
 ## `starwinds_analysis/visualisation/histograms.py`
-- `plot_cumulative_hists`: Cumulative histogram (CDF line) for each field on the provided axes. Used in `examples/smartds_radial_histograms.ipynb`, `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `plot_vs_radius`: Scatter raw samples vs radius for one or more fields. Used in `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`, `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `plot_binned_vs_radius`: Plot binned radial summaries (mean/median/sum) for one or more fields. Used in `examples/smartds_radial_histograms.ipynb`, `examples/smartds_quicklook_profiles.ipynb`, `examples/planet.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`.
-- `plot_radial_hist2d`: 2D histogram (radius vs field value) as a compact replacement for old "monster" plots. Used in `examples/smartds_radial_histograms.ipynb`, `starwinds_analysis/pipelines/quicklook2d.py`.
+
+- `plot_cumulative_hists`: CDF histogram helper.
+- `plot_vs_radius`: Scatter-vs-radius helper.
+- `plot_binned_vs_radius`: Binned radial summary helper.
+- `plot_radial_hist2d`: 2D radial histogram helper.
+
+Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 
 ## `starwinds_analysis/visualisation/profile_plots.py`
-- `shell_profile_height`: Return `height [R]` from a shell-profile dict (fallback from radius). Used in `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/quicklook2d.py`, `starwinds_analysis/visualisation/profile_plots.py`.
-- `plot_shell_height_series`: Generic shell-profile line plot primitive (height on x, chosen quantity on y). Used in `test/test_profile_plotting.py`, `starwinds_analysis/pipelines/quicklook2d.py`.
+
+- `shell_profile_height`: Extracts/derives shell height from profile payload.
+- `plot_shell_height_series`: Generic shell profile line plotting primitive.
+
+Used by: No non-test call sites found
+
+## `starwinds_analysis/visualisation/slice.py`
+
+- `auto_coords`: Detects two varying coordinates in nominal 2D datasets.
+- `triangles`: Builds triangulation from quad cell connectivity.
+- `default_slice_field`: Chooses a default field for slice plotting.
+- `plot_xz_slice_tripcolor_with_marginals`: Tripcolor + marginal panels.
+- `plot_xz_slice_tripcolor_with_cross_quantiles`: Tripcolor + cross-quantile panels.
+- `plot_xz_slice_with_marginal_points`: Tripcolor + point marginals.
+- `plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords`: Tripcolor + unique-coordinate quantiles.
+
+Used by: `starwinds_analysis/pipelines/slice.py`, `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`, plain-data examples
 
 ## `starwinds_analysis/vtk_utils.py`
-- `read`: Read a `.plt` file and optionally convert to base SI after 3D-grid conversion. Used in `test/test_isosurface.py`, `test/test_read_plt.py`, `test/test_volumetric.py`, `test/test_integrals.py`.
-- `convert`: Convert a `starwinds_readplt.Dataset` into an unstructured 3D grid. Used in `starwinds_analysis/vtk_utils.py`.
-- `convert_to_base_si`: Rename/scale common BATSRUS variables in a 3D visualisation grid into base SI units. Used in `starwinds_analysis/vtk_utils.py`.
+
+- `read`: Reads `.plt` file and returns converted VTK/PyVista grid, optionally SI-normalized.
+- `convert`: Converts raw dataset into VTK/PyVista unstructured grid.
+- `convert_to_base_si`: Renames/scales common BATSRUS fields to SI on VTK grid.
+
+Used by: No non-test call sites found
