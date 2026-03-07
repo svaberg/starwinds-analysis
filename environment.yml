@@ -6,11 +6,17 @@ dependencies:
   - numpy
   - scipy
   - matplotlib
+  - cmocean
   - pyvista
   - pip
   - pytest
   - pytest-cov
+  - nbmake
+  - nbstripout
+  - ipykernel
   - git
   - pip:
       - pytest-console-scripts
+      - git+https://github.com/svaberg/griblet.git
       - git+https://github.com/svaberg/starwinds-readplt.git
+      - -e .

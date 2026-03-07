@@ -16,6 +16,7 @@ dependencies = [
   "scipy",
   "matplotlib",
   "cmocean",
+  "griblet @ git+https://github.com/svaberg/griblet.git",
   "starwinds_readplt @ git+https://github.com/svaberg/starwinds-readplt",
 ]
 
@@ -38,8 +39,8 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/yourorg/starwinds-analysis"
-Issues = "https://github.com/yourorg/starwinds-analysis/issues"
+Repository = "https://github.com/svaberg/starwinds-analysis"
+Issues = "https://github.com/svaberg/starwinds-analysis/issues"
 
 [project.scripts]
 sw-pipe = "starwinds_analysis.pipelines.sw_pipe:main"
