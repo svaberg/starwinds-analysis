@@ -31,15 +31,6 @@ def basic_read(file):
 @pytest.mark.interactive
 def test_read_dataset(file='sample_data/3d__var_4_n00000000.plt'):
 
-    ds = Dataset.from_file(file)
-
-    grid = pv.UnstructuredGrid({pv.CellType.HEXAHEDRON: ds.corners}, ds.points[:,:3])
-    _ = grid.plot(show_edges=True)
-
-
-@pytest.mark.interactive
-def test_read_dataset(file='sample_data/3d__var_4_n00000000.plt'):
-
     grid = basic_read(file)
     
     grid.set_active_scalars("U_x [km/s]")
