@@ -1,79 +1,82 @@
 # Batplotlib Test Migration Checklist
 
+Last reviewed: 2026-03-07 (`dev`)
+
 ## Purpose
 
-Track migration status from old `/Users/dagfev/Documents/starwinds/batplotlib/tests`
-into this repo's test suite (`/Users/dagfev/Documents/starwinds/starwinds-analysis/test`).
+Track migration coverage from old
+`/Users/dagfev/Documents/starwinds/batplotlib/tests`
+into
+`/Users/dagfev/Documents/starwinds/starwinds-analysis/test`.
 
-This is file-level bookkeeping, not a claim that tests must be migrated 1:1.
-Many old tests were tied to older 3D visualisation tooling or test-framework-specific and are intentionally
-out of scope for the current NumPy/SciPy-first quicklook migration.
+This is a coverage bookkeeping document, not a requirement for strict 1:1 test ports.
 
 ## Snapshot (Current)
 
 - Old `batplotlib` test files: `23`
-- New repo test files: `21`
+- New repo test files: `23`
 - Exact filename overlap: `1` (`test_volumetric.py`)
-- Current full suite in `starwinds-analysis` env: not re-counted in this pass
 
 Notes:
 
-- Several legacy tests in this repo are currently skipped when the old `reader` API is
-  unavailable (it was renamed to `vtk_utils.py`).
-- The new repo has many renamed/split tests that cover old quicklook behavior in a more
-  modular way (shells, orbits, orbit-surface, surface-torque, and pipeline smoke tests).
+- New tests are mostly split by domain (`shell`, `orbit`, `surface`, `pipeline`, `param`, `smart_ds`).
+- Several legacy paths were replaced by new architecture (SmartDs + recipes + pipelines).
+
+Verification baseline (migration-critical subset):
+
+- Last verified: 2026-03-07
+- Environment: `starwinds-analysis` conda env
+- Command:
+
+```bash
+conda run -n starwinds-analysis python -m pytest -q \
+  test/test_shell_analysis.py \
+  test/test_surface_torque_analysis.py \
+  test/test_orbit_analysis.py \
+  test/test_orbit_pressure.py \
+  test/test_orbit_surface_analysis.py
+```
+
+- Result: `39 passed, 2 warnings in 0.67s`
+- Warning source: `starwinds_analysis/physics/orbit_surface.py` runtime warnings in the tested path.
 
 ## Status Legend
 
-- `Migrated`: Functionality is covered in the new suite (possibly split across files).
-- `Partial`: Core behavior or formulas are covered, but not all old workflows/cases.
-- `Deferred`: Intentionally postponed (often adjacent to 3D visualisation tooling or non-quicklook).
-- `Out of Scope`: Not part of the current quicklook/core analysis migration.
+- `Migrated`: behavior is covered in the new suite (possibly split across files)
+- `Partial`: core formulas/workflows are covered, but not all legacy edges
+- `Deferred`: intentionally postponed
+- `Out of Scope`: not part of current migration goals
 
 ## Mapping (Old -> New)
 
-| Old batplotlib test | Quicklook relevance | New equivalent(s) in this repo | Status | Notes |
-| --- | --- | --- | --- | --- |
-| `test_elliptic_orbit.py` | High | `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `test/test_planetary_orbits.py` | Migrated | Split into orbit geometry/sampling, local estimates, pressure, and orbit-surface diagnostics. |
-| `test_integral_physical.py` | High | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Physical shell integrals (mass/open flux/torque comparisons) covered; older 3D integral machinery not ported. |
-| `test_torque.py` | High | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Spherical-shell torque + explicit-surface torque core are covered; the old isosurface-driven workflows are deferred. |
-| `test_histograms.py` | High | (none; plotting primitives only) | Deferred | Histogram plotting primitives exist in the library, but dedicated modern tests are still missing. |
-| `test_fibonacci_sphere.py` | Medium | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Fibonacci sampling is exercised via shell area/exactness and torque integration tests; no standalone algorithm-only test yet. |
-| `test_polar_azimuthal_plot.py` | Medium | `test/test_shell_analysis.py` | Partial | Polar/azimuthal grid behavior covered indirectly via shell sampling and axisymmetric flux diagnostics. |
-| `test_geometry.py` | Medium | `test/test_shell_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Shell/orbit-surface geometry checks exist, but no direct port of old geometry utility tests. |
-| `test_quantiles.py` | Medium | `test/test_shell_analysis.py` | Partial | Weighted quantiles/summaries and phase quantile outputs are covered in analytics tests. |
-| `test_vector_fields.py` | Medium | `test/test_smart_ds.py`, `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Spherical vector usage covered in downstream analytics; no dedicated vector-transform test module yet. |
-| `test_zone_coordinate_transforms.py` | Medium | `test/test_smart_ds.py`, `test/test_shell_analysis.py` | Partial | Spherical-coordinate/derived-component behavior covered functionally, not as direct transform unit tests. |
-| `test_load_file.py` | Medium | `test/test_smart_ds.py`, `test/test_read_plt.py` (legacy) | Partial | New `SmartDs`/reader path is tested, but legacy `reader` import compatibility path is currently skipped. |
-| `test_integral.py` | Medium | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | New shell/surface integration formulas tested; old 3D integration API tests are not ported. |
-| `test_numpy_save.py` | Medium | `test/test_sw_pipe.py` | Partial | Recorder-backed `sw-pipe.<pipeline>.processed.json` persistence is tested; results are recorded via `add_record(...)` and plots are saved as normal files. |
-| `test_units.py` | Medium | (none; unit tests deferred) | Deferred | Unit-framework decisions intentionally deferred while pursuing SI gatekeeping at wrapper boundary. |
-| `test_confidence_bands.py` | Low | (none) | Deferred | Plot utility coverage exists, but confidence-band-specific test logic is not ported. |
-| `test_color_maps.py` | Low | (none) | Out of Scope | Legacy colour-map tooling. |
-| `test_cartopy.py` | Low | (none) | Out of Scope | Cartopy mapping workflow not part of current quicklook/core migration. |
-| `test_chiantipy_spectrum.py` | Low | (none) | Out of Scope | Chianti/spectrum-specific functionality not in current scope. |
-| `test_swmf_log_parser.py` | Low | (none) | Out of Scope | SWMF log parsing not part of current quicklook migration. |
-| `test_field_rejection.py` | Low | (none) | Out of Scope | Legacy field-filtering behavior not currently part of migrated quicklook path. |
-| `test_of_pytest.py` | Low | (none) | Out of Scope | Test-framework/demo utility. |
-| `test_of_test_context.py` | Low | (none) | Out of Scope | Test-context/helper behavior for old repo. |
-| `test_volumetric.py` | Low (for current plan) | `test/test_volumetric.py` (legacy, currently skipped on missing `reader`) | Deferred | 3D volumetric visualisation is not a priority for the non-3D-visualisation quicklook migration. |
+| Old batplotlib test | New equivalent(s) | Status | Notes |
+| --- | --- | --- | --- |
+| `test_elliptic_orbit.py` | `test/test_orbit_analysis.py`, `test/test_orbit_pressure.py`, `test/test_orbit_surface_analysis.py`, `test/test_planetary_orbits.py` | Migrated | Orbit geometry/sampling and derived diagnostics split across focused modules |
+| `test_integral_physical.py` | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Core shell/surface integrals are covered |
+| `test_torque.py` | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Shell and explicit-surface torque paths are covered |
+| `test_histograms.py` | (none dedicated) | Deferred | Plot primitives exist; dedicated migration tests still pending |
+| `test_fibonacci_sphere.py` | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Covered indirectly through shell and torque workflows |
+| `test_polar_azimuthal_plot.py` | `test/test_shell_analysis.py` | Partial | Covered indirectly through shell-grid workflows |
+| `test_geometry.py` | `test/test_shell_analysis.py`, `test/test_orbit_surface_analysis.py` | Partial | Geometry checks exist in shell/surface tests |
+| `test_quantiles.py` | `test/test_shell_analysis.py` | Partial | Weighted quantile/summaries covered in shell analytics |
+| `test_vector_fields.py` | `test/test_smart_ds.py`, `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Vector/spherical usage covered in downstream diagnostics |
+| `test_zone_coordinate_transforms.py` | `test/test_smart_ds.py`, `test/test_shell_analysis.py` | Partial | Coordinate/derived behavior covered functionally |
+| `test_load_file.py` | `test/test_smart_ds.py`, `test/test_read_plt.py` | Partial | New loader path tested; legacy reader expectations differ |
+| `test_integral.py` | `test/test_shell_analysis.py`, `test/test_surface_torque_analysis.py` | Partial | Formula-level coverage present |
+| `test_numpy_save.py` | `test/test_sw_pipe.py`, `test/test_sw_pipe_results.py` | Migrated | Recorder-backed JSON persistence + inspector tooling tested |
+| `test_units.py` | (none dedicated) | Deferred | Unit-framework choices remain intentionally constrained to SI-first graph access |
+| `test_confidence_bands.py` | (none dedicated) | Deferred | No dedicated confidence-band migration tests yet |
+| `test_color_maps.py` | (none) | Out of Scope | Legacy color-map specifics are not migration drivers |
+| `test_cartopy.py` | (none) | Out of Scope | Cartopy workflow not in current scope |
+| `test_chiantipy_spectrum.py` | (none) | Out of Scope | Chianti/spectrum functionality not in scope |
+| `test_swmf_log_parser.py` | (none) | Out of Scope | SWMF log parser not part of current migration |
+| `test_field_rejection.py` | (none) | Out of Scope | Legacy field-filtering path not part of current design |
+| `test_of_pytest.py` | (none) | Out of Scope | Framework/demo utility |
+| `test_of_test_context.py` | (none) | Out of Scope | Framework/context helper |
+| `test_volumetric.py` | `test/test_volumetric.py` | Deferred | 3D visualisation path remains secondary |
 
-## New Test Modules With No Direct Old Filename Match
+## Suggested Next Migration Targets
 
-These are mostly the modern replacements for old quicklook monolith behavior:
-
-- `test/test_smart_ds.py`
-- `test/test_shell_analysis.py`
-- `test/test_slices_analysis.py`
-- `test/test_orbit_analysis.py`
-- `test/test_orbit_pressure.py`
-- `test/test_orbit_surface_analysis.py`
-- `test/test_surface_torque_analysis.py`
-- `test/test_planetary_orbits.py`
-
-## Suggested Next Migration Targets (If We Keep Going)
-
-1. Add standalone algorithm tests for `fibonacci_sphere(...)` and `PolarAzimuthalGrid` (clean port of old sampling tests).
-2. Add dedicated vector/spherical transform tests (instead of only downstream analytic coverage).
-3. Decide whether to migrate legacy `reader` tests via compatibility shim or permanently retire them in favor of `SmartDs` + 3D bridge tests.
-4. Revisit `test_units.py` only after the SI/unit-framework direction is finalized.
+1. Add dedicated algorithm tests for `fibonacci_sphere` and `PolarAzimuthalGrid`.
+2. Add dedicated transform tests for core spherical/vector conversion primitives.
+3. Keep legacy-compat tests only when they validate current architecture goals.

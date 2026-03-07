@@ -1,176 +1,108 @@
 # Technical Debt Remediation Plan
 
-This plan is derived from `/Users/dagfev/Documents/starwinds/starwinds-analysis/docs/technical-debt.md` and the project rules in `/Users/dagfev/Documents/starwinds/starwinds-analysis/docs/bad-practices.md`.
+Last reviewed: 2026-03-07 (`dev`)
 
-## Principles (Hard Constraints)
+## Document Role
 
-- Do not reduce notebook clutter by moving one-off code into the library.
-- Deep layers must have smaller API surfaces and higher quality.
-- Same algorithm + different physical quantity is not a new function/module.
-- `SmartDs` + griblet should provide SI quantities directly; do not reintroduce `resolve_*`-style helper naming or wrapper APIs.
-- `analysis` should not import from `physics` (target direction), and circular imports must be removed by changing boundaries, not by lazy imports alone.
+- This file is execution order only.
+- Debt definitions live in `docs/technical-debt.md`.
+- Project rules live in `docs/bad-practices.md`.
+- Status snapshots and test baselines live in `docs/goal-audit.md`.
 
-## Phase 0 (Completed Low-Hanging Fruit)
+## Ordered Plan
 
-Completed in this pass:
+### Step 1: TD-01 (Pipelines)
 
-- Moved named planetary orbit presets/helpers out of `analysis` and into `physics`.
-- Added deep Kepler primitives in `physics.orbits` (`orbital_period`, `orbital_velocity`) and rewired callers.
-- Centralized `MU0` in `starwinds_analysis.constants` and removed local redefinitions.
-- Removed `open_wind_magnetisation_from_profiles` from `physics` (profile-bundle helper moved to local quicklook logic).
+Targets:
 
-## Phase 1 (Low-Hanging, Next)
+- `starwinds_analysis/pipelines/shell.py`
+- `starwinds_analysis/pipelines/sw_pipe.py`
+- `starwinds_analysis/pipelines/recorder.py`
 
-Goal: remove clear layer violations and obvious API-surface bloat without changing behavior.
+Execution focus:
 
-1. DONE: Shrink `physics.__init__` and `analysis.__init__` re-export surfaces.
-- Both package `__init__.py` files are now minimal (`__all__ = []`).
-- Callers import from owning modules directly.
+- reduce mixed responsibilities
+- keep pipelines flat and sequential (compute -> plot -> record)
+- trim argument/plumbing surface
 
-2. Continue removing stale debt markers by fixing or deleting the underlying patterns.
-- DONE: `analysis/__init__.py` (`analysis` re-exporting `physics`) removed.
-- DONE: quantity-specific shell profile wrappers were removed; callers now use `analysis.shells` primitives directly.
-- DONE (intermediate): `analysis/surface_torque.py` removed; torque code is currently consolidated in `physics/torque.py`.
-- NEXT: shrink `physics/torque.py` so only local torque terms remain in the deep layer and shell/surface wrappers move upward or become generic reducers.
+### Step 2: TD-02 (Physics workflow separation)
 
-3. Move any remaining deep primitives out of mixed modules when the split is file-clean.
-- DONE (updated): orbit geometry/sampling primitives live in `analysis.trajectories`,
-  which is generic enough for the current tree.
-- DONE: curve-vs-shell comparison logic was removed from the library and kept in tests only.
+Targets:
 
-## Phase 2 (SmartDs / griblet Migration)
+- `starwinds_analysis/physics/orbit_surface.py`
+- `starwinds_analysis/physics/curve.py`
+- `starwinds_analysis/physics/torque.py`
 
-Goal: stop computing physical quantities outside SmartDs/griblet.
+Execution focus:
 
-1. Add/extend griblet recipes for common SI quantities currently recomputed in code.
-- `B_r [T]`, `U_r [m/s]`
-- `magnetic_pressure [Pa]`, `ram_pressure [Pa]`
-- `mass_flux [kg/m^2/s]`, `energy_flux [W/m^2]`
-- torque-density terms where feasible (with explicit geometry inputs)
- - DONE (partial): core shell profile workflows now request spherical components
-   (`B_r`, `U_r`, `U_a`, `B_a`) from shell `SmartDs` instead of recomputing them.
- - DONE (partial): `batsrus.py` now provides pointwise SI recipes for
-   `magnetic_pressure [Pa]`, `ram_pressure [Pa]`, `mass_flux [kg/m^2/s]`,
-   `energy_flux [W/m^2]`, and shell-style torque densities, and shell workflows
-   request these via SmartDs/griblet.
- - NEXT: migrate more pointwise quantities (e.g. pressure-component bundle pieces,
-   explicit-surface torque terms where geometry inputs are explicit fields).
+- keep only reusable primitives in physics
+- reduce broad dict payloads
+- move pointwise quantities to recipes where feasible
 
-2. DONE (current pass): Replace wrapper-style field resolution with direct SmartDs requests.
-- Shell profile workflows now use `analysis.shells` primitives plus direct SmartDs/griblet quantities.
-- Orbit workflows (`physics/curve.py`, `physics/orbit_surface.py`) request SI quantities directly from SmartDs/griblet.
-- Dead `resolve_*` helper definitions were removed.
+### Step 3: TD-03 (Recipe/SmartDs hygiene)
 
-3. NEXT: Rename/clarify internal SmartDs graph resolve naming if needed.
-- Keep graph-path resolution distinct from user quantity requests.
+Targets:
 
-## Phase 3 (Shell / Surface Primitive Consolidation)
+- `starwinds_analysis/recipes/batsrus.py`
+- `starwinds_analysis/smart_ds.py`
 
-Goal: one primitive pipeline + parameterized quantities, not `*_vs_radius` duplication.
+Execution focus:
 
-1. Define generic shell reduction primitives (sampling + reduction) in `analysis/shells.py`.
-- Inputs: sampled shell arrays and reducer/integrand callbacks or quantity arrays.
-- Outputs: generic profile arrays/metadata.
+- simplify registration/access paths
+- keep strict fail-fast resolution
+- keep graph composition explicit and deterministic
 
-2. Move quantity definitions into `physics` (pointwise/local formulas only).
-- `mass_loss`, `energy flux`, `torque`, `open flux` should reuse the same shell reduction primitive.
+### Step 4: TD-05 (API hygiene in analysis/physics)
 
-3. Eliminate quantity-specific shell profile wrappers where they only differ by integrand.
-- DONE for standard shell profiles: callers now use explicit shell sampling (`sample_spherical_shells_fibonacci(...)` / `sample_spherical_shells(...)`) + `integrate_shell_scalar(...)`.
-- Remaining special case: `surface_torque_vs_radius(...)` in `physics/torque.py`.
+Targets:
 
-4. Apply the same split to explicit-surface torque.
-- Keep local `T1..T4` physics in `physics.torque`
-- Keep generic explicit-surface integration/reduction in `analysis`
-- Remove quantity-specific `*_vs_radius` wrappers as separate APIs when possible
+- `starwinds_analysis/analysis/`
+- `starwinds_analysis/physics/`
 
-## Phase 4 (Custom Containers and Structured SmartDs)
+Execution focus:
 
-Goal: stop inventing per-function containers and use shared abstractions.
+- remove low-value wrappers/shims
+- collapse unnecessary tiny APIs
+- keep only boundaries with real reuse
 
-1. Replace `SphericalShellSamples` compatibility usage gradually with structured `SmartDs` shell resampling.
-- DONE (partial): both grid and Fibonacci shell samplers now return structured `SmartDs`
-  with explicit metadata fields (`R`, `polar`, `azimuth`, `dA`).
-- DONE: core shell profile workflows and explicit-surface shell wrappers now read
-  shell values directly from the shell `SmartDs` (`shell_ds("...")`) instead of
-  using compat `.fields/.x/.area`.
-- DONE: temporary shell compatibility bridge (`.radii/.polar/.azimuth/.x/.y/.z/.area/.fields`)
-  removed after migrating remaining callers/tests/notebooks.
+### Step 5: TD-04 (Linear resampling performance)
 
-2. Remove `ShellMassFluxMap` (custom workflow container).
-- DONE: `ShellMassFluxMap` and `sample_shell_mass_flux_map(...)` were removed.
-- Tests/examples now use structured shell `SmartDs` + explicit arrays/metadata directly.
+Targets:
 
-3. Add geometry-measure support (`area`, `volume`) only where geometry basis is explicit.
-- Structured grids/shell grids first.
-- Native mesh (`corners`) later with documented assumptions.
+- `starwinds_analysis/_smart_ds_resample.py`
 
-4. Improve linear interpolation performance in resampling.
-- Observed case: a 1D trajectory sampled from a 3D file took about 11 minutes with linear interpolation.
-- Keep nearest-neighbour as the practical default for interactive workflows until this is fixed.
+Execution focus:
 
-5. NEXT: Permit direct resampling from one `SmartDs` onto another `SmartDs`.
-- Target workflow: `source_smart_ds.resample(target_smart_ds, ...)`.
-- Behavior: use target `SmartDs` coordinate fields as the resampling points, then return a new sampled `SmartDs`.
+- optimize shared-geometry linear workflows
+- keep nearest default practical path intact
 
-## Phase 5 (Plotting and Quicklook API Reduction)
+### Step 6: TD-06 (Docs sync pass)
 
-Goal: stop hardening quantity-specific plotting/orchestration wrappers into library APIs.
+Targets:
 
-1. Reduce `physics.plotting` to genuinely reusable primitives only.
-- Remove quantity-specific `plot_*` wrappers as notebooks/quicklook migrate to direct Matplotlib.
+- `docs/function-audit-notes.md`
+- `docs/shim-sized-function-audit.md`
+- `docs/technical-debt.md`
+- `docs/technical-debt-remediation-plan.md`
+- `docs/goal-audit.md`
 
-2. Keep the current `slice.py`, `shell.py`, and `volume.py` pipelines thin.
-- Do not rebuild a new monolithic quicklook wrapper.
-- Move pointwise science down into `recipes/` or `physics/`, and keep one-off composition in examples/scripts.
+Execution focus:
 
-3. Keep `visualisation/` for real plotting primitives only.
-- No quantity-specific APIs unless algorithmically distinct and reused.
+- refresh docs in same PR/batch as architecture/API changes
 
-## Phase 6 (Import Direction Cleanup)
+## Batch Validation Rule
 
-Goal: enforce one-way layer direction and eliminate circular import pressure.
+For each completed step:
 
-1. Remove `analysis -> physics` imports where the split is wrong.
-- Move shared primitives deeper (for example `physics.orbits`) or sideways into a true primitive module.
- - DONE (current pass): `starwinds_analysis/analysis/` no longer imports from `starwinds_analysis/physics/`.
+1. run targeted tests for touched modules
+2. run:
 
-2. Remove `physics -> analysis` imports in workflow-heavy modules by either:
-- moving workflows out of `physics`, or
-- extracting the needed primitive out of `analysis`.
- - DONE (partial): orbit workflows use the generic `analysis.trajectories` layer.
+```bash
+conda run -n starwinds-analysis python -m pytest -q test/test_code_rules.py
+```
 
-3. Only after boundaries are correct, remove lazy-import cycle workarounds.
-
-## Execution Order (Practical)
-
-Recommended next implementation batches:
-
-1. Shell profile workflows + torque wrappers in `physics/torque.py`
-- DONE: standard shell profile wrappers were removed and replaced with shared shell primitives in `analysis.shells`.
-- NEXT: remove the remaining quantity-specific `surface_torque_vs_radius(...)` wrapper.
-
-2. `physics/curve.py` + `physics/orbit_surface.py`
-- DONE (partial): orbit/curve workflows request SI SmartDs/griblet quantities directly and use shared orbit primitives from `analysis.trajectories`.
-- DONE (partial): `orbit_surface.py` no longer constructs orbit geometry internally; callers now provide explicit path points and sampled surfaces.
-- DONE (partial): orbit-surface pressure diagnostics no longer require periodic-orbit reconstruction; trajectory velocity/time are now explicit inputs.
-- NEXT: reduce dict-bundle outputs further and move more workflow composition upward.
-
-3. `visualisation/profile_plots.py` + current pipelines
-- DONE (partial): quantity-specific shell mass-flux plotting wrapper removed.
-- DONE (partial): generic shell-profile plotting helpers moved out of `physics` into `visualisation/profile_plots.py`.
-- NEXT: continue shrinking `shell.py` and `volume.py` without creating notebook convenience wrappers.
-
-## Testing Strategy (Required For Each Batch)
-
-- Run targeted tests for touched areas first.
-- Run the code-rules contract test when touching style/debt-sensitive code:
-  - `conda run -n starwinds-analysis python -m pytest -q test/test_code_rules.py`
-- `test/test_code_rules.py` uses a baseline to block new violations of selected bad-practice patterns.
-- Then run the full suite in `starwinds-analysis` before finishing a batch:
+3. run full suite when step scope is complete:
 
 ```bash
 conda run -n starwinds-analysis python -m pytest -q -ra
 ```
-
-- If a change is comment-only, run `py_compile` on touched files instead.

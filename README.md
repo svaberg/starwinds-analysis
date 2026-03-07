@@ -1,64 +1,97 @@
-# 3D analysis and visualisation of BATSRUS output
-Free and open source analysis
+# starwinds-analysis
 
-## Direction
+Analysis and diagnostics tooling for BATSRUS/SWMF outputs.
 
-This repo is moving toward a lightweight analysis core built around:
+## Core stack
 
-- `starwinds_readplt.Dataset` (raw BATSRUS/SWMF data access)
-- `numpy` / `scipy` (analysis, transforms, resampling)
-- optional `pyvista` only for 3D plotting / geometry operations
+- `starwinds_readplt.Dataset` for raw file access
+- `SmartDs` for field access, recipe-graph computation, and resampling
+- `numpy` / `scipy` / `matplotlib` for analysis and plotting
+- optional `pyvista` for 3D workflows only
 
-The goal is to avoid a large "precomputed quantity" workflow and instead compute
-derived fields on demand.
+## Installation
 
-## `SmartDs` (experimental wrapper)
+Option 1 (conda environment):
 
-`starwinds_analysis.smart_ds.SmartDs` wraps a `starwinds_readplt.Dataset` and adds:
+```bash
+conda env create -f environment.yml
+conda activate starwinds-analysis
+```
 
-- raw field passthrough (`.variable(name)`, `sds(name)`)
-- on-demand computed fields via registered functions
-- optional `griblet` computation-graph resolution (when `griblet` is installed)
-- point resampling that returns a **new wrapped dataset**
+Option 2 (pip only):
 
-### Example
+```bash
+pip install .
+```
+
+Extras:
+
+```bash
+pip install ".[tests]"
+pip install ".[viz3d]"
+```
+
+## SmartDs quickstart
 
 ```python
 from starwinds_analysis.smart_ds import SmartDs
 
 sds = SmartDs.from_file("sample_data/3d__var_1_n00060000.plt")
+sds.prepare()
 
-# Register on-demand spherical geometry + vector components from Cartesian fields
-sds.add_spherical_fields(vectors=("B", "U"))
-
-r = sds.variable("R [R]")
-br = sds.variable("B_r [Gauss]")
-ua = sds.variable("U_a [km/s]")
+print(sds)
+rho = sds("Rho [kg/m^3]")
+br = sds("B_r [T]")
+print(sds.explain("B_r [T]"))
 ```
 
-If `griblet` is installed, you can also attach spherical *recipes* (dependency-path
-resolution) instead of local field functions:
+`SmartDs.prepare()` attaches BATSRUS + spherical recipe fragments.
+Default spherical naming is:
+
+- `R [R]`, `polar [rad]`, `azimuth [rad]`
+- vector components: `_r`, `_p`, `_a`
+
+## Resampling
 
 ```python
-sds.add_spherical_graph(vectors=("B", "U"))
-print(sds.explain("B_r [Gauss]"))
+import numpy as np
+
+# points shape: (n, 3) in the same coordinate system as coord_fields
+points = np.stack([
+    np.linspace(1.0, 10.0, 100),
+    np.zeros(100),
+    np.zeros(100),
+], axis=-1)
+
+curve = sds.resample(
+    points,
+    fields=("Rho [kg/m^3]", "B_r [T]", "R [R]"),
+    method="nearest",
+)
 ```
 
-For BATSRUS-style inputs, `SmartDs` can also attach a recipe graph for common unit
-normalization (to SI where possible) and a few derived quantities:
+`resample(...)` returns a new wrapped `SmartDs`.
 
-```python
-sds.add_batsrus_graph()
+## Pipelines (`sw-pipe`)
 
-rho = sds.variable("Rho [kg/m^3]")
-bx = sds.variable("B_x [T]")
-c_s = sds.variable("c_s [m/s]")
-m_a = sds.variable("M_A [none]")
-print(sds.explain("M_A [none]"))
+`sw-pipe` discovers `.plt` and `.dat` files and routes by filename prefix:
+
+- `3d* -> volume`
+- `shl* -> shell`
+- `x=0*`, `y=0*`, `z=0* -> slice`
+
+Examples:
+
+```bash
+sw-pipe sample_data
+sw-pipe sample_data --pipeline slice
+sw-pipe sample_data --pipeline shell
+sw-pipe sample_data --pipeline volume
 ```
 
-Spherical conventions used by the helper recipes:
+Inspect recorded results:
 
-- `polar [rad]`: colatitude in `[0, pi]`
-- `azimuth [rad]`: azimuth from `atan2(y, x)` in `[-pi, pi]`
-- singular points (e.g. `r=0`, polar axis for some components) produce `NaN`
+```bash
+sw-pipe-results --state sample_data/sw-pipe.slice.processed.json --list-fields
+sw-pipe-results --state sample_data/sw-pipe.slice.processed.json --field slice_rho_png
+```

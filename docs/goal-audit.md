@@ -1,6 +1,6 @@
 # Goal Audit
 
-Date: 2026-03-04
+Date: 2026-03-07  
 Branch: `dev`
 
 ## Current Status Snapshot
@@ -13,14 +13,14 @@ Status: DONE (current shape)
   - `3d* -> volume`
   - `shl* -> shell`
   - `x=0*`, `y=0*`, `z=0* -> slice`
-- The old `quicklook2d` pipeline layer is gone.
-- Current built-in per-file pipelines are:
+- Built-in per-file pipelines are:
   - `slice`
   - `shell`
   - `volume`
   - `dummy`
 
 Files:
+
 - `starwinds_analysis/pipelines/sw_pipe.py`
 - `starwinds_analysis/pipelines/slice.py`
 - `starwinds_analysis/pipelines/shell.py`
@@ -30,36 +30,36 @@ Files:
 
 Status: DONE (current model)
 
-- Pipelines emit results through `add_record(...)` as values are produced.
-- `sw-pipe` captures those records and writes:
+- Pipelines emit result records through `add_record(...)` at compute time.
+- `sw-pipe` captures records and writes per-pipeline state files:
   - `sw-pipe.<pipeline>.processed.json`
-- Recorded values remain machine-ingestable and traceable via:
+- Recorded fields are machine-ingestable and traceable with:
   - `value`
   - `source.module`
   - `source.function`
   - `source.line`
 
 Files:
+
 - `starwinds_analysis/pipelines/recorder.py`
 - `starwinds_analysis/pipelines/sw_pipe.py`
+- `starwinds_analysis/pipelines/sw_pipe_results.py`
 
 ### 3) SmartDs and recipe surface
 
 Status: PARTIAL, usable
 
-- `SmartDs.prepare(...)` is the normal workflow setup method.
-- Local spherical field registration has been removed; spherical fields now come from the attached graph only.
-- Active spherical field names now use:
+- `SmartDs.prepare(...)` is the normal setup path.
+- BATSRUS + spherical graph fragments are attached by default in `prepare(...)`.
+- Active spherical names are:
   - `R [R]`
   - `polar [rad]`
   - `azimuth [rad]`
-  - `_r`, `_p`, `_a`
-- `theta` / `phi` and `*_theta` / `*_phi` aliases are removed from the active path.
-
-Remaining debt:
-- `SmartDs.resolve(...)` has been removed; graph-path inspection remains available through `SmartDs.explain(...)`.
+  - vector suffixes `_r`, `_p`, `_a`
+- Graph introspection is available through `SmartDs.explain(...)`.
 
 Files:
+
 - `starwinds_analysis/smart_ds.py`
 - `starwinds_analysis/recipes/spherical.py`
 - `starwinds_analysis/recipes/batsrus.py`
@@ -68,31 +68,46 @@ Files:
 
 Status: DONE (first pass)
 
-- `PARAM.in` parsing is available through `ParamIn`.
-- `SmartDs.from_file(...)` looks for nearby `PARAM.in` / `param.in`.
-- Parsed stellar parameters are exposed through graph-backed scalar fields:
+- `PARAM.in` parsing is available via `ParamIn`.
+- `SmartDs.from_file(...)` searches nearby `PARAM.in` / `param.in`.
+- Parsed stellar values are exposed in graph-accessible SI fields:
   - `star_radius [m]`
   - `star_mass [kg]`
   - `star_rotational_period [s]`
   - `star_rotation_rate [rad/s]`
 
 Files:
+
 - `starwinds_analysis/param_in.py`
 - `starwinds_analysis/smart_ds.py`
 - `starwinds_analysis/recipes/batsrus.py`
 
 ## Validation Baseline
 
-Current focused checks that should stay healthy:
+Focused checks that should stay green:
 
 - `test/test_sw_pipe.py`
 - `test/test_sw_pipe_results.py`
 - `test/test_param_in.py`
 - `test/test_smart_ds.py`
+- `test/test_alfven_radius.py`
 
-## Main Remaining Work
+Last verified: 2026-03-07  
+Environment: `starwinds-analysis` conda env
 
-- Continue shrinking real debt in `docs/technical-debt.md`, especially:
-  - removed `SmartDs.resolve(...)`; keep graph-path inspection on `SmartDs.explain(...)` only
-  - quantity-specific `*_vs_radius` wrappers in `physics/`
-  - keeping `shell.py` from growing into another logic blob
+```bash
+conda run -n starwinds-analysis python -m pytest -q \
+  test/test_sw_pipe.py \
+  test/test_sw_pipe_results.py \
+  test/test_param_in.py \
+  test/test_smart_ds.py \
+  test/test_alfven_radius.py
+```
+
+Result: `50 passed in 0.96s`
+
+## Boundary Note
+
+- This file is snapshot-only (state + verification).
+- Execution sequencing and next implementation steps live in:
+  - `docs/technical-debt-remediation-plan.md`

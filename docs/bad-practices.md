@@ -1,6 +1,7 @@
 # Bad Practices (Anti-Patterns) To Avoid
 
 This is a living list of patterns we want to avoid in `starwinds-analysis`.
+Last reviewed: 2026-03-07 (`dev`)
 
 The goal is not "purity". The goal is:
 
