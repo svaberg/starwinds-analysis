@@ -15,7 +15,6 @@ dependencies = [
   "numpy",
   "scipy",
   "matplotlib",
-  "cmocean",
   "griblet @ git+https://github.com/svaberg/griblet.git",
   "starwinds_readplt @ git+https://github.com/svaberg/starwinds-readplt",
 ]

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import cmocean
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from matplotlib.colors import SymLogNorm
@@ -18,7 +17,7 @@ from starwinds_analysis.visualisation.slice import plot_xz_slice_tripcolor_with_
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
-BR_CMAP = cmocean.cm.balance
+BR_CMAP = "RdBu_r"
 
 
 def process_plt_file(file_path: str | Path) -> None:
