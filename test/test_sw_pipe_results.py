@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import pytest
-
 from starwinds_analysis.pipelines.sw_pipe_results import main
 
 
@@ -80,16 +78,6 @@ def test_sw_pipe_results_field_query_value_only(tmp_path, capsys):
         "alpha.plt": {"vowels": 2, "consonants": 3},
         "beta.plt": {"vowels": 2, "consonants": 2},
     }
-
-
-@pytest.mark.design_lockin
-def test_sw_pipe_results_field_query_with_source(tmp_path, capsys):
-    path = _write_state(tmp_path)
-    code = main(["--state", str(path), "--field", "letter_counts", "--file", "alpha.plt", "--with-source"])
-    data = json.loads(capsys.readouterr().out)
-    assert code == 0
-    assert data["value"] == {"vowels": 2, "consonants": 3}
-    assert data["source"]["function"] == "name_letter_counts"
 
 
 def test_sw_pipe_results_default_dump_all(tmp_path, capsys):

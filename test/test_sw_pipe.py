@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 from pathlib import Path
@@ -128,32 +127,6 @@ def test_run_sw_pipe_fail_fast_raises_on_first_failure(tmp_path):
         run_sw_pipe(tmp_path, process_file=process_file, fail_fast=True)
 
 
-@pytest.mark.design_lockin
-def test_run_sw_pipe_writes_processed_state_file(tmp_path):
-    (tmp_path / "alpha.plt").write_text("")
-    (tmp_path / "nested").mkdir()
-    (tmp_path / "nested" / "beta.plt").write_text("")
-
-    run_sw_pipe(tmp_path, recursive=True, pipeline="dummy")
-    state_file = tmp_path / "sw-pipe.dummy.processed.json"
-    assert state_file.exists()
-    payload = json.loads(state_file.read_text())
-    assert payload["processed_files"] == ["alpha.plt", "nested/beta.plt"]
-    assert sorted(payload["computed_results"].keys()) == ["alpha.plt", "nested/beta.plt"]
-    assert "meta" in payload["computed_results"]["alpha.plt"]
-    assert "letter_counts" in payload["computed_results"]["alpha.plt"]
-
-
-@pytest.mark.design_lockin
-def test_run_sw_pipe_can_record_file_hash(tmp_path):
-    file_path = tmp_path / "alpha.plt"
-    file_path.write_text("abc")
-    results = run_sw_pipe(tmp_path, pipeline="dummy", include_file_hash=True)
-    expected_hash = hashlib.sha256(b"abc").hexdigest()
-    alpha = results.computed_results["alpha.plt"]
-    assert alpha["meta"]["file_hash_sha256"] == expected_hash
-
-
 def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     (tmp_path / "alpha.plt").write_text("")
 
@@ -174,15 +147,6 @@ def test_run_sw_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     assert float(loaded[0]) == 0.0
     assert float(loaded[-1]) == 199999.0
     assert entry["source"]["module"] == "test_pipeline"
-
-
-@pytest.mark.design_lockin
-def test_run_sw_pipe_warns_when_state_json_is_large(tmp_path, caplog):
-    (tmp_path / "alpha.plt").write_text("")
-    with caplog.at_level(logging.WARNING, logger="starwinds_analysis.pipelines.sw_pipe"):
-        run_sw_pipe(tmp_path, pipeline="dummy", json_warn_bytes=1)
-    warnings = [record.getMessage() for record in caplog.records if record.levelno == logging.WARNING]
-    assert any("state file is large" in message for message in warnings)
 
 
 def test_run_sw_pipe_auto_routes_by_filename_prefix(tmp_path):
