@@ -3,20 +3,75 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .base import Octree
-from .base import RayLinearPiece
-from .base import RaySegment
-from .base import _normalize_direction
 
 if TYPE_CHECKING:
     from .interpolator import OctreeInterpolator
 
 logger = logging.getLogger(__name__)
+
+HEX_TETS_INDEX = np.array(
+    (
+        (0, 1, 2, 6),
+        (0, 2, 3, 6),
+        (0, 3, 7, 6),
+        (0, 7, 4, 6),
+        (0, 4, 5, 6),
+        (0, 5, 1, 6),
+    ),
+    dtype=np.int64,
+)
+TET_FACES_INDEX = np.array(
+    (
+        (1, 2, 3),
+        (0, 3, 2),
+        (0, 1, 3),
+        (0, 2, 1),
+    ),
+    dtype=np.int64,
+)
+
+
+def _normalize_direction(direction_xyz: np.ndarray) -> np.ndarray:
+    """Normalize one Cartesian ray direction."""
+    d = np.asarray(direction_xyz, dtype=float).reshape(3)
+    dn = float(np.linalg.norm(d))
+    if not math.isfinite(dn) or dn == 0.0:
+        raise ValueError("direction_xyz must be finite and non-zero.")
+    return d / dn
+
+
+def _as_xyz(point_xyz: np.ndarray) -> np.ndarray:
+    """Coerce one Cartesian point to shape `(3,)` float array."""
+    return np.asarray(point_xyz, dtype=float).reshape(3)
+
+
+@dataclass(frozen=True)
+class RaySegment:
+    """Ray interval `[t_enter, t_exit]` that remains inside one leaf cell."""
+
+    cell_id: int
+    t_enter: float
+    t_exit: float
+
+
+@dataclass(frozen=True)
+class RayLinearPiece:
+    """Linear function f(t) = slope*t + intercept over [t_start, t_end]."""
+
+    t_start: float
+    t_end: float
+    cell_id: int
+    tet_id: int
+    slope: np.ndarray
+    intercept: np.ndarray
 
 
 class OctreeRayTracer:
@@ -49,8 +104,32 @@ class OctreeRayTracer:
         Returns:
         - Ordered list of `RaySegment` intervals.
         """
-        o = np.array(origin_xyz, dtype=float).reshape(3)
+        o = _as_xyz(origin_xyz)
         d = _normalize_direction(direction_xyz)
+        return self.trace_prepared(
+            o,
+            d,
+            float(t_start),
+            float(t_end),
+            max_steps=max_steps,
+            bisect_iters=bisect_iters,
+            boundary_tol=boundary_tol,
+        )
+
+    def trace_prepared(
+        self,
+        origin_xyz: np.ndarray,
+        direction_xyz_unit: np.ndarray,
+        t_start: float,
+        t_end: float,
+        *,
+        max_steps: int = 100000,
+        bisect_iters: int = 48,
+        boundary_tol: float = 1e-9,
+    ) -> list[RaySegment]:
+        """Trace ray segments for pre-normalized inputs."""
+        o = origin_xyz
+        d = direction_xyz_unit
 
         t0 = float(t_start)
         t1 = float(t_end)
@@ -73,7 +152,7 @@ class OctreeRayTracer:
             cid = int(hit.cell_id)
 
             if not self.tree.contains_cell(cid, p, space="xyz", tol=1e-8):
-                near_hit = self.tree._lookup_local(p, cid)
+                near_hit = self.tree.lookup_local(p, cid)
                 if near_hit is None:
                     break
                 hit = near_hit
@@ -111,13 +190,13 @@ class OctreeRayTracer:
             if t_next <= t + abs_eps * 0.25:
                 t_next = min(t1, t + abs_eps)
             p_next = o + t_next * d
-            next_hit = self.tree._lookup_local(p_next, cid)
+            next_hit = self.tree.lookup_local(p_next, cid)
             if next_hit is None:
                 break
             if int(next_hit.cell_id) == cid and t_next < t1:
                 t_next = min(t1, t_next + 4.0 * abs_eps)
                 p_next = o + t_next * d
-                next_hit = self.tree._lookup_local(p_next, cid)
+                next_hit = self.tree.lookup_local(p_next, cid)
                 if next_hit is None:
                     break
 
@@ -152,7 +231,7 @@ class OctreeRayInterpolator:
     def find_tet_in_hex(self, cell_xyz: np.ndarray, point_xyz: np.ndarray, *, tol: float = 1e-10) -> int | None:
         """Find which tet in the local 6-tet split contains a point."""
         p = np.array(point_xyz, dtype=float)
-        for tet_idx, tet in enumerate(self.interpolator._HEX_TETS_INDEX):
+        for tet_idx, tet in enumerate(HEX_TETS_INDEX):
             tet_xyz = cell_xyz[tet]
             if self.point_in_tet(p, tet_xyz, tol=tol):
                 return int(tet_idx)
@@ -229,11 +308,12 @@ class OctreeRayInterpolator:
         if int(n_samples) <= 0:
             raise ValueError("n_samples must be positive.")
 
-        o = np.array(origin_xyz, dtype=float).reshape(3)
+        o = _as_xyz(origin_xyz)
         d = _normalize_direction(direction_xyz)
         t_values = np.linspace(float(t_start), float(t_end), int(n_samples))
 
-        segments = self.tree.trace_ray(o, d, float(t_start), float(t_end))
+        tracer = OctreeRayTracer(self.tree)
+        segments = tracer.trace_prepared(o, d, float(t_start), float(t_end))
         query_xyz = o[None, :] + t_values[:, None] * d[None, :]
         values, cell_ids = self.interpolator(
             query_xyz,
@@ -278,12 +358,12 @@ class OctreeRayInterpolator:
         for _ in range(max_steps):
             if t >= t_exit - eps:
                 break
-            tet = interp._HEX_TETS_INDEX[tet_idx]
+            tet = HEX_TETS_INDEX[tet_idx]
             tet_xyz = cell_xyz[tet]
             tet_vals = cell_vals[tet]
 
             t_next = float(t_exit)
-            for face in interp._TET_FACES_INDEX:
+            for face in TET_FACES_INDEX:
                 tri = tet_xyz[face]
                 t_hit = self.ray_triangle_hit_t(
                     ray_origin,
@@ -342,10 +422,11 @@ class OctreeRayInterpolator:
         t_end: float,
     ) -> list[RayLinearPiece]:
         """Return stitched piecewise-linear `f(t)=m*t+b` intervals on a ray."""
-        o = np.array(origin_xyz, dtype=float).reshape(3)
+        o = _as_xyz(origin_xyz)
         d = _normalize_direction(direction_xyz)
 
-        segments = self.tree.trace_ray(o, d, float(t_start), float(t_end))
+        tracer = OctreeRayTracer(self.tree)
+        segments = tracer.trace_prepared(o, d, float(t_start), float(t_end))
         pieces: list[RayLinearPiece] = []
         for seg in segments:
             pieces.extend(

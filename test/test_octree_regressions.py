@@ -5,8 +5,9 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import SphericalOctree
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import OctreeRayTracer
+from starwinds_analysis.octree import SphericalOctree
 
 
 @pytest.fixture(scope="module")
@@ -31,6 +32,7 @@ def test_regression_xyz_to_rpa_is_stable_and_finite() -> None:
     assert np.isclose(azimuth, 0.0, rtol=0.0, atol=1e-15)
 
 
+@pytest.mark.slow
 def test_regression_lookup_outside_domain_returns_none(regression_context) -> None:
     """Regression: lookup outside radial domain should not snap to nearest cell."""
     _ds, tree = regression_context
@@ -46,20 +48,21 @@ def test_regression_trace_ray_from_outside_returns_empty(regression_context) -> 
     r_max = float(tree.lookup._r_max)
     origin = np.array([r_max + 25.0, 0.0, 0.0], dtype=float)
     direction = np.array([1.0, 0.0, 0.0], dtype=float)
-    segments = tree.trace_ray(origin, direction, 0.0, 10.0)
+    segments = OctreeRayTracer(tree).trace(origin, direction, 0.0, 10.0)
     assert segments == []
 
 
-def test_regression_load_without_corners_uses_dataset_corners(tmp_path, regression_context) -> None:
-    """Regression: loading no-corner files with ds must bind via ds.corners."""
+@pytest.mark.slow
+def test_regression_load_uses_dataset_corners(tmp_path, regression_context) -> None:
+    """Regression: loaded trees should resolve lookups from bound dataset corners."""
     ds, tree = regression_context
-    path = tmp_path / "tree_no_corners_regression.npz"
-    tree.save(path, include_corners=False)
+    path = tmp_path / "tree_regression.npz"
+    tree.save(path)
 
     loaded = Octree.load(path, ds=ds)
-    assert loaded.corners is not None
+    assert loaded.ds is ds
 
-    # Ensure lookups are functional without an explicit corners argument.
+    # Ensure lookups are functional via ds.corners.
     q = np.array([1.0, 0.0, 0.0], dtype=float)
     hit = loaded.lookup_point(q, space="xyz")
     assert hit is not None

@@ -14,12 +14,10 @@ from .base import GridIndex
 from .base import GridPath
 from .base import LookupHit
 from .base import Octree
-from .base import _CellLookup
-from .base import _DEFAULT_LOOKUP_MAX_RADIUS
-from .base import _LOOKUP_CONTAIN_TOL
-from .base import _TWO_PI
-from .builder import _circular_span_and_mean
-from .builder import compute_delta_phi_and_levels
+
+_TWO_PI = 2.0 * math.pi
+_LOOKUP_CONTAIN_TOL = 1e-10
+_DEFAULT_LOOKUP_MAX_RADIUS = 2
 
 
 class LookupKernelState(NamedTuple):
@@ -72,7 +70,7 @@ def _contains_rpa_cell(
 
 
 @njit(cache=True)
-def _lookup_rpa_cell_id(
+def lookup_rpa_cell_id_kernel(
     r: float,
     polar: float,
     azimuth: float,
@@ -227,7 +225,7 @@ def _lookup_rpa_cell_id(
             all_best = cid
     return all_best
 
-class _SphericalCellLookup(_CellLookup):
+class _SphericalCellLookup:
     """Leaf-cell lookup accelerator for spherical/Cartesian queries.
 
     The index is built from leaf-cell centers and bounds in spherical space.
@@ -236,7 +234,7 @@ class _SphericalCellLookup(_CellLookup):
     the hot path.
     """
 
-    def __init__(
+    def _init_lookup_state(
         self,
         tree: Octree,
     ) -> None:
@@ -247,12 +245,11 @@ class _SphericalCellLookup(_CellLookup):
         Returns:
         - `None`; initializes lookup arrays and compiled lookup state on `self`.
         """
-        if tree.ds is None or tree.corners is None:
+        if tree.ds is None or tree.ds.corners is None:
             raise ValueError("Lookup requires a bound octree with dataset and corners.")
         ds = tree.ds
-        corners = tree.corners
+        corners = np.array(ds.corners, dtype=np.int64)
         cell_levels = tree.cell_levels
-        axis2_center = tree.axis2_center
         axis_rho_tol = float(tree.axis_rho_tol)
         if not {"X [R]", "Y [R]", "Z [R]"}.issubset(set(ds.variables)):
             raise ValueError("Lookup requires X/Y/Z variables.")
@@ -268,17 +265,11 @@ class _SphericalCellLookup(_CellLookup):
             )
         )
         self._cell_centers = np.mean(self._points[self._corners], axis=1)
-        if cell_levels is None or axis2_center is None:
-            _delta_phi, axis2_center_auto, levels_auto, _expected, _coarse = compute_delta_phi_and_levels(
-                ds,
-                axis_rho_tol=axis_rho_tol,
-            )
-            if cell_levels is None:
-                cell_levels = levels_auto
-            if axis2_center is None:
-                axis2_center = axis2_center_auto
-        self._cell_level_rel = np.array(cell_levels, dtype=np.int64)
-        self._axis2_center = np.array(axis2_center, dtype=float)
+        n_cells = int(self._corners.shape[0])
+        if cell_levels is None or int(cell_levels.shape[0]) != n_cells:
+            self._cell_level_rel = np.full(n_cells, int(tree.max_level), dtype=np.int64)
+        else:
+            self._cell_level_rel = np.array(cell_levels, dtype=np.int64)
         self._build_index()
 
     def _build_index(self) -> None:
@@ -301,12 +292,26 @@ class _SphericalCellLookup(_CellLookup):
             raise ValueError("Lookup requires at least one valid leaf level.")
 
         self._max_level = int(self.tree.max_level)
-        (
-            self._level_to_depth,
-            self._shape_by_level,
-            self._dtheta_by_level,
-            self._dphi_by_level,
-        ) = self.tree.level_maps(self._cell_level_rel[valid])
+        valid_levels = sorted(set(int(v) for v in self._cell_level_rel[valid].tolist()))
+        shape_by_level: dict[int, tuple[int, int, int]] = {}
+        dtheta_by_level: dict[int, float] = {}
+        dphi_by_level: dict[int, float] = {}
+        for level in valid_levels:
+            depth = int(self.tree.depth - (int(self.tree.max_level) - int(level)))
+            if depth < 0:
+                raise ValueError(
+                    f"Derived negative tree depth for level {level}; "
+                    f"tree.depth={self.tree.depth}, max_level={self.tree.max_level}."
+                )
+            nr = int(self.tree.root_shape[0] * (1 << depth))
+            ntheta = int(self.tree.root_shape[1] * (1 << depth))
+            nphi = int(self.tree.root_shape[2] * (1 << depth))
+            shape_by_level[level] = (nr, ntheta, nphi)
+            dtheta_by_level[level] = math.pi / float(ntheta)
+            dphi_by_level[level] = _TWO_PI / float(nphi)
+        self._shape_by_level = shape_by_level
+        self._dtheta_by_level = dtheta_by_level
+        self._dphi_by_level = dphi_by_level
 
         levels_asc = np.array(sorted(self._shape_by_level.keys()), dtype=np.int64)
         self._levels_desc = levels_asc[::-1]
@@ -314,7 +319,6 @@ class _SphericalCellLookup(_CellLookup):
         shape_table = np.full((level_cap, 3), -1, dtype=np.int64)
         dtheta_table = np.full(level_cap, np.nan, dtype=float)
         dphi_table = np.full(level_cap, np.nan, dtype=float)
-        depth_table = np.full(level_cap, -1, dtype=np.int64)
         bin_level_offset = np.full(level_cap, -1, dtype=np.int64)
         running_offset = 0
         for level in levels_asc:
@@ -325,7 +329,6 @@ class _SphericalCellLookup(_CellLookup):
             shape_table[lvl, 2] = int(shape[2])
             dtheta_table[lvl] = float(self._dtheta_by_level[lvl])
             dphi_table[lvl] = float(self._dphi_by_level[lvl])
-            depth_table[lvl] = int(self._level_to_depth[lvl])
             bin_level_offset[lvl] = running_offset
             running_offset += int(shape[1]) * int(shape[2])
         self._shape_table = shape_table
@@ -343,19 +346,11 @@ class _SphericalCellLookup(_CellLookup):
         ctheta = np.mean(theta_points[self._corners], axis=1)
         rho_points = np.hypot(self._points[:, 0], self._points[:, 1])
         axis_mask = rho_points[self._corners] <= self._axis_rho_tol
-        _dphi_dummy, cphi_auto = _circular_span_and_mean(
-            phi_points[self._corners],
-            ignore_mask=axis_mask,
-        )
-        fallback_phi = np.mod(np.arctan2(self._cell_centers[:, 1], self._cell_centers[:, 0]), 2.0 * math.pi)
-        cphi = np.where(np.isfinite(self._axis2_center), self._axis2_center, cphi_auto)
-        cphi = np.where(np.isfinite(cphi), cphi, fallback_phi)
-        cphi = np.mod(cphi, 2.0 * math.pi)
+        cphi = np.mod(np.arctan2(self._cell_centers[:, 1], self._cell_centers[:, 0]), 2.0 * math.pi)
 
         itheta = np.full(n_cells, -1, dtype=np.int64)
         iphi = np.full(n_cells, -1, dtype=np.int64)
         ir_abs = np.full(n_cells, -1, dtype=np.int64)
-        cell_depth = np.full(n_cells, -1, dtype=np.int64)
 
         n_bins = int(running_offset)
         bin_lists: list[list[int]] = [[] for _ in range(n_bins)]
@@ -369,7 +364,6 @@ class _SphericalCellLookup(_CellLookup):
             pp = int(np.clip(np.floor(cphi[cid] / dphi), 0, nphi - 1))
             itheta[cid] = tt
             iphi[cid] = pp
-            cell_depth[cid] = int(depth_table[level])
             key = int(self._bin_level_offset[level] + tt * nphi + pp)
             bin_lists[key].append(int(cid))
 
@@ -405,7 +399,6 @@ class _SphericalCellLookup(_CellLookup):
             ids = bin_lists[key]
             bin_cell_ids[start:end] = np.array(ids, dtype=np.int64)
 
-        self._cell_depth = cell_depth
         self._ir = ir_abs
         self._itheta = itheta
         self._iphi = iphi
@@ -625,7 +618,7 @@ class _SphericalCellLookup(_CellLookup):
         - Resolved `cell_id`, or `-1` for invalid/out-of-domain inputs.
         """
         return int(
-            _lookup_rpa_cell_id(
+            lookup_rpa_cell_id_kernel(
                 float(r),
                 float(polar),
                 float(azimuth),
@@ -690,7 +683,7 @@ class _SphericalCellLookup(_CellLookup):
         azimuth = float(math.atan2(y, x) % (2.0 * math.pi))
         return self.lookup_rpa_cell_id(r, polar, azimuth)
 
-    def _hit_from_chosen(self, chosen: int, *, allow_invalid_depth: bool = False) -> LookupHit | None:
+    def hit_from_chosen(self, chosen: int, *, allow_invalid_depth: bool = False) -> LookupHit | None:
         """Materialize lookup metadata from one chosen cell id.
 
         Consumes:
@@ -702,15 +695,24 @@ class _SphericalCellLookup(_CellLookup):
         if chosen < 0:
             return None
         center = self._cell_centers[chosen]
-        depth = int(self._cell_depth[chosen])
-        if depth < 0 and not allow_invalid_depth:
+        level = int(self._cell_level_rel[chosen])
+        if level < 0 and not allow_invalid_depth:
             return None
+        if level < 0:
+            depth = int(self.tree.depth)
+        else:
+            depth = int(self.tree.depth - (int(self.tree.max_level) - level))
+            if depth < 0:
+                raise ValueError(
+                    f"Derived negative tree depth for level {level}; "
+                    f"tree.depth={self.tree.depth}, max_level={self.tree.max_level}."
+                )
         cell_ir = int(self._ir[chosen])
         cell_ipolar = int(self._itheta[chosen])
         cell_iazimuth = int(self._iphi[chosen])
         return LookupHit(
             cell_id=chosen,
-            level=depth,
+            level=level,
             i0=cell_ir,
             i1=cell_ipolar,
             i2=cell_iazimuth,
@@ -720,50 +722,10 @@ class _SphericalCellLookup(_CellLookup):
 
 
 
-class SphericalOctree(Octree):
+class SphericalOctree(_SphericalCellLookup, Octree):
     """Octree specialization for spherical `(r, polar, azimuth)` datasets."""
 
     COORD_SYSTEM: ClassVar[str | None] = "rpa"
-
-    @property
-    def center_phi(self) -> np.ndarray | None:
-        """Expose spherical axis-2 center payload."""
-        return self.axis2_center
-
-    @center_phi.setter
-    def center_phi(self, value: np.ndarray | None) -> None:
-        """Set spherical axis-2 center payload."""
-        self.axis2_center = value
-
-    @property
-    def delta_phi(self) -> np.ndarray | None:
-        """Expose spherical axis-2 span payload."""
-        return self.axis2_span
-
-    @delta_phi.setter
-    def delta_phi(self, value: np.ndarray | None) -> None:
-        """Set spherical axis-2 span payload."""
-        self.axis2_span = value
-
-    @property
-    def expected_delta_phi(self) -> np.ndarray | None:
-        """Expose expected spherical axis-2 span payload."""
-        return self.expected_axis2_span
-
-    @expected_delta_phi.setter
-    def expected_delta_phi(self, value: np.ndarray | None) -> None:
-        """Set expected spherical axis-2 span payload."""
-        self.expected_axis2_span = value
-
-    @property
-    def coarse_delta_phi(self) -> float | None:
-        """Expose coarsest spherical axis-2 span scalar."""
-        return self.coarse_axis2_span
-
-    @coarse_delta_phi.setter
-    def coarse_delta_phi(self, value: float | None) -> None:
-        """Set coarsest spherical axis-2 span scalar."""
-        self.coarse_axis2_span = value
 
     @staticmethod
     def xyz_to_rpa(q: np.ndarray) -> tuple[float, float, float]:
@@ -785,7 +747,7 @@ class SphericalOctree(Octree):
         azimuth = float(math.atan2(y, x) % (2.0 * math.pi))
         return r, polar, azimuth
 
-    def _lookup_local(self, xyz: np.ndarray, near_cid: int | None = None) -> "LookupHit | None":
+    def lookup_local(self, xyz: np.ndarray, near_cid: int | None = None) -> "LookupHit | None":
         """Lookup in xyz using local spherical-bin neighborhoods around a near cell.
 
         Algorithm:
@@ -859,18 +821,16 @@ class SphericalOctree(Octree):
 
         return self.lookup_point(np.array([x, y, z], dtype=float), space="xyz")
 
-    def _build_lookup(
+    def build_lookup(
         self,
-    ) -> "_CellLookup":
-        """Construct spherical lookup state backed by angular/radial bins.
+    ) -> None:
+        """Construct spherical lookup state directly on this octree instance.
 
         Consumes:
         - Bound spherical tree geometry.
         Returns:
-        - `_SphericalCellLookup` instance.
+        - `None`; lookup state is initialized on `self`.
         """
-        if self.ds is None or self.corners is None:
+        if self.ds is None or self.ds.corners is None:
             raise ValueError("Octree is not bound to a dataset. Call bind(...) before lookup.")
-        return _SphericalCellLookup(
-            self,
-        )
+        self._init_lookup_state(self)

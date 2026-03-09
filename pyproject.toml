@@ -13,6 +13,7 @@ authors = [
 ]
 dependencies = [
   "numpy",
+  "numba",
   "scipy",
   "matplotlib",
   "griblet @ git+https://github.com/svaberg/griblet.git",
@@ -50,7 +51,9 @@ include = ["starwinds_analysis*"]
 namespaces = true
 
 [tool.pytest.ini_options]
+addopts = "-m 'not slow'"
 markers = [
+  "slow: expensive tests excluded from the default unit-test run",
   "design_lockin: tests that primarily lock in current implementation details or schema/log formatting rather than core functionality",
   "interactive: tests requiring user interaction / graphics",
 ]

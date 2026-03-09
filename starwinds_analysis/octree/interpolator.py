@@ -17,20 +17,16 @@ from starwinds_readplt.dataset import Dataset
 
 from .base import DEFAULT_AXIS_RHO_TOL
 from .base import DEFAULT_COORD_SYSTEM
-from .base import LookupHit
 from .base import Octree
-from .base import RayLinearPiece
-from .base import RaySegment
-from .base import TetCornerIndex
-from .base import TriFaceIndex
-from .base import _TWO_PI
+from .cartesian import CartesianLookupKernelState
+from .cartesian import lookup_xyz_cell_id_kernel
 from .spherical import LookupKernelState
-from .spherical import SphericalOctree
-from .spherical import _lookup_rpa_cell_id
+from .spherical import lookup_rpa_cell_id_kernel
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SEED_CHUNK_SIZE = 1024
+_TWO_PI = 2.0 * math.pi
 
 
 def _clear_stale_numba_cache() -> None:
@@ -68,6 +64,22 @@ class InterpKernelState(NamedTuple):
     cell_pden: np.ndarray
     cell_phi_full: np.ndarray
     cell_phi_tiny: np.ndarray
+
+
+class CartesianInterpKernelState(NamedTuple):
+    """Numba Cartesian interpolation-kernel arrays with explicit field names."""
+
+    point_values_2d: np.ndarray
+    corners: np.ndarray
+    bin_to_corner: np.ndarray
+    cell_x0: np.ndarray
+    cell_xden: np.ndarray
+    cell_y0: np.ndarray
+    cell_yden: np.ndarray
+    cell_z0: np.ndarray
+    cell_zden: np.ndarray
+
+
 @njit(cache=True)
 def _trilinear_from_cell(
     out_row: np.ndarray,
@@ -150,6 +162,67 @@ def _trilinear_from_cell(
         )
 
 
+@njit(cache=True)
+def _trilinear_from_cell_xyz(
+    out_row: np.ndarray,
+    cell_id: int,
+    x: float,
+    y: float,
+    z: float,
+    interp_state: CartesianInterpKernelState,
+) -> None:
+    """Write one Cartesian trilinear interpolation result row for one cell."""
+    cid = int(cell_id)
+    u = (x - interp_state.cell_x0[cid]) / interp_state.cell_xden[cid]
+    if u < 0.0:
+        u = 0.0
+    elif u > 1.0:
+        u = 1.0
+    v = (y - interp_state.cell_y0[cid]) / interp_state.cell_yden[cid]
+    if v < 0.0:
+        v = 0.0
+    elif v > 1.0:
+        v = 1.0
+    w = (z - interp_state.cell_z0[cid]) / interp_state.cell_zden[cid]
+    if w < 0.0:
+        w = 0.0
+    elif w > 1.0:
+        w = 1.0
+
+    w0 = (1.0 - u) * (1.0 - v) * (1.0 - w)
+    w1 = u * (1.0 - v) * (1.0 - w)
+    w2 = (1.0 - u) * v * (1.0 - w)
+    w3 = u * v * (1.0 - w)
+    w4 = (1.0 - u) * (1.0 - v) * w
+    w5 = u * (1.0 - v) * w
+    w6 = (1.0 - u) * v * w
+    w7 = u * v * w
+
+    local = interp_state.corners[cid]
+    map_row = interp_state.bin_to_corner[cid]
+    c0 = int(local[int(map_row[0])])
+    c1 = int(local[int(map_row[1])])
+    c2 = int(local[int(map_row[2])])
+    c3 = int(local[int(map_row[3])])
+    c4 = int(local[int(map_row[4])])
+    c5 = int(local[int(map_row[5])])
+    c6 = int(local[int(map_row[6])])
+    c7 = int(local[int(map_row[7])])
+
+    ncomp = out_row.shape[0]
+    for comp in range(ncomp):
+        out_row[comp] = (
+            w0 * interp_state.point_values_2d[c0, comp]
+            + w1 * interp_state.point_values_2d[c1, comp]
+            + w2 * interp_state.point_values_2d[c2, comp]
+            + w3 * interp_state.point_values_2d[c3, comp]
+            + w4 * interp_state.point_values_2d[c4, comp]
+            + w5 * interp_state.point_values_2d[c5, comp]
+            + w6 * interp_state.point_values_2d[c6, comp]
+            + w7 * interp_state.point_values_2d[c7, comp]
+        )
+
+
 @njit(cache=True, parallel=True)
 def _interp_batch_xyz(
     queries_xyz: np.ndarray,
@@ -195,7 +268,7 @@ def _interp_batch_xyz(
                     zr = 1.0
                 polar = math.acos(zr)
             azimuth = math.atan2(y, x) % _TWO_PI
-            cid = _lookup_rpa_cell_id(
+            cid = lookup_rpa_cell_id_kernel(
                 r,
                 polar,
                 azimuth,
@@ -252,7 +325,7 @@ def _interp_batch_rpa(
             r = queries_rpa[i, 0]
             polar = queries_rpa[i, 1]
             azimuth = queries_rpa[i, 2] % _TWO_PI
-            cid = _lookup_rpa_cell_id(
+            cid = lookup_rpa_cell_id_kernel(
                 r,
                 polar,
                 azimuth,
@@ -274,6 +347,48 @@ def _interp_batch_rpa(
             )
     return out, cell_ids
 
+
+@njit(cache=True, parallel=True)
+def _interp_batch_xyz_cartesian(
+    queries_xyz: np.ndarray,
+    fill_values: np.ndarray,
+    interp_state: CartesianInterpKernelState,
+    lookup_state: CartesianLookupKernelState,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Evaluate Cartesian queries for Cartesian trees via compiled kernels."""
+    n_query = queries_xyz.shape[0]
+    ncomp = interp_state.point_values_2d.shape[1]
+    out = np.empty((n_query, ncomp), dtype=interp_state.point_values_2d.dtype)
+    cell_ids = np.full(n_query, -1, dtype=np.int64)
+    chunk_size = int(_DEFAULT_SEED_CHUNK_SIZE)
+    n_chunks = (n_query + chunk_size - 1) // chunk_size
+    for chunk_id in prange(n_chunks):
+        start = chunk_id * chunk_size
+        end = min(n_query, start + chunk_size)
+        hint_cid = -1
+        for i in range(start, end):
+            for comp in range(ncomp):
+                out[i, comp] = fill_values[comp]
+
+            x = queries_xyz[i, 0]
+            y = queries_xyz[i, 1]
+            z = queries_xyz[i, 2]
+            cid = lookup_xyz_cell_id_kernel(x, y, z, lookup_state, hint_cid)
+            if cid < 0:
+                hint_cid = -1
+                continue
+            cell_ids[i] = cid
+            hint_cid = int(cid)
+            _trilinear_from_cell_xyz(
+                out[i],
+                cid,
+                x,
+                y,
+                z,
+                interp_state,
+            )
+    return out, cell_ids
+
 class OctreeInterpolator:
     """LinearNDInterpolator-like callable built on octree leaf lookup.
 
@@ -285,23 +400,6 @@ class OctreeInterpolator:
     Ray methods additionally split cells into a fixed 6-tet decomposition and
     produce piecewise-linear functions along the ray.
     """
-
-    _HEX_TETS: tuple[TetCornerIndex, ...] = (
-        (0, 1, 2, 6),
-        (0, 2, 3, 6),
-        (0, 3, 7, 6),
-        (0, 7, 4, 6),
-        (0, 4, 5, 6),
-        (0, 5, 1, 6),
-    )
-    _HEX_TETS_INDEX = np.array(_HEX_TETS, dtype=np.int64)
-    _TET_FACES: tuple[TriFaceIndex, ...] = (
-        (1, 2, 3),
-        (0, 3, 2),
-        (0, 1, 3),
-        (0, 2, 1),
-    )
-    _TET_FACES_INDEX = np.array(_TET_FACES, dtype=np.int64)
 
     def __init__(
         self,
@@ -352,7 +450,7 @@ class OctreeInterpolator:
                 level_rtol=level_rtol,
                 level_atol=level_atol,
             )
-        resolved_tree.bind(ds, self._corners, axis_rho_tol=axis_rho_tol)
+        resolved_tree.bind(ds, axis_rho_tol=axis_rho_tol)
         self.tree = resolved_tree
         self.lookup = self.tree.lookup
         self._point_values = self._coerce_point_values(values)
@@ -363,17 +461,14 @@ class OctreeInterpolator:
         if self._coord_system == "rpa":
             self._prepare_spherical_points()
             self._prepare_trilinear_cache()
-            self.prepare_kernel_cache()
-            self.warmup_kernels()
         elif self._coord_system == "xyz":
             self._prepare_trilinear_cache_xyz()
-            flat = self._point_values.reshape(int(self._point_values.shape[0]), -1)
-            self._point_values_2d = np.array(flat, dtype=np.float64, order="C")
-            self._n_value_components = int(self._point_values_2d.shape[1])
         else:
             raise NotImplementedError(
                 f"Unsupported tree coord_system '{self._coord_system}' for interpolation."
             )
+        self.prepare_kernel_cache()
+        self.warmup_kernels()
         logger.info(
             "Interpolator ready: uniform=%s, depth=%d, leaf_shape=%s",
             self.tree.is_uniform,
@@ -537,32 +632,45 @@ class OctreeInterpolator:
         self._bin_to_corner = bin_to_corner
 
     def prepare_kernel_cache(self) -> None:
-        """Pack contiguous arrays used by compiled lookup/interpolation kernels.
-
-        Consumes:
-        - Prepared value/corner/cache arrays on `self`.
-        Returns:
-        - `None`; stores packed `InterpKernelState` and `LookupKernelState`.
-        """
+        """Pack contiguous arrays used by compiled lookup/interpolation kernels."""
         flat = self._point_values.reshape(int(self._point_values.shape[0]), -1)
         self._point_values_2d = np.array(flat, dtype=np.float64, order="C")
         self._n_value_components = int(self._point_values_2d.shape[1])
         self._bin_to_corner_index = np.array(self._bin_to_corner, dtype=np.int64, order="C")
-        self._interp_state = InterpKernelState(
-            point_values_2d=self._point_values_2d,
-            corners=self._corners,
-            bin_to_corner=self._bin_to_corner_index,
-            cell_r0=self._cell_r0,
-            cell_rden=self._cell_rden,
-            cell_t0=self._cell_t0,
-            cell_tden=self._cell_tden,
-            cell_p_start=self._cell_p_start,
-            cell_p_width=self._cell_p_width,
-            cell_pden=self._cell_pden,
-            cell_phi_full=self._cell_phi_full,
-            cell_phi_tiny=self._cell_phi_tiny,
+        if self._coord_system == "rpa":
+            self._interp_state = InterpKernelState(
+                point_values_2d=self._point_values_2d,
+                corners=self._corners,
+                bin_to_corner=self._bin_to_corner_index,
+                cell_r0=self._cell_r0,
+                cell_rden=self._cell_rden,
+                cell_t0=self._cell_t0,
+                cell_tden=self._cell_tden,
+                cell_p_start=self._cell_p_start,
+                cell_p_width=self._cell_p_width,
+                cell_pden=self._cell_pden,
+                cell_phi_full=self._cell_phi_full,
+                cell_phi_tiny=self._cell_phi_tiny,
+            )
+            self._lookup_state = self.lookup._lookup_state
+            return
+        if self._coord_system == "xyz":
+            self._interp_state_xyz = CartesianInterpKernelState(
+                point_values_2d=self._point_values_2d,
+                corners=self._corners,
+                bin_to_corner=self._bin_to_corner_index,
+                cell_x0=self._cell_x0,
+                cell_xden=self._cell_xden,
+                cell_y0=self._cell_y0,
+                cell_yden=self._cell_yden,
+                cell_z0=self._cell_z0,
+                cell_zden=self._cell_zden,
+            )
+            self._lookup_state_xyz = self.lookup._lookup_state
+            return
+        raise NotImplementedError(
+            f"Unsupported tree coord_system '{self._coord_system}' for kernel cache preparation."
         )
-        self._lookup_state = self.lookup._lookup_state
 
     def _fill_value_vector(self) -> np.ndarray:
         """Normalize `fill_value` into one vector matching component count.
@@ -586,51 +694,58 @@ class OctreeInterpolator:
         return fill
 
     def warmup_kernels(self) -> None:
-        """Trigger JIT compilation ahead of first real query.
-
-        Consumes:
-        - Prepared lookup/interpolation kernel state on `self`.
-        Returns:
-        - `None`; runs tiny warmup calls for xyz and rpa kernels.
-        """
+        """Trigger JIT compilation ahead of first real query."""
         q_xyz = np.array(self.lookup._points[:1], dtype=np.float64, order="C")
         if q_xyz.shape[0] == 0:
             q_xyz = np.zeros((1, 3), dtype=np.float64)
-        r, polar, azimuth = self.xyz_to_rpa(q_xyz[0])
-        q_rpa = np.array([[r, polar, azimuth]], dtype=np.float64, order="C")
         fill = self._fill_value_vector()
-        try:
-            _interp_batch_xyz(
+        if self._coord_system == "xyz":
+            _interp_batch_xyz_cartesian(
                 q_xyz,
                 fill,
-                self._interp_state,
-                self._lookup_state,
+                self._interp_state_xyz,
+                self._lookup_state_xyz,
             )
-            _interp_batch_rpa(
-                q_rpa,
-                fill,
-                self._interp_state,
-                self._lookup_state,
-            )
-        except ModuleNotFoundError as exc:
-            text = str(exc)
-            stale_refs = ("starwinds_analysis.octree.lookup", "starwinds_analysis.octree.core")
-            if not any(ref in text for ref in stale_refs):
-                raise
-            logger.warning("Detected stale numba cache references; clearing local cache and retrying warmup.")
-            _clear_stale_numba_cache()
-            _interp_batch_xyz(
-                q_xyz,
-                fill,
-                self._interp_state,
-                self._lookup_state,
-            )
-            _interp_batch_rpa(
-                q_rpa,
-                fill,
-                self._interp_state,
-                self._lookup_state,
-            )
+            return
+        if self._coord_system == "rpa":
+            r, polar, azimuth = self.xyz_to_rpa(q_xyz[0])
+            q_rpa = np.array([[r, polar, azimuth]], dtype=np.float64, order="C")
+            try:
+                _interp_batch_xyz(
+                    q_xyz,
+                    fill,
+                    self._interp_state,
+                    self._lookup_state,
+                )
+                _interp_batch_rpa(
+                    q_rpa,
+                    fill,
+                    self._interp_state,
+                    self._lookup_state,
+                )
+            except ModuleNotFoundError as exc:
+                text = str(exc)
+                stale_refs = ("starwinds_analysis.octree.lookup", "starwinds_analysis.octree.core")
+                if not any(ref in text for ref in stale_refs):
+                    raise
+                logger.warning("Detected stale numba cache references; clearing local cache and retrying warmup.")
+                _clear_stale_numba_cache()
+                _interp_batch_xyz(
+                    q_xyz,
+                    fill,
+                    self._interp_state,
+                    self._lookup_state,
+                )
+                _interp_batch_rpa(
+                    q_rpa,
+                    fill,
+                    self._interp_state,
+                    self._lookup_state,
+                )
+            return
+        raise NotImplementedError(
+            f"Unsupported tree coord_system '{self._coord_system}' for kernel warmup."
+        )
 
     @staticmethod
     def rpa_to_xyz(r: float, polar: float, azimuth: float) -> tuple[float, float, float]:
@@ -697,133 +812,16 @@ class OctreeInterpolator:
         Returns:
         - `(r, polar, azimuth)` as floats.
         """
-        return SphericalOctree.xyz_to_rpa(q)
-
-    def _trilinear_from_hit_xyz(
-        self,
-        hit: LookupHit,
-        x: float,
-        y: float,
-        z: float,
-    ) -> np.ndarray:
-        """Evaluate trilinear field value in one Cartesian leaf cell.
-
-        Consumes:
-        - Resolved `hit` and Cartesian query coordinates.
-        Returns:
-        - Interpolated value at that query (scalar or vector-shaped array).
-        """
-        cid = int(hit.cell_id)
-        u = float(np.clip((float(x) - self._cell_x0[cid]) / self._cell_xden[cid], 0.0, 1.0))
-        v = float(np.clip((float(y) - self._cell_y0[cid]) / self._cell_yden[cid], 0.0, 1.0))
-        w = float(np.clip((float(z) - self._cell_z0[cid]) / self._cell_zden[cid], 0.0, 1.0))
-
-        corner_ids = self._corners[cid][self._bin_to_corner[cid].astype(np.int64)]
-        v8 = self._point_values[corner_ids]
-        weights = np.array(
-            [
-                (1.0 - u) * (1.0 - v) * (1.0 - w),
-                u * (1.0 - v) * (1.0 - w),
-                (1.0 - u) * v * (1.0 - w),
-                u * v * (1.0 - w),
-                (1.0 - u) * (1.0 - v) * w,
-                u * (1.0 - v) * w,
-                (1.0 - u) * v * w,
-                u * v * w,
-            ],
-            dtype=float,
-        )
-        if v8.ndim == 1:
-            return np.dot(weights, v8)
-        return np.tensordot(weights, v8, axes=(0, 0))
-
-    def _interp_batch_xyz_tree(
-        self,
-        queries_xyz: np.ndarray,
-        fill_values: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Evaluate Cartesian queries for non-spherical tree backends.
-
-        Consumes:
-        - `queries_xyz`: `(n_query, 3)` Cartesian query array.
-        - `fill_values`: `(n_comp,)` fallback values for misses.
-        Returns:
-        - `(values, cell_ids)` where `values` is `(n_query, n_comp)` and `cell_ids`
-          is `(n_query,)` with `-1` for misses.
-        """
-        n_query = int(queries_xyz.shape[0])
-        ncomp = int(self._n_value_components)
-        out = np.empty((n_query, ncomp), dtype=np.float64)
-        out[:] = fill_values[None, :]
-        cell_ids = np.full(n_query, -1, dtype=np.int64)
-        hint_cid = -1
-        for i in range(n_query):
-            x = float(queries_xyz[i, 0])
-            y = float(queries_xyz[i, 1])
-            z = float(queries_xyz[i, 2])
-            if hint_cid >= 0 and self.lookup.contains_xyz_cell(hint_cid, x, y, z):
-                cid = int(hint_cid)
-            else:
-                cid = int(self.lookup.lookup_xyz_cell_id(x, y, z))
-            if cid < 0:
-                hint_cid = -1
-                continue
-            hit = self.tree.hit_from_cell_id(cid)
-            out[i, :] = np.asarray(self._trilinear_from_hit_xyz(hit, x, y, z), dtype=np.float64).reshape(-1)
-            cell_ids[i] = cid
-            hint_cid = cid
-        return out, cell_ids
-
-    def sample_ray(
-        self,
-        origin_xyz: np.ndarray,
-        direction_xyz: np.ndarray,
-        t_start: float,
-        t_end: float,
-        n_samples: int,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[RaySegment]]:
-        """Sample interpolated values along a ray.
-
-        Delegates to `octree.ray.OctreeRayInterpolator`, which uses the
-        interpolator's generic callable interface for value queries.
-        Consumes:
-        - Ray origin/direction, `t` bounds, and number of samples.
-        Returns:
-        - `(t_values, values, cell_ids, segments)` arrays/lists.
-        """
-        from .ray import OctreeRayInterpolator
-
-        return OctreeRayInterpolator(self).sample(
-            origin_xyz,
-            direction_xyz,
-            t_start,
-            t_end,
-            n_samples,
-        )
-
-    def ray_linear_pieces(
-        self,
-        origin_xyz: np.ndarray,
-        direction_xyz: np.ndarray,
-        t_start: float,
-        t_end: float,
-    ) -> list[RayLinearPiece]:
-        """Return stitched piecewise-linear `f(t)=m*t+b` domains along a ray.
-
-        Delegates to `octree.ray.OctreeRayInterpolator`.
-        Consumes:
-        - Ray origin/direction and `t` interval bounds.
-        Returns:
-        - Ordered list of stitched `RayLinearPiece` intervals.
-        """
-        from .ray import OctreeRayInterpolator
-
-        return OctreeRayInterpolator(self).linear_pieces(
-            origin_xyz,
-            direction_xyz,
-            t_start,
-            t_end,
-        )
+        x = float(q[0])
+        y = float(q[1])
+        z = float(q[2])
+        r = float(math.sqrt(x * x + y * y + z * z))
+        if r == 0.0:
+            polar = 0.0
+        else:
+            polar = float(math.acos(max(-1.0, min(1.0, z / r))))
+        azimuth = float(math.atan2(y, x) % _TWO_PI)
+        return r, polar, azimuth
 
     def __call__(
         self,
@@ -881,8 +879,13 @@ class OctreeInterpolator:
         else:
             q_xyz = q_array
             if debug_timing:
-                logger.debug("Interpolation kernel mode: python-xyz")
-            out2d, cell_ids = self._interp_batch_xyz_tree(q_xyz, fill)
+                logger.debug("Interpolation kernel mode: compiled-xyz")
+            out2d, cell_ids = _interp_batch_xyz_cartesian(
+                q_xyz,
+                fill,
+                self._interp_state_xyz,
+                self._lookup_state_xyz,
+            )
         t_after_kernel = perf_counter() if debug_timing else 0.0
 
         misses = int(np.count_nonzero(cell_ids < 0))

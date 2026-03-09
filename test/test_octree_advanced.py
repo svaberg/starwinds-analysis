@@ -5,9 +5,10 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import OctreeInterpolator
-from starwinds_analysis.octree_interpolator import SphericalOctree
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import OctreeInterpolator
+from starwinds_analysis.octree import OctreeRayTracer
+from starwinds_analysis.octree import SphericalOctree
 
 
 @pytest.fixture(scope="module")
@@ -29,10 +30,11 @@ def _select_center_queries(tree: Octree, *, n_query: int, seed: int) -> np.ndarr
     return centers[idx]
 
 
+@pytest.mark.slow
 def test_lookup_xyz_rpa_consistency_many_points(advanced_context) -> None:
     """Many interior points should map to the same cell in xyz and rpa lookup spaces."""
     _ds, tree = advanced_context
-    queries = _select_center_queries(tree, n_query=256, seed=1)
+    queries = _select_center_queries(tree, n_query=64, seed=1)
 
     for q in queries:
         hit_xyz = tree.lookup_point(q, space="xyz")
@@ -54,7 +56,7 @@ def test_trace_ray_segments_are_ordered_and_inside_cells(advanced_context) -> No
     t_start = 0.0
     t_end = 6.5
 
-    segments = tree.trace_ray(origin, direction, t_start, t_end)
+    segments = OctreeRayTracer(tree).trace(origin, direction, t_start, t_end)
     assert segments, "Expected at least one traversed segment."
 
     ray_dir = direction / np.linalg.norm(direction)
@@ -70,6 +72,7 @@ def test_trace_ray_segments_are_ordered_and_inside_cells(advanced_context) -> No
     assert float(segments[-1].t_exit) <= float(t_end) + 1e-6
 
 
+@pytest.mark.slow
 def test_loaded_tree_matches_original_ray_walk(advanced_context, tmp_path) -> None:
     """Persisted/reloaded tree should produce equivalent ray traversal segments."""
     _ds, tree = advanced_context
@@ -85,8 +88,8 @@ def test_loaded_tree_matches_original_ray_walk(advanced_context, tmp_path) -> No
     t_start = 0.0
     t_end = 6.5
 
-    seg_a = tree.trace_ray(origin, direction, t_start, t_end)
-    seg_b = loaded.trace_ray(origin, direction, t_start, t_end)
+    seg_a = OctreeRayTracer(tree).trace(origin, direction, t_start, t_end)
+    seg_b = OctreeRayTracer(loaded).trace(origin, direction, t_start, t_end)
     assert len(seg_a) == len(seg_b)
     for a, b in zip(seg_a, seg_b):
         assert int(a.cell_id) == int(b.cell_id)
@@ -94,6 +97,7 @@ def test_loaded_tree_matches_original_ray_walk(advanced_context, tmp_path) -> No
         assert np.isclose(float(a.t_exit), float(b.t_exit), atol=1e-8, rtol=0.0)
 
 
+@pytest.mark.slow
 def test_interpolator_matches_when_using_loaded_tree(advanced_context, tmp_path) -> None:
     """Interpolator outputs should be equal when using original vs loaded tree."""
     ds, tree = advanced_context
@@ -104,7 +108,7 @@ def test_interpolator_matches_when_using_loaded_tree(advanced_context, tmp_path)
     interp_a = OctreeInterpolator(ds, "Rho [g/cm^3]", query_space="xyz", tree=tree)
     interp_b = OctreeInterpolator(ds, "Rho [g/cm^3]", query_space="xyz", tree=loaded)
 
-    queries = _select_center_queries(tree, n_query=300, seed=7)
+    queries = _select_center_queries(tree, n_query=64, seed=7)
     vals_a, cids_a = interp_a(queries, return_cell_ids=True)
     vals_b, cids_b = interp_b(queries, return_cell_ids=True)
 

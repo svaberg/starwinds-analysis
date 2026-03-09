@@ -5,11 +5,12 @@ import math
 import numpy as np
 import pytest
 
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import CartesianOctree
-from starwinds_analysis.octree_interpolator import OctreeInterpolator
-from starwinds_analysis.octree_interpolator import OctreeBuilder
-from starwinds_analysis.octree_interpolator import build_octree
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import CartesianOctree
+from starwinds_analysis.octree import OctreeInterpolator
+from starwinds_analysis.octree import OctreeRayTracer
+from starwinds_analysis.octree import OctreeBuilder
+from starwinds_analysis.octree import build_octree
 
 
 class _FakeDataset:
@@ -294,26 +295,22 @@ def test_builder_build_tree_rejects_all_invalid_levels() -> None:
     delta_phi, _center_phi, _cell_levels, _expected, _coarse = builder.compute_phi_levels(ds)
     all_invalid = np.full(delta_phi.shape, -1, dtype=np.int64)
     with pytest.raises(ValueError, match="No valid \\(>=0\\) levels available to infer octree"):
-        builder.build_tree(ds, ds.corners, delta_phi, cell_levels=all_invalid)
+        builder.build_tree(ds, ds.corners, coord_system="rpa", cell_levels=all_invalid)
 
 
 def test_builder_handles_incompatible_blocks_aux_without_block_tree() -> None:
-    """Incompatible BLOCKS metadata should not crash and should skip block-tree fields."""
+    """Incompatible BLOCKS aux metadata should be ignored by the octree builder."""
     ds = _build_regular_dataset()
     ds.aux["BLOCKS"] = "7 3x5x9"
     tree = OctreeBuilder().build(ds, coord_system="rpa")
-    assert tree.block_shape is None
-    assert tree.block_cell_shape is None
-    assert tree.block_root_shape is None
-    assert tree.block_level_counts is None
+    assert tree.level_counts
+    assert tree.leaf_shape[0] > 0
 
 
-def test_octree_depth_for_level_rejects_unsupported_level() -> None:
-    """Depth mapping should reject levels too far below supported range."""
+def test_octree_no_public_depth_for_level_helper() -> None:
+    """Depth conversion is internal; no public depth-for-level helper is exposed."""
     tree = OctreeBuilder().build(_build_regular_dataset(), coord_system="rpa")
-    bad_level = int(tree.min_level - tree.depth - 1)
-    with pytest.raises(ValueError, match="Derived negative tree depth"):
-        tree.depth_for_level(bad_level)
+    assert not hasattr(tree, "depth_for_level")
 
 
 def test_octree_trace_ray_returns_empty_for_non_increasing_interval() -> None:
@@ -321,40 +318,35 @@ def test_octree_trace_ray_returns_empty_for_non_increasing_interval() -> None:
     tree = OctreeBuilder().build(_build_regular_dataset(), coord_system="rpa")
     origin = np.array([0.0, 0.0, 0.0])
     direction = np.array([1.0, 0.0, 0.0])
-    assert tree.trace_ray(origin, direction, 1.0, 1.0) == []
-    assert tree.trace_ray(origin, direction, 2.0, 1.0) == []
+    assert OctreeRayTracer(tree).trace(origin, direction, 1.0, 1.0) == []
+    assert OctreeRayTracer(tree).trace(origin, direction, 2.0, 1.0) == []
 
 
 def test_build_octree_helper_returns_unbound_tree_until_bind() -> None:
     """`build_octree` helper should return unbound tree requiring explicit bind."""
     ds = _build_regular_dataset()
     builder = OctreeBuilder()
-    delta_phi, center_phi, cell_levels, expected, coarse = builder.compute_phi_levels(ds)
+    _delta_phi, _center_phi, cell_levels, _expected, _coarse = builder.compute_phi_levels(ds)
     tree = build_octree(
         ds,
         ds.corners,
-        delta_phi,
         coord_system="rpa",
         cell_levels=cell_levels,
     )
-    tree.center_phi = center_phi
-    tree.expected_delta_phi = expected
-    tree.coarse_delta_phi = float(coarse)
     with pytest.raises(ValueError, match="not bound to a dataset"):
         tree.lookup_point(np.array([1.0, 0.0, 0.0], dtype=float), space="xyz")
     tree.bind(ds)
-    assert tree.corners is not None
+    assert tree.ds is ds
 
 
 def test_build_octree_helper_stores_coord_system_metadata() -> None:
     """Helper should store requested coordinate-system metadata in the tree."""
     ds = _build_regular_dataset()
     builder = OctreeBuilder()
-    delta_phi, _center_phi, cell_levels, _expected, _coarse = builder.compute_phi_levels(ds)
+    _delta_phi, _center_phi, cell_levels, _expected, _coarse = builder.compute_phi_levels(ds)
     tree = build_octree(
         ds,
         ds.corners,
-        delta_phi,
         coord_system="xyz",
         cell_levels=cell_levels,
     )

@@ -5,8 +5,9 @@ import math
 import numpy as np
 import pytest
 
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import OctreeInterpolator
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import OctreeInterpolator
+from starwinds_analysis.octree import OctreeRayTracer
 
 
 class _FakeDataset:
@@ -137,7 +138,7 @@ def test_fake_trace_ray_zero_direction_raises() -> None:
     ds = _build_regular_fake_dataset()
     tree = Octree.from_dataset(ds, coord_system="rpa")
     with pytest.raises(ValueError, match="direction_xyz must be finite and non-zero"):
-        tree.trace_ray(
+        OctreeRayTracer(tree).trace(
             origin_xyz=np.array([1.0, 0.0, 0.0]),
             direction_xyz=np.array([0.0, 0.0, 0.0]),
             t_start=0.0,

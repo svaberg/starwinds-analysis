@@ -5,13 +5,14 @@ import pytest
 from starwinds_readplt.dataset import Dataset
 
 from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.octree_interpolator import DEFAULT_AXIS_RHO_TOL
-from starwinds_analysis.octree_interpolator import DEFAULT_MIN_VALID_CELL_FRACTION
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import SphericalOctree
-from starwinds_analysis.octree_interpolator import format_histogram
-from starwinds_analysis.octree_interpolator import point_refinement_levels
-from starwinds_analysis.octree_interpolator import valid_cell_fraction
+from starwinds_analysis.octree import DEFAULT_AXIS_RHO_TOL
+from starwinds_analysis.octree import DEFAULT_MIN_VALID_CELL_FRACTION
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import OctreeBuilder
+from starwinds_analysis.octree import SphericalOctree
+from starwinds_analysis.octree import format_histogram
+from starwinds_analysis.octree import point_refinement_levels
+from starwinds_analysis.octree import valid_cell_fraction
 
 
 @pytest.fixture(scope="module")
@@ -31,16 +32,12 @@ def octree_context() -> dict[str, object]:
         level_rtol=1e-4,
         level_atol=1e-9,
     )
+    delta_phi, center_phi, _levels, expected, coarse = OctreeBuilder(
+        level_rtol=1e-4,
+        level_atol=1e-9,
+    ).compute_phi_levels(ds, axis_rho_tol=DEFAULT_AXIS_RHO_TOL)
     assert tree.cell_levels is not None
-    assert tree.center_phi is not None
-    assert tree.delta_phi is not None
-    assert tree.expected_delta_phi is not None
-    assert tree.coarse_delta_phi is not None
     cell_levels = tree.cell_levels
-    center_phi = tree.center_phi
-    delta_phi = tree.delta_phi
-    expected = tree.expected_delta_phi
-    coarse = tree.coarse_delta_phi
 
     point_levels = point_refinement_levels(
         n_points=ds.points.shape[0],
@@ -101,24 +98,12 @@ def test_refinement_fraction_and_histograms(octree_context: dict[str, object]) -
 def test_tree_build_caches_metadata(octree_context: dict[str, object]) -> None:
     """Tree stores lookup-level metadata needed for downstream construction."""
     cell_levels = octree_context["cell_levels"]
-    center_phi = octree_context["center_phi"]
-    delta_phi = octree_context["delta_phi"]
-    expected = octree_context["expected"]
-    coarse = octree_context["coarse"]
     tree = octree_context["tree"]
 
     assert tree.max_level >= tree.min_level
     assert tree.max_level > tree.min_level
     assert tree.cell_levels is not None
-    assert tree.center_phi is not None
-    assert tree.delta_phi is not None
-    assert tree.expected_delta_phi is not None
-    assert tree.coarse_delta_phi is not None
     assert tree.cell_levels.shape == cell_levels.shape
-    assert tree.center_phi.shape == center_phi.shape
-    assert tree.delta_phi.shape == delta_phi.shape
-    assert tree.expected_delta_phi.shape == expected.shape
-    assert tree.coarse_delta_phi == float(coarse)
 
 
 def test_lookup_xyz_and_rpa_agree(octree_context: dict[str, object]) -> None:

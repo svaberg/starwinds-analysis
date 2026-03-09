@@ -5,8 +5,9 @@ import math
 import numpy as np
 import pytest
 
-from starwinds_analysis.octree_interpolator import Octree
-from starwinds_analysis.octree_interpolator import OctreeInterpolator
+from starwinds_analysis.octree import Octree
+from starwinds_analysis.octree import OctreeInterpolator
+from starwinds_analysis.octree import OctreeRayInterpolator
 
 
 class _FakeDataset:
@@ -165,9 +166,9 @@ def test_sample_ray_xyz_rejects_bad_arguments() -> None:
     ds = _build_fake_dataset()
     interp = OctreeInterpolator(ds, "Scalar", query_space="xyz")
     with pytest.raises(ValueError, match="n_samples must be positive"):
-        interp.sample_ray(np.array([1.0, 0.0, 0.0]), np.array([1.0, 0.0, 0.0]), 0.0, 1.0, 0)
+        OctreeRayInterpolator(interp).sample(np.array([1.0, 0.0, 0.0]), np.array([1.0, 0.0, 0.0]), 0.0, 1.0, 0)
     with pytest.raises(ValueError, match="direction_xyz must be finite and non-zero"):
-        interp.sample_ray(np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]), 0.0, 1.0, 10)
+        OctreeRayInterpolator(interp).sample(np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]), 0.0, 1.0, 10)
 
 
 def test_ray_linear_pieces_rejects_zero_direction() -> None:
@@ -175,7 +176,7 @@ def test_ray_linear_pieces_rejects_zero_direction() -> None:
     ds = _build_fake_dataset()
     interp = OctreeInterpolator(ds, "Scalar", query_space="xyz")
     with pytest.raises(ValueError, match="direction_xyz must be finite and non-zero"):
-        interp.ray_linear_pieces(np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]), 0.0, 1.0)
+        OctreeRayInterpolator(interp).linear_pieces(np.array([1.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0]), 0.0, 1.0)
 
 
 def test_interpolator_outside_queries_use_fill_value_and_minus_one_cell_id() -> None:
