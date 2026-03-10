@@ -150,7 +150,7 @@ def test_fake_interpolator_fill_for_invalid_points() -> None:
     """Interpolator should emit fill value and cell_id=-1 for invalid queries."""
     ds = _build_regular_fake_dataset()
     tree = Octree.from_dataset(ds, coord_system="rpa")
-    interp = OctreeInterpolator(ds, "Scalar", query_space="xyz", tree=tree, fill_value=-123.0)
+    interp = OctreeInterpolator(ds, ["Scalar"], query_space="xyz", tree=tree, fill_value=-123.0)
 
     invalid = np.array(
         [

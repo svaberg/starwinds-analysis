@@ -404,7 +404,7 @@ class OctreeInterpolator:
     def __init__(
         self,
         ds: Dataset,
-        values: str | np.ndarray,
+        values: list[str] | None,
         *,
         fill_value: float | np.ndarray = np.nan,
         query_space: Literal["xyz", "rpa"] = "xyz",
@@ -418,7 +418,7 @@ class OctreeInterpolator:
         If `tree` is provided, it is used directly.
         Consumes:
         - `ds`: point/corner dataset.
-        - `values`: variable name or point-value array.
+        - `values`: `None` for all dataset fields, or `list[str]` field names.
         - Optional tree/build controls (`tree`, tolerances, `query_space`).
         Returns:
         - `None`; constructs caches and compiles kernels for this interpolator.
@@ -453,6 +453,7 @@ class OctreeInterpolator:
         resolved_tree.bind(ds, axis_rho_tol=axis_rho_tol)
         self.tree = resolved_tree
         self.lookup = self.tree.lookup
+        self.value_names: tuple[str, ...] = ()
         self._point_values = self._coerce_point_values(values)
         self._coord_system = str(self.tree.coord_system)
         if self._coord_system == "xyz" and self.query_space != "xyz":
@@ -476,26 +477,49 @@ class OctreeInterpolator:
             tuple(self.tree.leaf_shape),
         )
 
-    def _coerce_point_values(self, values: str | np.ndarray) -> np.ndarray:
+    def _coerce_point_values(self, values: list[str] | None) -> np.ndarray:
         """Resolve interpolation values into a point-centered array.
 
         Consumes:
-        - `values`: variable name or value array.
+        - `values`: `None` for all dataset fields, or `list[str]` field names.
         Returns:
         - `np.ndarray` whose first dimension matches dataset points.
         """
-        if isinstance(values, str):
-            arr = np.array(self._ds.variable(values))
-        else:
-            arr = np.array(values)
-
         n_points = int(self._ds.points.shape[0])
-        if arr.shape[0] == n_points:
-            logger.debug("Using point-centered values with shape=%s", tuple(arr.shape))
+        names: list[str]
+        if values is None:
+            names = [str(name) for name in self._ds.variables]
+            if len(names) == 0:
+                raise ValueError("Dataset has no variables; cannot interpolate values=None.")
+        else:
+            if isinstance(values, str):
+                raise ValueError("values must be None or list[str]; single-string values are not supported.")
+            if not isinstance(values, list) or len(values) == 0 or not all(isinstance(v, str) for v in values):
+                raise ValueError("values must be None or a non-empty list[str] of field names.")
+            names = [str(name) for name in values]
+
+        arrays: list[np.ndarray] = []
+        for name in names:
+            arr_name = np.array(self._ds.variable(name))
+            if arr_name.shape[0] != n_points:
+                logger.error(
+                    "Value size mismatch for field %s: values=%d, n_points=%d",
+                    name,
+                    int(arr_name.shape[0]),
+                    n_points,
+                )
+                raise ValueError(f"values length {arr_name.shape[0]} does not match required n_points={n_points}.")
+            arrays.append(arr_name)
+
+        self.value_names = tuple(names)
+        if len(arrays) == 1:
+            arr = arrays[0]
+            logger.debug("Using field %s with shape=%s", names[0], tuple(arr.shape))
             return arr
 
-        logger.error("Value size mismatch: values=%d, n_points=%d", int(arr.shape[0]), n_points)
-        raise ValueError(f"values length {arr.shape[0]} does not match required n_points={n_points}.")
+        merged = np.concatenate([arr.reshape(n_points, -1) for arr in arrays], axis=1)
+        logger.debug("Using %d fields with merged shape=%s", len(names), tuple(merged.shape))
+        return merged
 
     def _prepare_spherical_points(self) -> None:
         """Precompute nodal spherical coordinates from dataset `X/Y/Z`.

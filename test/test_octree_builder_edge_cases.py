@@ -163,7 +163,7 @@ def cartesian_octree_context() -> tuple[_FakeDataset, CartesianOctree, OctreeInt
     ds = _build_regular_xyz_dataset()
     tree = OctreeBuilder().build(ds, coord_system="xyz")
     assert isinstance(tree, CartesianOctree)
-    interp = OctreeInterpolator(ds, "Scalar", query_space="xyz", tree=tree)
+    interp = OctreeInterpolator(ds, ["Scalar"], query_space="xyz", tree=tree)
     return ds, tree, interp
 
 

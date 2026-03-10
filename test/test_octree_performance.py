@@ -28,7 +28,7 @@ def test_octree_build_and_query_runtime_on_mixed_level_3d_file() -> None:
     rng = np.random.default_rng(0)
 
     t0 = perf_counter()
-    interp = OctreeInterpolator(ds, "Rho [g/cm^3]", query_space="xyz")
+    interp = OctreeInterpolator(ds, ["Rho [g/cm^3]"], query_space="xyz")
     build_s = perf_counter() - t0
 
     xyz = np.column_stack(
