@@ -5,15 +5,15 @@ Last reviewed: 2026-03-07 (`dev`)
 Generated metadata:
 
 - Generation method: repo-local AST scan of function/method statement counts.
-- Scope: `starwinds_analysis/**/*.py`.
+- Scope: `batwind/**/*.py`.
 - Heuristic threshold: `stmt_count <= 4` (review list only, not auto-delete).
 
-Short-function scan for `starwinds_analysis/` to find potential shim/wrapper code.
+Short-function scan for `batwind/` to find potential shim/wrapper code.
 
 ## Heuristic
 
 - Candidate threshold: `stmt_count <= 4`
-- Scope: top-level functions and methods in `starwinds_analysis/`
+- Scope: top-level functions and methods in `batwind/`
 - This is a review list, not an auto-delete list.
 
 Current scan result:
@@ -25,32 +25,32 @@ Current scan result:
 
 These are compact by design and should stay short:
 
-- `SmartDs` API passthrough/property methods in `starwinds_analysis/smart_ds.py`
-- coordinate/geometry transform helpers in `starwinds_analysis/algorithms/spherical.py`
-- grid-edge/center accessors in `starwinds_analysis/algorithms/sphere_sampling.py`
-- recorder path/key helpers in `starwinds_analysis/pipelines/recorder.py`
-- small parser accessors in `starwinds_analysis/param_in.py`
+- `SmartDs` API passthrough/property methods in `batwind/smart_ds.py`
+- coordinate/geometry transform helpers in `batwind/algorithms/spherical.py`
+- grid-edge/center accessors in `batwind/algorithms/sphere_sampling.py`
+- recorder path/key helpers in `batwind/pipelines/recorder.py`
+- small parser accessors in `batwind/param_in.py`
 
 ## Review Candidates (Current)
 
 These are short and currently worth explicit review for placement/value.
 
-1. `starwinds_analysis/physics/curve.py`
+1. `batwind/physics/curve.py`
 - `mass_loss_from_curve`
 - `torque_from_curve`
 - Both are small, quantity-specific wrappers. Keep only if they remain useful call boundaries.
 
-2. `starwinds_analysis/physics/torque.py`
+2. `batwind/physics/torque.py`
 - `spherical_wind_torque_density_terms`
 - `radial_surface_normals`
 - Compact and valid, but should stay only if reused as independent primitives.
 
-3. `starwinds_analysis/pipelines/utils.py`
+3. `batwind/pipelines/utils.py`
 - `slug_key`
 - `output_prefix_from_input_file`
 - Keep if shared by multiple pipelines (currently true). Revisit if they become single-use.
 
-4. `starwinds_analysis/data/samples.py`
+4. `batwind/data/samples.py`
 - `data_dir`
 - `data_file`
 - Intentionally small. Keep as stable sample-data lookup boundary.

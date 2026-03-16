@@ -3,21 +3,21 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.analysis.shell_summary import boxcar_shell_weights
-from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
-from starwinds_analysis.analysis.shell_summary import summarize_shell_series
-from starwinds_analysis.analysis.shells import infer_cartesian_axis_radii
-from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_spherical_shells
-from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
-from starwinds_analysis.analysis.stats import weighted_mean_std
-from starwinds_analysis.analysis.stats import weighted_quantile
-from starwinds_analysis.algorithms.spherical import cartesian_vector_to_spherical_components
-from starwinds_analysis.physics.wind_scaling import open_wind_magnetisation
-from starwinds_analysis.physics.wind_scaling import surface_escape_speed
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.analysis.stats import summarize_samples
+from batwind.analysis.shell_summary import boxcar_shell_weights
+from batwind.analysis.shell_summary import summarize_shell_diagnostics_band
+from batwind.analysis.shell_summary import summarize_shell_series
+from batwind.analysis.shells import infer_cartesian_axis_radii
+from batwind.analysis.shells import integrate_shell_scalar
+from batwind.analysis.shells import sample_spherical_shells
+from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.analysis.stats import weighted_mean_std
+from batwind.analysis.stats import weighted_quantile
+from batwind.algorithms.spherical import cartesian_vector_to_spherical_components
+from batwind.physics.wind_scaling import open_wind_magnetisation
+from batwind.physics.wind_scaling import surface_escape_speed
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")

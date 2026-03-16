@@ -4,8 +4,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.visualisation.profile_plots import plot_shell_height_series
-from starwinds_analysis.visualisation.profile_plots import shell_profile_height
+from batwind.visualisation.profile_plots import plot_shell_height_series
+from batwind.visualisation.profile_plots import shell_profile_height
 
 
 def test_shell_profile_height_uses_height_or_radius():

@@ -2,10 +2,10 @@ from pathlib import Path
 
 import logging
 
-from starwinds_analysis.param_in import ParamIn
-from starwinds_analysis.param_in import flatten_includes
-from starwinds_analysis.param_in import find_param_in
-from starwinds_analysis.param_in import stellar_aux_from_nearby_param_in
+from batwind.param_in import ParamIn
+from batwind.param_in import flatten_includes
+from batwind.param_in import find_param_in
+from batwind.param_in import stellar_aux_from_nearby_param_in
 
 
 SAMPLE_PARAM_IN = Path("sample_data/PARAM.in")

@@ -3,15 +3,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.trajectories import circular_orbit_points
-from starwinds_analysis.analysis.trajectories import sample_trajectory
-from starwinds_analysis.analysis.trajectories import trajectory_velocity
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.curve import relative_ram_pressure_from_trajectory
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.physics.pressure import magnetospheric_standoff_distance
-from starwinds_analysis.physics.pressure import ram_pressure
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.analysis.trajectories import circular_orbit_points
+from batwind.analysis.trajectories import sample_trajectory
+from batwind.analysis.trajectories import trajectory_velocity
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.physics.curve import relative_ram_pressure_from_trajectory
+from batwind.physics.orbits import orbital_period
+from batwind.physics.pressure import magnetospheric_standoff_distance
+from batwind.physics.pressure import ram_pressure
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")

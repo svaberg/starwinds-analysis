@@ -58,9 +58,9 @@ Out of scope here:
 
 ### Visualization primitives
 
-- slice plotting family in `starwinds_analysis/visualisation/slice.py`
-- histogram/profile plotting in `starwinds_analysis/visualisation/histograms.py` and
-  `starwinds_analysis/visualisation/profile_plots.py`
+- slice plotting family in `batwind/visualisation/slice.py`
+- histogram/profile plotting in `batwind/visualisation/histograms.py` and
+  `batwind/visualisation/profile_plots.py`
 
 ## Old Quicklook Feature Mapping (Current)
 

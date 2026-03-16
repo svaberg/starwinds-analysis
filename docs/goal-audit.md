@@ -9,7 +9,7 @@ Branch: `dev`
 
 Status: DONE (current shape)
 
-- `sw-pipe` routes built-in pipelines by filename prefix:
+- `batwind-pipe` routes built-in pipelines by filename prefix:
   - `3d* -> volume`
   - `shl* -> shell`
   - `x=0*`, `y=0*`, `z=0* -> slice`
@@ -21,18 +21,18 @@ Status: DONE (current shape)
 
 Files:
 
-- `starwinds_analysis/pipelines/sw_pipe.py`
-- `starwinds_analysis/pipelines/slice.py`
-- `starwinds_analysis/pipelines/shell.py`
-- `starwinds_analysis/pipelines/volume.py`
+- `batwind/pipelines/batwind_pipe.py`
+- `batwind/pipelines/slice.py`
+- `batwind/pipelines/shell.py`
+- `batwind/pipelines/volume.py`
 
 ### 2) Recorder-backed pipeline output
 
 Status: DONE (current model)
 
 - Pipelines emit result records through `add_record(...)` at compute time.
-- `sw-pipe` captures records and writes per-pipeline state files:
-  - `sw-pipe.<pipeline>.processed.json`
+- `batwind-pipe` captures records and writes per-pipeline state files:
+  - `batwind-pipe.<pipeline>.processed.json`
 - Recorded fields are machine-ingestable and traceable with:
   - `value`
   - `source.module`
@@ -41,9 +41,9 @@ Status: DONE (current model)
 
 Files:
 
-- `starwinds_analysis/pipelines/recorder.py`
-- `starwinds_analysis/pipelines/sw_pipe.py`
-- `starwinds_analysis/pipelines/sw_pipe_results.py`
+- `batwind/pipelines/recorder.py`
+- `batwind/pipelines/batwind_pipe.py`
+- `batwind/pipelines/batwind_pipe_results.py`
 
 ### 3) SmartDs and recipe surface
 
@@ -60,9 +60,9 @@ Status: PARTIAL, usable
 
 Files:
 
-- `starwinds_analysis/smart_ds.py`
-- `starwinds_analysis/recipes/spherical.py`
-- `starwinds_analysis/recipes/batsrus.py`
+- `batwind/smart_ds.py`
+- `batwind/recipes/spherical.py`
+- `batwind/recipes/batsrus.py`
 
 ### 4) Nearby config and stellar parameters
 
@@ -78,27 +78,27 @@ Status: DONE (first pass)
 
 Files:
 
-- `starwinds_analysis/param_in.py`
-- `starwinds_analysis/smart_ds.py`
-- `starwinds_analysis/recipes/batsrus.py`
+- `batwind/param_in.py`
+- `batwind/smart_ds.py`
+- `batwind/recipes/batsrus.py`
 
 ## Validation Baseline
 
 Focused checks that should stay green:
 
-- `test/test_sw_pipe.py`
-- `test/test_sw_pipe_results.py`
+- `test/test_batwind_pipe.py`
+- `test/test_batwind_pipe_results.py`
 - `test/test_param_in.py`
 - `test/test_smart_ds.py`
 - `test/test_alfven_radius.py`
 
 Last verified: 2026-03-07  
-Environment: `starwinds-analysis` conda env
+Environment: `batwind` conda env
 
 ```bash
-conda run -n starwinds-analysis python -m pytest -q \
-  test/test_sw_pipe.py \
-  test/test_sw_pipe_results.py \
+conda run -n batwind python -m pytest -q \
+  test/test_batwind_pipe.py \
+  test/test_batwind_pipe_results.py \
   test/test_param_in.py \
   test/test_smart_ds.py \
   test/test_alfven_radius.py

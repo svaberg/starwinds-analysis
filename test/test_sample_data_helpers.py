@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from starwinds_analysis.data.samples import data_dir
-from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.data.samples import data_dir
+from batwind.data.samples import data_file
+from batwind.smart_ds import SmartDs
 
 
 def test_data_dir_exists():

@@ -13,8 +13,8 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap
 import re
 
-from starwinds_analysis.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
-from starwinds_analysis.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
+from batwind.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
+from batwind.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
 k_B = 1.380649e-23      # J/K
 amu = 1.66053906660e-27 # kg
 

@@ -71,8 +71,8 @@ output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
 
 from starwinds_readplt.dataset import Dataset
-from starwinds_analysis.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
-from starwinds_analysis.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
+from batwind.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
+from batwind.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
 
 
 def extract_index(p):

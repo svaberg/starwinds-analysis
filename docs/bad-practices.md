@@ -1,6 +1,6 @@
 # Bad Practices (Anti-Patterns) To Avoid
 
-This is a living list of patterns we want to avoid in `starwinds-analysis`.
+This is a living list of patterns we want to avoid in `batwind`.
 Last reviewed: 2026-03-07 (`dev`)
 
 The goal is not "purity". The goal is:
@@ -169,7 +169,7 @@ Preferred pattern:
 Rule:
 
 - In library code, keep orbit generation minimal: only circular XY point generation is built in.
-- Do not implement or maintain fancy/feature-rich orbit builders in `starwinds_analysis/...`.
+- Do not implement or maintain fancy/feature-rich orbit builders in `batwind/...`.
 - For non-circular or custom trajectories, users should provide explicit points/time from notebooks/scripts.
 
 Preferred pattern:
@@ -209,7 +209,7 @@ Rule:
 
 What goes where:
 
-- `starwinds_analysis/...`:
+- `batwind/...`:
   - reusable analysis logic
   - reusable data/sampling/topology logic
   - general plotting primitives only when genuinely reused
@@ -222,7 +222,7 @@ Litmus test:
 
 - If a function exists only to make one notebook cell shorter, it probably does **not** belong in the library.
 - If code is specific to one example narrative and not reused elsewhere, keep it in the notebook/script.
-- If a function is only imported by tests, it belongs in the test file or in a test helper module under `test/`, not in `starwinds_analysis/...`.
+- If a function is only imported by tests, it belongs in the test file or in a test helper module under `test/`, not in `batwind/...`.
 - If a module is only a re-export, a test-only helper, or a single trivial utility, it should usually be deleted.
 
 Test organization rule:

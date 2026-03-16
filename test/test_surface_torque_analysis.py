@@ -3,15 +3,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.algorithms.sphere_sampling import fibonacci_sphere
-from starwinds_analysis.constants import MU0
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
-from starwinds_analysis.physics.torque import integrate_surface_torque_terms
-from starwinds_analysis.physics.torque import surface_torque_density_terms
-from starwinds_analysis.physics.torque import surface_torque_terms_on_shell_samples
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.algorithms.sphere_sampling import fibonacci_sphere
+from batwind.constants import MU0
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.analysis.shells import integrate_shell_scalar
+from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.physics.torque import integrate_surface_torque_terms
+from batwind.physics.torque import surface_torque_density_terms
+from batwind.physics.torque import surface_torque_terms_on_shell_samples
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")

@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "starwinds_analysis"
+name = "batwind"
 version = "0.1.0"
 description = "Analysis tools for SWMF/BATSRUS output"
 readme = "README.md"
@@ -38,15 +38,15 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/svaberg/starwinds-analysis"
-Issues = "https://github.com/svaberg/starwinds-analysis/issues"
+Repository = "https://github.com/svaberg/batwind"
+Issues = "https://github.com/svaberg/batwind/issues"
 
 [project.scripts]
-sw-pipe = "starwinds_analysis.pipelines.sw_pipe:main"
-sw-pipe-results = "starwinds_analysis.pipelines.sw_pipe_results:main"
+batwind-pipe = "batwind.pipelines.batwind_pipe:main"
+batwind-pipe-results = "batwind.pipelines.batwind_pipe_results:main"
 
 [tool.setuptools.packages.find]
-include = ["starwinds_analysis*"]
+include = ["batwind*"]
 namespaces = true
 
 [tool.pytest.ini_options]

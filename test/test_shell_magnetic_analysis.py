@@ -7,11 +7,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_spherical_shells
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.analysis.shells import integrate_shell_scalar
+from batwind.analysis.shells import sample_spherical_shells
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.data.samples import data_file
+from batwind.smart_ds import SmartDs
 
 
 def _example_3d():

@@ -5,16 +5,16 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.analysis.trajectories import circular_orbit_points
-from starwinds_analysis.analysis.trajectories import trajectory_velocity
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.physics.orbit_surface import pressure_components_on_surface
-from starwinds_analysis.physics.orbit_surface import sample_surface_revolution
-from starwinds_analysis.physics.orbit_surface import surface_of_revolution_from_trajectory
-from starwinds_analysis.physics.orbit_surface import surface_point_normals_and_areas
-from starwinds_analysis.physics.orbit_surface import torque_components_on_surface
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.analysis.trajectories import circular_orbit_points
+from batwind.analysis.trajectories import trajectory_velocity
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.physics.orbits import orbital_period
+from batwind.physics.orbit_surface import pressure_components_on_surface
+from batwind.physics.orbit_surface import sample_surface_revolution
+from batwind.physics.orbit_surface import surface_of_revolution_from_trajectory
+from batwind.physics.orbit_surface import surface_point_normals_and_areas
+from batwind.physics.orbit_surface import torque_components_on_surface
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")

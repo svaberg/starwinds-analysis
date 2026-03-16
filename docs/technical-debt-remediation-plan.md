@@ -15,9 +15,9 @@ Last reviewed: 2026-03-07 (`dev`)
 
 Targets:
 
-- `starwinds_analysis/pipelines/shell.py`
-- `starwinds_analysis/pipelines/sw_pipe.py`
-- `starwinds_analysis/pipelines/recorder.py`
+- `batwind/pipelines/shell.py`
+- `batwind/pipelines/batwind_pipe.py`
+- `batwind/pipelines/recorder.py`
 
 Execution focus:
 
@@ -29,9 +29,9 @@ Execution focus:
 
 Targets:
 
-- `starwinds_analysis/physics/orbit_surface.py`
-- `starwinds_analysis/physics/curve.py`
-- `starwinds_analysis/physics/torque.py`
+- `batwind/physics/orbit_surface.py`
+- `batwind/physics/curve.py`
+- `batwind/physics/torque.py`
 
 Execution focus:
 
@@ -43,8 +43,8 @@ Execution focus:
 
 Targets:
 
-- `starwinds_analysis/recipes/batsrus.py`
-- `starwinds_analysis/smart_ds.py`
+- `batwind/recipes/batsrus.py`
+- `batwind/smart_ds.py`
 
 Execution focus:
 
@@ -56,8 +56,8 @@ Execution focus:
 
 Targets:
 
-- `starwinds_analysis/analysis/`
-- `starwinds_analysis/physics/`
+- `batwind/analysis/`
+- `batwind/physics/`
 
 Execution focus:
 
@@ -69,7 +69,7 @@ Execution focus:
 
 Targets:
 
-- `starwinds_analysis/_smart_ds_resample.py`
+- `batwind/_smart_ds_resample.py`
 
 Execution focus:
 
@@ -98,11 +98,11 @@ For each completed step:
 2. run:
 
 ```bash
-conda run -n starwinds-analysis python -m pytest -q test/test_code_rules.py
+conda run -n batwind python -m pytest -q test/test_code_rules.py
 ```
 
 3. run full suite when step scope is complete:
 
 ```bash
-conda run -n starwinds-analysis python -m pytest -q -ra
+conda run -n batwind python -m pytest -q -ra
 ```

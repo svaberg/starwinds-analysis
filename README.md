@@ -1,4 +1,4 @@
-# starwinds-analysis
+# batwind
 
 Analysis and diagnostics tooling for BATSRUS/SWMF outputs.
 
@@ -15,7 +15,7 @@ Option 1 (conda environment):
 
 ```bash
 conda env create -f environment.yml
-conda activate starwinds-analysis
+conda activate batwind
 ```
 
 Option 2 (pip only):
@@ -34,7 +34,7 @@ pip install ".[viz3d]"
 ## SmartDs quickstart
 
 ```python
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 sds = SmartDs.from_file("sample_data/3d__var_1_n00060000.plt")
 sds.prepare()
@@ -72,9 +72,9 @@ curve = sds.resample(
 
 `resample(...)` returns a new wrapped `SmartDs`.
 
-## Pipelines (`sw-pipe`)
+## Pipelines (`batwind-pipe`)
 
-`sw-pipe` discovers `.plt` and `.dat` files and routes by filename prefix:
+`batwind-pipe` discovers `.plt` and `.dat` files and routes by filename prefix:
 
 - `3d* -> volume`
 - `shl* -> shell`
@@ -83,15 +83,15 @@ curve = sds.resample(
 Examples:
 
 ```bash
-sw-pipe sample_data
-sw-pipe sample_data --pipeline slice
-sw-pipe sample_data --pipeline shell
-sw-pipe sample_data --pipeline volume
+batwind-pipe sample_data
+batwind-pipe sample_data --pipeline slice
+batwind-pipe sample_data --pipeline shell
+batwind-pipe sample_data --pipeline volume
 ```
 
 Inspect recorded results:
 
 ```bash
-sw-pipe-results --state sample_data/sw-pipe.slice.processed.json --list-fields
-sw-pipe-results --state sample_data/sw-pipe.slice.processed.json --field slice_rho_png
+batwind-pipe-results --state sample_data/batwind-pipe.slice.processed.json --list-fields
+batwind-pipe-results --state sample_data/batwind-pipe.slice.processed.json --field slice_rho_png
 ```
