@@ -13,16 +13,25 @@ import griblet
 
 log = logging.getLogger(__name__)
 
+
+def _graph_fields(graph) -> tuple[str, ...]:
+    """Return field names across griblet API variants."""
+    if hasattr(graph, "list_fields"):
+        return tuple(graph.list_fields())
+    if hasattr(graph, "fields"):
+        return tuple(graph.fields())
+    return ()
+
 def graph_field_names(smart_ds):
     """
     List available field names from the runtime griblet graph.
     Used by: no external call sites found
     """
     graph = smart_ds._computation_graph
-    if graph is None or not hasattr(graph, "fields"):
-        log.debug("graph_field_names: no graph/fields available")
+    if graph is None:
+        log.debug("graph_field_names: no graph available")
         return ()
-    out = tuple(graph.fields())
+    out = _graph_fields(graph)
     log.debug("graph_field_names: n_fields=%d", len(out))
     return out
 
@@ -98,7 +107,7 @@ def build_runtime_graph(smart_ds):
     runtime_graph = griblet.ComputationGraph()
     loader_graph = build_loader_graph(smart_ds)
     runtime_graph.merge(loader_graph)
-    loader_fields = set(loader_graph.fields())
+    loader_fields = set(_graph_fields(loader_graph))
     for field, recipes in smart_ds._computation_graph.recipes.items():
         if field in loader_fields:
             continue
@@ -106,7 +115,7 @@ def build_runtime_graph(smart_ds):
     log.debug(
         "build_runtime_graph done loader_fields=%d runtime_fields=%d",
         len(loader_fields),
-        len(runtime_graph.fields()) if hasattr(runtime_graph, "fields") else -1,
+        len(_graph_fields(runtime_graph)),
     )
     return runtime_graph
 

@@ -38,6 +38,9 @@ class ScientificFloatEncoder(json.JSONEncoder):
         """
         markers = {} if self.check_circular else None
         encoder = encode_basestring_ascii if self.ensure_ascii else encode_basestring
+        indent = self.indent
+        if isinstance(indent, int):
+            indent = " " * indent
 
         def floatstr(
             value,
@@ -62,7 +65,7 @@ class ScientificFloatEncoder(json.JSONEncoder):
             markers,
             self.default,
             encoder,
-            self.indent,
+            indent,
             floatstr,
             self.key_separator,
             self.item_separator,

@@ -1,1 +1,1304 @@
-[]
+[
+  {
+    "file": "batwind/octree/base.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 274,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/base.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 330,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/base.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 338,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 214,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 136,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 137,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 138,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 155,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 24,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 73,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 74,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_cartesian.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 75,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 101,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 104,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 107,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 110,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 111,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 165,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 190,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 191,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 192,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 266,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 267,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 27,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 91,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/builder_spherical.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 92,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 177,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 178,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 179,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 194,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 202,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 301,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/cartesian.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 320,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 532,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 533,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 534,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 614,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 813,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 818,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 828,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/interpolator.py",
+    "rule": "BAN_LOGGING_FSTRING",
+    "line": 935,
+    "detail": "logger.debug"
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 118,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 119,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 123,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 130,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 31,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 74,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 75,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 77,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/persistence.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 81,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 1175,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 1180,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1289,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1397,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1427,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1435,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1442,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1449,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1492,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1573,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1574,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1586,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1587,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1588,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1611,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1616,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1645,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1752,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 1755,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 913,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/ray.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 922,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 262,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 263,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 264,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 472,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 569,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 586,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 764,
+    "detail": ""
+  },
+  {
+    "file": "batwind/octree/spherical.py",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": 822,
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 12:3",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 12:5",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 12:6",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 14:7",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 16:2",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 16:3",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 16:4",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 16:6",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 18:2",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 18:3",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 20:6",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 20:6",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 24:1",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 24:10",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 24:10",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 24:8",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 24:9",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 26:25",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 26:27",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 26:39",
+    "detail": ""
+  },
+  {
+    "file": "examples/octree_interpolator_demo.ipynb",
+    "rule": "BAN_NP_ARRAY_DTYPE_FLOAT",
+    "line": "cell 28:48",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:125",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:126",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:14",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:147",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:148",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:155",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:2",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:34",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:58",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:59",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:65",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 4:66",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 5:9",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 8:6",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.ipynb",
+    "rule": "BAN_NP_ASARRAY",
+    "line": "cell 8:7",
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 100,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 101,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 157,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 157,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 158,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 161,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 162,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 168,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 187,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 187,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 188,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 191,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 192,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 198,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 218,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 219,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 22,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 22,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 220,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 221,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 26,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 287,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 304,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 305,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 363,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 364,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 365,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 366,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 449,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 466,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 467,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 527,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 528,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 529,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 530,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 56,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 617,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 634,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 635,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 747,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 775,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 776,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 88,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 89,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 896,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 897,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 90,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 901,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_2d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 91,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 204,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 205,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 206,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 21,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 239,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 239,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 239,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 241,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 244,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 245,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 246,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 252,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 277,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 280,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 281,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 282,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 289,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 31,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 310,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 310,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 310,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 312,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 315,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 316,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 317,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 32,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 323,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 33,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 387,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 408,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 409,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 410,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 527,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 550,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 551,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 552,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 628,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 629,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 630,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 666,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 667,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 700,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 701,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 702,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 715,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 90,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 91,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 92,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 93,
+    "detail": ""
+  },
+  {
+    "file": "examples/plain_ds_read_3d_dat.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 94,
+    "detail": ""
+  },
+  {
+    "file": "examples/plot_rtp_point_projections.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 121,
+    "detail": ""
+  },
+  {
+    "file": "examples/plot_rtp_point_projections.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 122,
+    "detail": ""
+  },
+  {
+    "file": "examples/plot_rtp_point_projections.py",
+    "rule": "BAN_NP_ASARRAY",
+    "line": 123,
+    "detail": ""
+  }
+]
