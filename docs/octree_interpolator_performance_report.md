@@ -1,7 +1,7 @@
 # Octree Interpolator Performance Report
 
 Date: 2026-03-08  
-Environment: `starwinds-analysis`  
+Environment: `batwind`  
 Dataset: `sample_data/difflevels-3d__var_1_n00000000.dat`
 
 ## Scope

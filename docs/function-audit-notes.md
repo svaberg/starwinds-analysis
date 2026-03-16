@@ -6,28 +6,28 @@ Branch: `dev`
 Generated metadata:
 
 - Generation method: repo-local static scan + manual caller review.
-- Scope: `starwinds_analysis/**/*.py` plus non-test callers in `examples/`.
+- Scope: `batwind/**/*.py` plus non-test callers in `examples/`.
 - Refresh rule: rerun after API moves/renames in `analysis/`, `physics/`, `pipelines/`, `recipes/`, or `smart_ds.py`.
 
 This file is a fresh snapshot of functions/classes currently present in
-`starwinds_analysis/`.
+`batwind/`.
 
 Conventions used here:
 
-- "Used by" lists non-test, non-self callers in `starwinds_analysis/` and `examples/`.
+- "Used by" lists non-test, non-self callers in `batwind/` and `examples/`.
 - If no such caller is found, it is marked as "No non-test call sites found".
 - This replaces the previous stale snapshot and tracks only the current tree.
 
-## `starwinds_analysis/_smart_ds_graph.py`
+## `batwind/_smart_ds_graph.py`
 
 - `graph_field_names`: Lists available fields from the active runtime graph.  
-  Used by: `starwinds_analysis/smart_ds.py`
+  Used by: `batwind/smart_ds.py`
 - `graph_path`: Resolves the selected dependency path for a field.  
   Used by: `explain_field`
 - `explain_field`: Returns human-readable graph path text (or tree).  
-  Used by: `starwinds_analysis/smart_ds.py`
+  Used by: `batwind/smart_ds.py`
 - `compute_via_graph`: Resolves + evaluates a graph field.  
-  Used by: `starwinds_analysis/smart_ds.py`
+  Used by: `batwind/smart_ds.py`
 - `build_runtime_graph`: Merges loader graph + attached graph recipes.  
   Used by: `compute_via_graph`, `graph_path`
 - `build_loader_graph`: Exposes raw dataset variables and aux entries as zero-dependency recipes.  
@@ -35,34 +35,34 @@ Conventions used here:
 - `evaluate_resolved_tree`: Evaluates one resolved dependency tree.  
   Used by: `compute_via_graph`
 
-## `starwinds_analysis/_smart_ds_resample.py`
+## `batwind/_smart_ds_resample.py`
 
 - `resample_smart_ds`: Interpolates requested fields onto target points and returns a new `SmartDs`.  
-  Used by: `starwinds_analysis/smart_ds.py`
+  Used by: `batwind/smart_ds.py`
 
-## `starwinds_analysis/algorithms/sphere_sampling.py`
+## `batwind/algorithms/sphere_sampling.py`
 
 - `fibonacci_sphere`: Generates approximately uniform unit-sphere points.  
-  Used by: `starwinds_analysis/analysis/shells.py`
+  Used by: `batwind/analysis/shells.py`
 - `PolarAzimuthalGrid`: Structured polar/azimuth edge+center grid with area/cartesian helpers.  
-  Used by: `starwinds_analysis/analysis/shells.py`
+  Used by: `batwind/analysis/shells.py`
 
-## `starwinds_analysis/algorithms/spherical.py`
+## `batwind/algorithms/spherical.py`
 
 - `cartesian_to_spherical_coordinates`: Cartesian -> `(R, polar, azimuth)`.  
-  Used by: `starwinds_analysis/recipes/spherical.py`
+  Used by: `batwind/recipes/spherical.py`
 - `spherical_to_cartesian_coordinates`: `(R, polar, azimuth)` -> Cartesian.  
-  Used by: `starwinds_analysis/recipes/spherical.py`
+  Used by: `batwind/recipes/spherical.py`
 - `polar_azimuth_to_latitude_longitude`: `(polar, azimuth)` -> `(latitude, longitude)`.  
-  Used by: `starwinds_analysis/recipes/spherical.py`
+  Used by: `batwind/recipes/spherical.py`
 - `latitude_longitude_to_polar_azimuth`: `(latitude, longitude)` -> `(polar, azimuth)`.  
-  Used by: `starwinds_analysis/recipes/spherical.py`
+  Used by: `batwind/recipes/spherical.py`
 - `cartesian_vector_to_spherical_components`: Cartesian vector -> `(r, p, a)` components.  
-  Used by: `starwinds_analysis/recipes/spherical.py`
+  Used by: `batwind/recipes/spherical.py`
 - `spherical_vector_to_cartesian_components`: `(r, p, a)` vector -> Cartesian components.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/analysis/shell_summary.py`
+## `batwind/analysis/shell_summary.py`
 
 - `boxcar_shell_weights`: Boxcar weighting over shell radii.  
   Used by: No non-test call sites found
@@ -71,18 +71,18 @@ Conventions used here:
 - `summarize_shell_diagnostics_band`: Band summary over shell diagnostics dicts.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/analysis/shells.py`
+## `batwind/analysis/shells.py`
 
 - `infer_cartesian_axis_radii`: Infers shell radii from axis-aligned samples.  
   Used by: No non-test call sites found
 - `sample_spherical_shells`: Resamples to structured polar/azimuth shell grids.  
   Used by: notebooks/examples
 - `sample_spherical_shells_fibonacci`: Resamples to equal-area Fibonacci shell points.  
-  Used by: `starwinds_analysis/pipelines/volume.py`, notebooks/examples
+  Used by: `batwind/pipelines/volume.py`, notebooks/examples
 - `integrate_shell_scalar`: Area-integrates shell scalar fields and returns integral + coverage.  
-  Used by: `starwinds_analysis/physics/torque.py`, `starwinds_analysis/pipelines/volume.py`, notebooks/examples
+  Used by: `batwind/physics/torque.py`, `batwind/pipelines/volume.py`, notebooks/examples
 
-## `starwinds_analysis/analysis/slices.py`
+## `batwind/analysis/slices.py`
 
 - `structured_quad_corners`: Builds quad connectivity for structured `(nz, nx)` grids.  
   Used by: No non-test call sites found
@@ -91,16 +91,16 @@ Conventions used here:
 - `resample_structured_xz_slice`: Resamples 3D data to a structured XZ slice `SmartDs`.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/analysis/stats.py`
+## `batwind/analysis/stats.py`
 
 - `weighted_mean_std`: Weighted mean and standard deviation.  
-  Used by: `starwinds_analysis/analysis/shell_summary.py`
+  Used by: `batwind/analysis/shell_summary.py`
 - `weighted_quantile`: Weighted quantiles for 1D samples.  
-  Used by: `starwinds_analysis/analysis/shell_summary.py`
+  Used by: `batwind/analysis/shell_summary.py`
 - `summarize_samples`: Combined weighted summary helper (quantiles + mean/std).  
-  Used by: `starwinds_analysis/physics/orbit_surface.py`
+  Used by: `batwind/physics/orbit_surface.py`
 
-## `starwinds_analysis/analysis/trajectories.py`
+## `batwind/analysis/trajectories.py`
 
 - `trajectory_velocity`: Finite-difference trajectory velocity from points + time.  
   Used by: `examples/orbit_surface_revolution.ipynb`
@@ -111,19 +111,19 @@ Conventions used here:
 - `sample_trajectory`: Resamples fields onto trajectory points and appends `t`/optional `V_*`.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/data/field_names.py`
+## `batwind/data/field_names.py`
 
 - `unit_from_brackets`: Extracts unit token from bracketed field names (`X [R]` -> `R`).  
-  Used by: `starwinds_analysis/analysis/shells.py`
+  Used by: `batwind/analysis/shells.py`
 
-## `starwinds_analysis/data/samples.py`
+## `batwind/data/samples.py`
 
 - `data_dir`: Returns repository `sample_data` path.  
   Used by: No non-test call sites found
 - `data_file`: Returns one `sample_data/<name>` path.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/param_in.py`
+## `batwind/param_in.py`
 
 - `flatten_includes`: Flattens `#INCLUDE` trees into one line stream.  
   Used by: `ParamIn.from_file`
@@ -134,9 +134,9 @@ Conventions used here:
 - `ParamIn`: Parsed parameter-file object with command/parameter accessors (`get_*`, `stellar_params`).  
   Used by: `stellar_aux_from_nearby_param_in`
 - `stellar_aux_from_nearby_param_in`: Reads nearby `PARAM.in` stellar values into aux-compatible keys.  
-  Used by: `starwinds_analysis/smart_ds.py`
+  Used by: `batwind/smart_ds.py`
 
-## `starwinds_analysis/physics/alfven_radius.py`
+## `batwind/physics/alfven_radius.py`
 
 - `alfven_radius_map`: Computes first outward `M_A` crossing radius map.  
   Used by: `examples/alfven_radius_shell.ipynb`
@@ -145,7 +145,7 @@ Conventions used here:
 - `summarize_alfven_radius`: Summarizes map min/max/mean/cyl-mean/coverage.  
   Used by: `examples/alfven_radius_shell.ipynb`
 
-## `starwinds_analysis/physics/curve.py`
+## `batwind/physics/curve.py`
 
 - `mass_loss_from_curve`: Local mass-loss estimate from sampled curve fields.  
   Used by: No non-test call sites found
@@ -154,7 +154,7 @@ Conventions used here:
 - `relative_ram_pressure_from_trajectory`: Trajectory-frame ram pressure + standoff estimate.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/physics/orbit_surface.py`
+## `batwind/physics/orbit_surface.py`
 
 - `surface_of_revolution_from_trajectory`: Builds a 2D surface grid from trajectory revolution.  
   Used by: `sample_surface_revolution`
@@ -173,7 +173,7 @@ Conventions used here:
 - `torque_components_on_surface`: Computes explicit-surface torque diagnostics (`T1..T4`, totals, summaries).  
   Used by: `examples/orbit_surface_revolution.ipynb`
 
-## `starwinds_analysis/physics/orbits.py`
+## `batwind/physics/orbits.py`
 
 - `PlanetOrbitElements`: Named orbital element container + built-in solar-system table.  
   Used by: No non-test call sites found
@@ -182,14 +182,14 @@ Conventions used here:
 - `orbital_velocity`: Vis-viva orbital speed.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/physics/pressure.py`
+## `batwind/physics/pressure.py`
 
 - `ram_pressure`: `rho * V^2`.  
-  Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
+  Used by: `batwind/physics/curve.py`, `batwind/physics/orbit_surface.py`
 - `magnetospheric_standoff_distance`: Stand-off proxy from pressure balance.  
-  Used by: `starwinds_analysis/physics/curve.py`, `starwinds_analysis/physics/orbit_surface.py`
+  Used by: `batwind/physics/curve.py`, `batwind/physics/orbit_surface.py`
 
-## `starwinds_analysis/physics/torque.py`
+## `batwind/physics/torque.py`
 
 - `spherical_wind_torque_density_terms`: Pointwise shell-style magnetic/dynamic torque densities.  
   Used by: No non-test call sites found
@@ -200,20 +200,20 @@ Conventions used here:
 - `radial_surface_normals`: Builds radial normals from position vectors.  
   Used by: `surface_torque_terms_on_shell_samples`
 - `surface_torque_density_terms`: Computes `T1..T4` torque density terms and total.  
-  Used by: `starwinds_analysis/physics/orbit_surface.py`, `surface_torque_terms_on_shell_samples`
+  Used by: `batwind/physics/orbit_surface.py`, `surface_torque_terms_on_shell_samples`
 - `integrate_surface_torque_terms`: Integrates explicit-surface torque density terms over area.  
-  Used by: `starwinds_analysis/physics/orbit_surface.py`
+  Used by: `batwind/physics/orbit_surface.py`
 - `surface_torque_terms_on_shell_samples`: Convenience wrapper for torque terms on shell sampled fields.  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/physics/wind_scaling.py`
+## `batwind/physics/wind_scaling.py`
 
 - `surface_escape_speed`: Escape speed from stellar mass/radius.  
   Used by: `open_wind_magnetisation`
 - `open_wind_magnetisation`: Reville-style open wind magnetisation (`Upsilon_open`).  
   Used by: No non-test call sites found
 
-## `starwinds_analysis/pipelines/dummy_pipeline.py`
+## `batwind/pipelines/dummy_pipeline.py`
 
 - `name_letter_counts`: Emits vowel/consonant counts for file stem.
 - `name_profile_payload`: Emits float/string/array payload for file stem.
@@ -221,41 +221,41 @@ Conventions used here:
 - `name_waveform_payload`: Emits large waveform array payload (sidecar test path).
 - `process_plt_file`: Dummy per-file pipeline entrypoint.
 
-Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+Used by: `batwind/pipelines/batwind_pipe.py`
 
-## `starwinds_analysis/pipelines/recorder.py`
+## `batwind/pipelines/recorder.py`
 
 - `ScientificFloatEncoder`: JSON encoder with scientific float formatting.
-- `SwPipeResults`: In-memory run result container.
+- `BatwindPipeResults`: In-memory run result container.
 - `safe_name`: Safe filesystem tokenization helper.
 - `relative_file_key`: Relative, stable file keys for state payload.
 - `state_file_path`: Per-pipeline state filename builder.
 - `sha256_file`: Input file hashing helper.
 - `parse_record_payload`: Parses logger message payload into record key/value.
 - `normalize_recorded_value`: JSON-normalizes payloads and offloads large arrays.
-- `SwRecordHandler`: Logging handler that captures and stores recorded payloads.
+- `BatwindRecordHandler`: Logging handler that captures and stores recorded payloads.
 - `load_state`: Loads processed/computed state.
 - `load_state_payload`: Loads raw state payload for inspector CLI.
 - `save_state`: Writes per-pipeline state JSON.
 
-Used by: `starwinds_analysis/pipelines/sw_pipe.py`, `starwinds_analysis/pipelines/sw_pipe_results.py`
+Used by: `batwind/pipelines/batwind_pipe.py`, `batwind/pipelines/batwind_pipe_results.py`
 
-## `starwinds_analysis/pipelines/shell.py`
+## `batwind/pipelines/shell.py`
 
 - `shell_cell_values`: Converts nodal values to cell-centered shell map values.
 - `load_shell_grid`: Loads shell radii/grid nodes/masks/areas from `SmartDs`.
 - `shell_map_and_profile`: Computes outer shell map + radial integral profile.
 - `process_plt_file`: Shell pipeline entrypoint.
 
-Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+Used by: `batwind/pipelines/batwind_pipe.py`
 
-## `starwinds_analysis/pipelines/slice.py`
+## `batwind/pipelines/slice.py`
 
 - `process_plt_file`: Slice pipeline entrypoint (`rho`, `U`, `B`, `B_r` figures + records).
 
-Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+Used by: `batwind/pipelines/batwind_pipe.py`
 
-## `starwinds_analysis/pipelines/sw_pipe.py`
+## `batwind/pipelines/batwind_pipe.py`
 
 - `PipelineSourceFilter`: Injects `pipeline_source` for unified logging format.
 - `configure_logger`: Human stdout logger setup (colorlog when available).
@@ -263,13 +263,13 @@ Used by: `starwinds_analysis/pipelines/sw_pipe.py`
 - `discover_input_files`: Finds `.plt`/`.dat` files.
 - `pipeline_name_for_file`: Filename-prefix pipeline selection (`3d`, `shl`, `x=0/y=0/z=0`).
 - `process_file_for_pipeline`: Resolves built-in pipeline process function.
-- `run_sw_pipe`: Core orchestrator over selected files.
-- `build_parser`: CLI parser for `sw-pipe`.
+- `run_batwind_pipe`: Core orchestrator over selected files.
+- `build_parser`: CLI parser for `batwind-pipe`.
 - `main`: CLI entrypoint.
 
 Used by: CLI
 
-## `starwinds_analysis/pipelines/sw_pipe_results.py`
+## `batwind/pipelines/batwind_pipe_results.py`
 
 - `_computed_results`: Extracts the computed-results mapping.
 - `_iter_file_keys`: Lists file keys in display order.
@@ -281,20 +281,20 @@ Used by: CLI
 
 Used by: CLI
 
-## `starwinds_analysis/pipelines/utils.py`
+## `batwind/pipelines/utils.py`
 
 - `slug_key`: Slugifies text for output naming.
 - `output_prefix_from_input_file`: Output prefix builder from input filename.
 
-Used by: `starwinds_analysis/pipelines/slice.py`, `starwinds_analysis/pipelines/shell.py`, `starwinds_analysis/pipelines/volume.py`
+Used by: `batwind/pipelines/slice.py`, `batwind/pipelines/shell.py`, `batwind/pipelines/volume.py`
 
-## `starwinds_analysis/pipelines/volume.py`
+## `batwind/pipelines/volume.py`
 
 - `process_plt_file`: Volume pipeline entrypoint (shell sampling + mass/torque/open-flux/energy plots and records).
 
-Used by: `starwinds_analysis/pipelines/sw_pipe.py`
+Used by: `batwind/pipelines/batwind_pipe.py`
 
-## `starwinds_analysis/recipes/batsrus.py`
+## `batwind/recipes/batsrus.py`
 
 - `build_griblet_batsrus_graph`: Top-level BATSRUS recipe graph builder (normalization + derived).
 - `build_griblet_unit_normalization_graph`: Raw-unit -> SI conversions + scalar aux parsing recipes.
@@ -302,17 +302,17 @@ Used by: `starwinds_analysis/pipelines/sw_pipe.py`
 - `build_griblet_vector_cartesian_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
 - `body_radius_from_inputs`: Resolves body radius from explicit input or aux keys.
 
-Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/analysis/trajectories.py`
+Used by: `batwind/smart_ds.py`, `batwind/analysis/trajectories.py`
 
-## `starwinds_analysis/recipes/spherical.py`
+## `batwind/recipes/spherical.py`
 
 - `_vector_triplets`: Finds Cartesian vector triplets (`*_x/_y/_z`) by prefix/unit.
 - `build_griblet_spherical_geometry_graph`: Adds coordinate recipes (`XYZ <-> R/polar/azimuth`, `lat/lon`).
 - `build_griblet_vector_spherical_components_graph`: Adds vector component recipes (`xyz -> r/p/a`, stacked `*_rpa`).
 
-Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.py`
+Used by: `batwind/smart_ds.py`, `batwind/recipes/batsrus.py`
 
-## `starwinds_analysis/smart_ds.py`
+## `batwind/smart_ds.py`
 
 - `SmartDs`: Main wrapper around `starwinds_readplt.Dataset`.
 - `SmartDs.from_file`: File loader + nearby `PARAM.in` stellar aux ingestion.
@@ -327,7 +327,7 @@ Used by: `starwinds_analysis/smart_ds.py`, `starwinds_analysis/recipes/batsrus.p
 
 Used by: all pipelines, recipes, analysis primitives, and examples/notebooks.
 
-## `starwinds_analysis/visualisation/histograms.py`
+## `batwind/visualisation/histograms.py`
 
 - `plot_cumulative_hists`: CDF histogram helper.
 - `plot_vs_radius`: Scatter-vs-radius helper.
@@ -336,14 +336,14 @@ Used by: all pipelines, recipes, analysis primitives, and examples/notebooks.
 
 Used by: `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`
 
-## `starwinds_analysis/visualisation/profile_plots.py`
+## `batwind/visualisation/profile_plots.py`
 
 - `shell_profile_height`: Extracts/derives shell height from profile payload.
 - `plot_shell_height_series`: Generic shell profile line plotting primitive.
 
 Used by: No non-test call sites found
 
-## `starwinds_analysis/visualisation/slice.py`
+## `batwind/visualisation/slice.py`
 
 - `auto_coords`: Detects two varying coordinates in nominal 2D datasets.
 - `triangles`: Builds triangulation from quad cell connectivity.
@@ -353,9 +353,9 @@ Used by: No non-test call sites found
 - `plot_xz_slice_with_marginal_points`: Tripcolor + point marginals.
 - `plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords`: Tripcolor + unique-coordinate quantiles.
 
-Used by: `starwinds_analysis/pipelines/slice.py`, `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`, plain-data examples
+Used by: `batwind/pipelines/slice.py`, `examples/planet.py`, `examples/earth-xuv-neutrals/earth-xuv-neutrals.py`, plain-data examples
 
-## `starwinds_analysis/vtk_utils.py`
+## `batwind/vtk_utils.py`
 
 - `read`: Reads `.plt` file and returns converted VTK/PyVista grid, optionally SI-normalized.
 - `convert`: Converts raw dataset into VTK/PyVista unstructured grid.

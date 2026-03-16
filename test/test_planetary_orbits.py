@@ -1,9 +1,9 @@
 import numpy as np
 from scipy import constants as const
 
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.physics.orbits import PlanetOrbitElements
-from starwinds_analysis.physics.orbits import SOLAR_SYSTEM_PLANETS
+from batwind.physics.orbits import orbital_period
+from batwind.physics.orbits import PlanetOrbitElements
+from batwind.physics.orbits import SOLAR_SYSTEM_PLANETS
 
 
 def test_planet_orbit_period_is_reasonable():

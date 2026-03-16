@@ -6,9 +6,9 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.constants import MU0
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.constants import MU0
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
@@ -233,7 +233,7 @@ def test_resample_fails_fast_on_non_finite_source_coordinates():
     reason="scipy is required for SmartDs.resample()",
 )
 def test_resample_reuses_cached_ckdtree(monkeypatch):
-    import starwinds_analysis._smart_ds_resample as resample_module
+    import batwind._smart_ds_resample as resample_module
 
     sds = SmartDs(make_dataset_2d())
     target = np.array([[0.1, 0.2], [0.95, 0.85]])
@@ -267,7 +267,7 @@ def test_resample_reuses_cached_ckdtree(monkeypatch):
     reason="scipy is required for SmartDs.resample()",
 )
 def test_resample_reuses_cached_delaunay(monkeypatch):
-    import starwinds_analysis._smart_ds_resample as resample_module
+    import batwind._smart_ds_resample as resample_module
 
     sds = SmartDs(make_dataset_2d())
     target = np.array([[0.25, 0.50], [0.60, 0.10]])
@@ -570,7 +570,7 @@ def test_dat_and_plt_pairs_load_to_nearly_identical_smartds(stem):
 )
 def test_griblet_graph_resolution_and_explain():
     import griblet
-    from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
+    from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
 
     sds = SmartDs(make_dataset_3d_vectors())
     graph = build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))

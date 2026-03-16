@@ -44,7 +44,7 @@ No-overlap rule for the three core state docs:
 2. `technical-debt.md`: debt ledger only
 3. `technical-debt-remediation-plan.md`: ordered action plan only
 
-When architecture or API shape changes in `starwinds_analysis/`, update these docs in this order:
+When architecture or API shape changes in `batwind/`, update these docs in this order:
 
 1. `function-audit-notes.md` and `shim-sized-function-audit.md`
 2. `technical-debt.md`

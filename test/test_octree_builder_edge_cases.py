@@ -5,12 +5,12 @@ import math
 import numpy as np
 import pytest
 
-from starwinds_analysis.octree import Octree
-from starwinds_analysis.octree import CartesianOctree
-from starwinds_analysis.octree import OctreeInterpolator
-from starwinds_analysis.octree import OctreeRayTracer
-from starwinds_analysis.octree import OctreeBuilder
-from starwinds_analysis.octree import build_octree
+from batwind.octree import Octree
+from batwind.octree import CartesianOctree
+from batwind.octree import OctreeInterpolator
+from batwind.octree import OctreeRayTracer
+from batwind.octree import OctreeBuilder
+from batwind.octree import build_octree
 
 
 class _FakeDataset:

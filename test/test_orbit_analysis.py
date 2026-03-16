@@ -4,18 +4,18 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from starwinds_analysis.analysis.trajectories import circular_orbit_points
-from starwinds_analysis.analysis.trajectories import sample_curve
-from starwinds_analysis.analysis.trajectories import trajectory_velocity
-from starwinds_analysis.analysis.shells import integrate_shell_scalar
-from starwinds_analysis.analysis.shells import sample_spherical_shells_fibonacci
-from starwinds_analysis.analysis.stats import summarize_samples
-from starwinds_analysis.constants import SOLAR_RADIUS_M
-from starwinds_analysis.physics.curve import mass_loss_from_curve
-from starwinds_analysis.physics.curve import torque_from_curve
-from starwinds_analysis.physics.orbits import orbital_period
-from starwinds_analysis.physics.orbits import orbital_velocity
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.analysis.trajectories import circular_orbit_points
+from batwind.analysis.trajectories import sample_curve
+from batwind.analysis.trajectories import trajectory_velocity
+from batwind.analysis.shells import integrate_shell_scalar
+from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.analysis.stats import summarize_samples
+from batwind.constants import SOLAR_RADIUS_M
+from batwind.physics.curve import mass_loss_from_curve
+from batwind.physics.curve import torque_from_curve
+from batwind.physics.orbits import orbital_period
+from batwind.physics.orbits import orbital_velocity
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")

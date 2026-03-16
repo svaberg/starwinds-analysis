@@ -2,10 +2,10 @@ import numpy as np
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.physics.alfven_radius import alfven_radius_map
-from starwinds_analysis.physics.alfven_radius import projected_solid_angle_weights
-from starwinds_analysis.physics.alfven_radius import summarize_alfven_radius
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.physics.alfven_radius import alfven_radius_map
+from batwind.physics.alfven_radius import projected_solid_angle_weights
+from batwind.physics.alfven_radius import summarize_alfven_radius
+from batwind.smart_ds import SmartDs
 
 
 def make_shell_demo(*, no_cross_at_00: bool = False):

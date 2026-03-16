@@ -8,7 +8,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = Path(__file__).with_name("code_rules_baseline.json")
-SCAN_DIRS = (ROOT / "starwinds_analysis", ROOT / "examples")
+SCAN_DIRS = (ROOT / "batwind", ROOT / "examples")
 
 
 def _iter_targets():

@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import logging
 log = logging.getLogger(__name__)
 import pytest
-from starwinds_analysis.constants import SOLAR_RADIUS_M
+from batwind.constants import SOLAR_RADIUS_M
 try:
-    from starwinds_analysis import reader
+    from batwind import reader
 except ImportError:
     pytestmark = pytest.mark.skip(
         reason="Legacy reader API missing (renamed to vtk_utils); test pending migration"

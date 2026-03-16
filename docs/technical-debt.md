@@ -16,9 +16,9 @@ Last reviewed: 2026-03-07 (`dev`)
 
 Area:
 
-- `starwinds_analysis/pipelines/shell.py`
-- `starwinds_analysis/pipelines/sw_pipe.py`
-- `starwinds_analysis/pipelines/recorder.py`
+- `batwind/pipelines/shell.py`
+- `batwind/pipelines/batwind_pipe.py`
+- `batwind/pipelines/recorder.py`
 
 Debt:
 
@@ -29,9 +29,9 @@ Debt:
 
 Area:
 
-- `starwinds_analysis/physics/orbit_surface.py`
-- `starwinds_analysis/physics/curve.py`
-- `starwinds_analysis/physics/torque.py`
+- `batwind/physics/orbit_surface.py`
+- `batwind/physics/curve.py`
+- `batwind/physics/torque.py`
 
 Debt:
 
@@ -42,8 +42,8 @@ Debt:
 
 Area:
 
-- `starwinds_analysis/recipes/batsrus.py`
-- `starwinds_analysis/smart_ds.py`
+- `batwind/recipes/batsrus.py`
+- `batwind/smart_ds.py`
 
 Debt:
 
@@ -54,7 +54,7 @@ Debt:
 
 Area:
 
-- `starwinds_analysis/_smart_ds_resample.py`
+- `batwind/_smart_ds_resample.py`
 
 Debt:
 
@@ -64,8 +64,8 @@ Debt:
 
 Area:
 
-- `starwinds_analysis/analysis/`
-- `starwinds_analysis/physics/`
+- `batwind/analysis/`
+- `batwind/physics/`
 
 Debt:
 

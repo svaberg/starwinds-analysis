@@ -5,7 +5,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCAN_ROOT = ROOT / "starwinds_analysis"
+SCAN_ROOT = ROOT / "batwind"
 
 
 def _iter_python_files():

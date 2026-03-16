@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.data.samples import data_file
-from starwinds_analysis.octree import Octree
-from starwinds_analysis.octree import OctreeInterpolator
-from starwinds_analysis.octree import OctreeRayTracer
-from starwinds_analysis.octree import SphericalOctree
+from batwind.data.samples import data_file
+from batwind.octree import Octree
+from batwind.octree import OctreeInterpolator
+from batwind.octree import OctreeRayTracer
+from batwind.octree import SphericalOctree
 
 
 @pytest.fixture(scope="module")
