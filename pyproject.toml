@@ -1,5 +1,5 @@
 [project]
-name = "starwinds_analysis"
+name = "batwind"
 description = "Process SWMF/BATSRUS output with PyVista"
 dynamic = ['version']
 dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "starwinds_readplt@git+https://github.com/svaberg/starwinds-readplt"]
@@ -11,8 +11,8 @@ build-backend = "setuptools.build_meta"
 [tool.versioneer]
 VCS = "git"
 style = "pep440"
-versionfile_source = "starwinds_analysis/_version.py"
-versionfile_build = "starwinds_analysis/_version.py"
+versionfile_source = "batwind/_version.py"
+versionfile_build = "batwind/_version.py"
 tag_prefix = "v"
 parentdir_prefix = ""
 

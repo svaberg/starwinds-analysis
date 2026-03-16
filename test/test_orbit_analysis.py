@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from starwinds_analysis.analysis.orbits import (
+from batwind.analysis.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
     local_mass_loss_on_circular_orbit,
@@ -16,7 +16,7 @@ from starwinds_analysis.analysis.orbits import (
     sample_circular_orbit,
     sample_elliptic_orbit,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")

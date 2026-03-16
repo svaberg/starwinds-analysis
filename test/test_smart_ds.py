@@ -6,7 +6,7 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
@@ -196,7 +196,7 @@ def test_add_spherical_fields_on_real_example_data():
 )
 def test_griblet_graph_resolution_and_explain():
     import griblet
-    from starwinds_analysis.recipes.spherical import build_griblet_spherical_geometry_graph
+    from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
 
     sds = SmartDs(make_dataset_3d_vectors())
     graph = build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))

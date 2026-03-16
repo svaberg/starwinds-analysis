@@ -5,13 +5,13 @@ from collections.abc import Callable, Mapping, Sequence
 import numpy as np
 
 from starwinds_readplt.dataset import Dataset
-from starwinds_analysis._smart_ds_graph import (
+from batwind._smart_ds_graph import (
     compute_via_graph as _compute_via_graph,
     explain_field as _explain_field,
     graph_field_names as _graph_field_names,
     resolve_field as _resolve_field,
 )
-from starwinds_analysis._smart_ds_resample import resample_smart_ds
+from batwind._smart_ds_resample import resample_smart_ds
 
 
 FieldFunction = Callable[["SmartDs"], np.ndarray]
@@ -189,10 +189,10 @@ class SmartDs:
         Register on-demand spherical geometry and vector-component fields.
 
         This uses local field functions (no griblet required), but the same recipe
-        functions are available in ``starwinds_analysis.recipes.spherical`` for
+        functions are available in ``batwind.recipes.spherical`` for
         future griblet integration.
         """
-        from starwinds_analysis.recipes.spherical import (
+        from batwind.recipes.spherical import (
             auto_register_vector_spherical_components,
             register_spherical_geometry_fields,
         )
@@ -220,7 +220,7 @@ class SmartDs:
         Unlike ``add_spherical_fields()``, this registers recipes in the attached
         computation graph and resolves them via ``griblet`` on demand.
         """
-        from starwinds_analysis.recipes.spherical import (
+        from batwind.recipes.spherical import (
             build_griblet_auto_vector_spherical_components_graph,
             build_griblet_spherical_geometry_graph,
         )
@@ -248,7 +248,7 @@ class SmartDs:
         """
         Attach a BATSRUS-oriented griblet graph (SI normalization + derived fields).
         """
-        from starwinds_analysis.recipes.batsrus import build_griblet_batsrus_graph
+        from batwind.recipes.batsrus import build_griblet_batsrus_graph
 
         graph = build_griblet_batsrus_graph(
             self.variables,

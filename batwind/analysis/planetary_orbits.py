@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from scipy.constants import au as AU_M
 
-from starwinds_analysis.analysis.orbits import orbital_period
+from batwind.analysis.orbits import orbital_period
 
 
 @dataclass(frozen=True)

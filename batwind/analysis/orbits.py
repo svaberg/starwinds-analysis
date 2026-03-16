@@ -5,19 +5,19 @@ import math
 import numpy as np
 from scipy.constants import G as GRAVITATIONAL_CONSTANT
 
-from starwinds_analysis.analysis.local_estimates import (
+from batwind.analysis.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
     summarize_samples,
 )
-from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.mass_loss import mass_loss_vs_radius
+from batwind.analysis.shells import (
     infer_body_radius_m,
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,
 )
-from starwinds_analysis.analysis.torque import torque_vs_radius
-from starwinds_analysis.recipes.spherical import radial_component, spherical_vector_components
+from batwind.analysis.torque import torque_vs_radius
+from batwind.recipes.spherical import radial_component, spherical_vector_components
 
 
 def orbital_period(semi_major_axis_m, star_mass_kg):

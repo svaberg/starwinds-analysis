@@ -5,7 +5,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
+from batwind.algorithms.sphere_sampling import PolarAzimuthalGrid, fibonacci_sphere
 
 
 @dataclass

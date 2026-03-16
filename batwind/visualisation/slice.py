@@ -5,7 +5,7 @@ from matplotlib.cm import ScalarMappable
 import numpy as np
 import matplotlib.pyplot as plt
 
-from starwinds_analysis.utils import triangles
+from batwind.utils import triangles
 
 
 def plot_xz_slice_tripcolor_with_marginals(

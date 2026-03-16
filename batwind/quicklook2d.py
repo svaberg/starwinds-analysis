@@ -7,41 +7,41 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from starwinds_analysis.analysis.fluxes import (
+from batwind.analysis.fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
     plot_energy_flux_profile,
     plot_open_flux_profile,
 )
-from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
-from starwinds_analysis.analysis.planetary_orbits import planet_orbit_spec
-from starwinds_analysis.analysis.orbit_pressure import (
+from batwind.analysis.mass_loss import mass_loss_vs_radius, plot_mass_loss_profile
+from batwind.analysis.planetary_orbits import planet_orbit_spec
+from batwind.analysis.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.orbit_surface import (
+from batwind.analysis.orbit_surface import (
     pressure_components_on_orbit_surface,
     torque_components_on_orbit_surface,
 )
-from starwinds_analysis.analysis.orbits import (
+from batwind.analysis.orbits import (
     local_mass_loss_on_circular_orbit,
     local_mass_loss_on_elliptic_orbit,
     local_torque_on_circular_orbit,
     local_torque_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.shell_summary import summarize_shell_diagnostics_band
-from starwinds_analysis.analysis.slices import resample_structured_xz_slice
-from starwinds_analysis.analysis.torque import plot_torque_profile, torque_vs_radius
-from starwinds_analysis.analysis.wind_scaling import open_wind_magnetisation_from_profiles
-from starwinds_analysis.utils import triangles
-from starwinds_analysis.visualisation.histograms import (
+from batwind.analysis.shell_summary import summarize_shell_diagnostics_band
+from batwind.analysis.slices import resample_structured_xz_slice
+from batwind.analysis.torque import plot_torque_profile, torque_vs_radius
+from batwind.analysis.wind_scaling import open_wind_magnetisation_from_profiles
+from batwind.utils import triangles
+from batwind.visualisation.histograms import (
     plot_binned_vs_radius,
     plot_cumulative_hists,
     plot_radial_hist2d,
     plot_vs_radius,
 )
-from starwinds_analysis.visualisation.slice import (
+from batwind.visualisation.slice import (
     plot_xz_slice_tripcolor_with_cross_quantiles,
     plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords,
     plot_xz_slice_tripcolor_with_marginals,

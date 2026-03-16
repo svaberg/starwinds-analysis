@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
+from batwind.analysis.stats import weighted_mean_std, weighted_quantile
 
 
 def boxcar_shell_weights(radii_r, *, rmin: float | None = None, rmax: float | None = None):

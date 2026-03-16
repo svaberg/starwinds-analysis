@@ -1,4 +1,4 @@
-name: starwinds-analysis
+name: batwind
 channels:
   - conda-forge
   - defaults

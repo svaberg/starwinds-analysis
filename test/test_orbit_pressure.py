@@ -3,17 +3,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.orbit_pressure import (
+from batwind.analysis.orbit_pressure import (
     pressure_components_on_circular_orbit,
     pressure_components_on_elliptic_orbit,
 )
-from starwinds_analysis.analysis.pressure import (
+from batwind.analysis.pressure import (
     magnetic_pressure,
     magnetospheric_standoff_distance,
     pressure_components,
     ram_pressure,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")

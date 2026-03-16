@@ -3,7 +3,7 @@
 ## Purpose
 
 Track migration status from old `/Users/dagfev/Documents/starwinds/batplotlib/tests`
-into this repo's test suite (`/Users/dagfev/Documents/starwinds/starwinds-analysis/test`).
+into this repo's test suite (`/Users/dagfev/Documents/starwinds/batwind/test`).
 
 This is file-level bookkeeping, not a claim that tests must be migrated 1:1.
 Many old tests were Tecplot/VTK-specific or test-framework-specific and are intentionally
@@ -14,7 +14,7 @@ out of scope for the current NumPy/SciPy-first quicklook migration.
 - Old `batplotlib` test files: `23`
 - New repo test files: `16`
 - Exact filename overlap: `1` (`test_volumetric.py`)
-- Current full suite in `starwinds-analysis` env: `74 passed, 14 skipped`
+- Current full suite in `batwind` env: `74 passed, 14 skipped`
 
 Notes:
 

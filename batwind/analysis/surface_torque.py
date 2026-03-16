@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     resolve_batsrus_density_si,

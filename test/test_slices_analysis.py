@@ -3,12 +3,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.slices import (
+from batwind.analysis.slices import (
     infer_range,
     resample_structured_xz_slice,
     structured_quad_corners,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")

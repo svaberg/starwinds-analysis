@@ -5,7 +5,7 @@ import pytest
 import scipy.constants as c
 log = logging.getLogger(__name__)
 try:
-    from starwinds_analysis import reader
+    from batwind import reader
 except ImportError:
     pytestmark = pytest.mark.skip(
         reason="Legacy reader API missing (renamed to vtk_utils); test pending migration"

@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.local_estimates import summarize_samples
-from starwinds_analysis.analysis.orbits import (
+from batwind.analysis.local_estimates import summarize_samples
+from batwind.analysis.orbits import (
     orbital_period,
     sample_circular_orbit,
     sample_elliptic_orbit,
 )
-from starwinds_analysis.analysis.pressure import (
+from batwind.analysis.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     infer_body_radius_m,
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,

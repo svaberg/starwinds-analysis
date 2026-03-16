@@ -243,21 +243,21 @@ These were useful in old quicklook and can be ported cleanly as pure analysis ut
 
 This keeps physics, sampling, and plotting separate.
 
-- `starwinds_analysis/analysis/shells.py`
+- `batwind/analysis/shells.py`
   - shell grid construction
   - shell sampling from `SmartDs`
   - area weights / quadrature
   - generic shell integral helper
-- `starwinds_analysis/analysis/mass_loss.py`
+- `batwind/analysis/mass_loss.py`
   - `mass_loss_vs_radius(...)`
   - local mass-loss estimates
-- `starwinds_analysis/analysis/torque.py`
+- `batwind/analysis/torque.py`
   - spherical-shell torque components and totals
   - torque-vs-radius helpers
-- `starwinds_analysis/analysis/stats.py`
+- `batwind/analysis/stats.py`
   - weighted mean/std
   - weighted quantiles
-- `starwinds_analysis/quicklook2d.py`
+- `batwind/quicklook2d.py`
   - orchestration only
   - preset plot bundles
   - saves figures / tabular summaries

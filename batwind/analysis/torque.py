@@ -4,7 +4,7 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     resolve_batsrus_density_si,
@@ -12,7 +12,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells,
     sample_spherical_shells_fibonacci,
 )
-from starwinds_analysis.recipes.spherical import spherical_vector_components
+from batwind.recipes.spherical import spherical_vector_components
 
 
 MU0 = 4.0e-7 * math.pi

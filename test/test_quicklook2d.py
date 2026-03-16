@@ -7,7 +7,7 @@ import pytest
 
 from starwinds_readplt.dataset import Dataset
 
-from starwinds_analysis.quicklook2d import (
+from batwind.quicklook2d import (
     orbit_local_comparison_figure,
     orbit_pressure_figure,
     orbit_surface_pressure_figure,
@@ -18,7 +18,7 @@ from starwinds_analysis.quicklook2d import (
     run_quicklook2d,
     save_quicklook2d_bundle,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")

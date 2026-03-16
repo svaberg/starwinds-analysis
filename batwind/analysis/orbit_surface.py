@@ -4,30 +4,30 @@ import math
 
 import numpy as np
 
-from starwinds_analysis.analysis.local_estimates import summarize_samples
-from starwinds_analysis.analysis.orbit_pressure import (
+from batwind.analysis.local_estimates import summarize_samples
+from batwind.analysis.orbit_pressure import (
     resolve_batsrus_pressure_si,
 )
-from starwinds_analysis.analysis.orbits import (
+from batwind.analysis.orbits import (
     circular_orbit_points,
     elliptic_orbit_points,
     orbital_period,
     sample_points,
 )
-from starwinds_analysis.analysis.pressure import (
+from batwind.analysis.pressure import (
     magnetospheric_standoff_distance,
     pressure_components,
 )
-from starwinds_analysis.analysis.surface_torque import (
+from batwind.analysis.surface_torque import (
     integrate_surface_torque_terms,
     surface_torque_density_terms,
 )
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     infer_body_radius_m,
     resolve_batsrus_density_si,
     resolve_batsrus_vector_xyz_si,
 )
-from starwinds_analysis.analysis.stats import weighted_quantile
+from batwind.analysis.stats import weighted_quantile
 
 
 def surface_of_revolution_from_path(points, *, n_longitudes: int = 199):

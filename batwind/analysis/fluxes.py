@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     infer_body_radius_m,
     integrate_shell_scalar,
     resolve_batsrus_vector_xyz_si,
@@ -10,7 +10,7 @@ from starwinds_analysis.analysis.shells import (
     sample_spherical_shells,
     sample_spherical_shells_fibonacci,
 )
-from starwinds_analysis.recipes.spherical import spherical_vector_components
+from batwind.recipes.spherical import spherical_vector_components
 
 
 def open_magnetic_flux_vs_radius(

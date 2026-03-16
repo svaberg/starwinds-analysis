@@ -3,14 +3,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.orbit_surface import (
+from batwind.analysis.orbit_surface import (
     pressure_components_on_orbit_surface,
     sample_orbit_surface_revolution,
     surface_of_revolution_from_path,
     surface_point_normals_and_areas,
     torque_components_on_orbit_surface,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")

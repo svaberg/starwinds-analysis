@@ -14,7 +14,7 @@ derived fields on demand.
 
 ## `SmartDs` (experimental wrapper)
 
-`starwinds_analysis.smart_ds.SmartDs` wraps a `starwinds_readplt.Dataset` and adds:
+`batwind.smart_ds.SmartDs` wraps a `starwinds_readplt.Dataset` and adds:
 
 - raw field passthrough (`.variable(name)`, `sds(name)`)
 - on-demand computed fields via registered functions
@@ -24,7 +24,7 @@ derived fields on demand.
 ### Example
 
 ```python
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 

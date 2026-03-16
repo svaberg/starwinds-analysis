@@ -3,35 +3,35 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_analysis.analysis.fluxes import (
+from batwind.analysis.fluxes import (
     axisymmetric_open_flux_vs_radius,
     energy_flux_vs_radius,
     open_magnetic_flux_vs_radius,
 )
-from starwinds_analysis.analysis.local_estimates import (
+from batwind.analysis.local_estimates import (
     local_mass_loss_estimates,
     local_torque_estimates,
     summarize_samples,
 )
-from starwinds_analysis.analysis.mass_loss import mass_loss_vs_radius
-from starwinds_analysis.analysis.shell_summary import (
+from batwind.analysis.mass_loss import mass_loss_vs_radius
+from batwind.analysis.shell_summary import (
     boxcar_shell_weights,
     summarize_shell_diagnostics_band,
     summarize_shell_series,
 )
-from starwinds_analysis.analysis.shells import (
+from batwind.analysis.shells import (
     integrate_shell_scalar,
     sample_spherical_shells,
     sample_spherical_shells_fibonacci,
 )
-from starwinds_analysis.analysis.stats import weighted_mean_std, weighted_quantile
-from starwinds_analysis.analysis.torque import torque_vs_radius
-from starwinds_analysis.analysis.wind_scaling import (
+from batwind.analysis.stats import weighted_mean_std, weighted_quantile
+from batwind.analysis.torque import torque_vs_radius
+from batwind.analysis.wind_scaling import (
     open_wind_magnetisation,
     open_wind_magnetisation_from_profiles,
     surface_escape_speed,
 )
-from starwinds_analysis.smart_ds import SmartDs
+from batwind.smart_ds import SmartDs
 
 
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
