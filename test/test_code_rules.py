@@ -2,6 +2,7 @@ import ast
 import json
 import os
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -11,7 +12,35 @@ BASELINE = Path(__file__).with_name("code_rules_baseline.json")
 SCAN_DIRS = (ROOT / "batwind", ROOT / "examples")
 
 
+def _tracked_scan_targets():
+    try:
+        output = subprocess.check_output(
+            ["git", "ls-files", "--", "batwind", "examples"],
+            cwd=ROOT,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+    tracked = set()
+    for rel in output.splitlines():
+        if not rel:
+            continue
+        path = ROOT / rel
+        if path.suffix not in {".py", ".ipynb"}:
+            continue
+        if path.exists():
+            tracked.add(path)
+    return tracked
+
+
 def _iter_targets():
+    tracked = _tracked_scan_targets()
+    if tracked is not None:
+        for path in sorted(tracked):
+            yield path
+        return
+
     for base in SCAN_DIRS:
         if not base.exists():
             continue
