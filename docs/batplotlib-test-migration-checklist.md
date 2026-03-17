@@ -6,8 +6,8 @@ Track migration status from old `/Users/dagfev/Documents/starwinds/batplotlib/te
 into this repo's test suite (`/Users/dagfev/Documents/starwinds/batwind/test`).
 
 This is file-level bookkeeping, not a claim that tests must be migrated 1:1.
-Many old tests were Tecplot/VTK-specific or test-framework-specific and are intentionally
-out of scope for the current NumPy/SciPy-first quicklook migration.
+Many old tests were tied to older plotting stacks or test-framework-specific behavior and
+are intentionally out of scope for the current NumPy/SciPy-first quicklook migration.
 
 ## Snapshot (Current)
 
@@ -18,8 +18,8 @@ out of scope for the current NumPy/SciPy-first quicklook migration.
 
 Notes:
 
-- Several legacy tests in this repo are currently skipped when the old `reader` API is
-  unavailable (it was renamed to `vtk_utils.py`).
+- Several legacy tests in this repo were previously skipped when the old `reader` API was
+  unavailable.
 - The new repo has many renamed/split tests that cover old quicklook behavior in a more
   modular way (shells, orbits, quicklook2d, orbit-surface, surface-torque).
 
@@ -27,7 +27,7 @@ Notes:
 
 - `Migrated`: Functionality is covered in the new suite (possibly split across files).
 - `Partial`: Core behavior or formulas are covered, but not all old workflows/cases.
-- `Deferred`: Intentionally postponed (often VTK/Tecplot-adjacent or non-quicklook).
+- `Deferred`: Intentionally postponed (often legacy-plotting-adjacent or non-quicklook).
 - `Out of Scope`: Not part of the current quicklook/core analysis migration.
 
 ## Mapping (Old -> New)
@@ -56,7 +56,7 @@ Notes:
 | `test_field_rejection.py` | Low | (none) | Out of Scope | Legacy field-filtering behavior not currently part of migrated quicklook path. |
 | `test_of_pytest.py` | Low | (none) | Out of Scope | Test-framework/demo utility. |
 | `test_of_test_context.py` | Low | (none) | Out of Scope | Test-context/helper behavior for old repo. |
-| `test_volumetric.py` | Low (for current plan) | `test/test_volumetric.py` (legacy, currently skipped on missing `reader`) | Deferred | 3D volumetric/VTK path is not a priority for the non-VTK quicklook migration. |
+| `test_volumetric.py` | Low (for current plan) | `test/test_volumetric.py` (legacy, currently skipped on missing `reader`) | Deferred | 3D volumetric workflows are not a priority for the current quicklook migration. |
 
 ## New Test Modules With No Direct Old Filename Match
 
@@ -76,6 +76,5 @@ These are mostly the modern replacements for old quicklook monolith behavior:
 
 1. Add standalone algorithm tests for `fibonacci_sphere(...)` and `PolarAzimuthalGrid` (clean port of old sampling tests).
 2. Add dedicated vector/spherical transform tests (instead of only downstream analytic coverage).
-3. Decide whether to migrate legacy `reader` tests via compatibility shim or permanently retire them in favor of `SmartDs` + `vtk_utils` tests.
+3. Decide whether to migrate legacy `reader` tests or permanently retire them in favor of `SmartDs` tests.
 4. Revisit `test_units.py` only after the SI/unit-framework direction is finalized.
-

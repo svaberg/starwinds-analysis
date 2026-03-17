@@ -23,7 +23,7 @@ class SmartDs:
 
     Initial goals:
     - Provide a stable place for on-demand derived fields (lazy + cached).
-    - Support resampling into a new wrapped dataset without involving VTK/PyVista.
+    - Support resampling into a new wrapped dataset.
 
     The current implementation is intentionally simple: if a requested field exists
     in the underlying dataset it is returned directly, and optional registered field

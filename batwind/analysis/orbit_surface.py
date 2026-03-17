@@ -384,7 +384,7 @@ def torque_components_on_orbit_surface(
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
     """
-    Explicit-surface torque diagnostics on an orbit surface of revolution (non-VTK).
+    Explicit-surface torque diagnostics on an orbit surface of revolution.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)

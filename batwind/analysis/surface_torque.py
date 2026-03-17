@@ -243,7 +243,7 @@ def surface_torque_vs_radius(
     """
     Explicit-surface torque profile on spherical shells using general T1..T4 terms.
 
-    This is a non-VTK route and a bridge toward arbitrary explicit surfaces.
+    This bridges spherical-shell diagnostics toward arbitrary explicit surfaces.
     """
     body_radius_m = infer_body_radius_m(smart_ds, body_radius_m=body_radius_m)
     rho_name, rho_scale = resolve_batsrus_density_si(smart_ds)

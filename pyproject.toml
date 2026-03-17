@@ -1,8 +1,8 @@
 [project]
 name = "batwind"
-description = "Process SWMF/BATSRUS output with PyVista"
+description = "Process SWMF/BATSRUS output"
 version = "0.1.0"
-dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "batread"]
+dependencies = ["scipy", "numpy", "matplotlib", "slugify", "batread"]
 
 [build-system]
 requires = ["setuptools"]

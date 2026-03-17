@@ -611,7 +611,7 @@ def orbit_surface_torque_figure(
     figsize=(12, 6),
 ):
     """
-    Surface-of-revolution torque quicklook (`T1..T4` + total), non-VTK.
+    Surface-of-revolution torque quicklook (`T1..T4` + total).
     """
     result = torque_components_on_orbit_surface(
         smart_ds,
