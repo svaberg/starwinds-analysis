@@ -1,20 +1,15 @@
 [project]
 name = "batwind"
 description = "Process SWMF/BATSRUS output with PyVista"
-dynamic = ['version']
-dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "batread@git+https://github.com/svaberg/batread"]
+version = "0.1.0"
+dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "batread"]
 
 [build-system]
-requires = ["versioneer", "setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "batwind/_version.py"
-versionfile_build = "batwind/_version.py"
-tag_prefix = "v"
-parentdir_prefix = ""
+[tool.setuptools.packages.find]
+include = ["batwind*"]
 
 [project.optional-dependencies]
 tests = ["pytest", "pytest-console-scripts", ]
