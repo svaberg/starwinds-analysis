@@ -186,7 +186,7 @@ for file in files_sorted:
 
     _, ax = plt.subplots()
     w_name = "XUVTAU [none]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     if np.max(w_var) <= 0:
         norm=None
     else:
@@ -203,7 +203,7 @@ for file in files_sorted:
 
     fig, ax = plt.subplots()
     w_name = "XUVHEAT [W/m^3]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     if np.max(w_var) <= 0:
         norm=None
     else:
@@ -216,7 +216,7 @@ for file in files_sorted:
 
     _, ax = plt.subplots()
     w_name = "Rho [amu/cm^3]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     img = ax.tripcolor(tris, w_var, shading="flat", norm="log")
     cax = plt.colorbar(img)
     plt.title(f"Rho at time step {i} {s}")
@@ -233,7 +233,7 @@ for file in files_sorted:
 
     _, ax = plt.subplots()
     w_name = "NH [1/m^3]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     img = ax.tripcolor(tris, w_var, shading="flat", norm="log")
     cax = plt.colorbar(img)
     plt.title(f"NH at time step {i} {s}")
@@ -242,7 +242,7 @@ for file in files_sorted:
 
     _, ax = plt.subplots()
     w_name = "NE [1/m^3]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     img = ax.tripcolor(tris, w_var, shading="flat", norm="log")
     cax = plt.colorbar(img)
     plt.title(f"NE at time step {i} {s}")
@@ -251,7 +251,7 @@ for file in files_sorted:
 
     _ax = plt.subplots()
     w_name = "NHP [1/m^3]"
-    w_var = ds.variable(w_name)
+    w_var = ds[w_name]
     img = ax.tripcolor(tris, w_var, shading="flat", norm="log")
     cax = plt.colorbar(img)
     plt.title(f"NHP at time step {i} {s}")
@@ -265,7 +265,7 @@ for file in files_sorted:
 
 
 # Vectors
-magfield = np.stack([ds.variable("B_%s [nT]" % i)  for i in "xyz"], axis=-1)
+magfield = np.stack([ds["B_%s [nT]" % i] for i in "xyz"], axis=-1)
 magfield_mag = np.linalg.norm(magfield, axis=-1)
 _, ax = plt.subplots()
 img = ax.tripcolor(tris, magfield_mag, shading="gouraud", norm="log")
@@ -285,7 +285,7 @@ plt.close()
 
 
 # Vectors
-velfield = np.stack([ds.variable("U_%s [km/s]" % i)  for i in "xyz"], axis=-1)
+velfield = np.stack([ds["U_%s [km/s]" % i] for i in "xyz"], axis=-1)
 velfield_mag = np.linalg.norm(velfield, axis=-1)
 _, ax = plt.subplots()
 img = ax.tripcolor(tris, velfield_mag, shading="gouraud", cmap="cividis")

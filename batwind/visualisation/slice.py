@@ -22,7 +22,7 @@ def plot_xz_slice_tripcolor_with_marginals(
 
     tris = triangles(ds)  # Triangulation in the XZ plane
 
-    w = np.asarray(ds.variable(var)).ravel()
+    w = np.asarray(ds[var]).ravel()
 
     if w.size != tris.x.size:
         raise ValueError(f"{var} length {w.size} != tris.x length {tris.x.size}")
@@ -110,7 +110,7 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(
     tris = triangles(ds)  # Triangulation in XZ
     x = np.asarray(tris.x).ravel()
     z = np.asarray(tris.y).ravel()
-    w_full = np.asarray(ds.variable(var)).ravel()
+    w_full = np.asarray(ds[var]).ravel()
 
     if w_full.size != x.size:
         raise ValueError(f"{var}: {w_full.size} values, triangulation has {x.size} points")
@@ -228,7 +228,7 @@ def plot_xz_slice_with_marginal_points(
     tris = triangles(ds)  # Triangulation in XZ
     x = np.asarray(tris.x).ravel()
     z = np.asarray(tris.y).ravel()
-    w = np.asarray(ds.variable(var)).ravel()
+    w = np.asarray(ds[var]).ravel()
 
     if w.size != x.size:
         raise ValueError(f"{var} length {w.size} != tris.x length {x.size}")
@@ -242,7 +242,7 @@ def plot_xz_slice_with_marginal_points(
     ax_main = fig.add_subplot(gs[0, 1])
     ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
 
-    img = ax_main.tripcolor(tris, ds.variable(var), **tripcolor_kwargs)
+    img = ax_main.tripcolor(tris, ds[var], **tripcolor_kwargs)
     ax_main.set_xlabel("X [R]")
     ax_main.set_ylabel("Z [R]")
     ax_main.set_title(var)
@@ -278,7 +278,7 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
     tris = triangles(ds)  # Triangulation in XZ
     x = np.asarray(tris.x).ravel()
     z = np.asarray(tris.y).ravel()
-    w = np.asarray(ds.variable(var)).ravel()
+    w = np.asarray(ds[var]).ravel()
 
     if w.size != x.size:
         raise ValueError(f"{var}: {w.size} values, triangulation has {x.size} points")
@@ -309,7 +309,7 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
     ax_main = fig.add_subplot(gs[0, 1])
     ax_bottom = fig.add_subplot(gs[1, 1], sharex=ax_main)
 
-    img = ax_main.tripcolor(tris, ds.variable(var), **tripcolor_kwargs)
+    img = ax_main.tripcolor(tris, ds[var], **tripcolor_kwargs)
     ax_main.set_xlabel("X [R]")
     ax_main.set_ylabel("Z [R]")
     ax_main.set_title(var)

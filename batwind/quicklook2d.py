@@ -116,7 +116,7 @@ def _has_field(ds, name: str) -> bool:
         except Exception:
             return False
     try:
-        ds.variable(name)
+        ds[name]
     except Exception:
         return False
     return True
@@ -177,7 +177,7 @@ def plot_slice_quicklook(
     contour_kwargs = dict(contour_kwargs or {})
     tris = triangles(ds)
     for overlay_field, level, color in _normalize_overlays(ds, overlays):
-        values = np.asarray(ds.variable(overlay_field))
+        values = np.asarray(ds[overlay_field])
         kwargs = {"levels": [level], "colors": [color], "linewidths": 1.0}
         kwargs.update(contour_kwargs)
         ax_main.tricontour(tris, values, **kwargs)

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import importlib
 
-from batwind._batread_compat import dataset_variable
-
 
 def graph_field_names(smart_ds):
     graph = smart_ds._computation_graph
@@ -83,7 +81,7 @@ def build_loader_graph(smart_ds):
     for raw_name in smart_ds._dataset.variables:
         graph.add_recipe(
             field=raw_name,
-            func=lambda raw_name=raw_name: dataset_variable(smart_ds._dataset, raw_name),
+            func=lambda raw_name=raw_name: smart_ds._dataset[raw_name],
             deps=[],
             cost=0.0,
             metadata={"description": "Dataset raw field"},
@@ -97,7 +95,7 @@ def build_loader_graph(smart_ds):
             continue
         graph.add_recipe(
             field=alias_name,
-            func=lambda raw_name=raw_name: dataset_variable(smart_ds._dataset, raw_name),
+            func=lambda raw_name=raw_name: smart_ds._dataset[raw_name],
             deps=[],
             cost=0.0,
             metadata={"description": f"Alias for {raw_name}"},

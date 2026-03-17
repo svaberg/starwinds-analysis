@@ -23,7 +23,7 @@ def basic_read(file):
     grid = pv.UnstructuredGrid({pv.CellType.HEXAHEDRON: ds.corners}, ds.points[:,:3])
 
     for v in ds.variables[:]:
-        grid.point_data[v] = ds.variable(v)
+        grid.point_data[v] = ds[v]
     
     return grid
 

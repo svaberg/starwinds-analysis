@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 
 import numpy as np
 
-from batwind._batread_compat import Dataset, dataset_variable
+from batread.dataset import Dataset
 from batwind._smart_ds_graph import (
     compute_via_graph as _compute_via_graph,
     explain_field as _explain_field,
@@ -270,7 +270,7 @@ class SmartDs:
     def variable(self, index_or_name):
         # Preserve Dataset behavior for integer indexing.
         if not isinstance(index_or_name, str):
-            return dataset_variable(self._dataset, index_or_name)
+            return self._dataset[index_or_name]
 
         name = index_or_name
         if self._cache_enabled and name in self._cache:
@@ -278,7 +278,7 @@ class SmartDs:
 
         raw_name = self._resolve_raw_name(name)
         if raw_name is not None:
-            value = dataset_variable(self._dataset, raw_name)
+            value = self._dataset[raw_name]
             if self._cache_enabled:
                 self._cache[name] = value
             return value

@@ -4,7 +4,7 @@ from collections import defaultdict
 import logging
 log = logging.getLogger(__name__)
 
-from batwind._batread_compat import Dataset, dataset_variable
+from batread.dataset import Dataset
 
 
 def read(file='examples/3d__var_1_n00000000.plt', convert_to_si_base=True):
@@ -40,7 +40,7 @@ def convert(dataset, copy_aux_to_fields=True):
     name_mappings = scan_names(dataset.variables)
 
     for name, component_names in name_mappings.items():
-        data = np.stack([dataset_variable(dataset, c) for c in component_names], axis=-1)
+        data = np.stack([dataset[c] for c in component_names], axis=-1)
         grid.point_data.set_array(data, name)
 
     # Copy over auxiliary data
@@ -97,5 +97,4 @@ def convert_to_base_si(grid):
         grid.point_data[new_name] = factor * grid.point_data[new_name].copy()  # Obs the copy is required not to corrupt memory!
 
     return grid
-
 

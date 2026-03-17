@@ -112,23 +112,23 @@ def register_spherical_geometry_fields(
         r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
 
     def _r(ds):
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
+        x = ds[x_name]
+        y = ds[y_name]
+        z = ds[z_name]
         r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return r
 
     def _theta(ds):
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
+        x = ds[x_name]
+        y = ds[y_name]
+        z = ds[z_name]
         _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
         return theta
 
     def _phi(ds):
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
+        x = ds[x_name]
+        y = ds[y_name]
+        z = ds[z_name]
         _r, _theta, phi = cartesian_to_spherical_angles(x, y, z)
         return phi
 
@@ -162,12 +162,12 @@ def register_vector_spherical_components(
         component_names = dict(component_names)
 
     def _compute(ds):
-        x = ds.variable(x_name)
-        y = ds.variable(y_name)
-        z = ds.variable(z_name)
-        vx = ds.variable(vx_name)
-        vy = ds.variable(vy_name)
-        vz = ds.variable(vz_name)
+        x = ds[x_name]
+        y = ds[y_name]
+        z = ds[z_name]
+        vx = ds[vx_name]
+        vy = ds[vy_name]
+        vz = ds[vz_name]
         return spherical_vector_components(vx, vy, vz, x, y, z)
 
     if "r" in register_components:
