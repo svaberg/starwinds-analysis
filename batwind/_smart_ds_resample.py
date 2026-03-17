@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 
 def resample_smart_ds(

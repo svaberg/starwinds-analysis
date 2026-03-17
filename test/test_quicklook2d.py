@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 from batwind.quicklook2d import (
     orbit_local_comparison_figure,

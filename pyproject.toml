@@ -2,7 +2,7 @@
 name = "batwind"
 description = "Process SWMF/BATSRUS output with PyVista"
 dynamic = ['version']
-dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "starwinds_readplt@git+https://github.com/svaberg/starwinds-readplt"]
+dependencies = ["scipy", "numpy", "matplotlib", "pyvista", "slugify", "batread@git+https://github.com/svaberg/batread"]
 
 [build-system]
 requires = ["versioneer", "setuptools", "setuptools-scm"]
@@ -18,4 +18,3 @@ parentdir_prefix = ""
 
 [project.optional-dependencies]
 tests = ["pytest", "pytest-console-scripts", ]
-

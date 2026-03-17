@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import pytest
 log = logging.getLogger(__name__)
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 try:
     from batwind import reader
 except ImportError:

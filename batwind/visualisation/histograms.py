@@ -1,5 +1,5 @@
 import numpy as np
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 
 def plot_cumulative_hists(

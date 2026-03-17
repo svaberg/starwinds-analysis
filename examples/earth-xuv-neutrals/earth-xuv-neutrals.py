@@ -67,7 +67,7 @@ output_dir = args.output_dir.expanduser().resolve()
 output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 from batwind.utils import auto_coords, triangles, extract_index, sort_key
 from batwind.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
 from batwind.visualisation.slice import plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points

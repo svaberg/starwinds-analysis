@@ -6,7 +6,7 @@ from pathlib import Path
 
 from scipy.interpolate import NearestNDInterpolator  # This is fast and should be used for testing and development.
 from scipy.interpolate import LinearNDInterpolator  # This is much slower but should be used for generating the final figures.
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.cm import ScalarMappable

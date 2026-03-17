@@ -18,7 +18,7 @@ Out of scope for this plan:
 
 ## Design Constraints (Current Direction)
 
-- `SmartDs` is the access layer for BATSRUS data (`starwinds_readplt.Dataset`).
+- `SmartDs` is the access layer for BATSRUS data (`batread.Dataset`).
 - Derived quantities should be computed on demand.
 - `griblet` should provide recipe/path resolution for derived fields.
 - Base SI should be the internal target as early as practical.

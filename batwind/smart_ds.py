@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 
 import numpy as np
 
-from starwinds_readplt.dataset import Dataset
+from batwind._batread_compat import Dataset, dataset_variable
 from batwind._smart_ds_graph import (
     compute_via_graph as _compute_via_graph,
     explain_field as _explain_field,
@@ -19,7 +19,7 @@ FieldFunction = Callable[["SmartDs"], np.ndarray]
 
 class SmartDs:
     """
-    Lightweight wrapper around ``starwinds_readplt.Dataset``.
+    Lightweight wrapper around ``batread.Dataset``.
 
     Initial goals:
     - Provide a stable place for on-demand derived fields (lazy + cached).
@@ -270,7 +270,7 @@ class SmartDs:
     def variable(self, index_or_name):
         # Preserve Dataset behavior for integer indexing.
         if not isinstance(index_or_name, str):
-            return self._dataset.variable(index_or_name)
+            return dataset_variable(self._dataset, index_or_name)
 
         name = index_or_name
         if self._cache_enabled and name in self._cache:
@@ -278,7 +278,7 @@ class SmartDs:
 
         raw_name = self._resolve_raw_name(name)
         if raw_name is not None:
-            value = self._dataset.variable(raw_name)
+            value = dataset_variable(self._dataset, raw_name)
             if self._cache_enabled:
                 self._cache[name] = value
             return value

@@ -1,11 +1,13 @@
-# 3D analysis and visualisation of BATSRUS output
+# batwind
+
+3D analysis and visualisation of BATSRUS output.
 Free and open source analysis with the `pyvista` package!
 
 ## Direction
 
 This repo is moving toward a lightweight analysis core built around:
 
-- `starwinds_readplt.Dataset` (raw BATSRUS/SWMF data access)
+- `batread.Dataset` (raw BATSRUS/SWMF data access)
 - `numpy` / `scipy` (analysis, transforms, resampling)
 - optional `pyvista` / `vtk` only for 3D plotting / geometry operations
 
@@ -14,7 +16,7 @@ derived fields on demand.
 
 ## `SmartDs` (experimental wrapper)
 
-`batwind.smart_ds.SmartDs` wraps a `starwinds_readplt.Dataset` and adds:
+`batwind.smart_ds.SmartDs` wraps a `batread.Dataset` and adds:
 
 - raw field passthrough (`.variable(name)`, `sds(name)`)
 - on-demand computed fields via registered functions

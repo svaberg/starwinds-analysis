@@ -14,7 +14,7 @@ dependencies:
   - pip:
     - pyvista  # TODO install with conda.
     - pytest-console-scripts
-    - git+https://github.com/svaberg/starwinds-readplt.git
+    - git+https://github.com/svaberg/batread.git
     
   #
   # These packages are used for testing

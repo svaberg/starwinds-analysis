@@ -4,7 +4,7 @@ from matplotlib import tri
 
 from pathlib import Path
 
-from starwinds_readplt.dataset import Dataset
+from batwind._batread_compat import Dataset, dataset_variable
 
 from matplotlib.colors import LogNorm
 
@@ -16,13 +16,13 @@ def auto_coords(ds, names=None):
     if names is None:
         names = "X [R]", "Y [R]", "Z [R]"
 
-    all_zero = np.allclose([ds.variable(name) for name in names], 0)
+    all_zero = np.allclose([dataset_variable(ds, name) for name in names], 0)
 
-    if np.allclose(ds.variable("X [R]"), 0):
+    if np.allclose(dataset_variable(ds, "X [R]"), 0):
         return "Y [R]", "Z [R]"
-    if np.allclose(ds.variable("Y [R]"), 0):
+    if np.allclose(dataset_variable(ds, "Y [R]"), 0):
         return "X [R]", "Z [R]"
-    if np.allclose(ds.variable("Z [R]"), 0):
+    if np.allclose(dataset_variable(ds, "Z [R]"), 0):
         return "X [R]", "Y [R]"
 
 
@@ -34,8 +34,8 @@ def triangles(ds, uname=None, vname=None):
     if uname is None and vname is None:
         uname, vname = auto_coords(ds)
 
-    pu = ds.variable(uname)
-    pv = ds.variable(vname)
+    pu = dataset_variable(ds, uname)
+    pv = dataset_variable(ds, vname)
 
     if ds.corners.shape[1] != 4:
         raise ValueError("Can only triangulate a 2D dataset with 4 corners per element")

@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 from batwind.smart_ds import SmartDs
 
