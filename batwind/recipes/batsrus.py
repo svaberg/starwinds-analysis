@@ -104,29 +104,29 @@ def build_griblet_unit_normalization_graph(
     # Optional coordinate scale: X/Y/Z [R] -> [m]
     body_radius = _resolve_body_radius_m(aux=aux, body_radius_m=body_radius_m)
     if body_radius is not None:
-        for axis in ("X", "Y", "Z"):
-            source = f"{axis} [R]"
-            target = f"{axis} [m]"
-            graph.add_recipe(
-                target,
-                lambda x, scale=body_radius: scale * np.asarray(x),
-                deps=[source],
-                cost=0.05,
-                metadata={"description": "Scale body-radius coordinates to meters"},
-            )
-        graph.add_recipe(
-            "R [m]",
-            lambda r, scale=body_radius: scale * np.asarray(r),
-            deps=["R [R]"],
-            cost=0.05,
-            metadata={"description": "Scale spherical radius to meters"},
-        )
         graph.add_recipe(
             "RBODY [m]",
             lambda: float(body_radius),
             deps=[],
             cost=0.0,
             metadata={"description": "Configured body radius"},
+        )
+        for axis in ("X", "Y", "Z"):
+            source = f"{axis} [R]"
+            target = f"{axis} [m]"
+            graph.add_recipe(
+                target,
+                lambda x, rbody: np.asarray(rbody) * np.asarray(x),
+                deps=[source, "RBODY [m]"],
+                cost=0.05,
+                metadata={"description": "Scale body-radius coordinates to meters"},
+            )
+        graph.add_recipe(
+            "R [m]",
+            lambda r, rbody: np.asarray(rbody) * np.asarray(r),
+            deps=["R [R]", "RBODY [m]"],
+            cost=0.05,
+            metadata={"description": "Scale spherical radius to meters"},
         )
 
     # Parse common scalar aux values into numeric fields.
