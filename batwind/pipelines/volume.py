@@ -62,7 +62,7 @@ def process_plt_file(file_path: str | Path) -> None:
         radii,
         fields=shared_source_fields,
         n_points=24 * 48,
-        method="nearest",
+        method="octree",
         length_unit_to_m=body_radius,
     )
     mass_flux = np.array(shells["mass_flux [kg/m^2/s]"])
