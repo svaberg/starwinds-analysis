@@ -133,7 +133,7 @@ def build_griblet_unit_normalization_graph(
     if aux is not None and "GAMMA" in aux:
         graph.add_recipe(
             "GAMMA [none]",
-            _parse_float,
+            float,
             deps=["GAMMA"],
             cost=0.01,
             metadata={"description": "Parse GAMMA from aux"},
@@ -149,7 +149,7 @@ def build_griblet_unit_normalization_graph(
             continue
         graph.add_recipe(
             field_name,
-            _parse_float,
+            float,
             deps=[raw_name],
             cost=0.01,
             metadata={"description": f"Parse {raw_name} from aux"},
@@ -437,14 +437,8 @@ def _parse_xyz_component_name(name: str):
     return prefix, comp, unit
 
 
-def _parse_float(x):
-    if isinstance(x, (int, float, np.floating)):
-        return float(x)
-    return float(str(x).strip())
-
-
 def _safe_gamma(gamma):
-    g = _parse_float(gamma)
+    g = float(gamma)
     if not np.isfinite(g) or g <= 0:
         return _DEFAULT_GAMMA
     return g
@@ -467,7 +461,7 @@ def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: f
     for key in ("RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
         if key in aux:
             try:
-                return _parse_float(aux[key])
+                return float(aux[key])
             except Exception:
                 return None
     return None
