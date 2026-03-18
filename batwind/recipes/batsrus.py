@@ -7,6 +7,8 @@ import griblet
 import numpy as np
 from scipy.constants import atomic_mass, mu_0
 
+from batwind.recipes.vectors import build_vector_graph
+
 
 _DEFAULT_GAMMA = 5.0 / 3.0
 
@@ -275,35 +277,6 @@ def build_common_derived_graph():
 
     return graph
 
-
-def build_vector_graph(variable_names: set[str] | Sequence[str]):
-    graph = griblet.ComputationGraph()
-
-    by_prefix: dict[tuple[str, str], set[str]] = {}
-    for prefix, comp, unit in _available_xyz_components(variable_names):
-        by_prefix.setdefault((prefix, unit), set()).add(comp)
-
-    for (prefix, unit), comps in sorted(by_prefix.items()):
-        if comps != {"x", "y", "z"}:
-            continue
-        deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
-        graph.add_recipe(
-            f"{prefix}_xyz [{unit}]",
-            lambda x, y, z: np.stack([np.array(x), np.array(y), np.array(z)], axis=-1),
-            deps=deps,
-            cost=0.05,
-            metadata={"description": f"{prefix} Cartesian vector"},
-        )
-        graph.add_recipe(
-            f"{prefix} [{unit}]",
-            lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
-            deps=deps,
-            cost=0.1,
-            metadata={"description": f"{prefix} magnitude"},
-        )
-    return graph
-
-
 def _parse_var_name(name: str):
     """
     Parse BATSRUS variable names.
@@ -323,35 +296,6 @@ def _parse_var_name(name: str):
             return base, unit
     return None
 
-
-def _parse_xyz_component_name(name: str):
-    parsed = _parse_var_name(name)
-    if parsed is None:
-        return None
-    base, unit = parsed
-    if "_" not in base:
-        return None
-    prefix, comp = base.rsplit("_", 1)
-    if comp not in ("x", "y", "z") or not prefix:
-        return None
-    return prefix, comp, unit
-
-
-def _available_xyz_components(variable_names: set[str] | Sequence[str]):
-    seen: set[tuple[str, str, str]] = set()
-    for name in variable_names:
-        parsed = _parse_xyz_component_name(name)
-        if parsed is None:
-            continue
-        prefix, comp, unit = parsed
-        seen.add((prefix, comp, unit))
-        unit_match = _UNIT_FACTORS.get(unit)
-        if unit_match is not None:
-            si_unit, _factor = unit_match
-            seen.add((prefix, comp, si_unit))
-    return seen
-
-
 def _safe_gamma(gamma):
     g = float(gamma)
     if not np.isfinite(g) or g <= 0:
@@ -370,5 +314,4 @@ __all__ = [
     "build_common_derived_graph",
     "build_coordinate_scale_graph",
     "build_unit_normalization_graph",
-    "build_vector_graph",
 ]

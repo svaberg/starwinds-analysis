@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from batwind.recipes.batsrus import build_vector_graph
+from batwind.recipes.vectors import build_vector_graph
 
 log = logging.getLogger(__name__)
 
