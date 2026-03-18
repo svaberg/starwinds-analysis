@@ -9,8 +9,6 @@ import numpy as np
 from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
 from batwind._smart_ds_resample import resample_smart_ds
-from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_spherical_graph
 
 
 class SmartDs:
@@ -130,15 +128,6 @@ class SmartDs:
 
     def merge_computation_graph(self, graph):
         self._computation_graph.merge(graph)
-        return self
-
-    def add_spherical_graph(
-        self,
-        *,
-        coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
-    ):
-        graph = build_griblet_spherical_graph(self.keys(), coord_fields=coord_fields)
-        self.merge_computation_graph(graph)
         return self
 
     def clear_cache(self, *names: str) -> None:

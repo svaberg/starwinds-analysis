@@ -23,12 +23,13 @@ derived fields on demand.
 ### Example
 
 ```python
+from batwind.recipes.spherical import build_griblet_spherical_graph
 from batwind.smart_ds import SmartDs
 
 sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 
 # Attach spherical geometry + auto-detected vector-component recipes
-sds.add_spherical_graph()
+sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
 
 r = sds["R [R]"]
 br = sds["B_r [Gauss]"]
@@ -39,6 +40,8 @@ For BATSRUS-style inputs, `SmartDs` can also attach a graph for common unit
 normalization (to SI where possible) and a few derived quantities:
 
 ```python
+from batwind.recipes.batsrus import build_griblet_batsrus_graph
+
 sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux))
 
 rho = sds["Rho [kg/m^3]"]

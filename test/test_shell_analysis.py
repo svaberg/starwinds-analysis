@@ -17,6 +17,7 @@ from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.wind_scaling import open_wind_magnetisation
 from batwind.physics.wind_scaling import surface_escape_speed
 from batwind.recipes.batsrus import build_griblet_batsrus_graph
+from batwind.recipes.spherical import build_griblet_spherical_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -74,7 +75,7 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
@@ -102,7 +103,7 @@ def test_mass_loss_profile_runs_on_example():
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     shells = sample_spherical_shells(
         sds,
         [5.0],
@@ -135,7 +136,7 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
@@ -174,7 +175,7 @@ def test_torque_profile_runs_on_example():
 def test_unsigned_magnetic_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
@@ -213,7 +214,7 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     shells = sample_spherical_shells(
         sds,
         [2.0, 4.0, 8.0, 16.0],
@@ -245,7 +246,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
 def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
     energy_source = "E [J/m^3]" if sds.has_field("E [J/m^3]") else "E [erg/cm^3]"
     shells = sample_spherical_shells_fibonacci(
         sds,

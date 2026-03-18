@@ -7,6 +7,7 @@ import pytest
 from batread.dataset import Dataset
 
 from batwind.recipes.batsrus import build_griblet_batsrus_graph
+from batwind.recipes.spherical import build_griblet_spherical_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -114,8 +115,9 @@ def test_resample_linear_interpolates_inside_hull():
     np.testing.assert_allclose(out["Q [none]"], [0.75, 0.70], rtol=0, atol=1e-12)
 
 
-def test_add_spherical_graph_computes_geometry_and_vector_components():
-    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph()
+def test_spherical_graph_computes_geometry_and_vector_components():
+    sds = SmartDs(make_dataset_3d_vectors())
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
 
     r = sds["R [R]"]
     polar = sds["polar [rad]"]
@@ -140,9 +142,9 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
     np.testing.assert_allclose(b_a[0], 2.0)
 
 
-def test_add_spherical_graph_on_real_example_data():
+def test_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
 
     x = np.asarray(sds["X [R]"])
     y = np.asarray(sds["Y [R]"])
@@ -179,8 +181,6 @@ def test_add_spherical_graph_on_real_example_data():
 
 
 def test_griblet_graph_resolution_and_explain():
-    from batwind.recipes.spherical import build_griblet_spherical_graph
-
     sds = SmartDs(make_dataset_3d_vectors())
     graph = build_griblet_spherical_graph(sds.keys(), coord_fields=("X [R]", "Y [R]", "Z [R]"))
     sds.merge_computation_graph(graph)
@@ -209,9 +209,9 @@ def test_smartds_graph_is_never_none():
     assert "A [none]" not in sds.keys()
 
 
-def test_griblet_add_spherical_graph_on_real_example_data():
+def test_griblet_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_spherical_graph()
+    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
 
     polar = np.asarray(sds["polar [rad]"])
     b_r = np.asarray(sds["B_r [Gauss]"])
