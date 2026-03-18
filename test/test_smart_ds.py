@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import griblet
 import numpy as np
 import pytest
 
@@ -169,6 +170,15 @@ def test_griblet_graph_resolution_and_explain():
     explanation = sds.explain("theta [rad]")
     assert "theta [rad]" in explanation
     assert "X [R]" in explanation
+
+
+def test_smartds_graph_is_never_none():
+    sds = SmartDs(make_dataset_2d())
+
+    assert isinstance(sds.computation_graph, griblet.ComputationGraph)
+
+    with pytest.raises(TypeError, match="griblet.ComputationGraph"):
+        sds.set_computation_graph(None)
 
 
 def test_griblet_add_spherical_graph_on_real_example_data():

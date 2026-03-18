@@ -10,6 +10,8 @@ from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
 from batwind._smart_ds_resample import resample_smart_ds
 
+_UNSET_COMPUTATION_GRAPH = object()
+
 
 class SmartDs:
     """
@@ -23,15 +25,15 @@ class SmartDs:
         dataset: Dataset,
         *,
         cache_enabled: bool = True,
-        computation_graph=None,
+        computation_graph=_UNSET_COMPUTATION_GRAPH,
         include_aux_in_loader: bool = True,
     ) -> None:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
-        self._computation_graph = (
-            griblet.ComputationGraph() if computation_graph is None else computation_graph
-        )
+        self._computation_graph = griblet.ComputationGraph()
+        if computation_graph is not _UNSET_COMPUTATION_GRAPH:
+            self.set_computation_graph(computation_graph, merge=True)
         self._include_aux_in_loader = bool(include_aux_in_loader)
 
     @classmethod
@@ -126,9 +128,8 @@ class SmartDs:
             return default
 
     def set_computation_graph(self, graph, *, merge: bool = False):
-        if graph is None:
-            self._computation_graph = griblet.ComputationGraph()
-            return self
+        if not isinstance(graph, griblet.ComputationGraph):
+            raise TypeError("graph must be a griblet.ComputationGraph")
 
         if merge:
             self._computation_graph.merge(graph)
