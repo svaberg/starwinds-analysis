@@ -7,6 +7,7 @@ import griblet
 import numpy as np
 
 from batread.dataset import Dataset
+from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
 from griblet.dependency_solver import UnresolvableFieldError
 from griblet.evaluate_tree import evaluate_tree
 from batwind._smart_ds_resample import resample_smart_ds
@@ -19,7 +20,7 @@ class SmartDs:
     Lightweight wrapper around ``batread.Dataset`` with graph-backed derived fields.
     """
 
-    DEFAULT_COORD_FIELDS = ("X [R]", "Y [R]", "Z [R]")
+    DEFAULT_COORD_FIELDS = CARTESIAN_COORD_FIELDS_R
 
     def __init__(
         self,
@@ -206,7 +207,7 @@ class SmartDs:
         zone: str | None = None,
     ) -> "SmartDs":
         if coordinate_fields is None:
-            preferred = ["X [R]", "Y [R]", "Z [R]"]
+            preferred = CARTESIAN_COORD_FIELDS_R
             ndim = np.asarray(sample_points, dtype=float).shape[-1]
             coordinate_fields = tuple(name for name in preferred if name in self._dataset.variables)
             if len(coordinate_fields) < ndim:

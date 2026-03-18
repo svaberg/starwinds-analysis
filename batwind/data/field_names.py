@@ -5,6 +5,9 @@ import logging
 log = logging.getLogger(__name__)
 
 
+CARTESIAN_COORD_FIELDS_R = ("X [R]", "Y [R]", "Z [R]")
+
+
 def unit_from_brackets(name: str) -> str | None:
     """
     Extract the unit token from a bracketed field name like `X [R]`.

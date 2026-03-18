@@ -9,6 +9,7 @@ import numpy as np
 
 from batwind.algorithms.sphere_sampling import PolarAzimuthalGrid
 from batwind.algorithms.sphere_sampling import fibonacci_sphere
+from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
 from batwind.data.field_names import unit_from_brackets
 
 
@@ -16,7 +17,7 @@ def infer_cartesian_axis_radii(
     smart_ds,
     *,
     axis: str = "x",
-    coord_fields=("X [R]", "Y [R]", "Z [R]"),
+    coord_fields=CARTESIAN_COORD_FIELDS_R,
     atol: float = 1e-12,
     positive_only: bool = True,
     r_min: float | None = None,
@@ -62,7 +63,7 @@ def sample_spherical_shells(
     radii,
     *,
     fields=None,
-    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
     n_polar: int = 24,
     n_azimuth: int = 48,
     polar_edges=None,
@@ -160,7 +161,7 @@ def sample_spherical_shells_fibonacci(
     radii,
     *,
     fields=None,
-    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
     n_points: int = 512,
     randomize: bool = False,
     method: str = "nearest",

@@ -12,6 +12,7 @@ import numpy as np
 
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.constants import MU0
+from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
 
 log = logging.getLogger(__name__)
 
@@ -230,7 +231,7 @@ def surface_torque_terms_on_shell_samples(
     body_radius: float = 1.0,
     normals_xyz=None,
     use_rotating_frame: bool = True,
-    coordinate_fields=("X [R]", "Y [R]", "Z [R]"),
+    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
     area_field: str = "dA [m^2]",
 ):
     """

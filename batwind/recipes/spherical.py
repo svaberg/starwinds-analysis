@@ -6,6 +6,8 @@ import re
 import griblet
 import numpy as np
 
+from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
+
 SPHERICAL_COMPONENTS = ("r", "p", "a")
 
 
@@ -103,7 +105,7 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
 
 def build_spherical_graph(
     variable_names: Sequence[str],
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
+    coord_fields: Sequence[str] = CARTESIAN_COORD_FIELDS_R,
 ):
     """
     Build a griblet graph for spherical geometry and auto-detected vector components.

@@ -5,6 +5,7 @@ from matplotlib import tri
 from pathlib import Path
 
 from batread.dataset import Dataset
+from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
 
 from matplotlib.colors import LogNorm
 
@@ -14,7 +15,7 @@ import re
 def auto_coords(ds, names=None):
 
     if names is None:
-        names = "X [R]", "Y [R]", "Z [R]"
+        names = CARTESIAN_COORD_FIELDS_R
 
     all_zero = np.allclose([ds[name] for name in names], 0)
 
