@@ -7,20 +7,6 @@ import griblet
 import numpy as np
 
 
-_UNIT_FACTORS = {
-    "g/cm^3": ("kg/m^3", 1e3),
-    "amu/cm^3": ("kg/m^3", 1.66053906660e-27 * 1e6),
-    "km/s": ("m/s", 1e3),
-    "Gauss": ("T", 1e-4),
-    "G": ("T", 1e-4),
-    "nT": ("T", 1e-9),
-    "erg/cm^3": ("J/m^3", 1e-1),
-    "dyne/cm^2": ("Pa", 1e-1),
-    "nPa": ("Pa", 1e-9),
-    "`mA/m^2": ("A/m^2", 1e-6),
-}
-
-
 def build_vector_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
 
@@ -80,12 +66,7 @@ def _available_xyz_components(variable_names: set[str] | Sequence[str]):
         parsed = _parse_xyz_component_name(name)
         if parsed is None:
             continue
-        prefix, comp, unit = parsed
-        seen.add((prefix, comp, unit))
-        unit_match = _UNIT_FACTORS.get(unit)
-        if unit_match is not None:
-            si_unit, _factor = unit_match
-            seen.add((prefix, comp, si_unit))
+        seen.add(parsed)
     return seen
 
 
