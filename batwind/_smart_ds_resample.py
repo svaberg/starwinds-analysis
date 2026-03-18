@@ -191,7 +191,7 @@ def resample_smart_ds(
 
     nearest_indices = None
 
-    # Interpolate each non-coordinate field onto the target points. The nearest
+    # Interpolate each non-coordinate field onto the target points. The `nearest`
     # path can reuse a shared KD-tree / index lookup from the spatial cache.
     for name in output_variables:
         if name in coordinate_fields:
