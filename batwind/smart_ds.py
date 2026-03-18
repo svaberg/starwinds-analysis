@@ -24,12 +24,10 @@ class SmartDs:
         *,
         cache_enabled: bool = True,
         computation_graph: griblet.ComputationGraph | None = None,
-        include_aux_in_loader: bool = True,
     ) -> None:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
-        self._include_aux_in_loader = bool(include_aux_in_loader)
         self._computation_graph = griblet.ComputationGraph()
         self.clear_computation_graph()
         if computation_graph is not None:
@@ -144,15 +142,14 @@ class SmartDs:
                 cost=0.0,
                 metadata={"description": "Dataset raw field", "loader": True},
             )
-        if self._include_aux_in_loader:
-            for key, value in self._dataset.aux.items():
-                self._computation_graph.add_recipe(
-                    field=key,
-                    func=lambda value=value: value,
-                    deps=[],
-                    cost=0.0,
-                    metadata={"description": "Dataset aux", "loader": True},
-                )
+        for key, value in self._dataset.aux.items():
+            self._computation_graph.add_recipe(
+                field=key,
+                func=lambda value=value: value,
+                deps=[],
+                cost=0.0,
+                metadata={"description": "Dataset aux", "loader": True},
+            )
         return self
 
     def merge_computation_graph(self, graph):
@@ -284,7 +281,6 @@ class SmartDs:
             new_dataset,
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
-            include_aux_in_loader=self._include_aux_in_loader,
         )
 
     def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:

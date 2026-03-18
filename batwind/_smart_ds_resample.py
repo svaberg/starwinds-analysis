@@ -117,7 +117,6 @@ def resample_smart_ds(
         new_dataset,
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
-        include_aux_in_loader=smart_ds._include_aux_in_loader,
     )
 
 
