@@ -141,6 +141,8 @@ def resample_smart_ds(
     """
     Resample scalar fields onto new point locations and return a new wrapped dataset.
     """
+    # Normalize target points to a flat (n_points, ndim) form for interpolation,
+    # then reshape back to the requested grid shape at the end.
     sample_points = np.asarray(sample_points, dtype=float)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
@@ -165,11 +167,15 @@ def resample_smart_ds(
     if fields is None:
         output_variables = list(smart_ds._dataset.variables)
     else:
+        # Always keep the coordinate columns in the output dataset, then append the
+        # requested fields without duplication.
         output_variables = list(coordinate_fields)
         for name in fields:
             if name not in output_variables:
                 output_variables.append(name)
 
+    # Reuse coordinate-dependent spatial structures across resample calls with the
+    # same coordinate field choice.
     spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
     source_coords = spatial_cache["source_coords"]
     coord_mask = spatial_cache["coord_mask"]
@@ -185,6 +191,8 @@ def resample_smart_ds(
 
     nearest_indices = None
 
+    # Interpolate each non-coordinate field onto the target points. The nearest
+    # path can reuse a shared KD-tree / index lookup from the spatial cache.
     for name in output_variables:
         if name in coordinate_fields:
             continue
@@ -209,6 +217,8 @@ def resample_smart_ds(
             continue
         out_points[:, out_index[name]] = out
 
+    # Build the resampled raw Dataset and wrap it back into the same SmartDs type,
+    # carrying forward the derived-field graph.
     new_dataset = _build_resampled_dataset(
         smart_ds,
         out_points,
