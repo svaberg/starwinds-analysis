@@ -125,7 +125,7 @@ class SmartDs:
         if name in self._dataset.variables:
             return True
         try:
-            cost, _tree = self.resolve(name)
+            cost, _tree = self._resolve_field(name)
         except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
             return False
         return np.isfinite(cost)
@@ -194,13 +194,8 @@ class SmartDs:
         for name in names:
             self._cache.pop(name, None)
 
-    def resolve(self, name: str):
-        graph = self._build_runtime_graph()
-        solver = griblet.DependencySolver(graph)
-        return solver.resolve_field(name)
-
     def explain(self, name: str, *, return_tree: bool = False):
-        cost, tree = self.resolve(name)
+        cost, tree = self._resolve_field(name)
         if return_tree:
             return cost, tree
 
@@ -249,7 +244,7 @@ class SmartDs:
                 add(field)
                 continue
             try:
-                _cost, tree = self.resolve(field)
+                _cost, tree = self._resolve_field(field)
             except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
                 add(field)
                 continue
@@ -276,6 +271,11 @@ class SmartDs:
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
         return self._evaluate_resolved_tree(tree, graph)
+
+    def _resolve_field(self, name: str):
+        graph = self._build_runtime_graph()
+        solver = griblet.DependencySolver(graph)
+        return solver.resolve_field(name)
 
     def resample(
         self,
