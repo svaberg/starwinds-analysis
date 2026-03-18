@@ -39,7 +39,7 @@ For BATSRUS-style inputs, `SmartDs` can also attach a graph for common unit
 normalization (to SI where possible) and a few derived quantities:
 
 ```python
-sds.add_batsrus_graph()
+sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux))
 
 rho = sds["Rho [kg/m^3]"]
 bx = sds["B_x [T]"]

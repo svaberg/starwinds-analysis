@@ -9,6 +9,7 @@ from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.curve import relative_ram_pressure_from_trajectory
 from batwind.physics.orbits import orbital_period
 from batwind.physics.pressure import magnetospheric_standoff_distance
+from batwind.recipes.batsrus import build_griblet_batsrus_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -27,7 +28,7 @@ def test_magnetospheric_standoff_distance_decreases_with_speed():
 
 def test_relative_ram_pressure_from_trajectory_runs_on_circular_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
     sds.add_spherical_graph()
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     points = circular_orbit_points(10.0, n_points=96)

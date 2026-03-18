@@ -148,23 +148,6 @@ class SmartDs:
         self.merge_computation_graph(graph)
         return self
 
-    def add_batsrus_graph(
-        self,
-        *,
-        body_radius_m: float | None = None,
-        include_unit_normalization: bool = True,
-        include_derived: bool = True,
-    ):
-        graph = build_griblet_batsrus_graph(
-            self.variables,
-            aux=self.aux,
-            body_radius_m=body_radius_m,
-            include_unit_normalization=include_unit_normalization,
-            include_derived=include_derived,
-        )
-        self.merge_computation_graph(graph)
-        return self
-
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()

@@ -6,6 +6,7 @@ import pytest
 
 from batread.dataset import Dataset
 
+from batwind.recipes.batsrus import build_griblet_batsrus_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -228,7 +229,7 @@ def test_griblet_add_spherical_graph_on_real_example_data():
 
 def test_griblet_batsrus_si_normalization_and_derived_fields():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_batsrus_graph()
+    sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux))
 
     # Unit normalization examples
     bx_g = np.asarray(sds["B_x [Gauss]"])
