@@ -9,8 +9,6 @@ from scipy.spatial import cKDTree
 
 from batcamp import OctreeInterpolator
 from batread.dataset import Dataset
-from batwind.data.field_names import DEFAULT_XYZ_NAMES
-
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
 
 
@@ -99,10 +97,6 @@ def _interpolate_field(
         else:
             interpolator.set_fields([name], fill_value=fill_value)
 
-        if coordinate_fields != DEFAULT_XYZ_NAMES:
-            raise NotImplementedError(
-                f"method='octree' does not support coordinate_fields={coordinate_fields!r}"
-            )
         out = np.asarray(interpolator(flat_sample_points), dtype=float)
         if out.ndim == 0:
             out = out[np.newaxis]
