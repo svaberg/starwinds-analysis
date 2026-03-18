@@ -49,7 +49,7 @@ class SmartDs:
         sds = cls(Dataset.from_file(str(file)), **kwargs)
         if batsrus:
             sds.computation_graph.merge(
-                build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=body_radius_m)
+                build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=body_radius_m)
             )
         if spherical:
             sds.computation_graph.merge(build_spherical_graph(tuple(sds)))
@@ -61,44 +61,20 @@ class SmartDs:
 
     def __repr__(self) -> str:
         return (
-            f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
-            f"points={np.shape(self.points)}, variables={len(self.variables)})"
+            f"SmartDs(title={self._dataset.title!r}, zone={self._dataset.zone!r}, "
+            f"points={np.shape(self._dataset.points)}, variables={len(self._dataset.variables)})"
         )
 
     def __str__(self) -> str:
         return "\n".join(
             (
                 "SmartDs",
-                f"  Title: {self.title}",
-                f"  Zone : {self.zone}",
-                f"  Points: {np.shape(self.points)}",
-                f"  Variables: {len(self.variables)}",
+                f"  Title: {self._dataset.title}",
+                f"  Zone : {self._dataset.zone}",
+                f"  Points: {np.shape(self._dataset.points)}",
+                f"  Variables: {len(self._dataset.variables)}",
             )
         )
-
-    @property
-    def aux(self):
-        return self._dataset.aux
-
-    @property
-    def title(self):
-        return self._dataset.title
-
-    @property
-    def zone(self):
-        return self._dataset.zone
-
-    @property
-    def points(self):
-        return self._dataset.points
-
-    @property
-    def corners(self):
-        return self._dataset.corners
-
-    @property
-    def variables(self) -> tuple[str, ...]:
-        return tuple(self._dataset.variables)
 
     @property
     def computation_graph(self):

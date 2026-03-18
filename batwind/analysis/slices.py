@@ -86,7 +86,7 @@ def resample_structured_xz_slice(
     corners = structured_quad_corners(nx=int(nx), nz=int(nz))
 
     if fields is None:
-        fields = tuple(smart_ds.variables)
+        fields = tuple(smart_ds.raw.variables)
     else:
         fields = smart_ds.base_fields_for_resample(tuple(dict.fromkeys(fields)))
 
@@ -97,6 +97,6 @@ def resample_structured_xz_slice(
         method=method,
         fill_value=fill_value,
         corners=corners,
-        zone=f"{smart_ds.zone} (XZ slice y={y_value:g})",
+        zone=f"{smart_ds.raw.zone} (XZ slice y={y_value:g})",
     )
     return sliced

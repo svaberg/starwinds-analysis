@@ -74,7 +74,7 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
 
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     shells = sample_spherical_shells_fibonacci(
         sds,
@@ -102,7 +102,7 @@ def test_mass_loss_profile_runs_on_example():
 
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     shells = sample_spherical_shells(
         sds,
@@ -135,7 +135,7 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
 
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     shells = sample_spherical_shells_fibonacci(
         sds,
@@ -174,7 +174,7 @@ def test_torque_profile_runs_on_example():
 
 def test_unsigned_magnetic_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     shells = sample_spherical_shells_fibonacci(
         sds,
@@ -213,7 +213,7 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
 
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     shells = sample_spherical_shells(
         sds,
@@ -245,7 +245,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
 
 def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     energy_source = "E [J/m^3]"
     shells = sample_spherical_shells_fibonacci(

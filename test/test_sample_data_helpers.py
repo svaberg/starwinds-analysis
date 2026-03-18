@@ -22,7 +22,7 @@ def test_data_file_returns_existing_tracked_fixture():
 
 def test_smartds_from_file_accepts_pathlike():
     sds = SmartDs.from_file(data_file("3d__var_4_n00000000.plt"))
-    assert sds.title
+    assert sds.raw.title
 
 
 def test_data_file_missing_lists_available_fixtures():

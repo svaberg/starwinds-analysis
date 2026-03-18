@@ -116,11 +116,11 @@ def sample_trajectory(
     )
 
     time = np.array(time)
-    if time.ndim != 1 or time.shape[0] != sampled_curve.points.shape[0]:
+    if time.ndim != 1 or time.shape[0] != sampled_curve.raw.points.shape[0]:
         log.error(
             "sample_trajectory failed: time shape=%s expected=(%d,)",
             time.shape,
-            sampled_curve.points.shape[0],
+            sampled_curve.raw.points.shape[0],
         )
         raise ValueError("time must have shape (n_points,)")
 
@@ -130,17 +130,17 @@ def sample_trajectory(
         return sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
 
     velocity = np.array(velocity_xyz)
-    if velocity.shape != (sampled_curve.points.shape[0], 3):
+    if velocity.shape != (sampled_curve.raw.points.shape[0], 3):
         log.error(
             "sample_trajectory failed: velocity shape=%s expected=(%d, 3)",
             velocity.shape,
-            sampled_curve.points.shape[0],
+            sampled_curve.raw.points.shape[0],
         )
         raise ValueError("velocity_xyz must have shape (n_points, 3)")
     context_fields["V_x [m/s]"] = velocity[:, 0]
     context_fields["V_y [m/s]"] = velocity[:, 1]
     context_fields["V_z [m/s]"] = velocity[:, 2]
     sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
-    sampled_curve.merge_computation_graph(build_vector_graph(sampled_curve.variables))
+    sampled_curve.merge_computation_graph(build_vector_graph(sampled_curve.raw.variables))
     log.info("sample_trajectory done with velocity fields")
     return sampled_curve

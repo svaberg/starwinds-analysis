@@ -186,7 +186,7 @@ def test_griblet_graph_resolution_and_explain():
     sds.merge_computation_graph(graph)
 
     r = sds["R [R]"]
-    np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
+    np.testing.assert_allclose(r, np.sqrt(np.sum(sds.raw.points[:, :3] ** 2, axis=1)))
 
     explanation = explain_field(sds, "polar [rad]")
     assert "polar [rad]" in explanation
