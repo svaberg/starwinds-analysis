@@ -177,30 +177,6 @@ class SmartDs:
         for name in names:
             self._cache.pop(name, None)
 
-    def explain(self, name: str, *, return_tree: bool = False):
-        cost, tree = self._resolve_field(name)
-        if return_tree:
-            return cost, tree
-
-        lines: list[str] = []
-
-        def walk(node, depth=0):
-            meta = getattr(node, "recipe_metadata", {}) or {}
-            desc = meta.get("description", "")
-            planned = getattr(node, "cost", None)
-            parts = [node.field]
-            if planned is not None:
-                parts.append(f"(cost={planned})")
-            if desc:
-                parts.append(f"- {desc}")
-            lines.append("  " * depth + " ".join(parts))
-            for dep in getattr(node, "deps", []):
-                walk(dep, depth + 1)
-
-        walk(tree)
-        header = f"{name} total_cost={cost}"
-        return "\n".join([header, *lines])
-
     def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
         base_fields: list[str] = []
 

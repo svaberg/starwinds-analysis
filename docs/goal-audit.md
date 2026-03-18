@@ -56,7 +56,6 @@ Status: PARTIAL, usable
   - `polar [rad]`
   - `azimuth [rad]`
   - vector suffixes `_r`, `_p`, `_a`
-- Graph introspection is available through `SmartDs.explain(...)`.
 
 Files:
 

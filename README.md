@@ -35,12 +35,6 @@ br = sds["B_r [Gauss]"]
 ua = sds["U_a [km/s]"]
 ```
 
-You can inspect the recipe path for any derived field:
-
-```python
-print(sds.explain("B_r [Gauss]"))
-```
-
 For BATSRUS-style inputs, `SmartDs` can also attach a graph for common unit
 normalization (to SI where possible) and a few derived quantities:
 
@@ -51,7 +45,6 @@ rho = sds["Rho [kg/m^3]"]
 bx = sds["B_x [T]"]
 c_s = sds["c_s [m/s]"]
 m_a = sds["M_A [none]"]
-print(sds.explain("M_A [none]"))
 ```
 
 Spherical conventions used by the helper recipes:

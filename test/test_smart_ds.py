@@ -12,6 +12,27 @@ from batwind.smart_ds import SmartDs
 EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
+def explain_field(sds: SmartDs, name: str) -> str:
+    cost, tree = sds._resolve_field(name)
+    lines: list[str] = []
+
+    def walk(node, depth=0):
+        meta = getattr(node, "recipe_metadata", {}) or {}
+        desc = meta.get("description", "")
+        planned = getattr(node, "cost", None)
+        parts = [node.field]
+        if planned is not None:
+            parts.append(f"(cost={planned})")
+        if desc:
+            parts.append(f"- {desc}")
+        lines.append("  " * depth + " ".join(parts))
+        for dep in getattr(node, "deps", []):
+            walk(dep, depth + 1)
+
+    walk(tree)
+    return "\n".join([f"{name} total_cost={cost}", *lines])
+
+
 def make_dataset_2d():
     # q = x + y on a unit square, useful for interpolation checks.
     variables = ["X [R]", "Y [R]", "Q [none]"]
@@ -166,7 +187,7 @@ def test_griblet_graph_resolution_and_explain():
     r = sds["R [R]"]
     np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
 
-    explanation = sds.explain("polar [rad]")
+    explanation = explain_field(sds, "polar [rad]")
     assert "polar [rad]" in explanation
     assert "X [R]" in explanation
 
@@ -200,7 +221,7 @@ def test_griblet_add_spherical_graph_on_real_example_data():
     finite_polar = np.isfinite(polar)
     assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
-    expl = sds.explain("B_r [Gauss]")
+    expl = explain_field(sds, "B_r [Gauss]")
     assert "B_r [Gauss]" in expl
     assert "B_x [Gauss]" in expl
 
@@ -257,9 +278,9 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     beta = np.asarray(sds["beta [none]"])
     np.testing.assert_allclose(beta, p_si / p_b, rtol=1e-10, atol=1e-10)
 
-    expl = sds.explain("M_A [none]")
+    expl = explain_field(sds, "M_A [none]")
     assert "M_A [none]" in expl
     assert "c_A [m/s]" in expl
     assert "U [m/s]" in expl
 
-    assert "beta [none]" in sds.explain("beta [none]")
+    assert "beta [none]" in explain_field(sds, "beta [none]")
