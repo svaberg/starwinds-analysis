@@ -145,6 +145,8 @@ class SmartDs:
         return self
 
     def merge_computation_graph(self, graph):
+        # Loader recipes close over this SmartDs' dataset, so we must not blindly
+        # merge them forward into another SmartDs that may wrap different raw data.
         for field, recipes in graph.recipes.items():
             for recipe in recipes:
                 metadata = dict(recipe.get("metadata", {}) or {})
