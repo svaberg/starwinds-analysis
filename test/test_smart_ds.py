@@ -1,4 +1,3 @@
-import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -58,10 +57,6 @@ def test_passthrough_raw_field():
     assert "Q [none]" in sds
 
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("scipy") is None,
-    reason="scipy is required for SmartDs.resample()",
-)
 def test_resample_returns_new_wrapped_dataset_nearest():
     sds = SmartDs(make_dataset_2d())
     target = np.array([[0.1, 0.2], [0.95, 0.85]])
@@ -83,10 +78,6 @@ def test_resample_returns_new_wrapped_dataset_nearest():
     np.testing.assert_allclose(out.variable("Q [none]"), [0.0, 2.0])
 
 
-@pytest.mark.skipif(
-    importlib.util.find_spec("scipy") is None,
-    reason="scipy is required for SmartDs.resample()",
-)
 def test_resample_linear_interpolates_inside_hull():
     sds = SmartDs(make_dataset_2d())
     target = np.array([[0.25, 0.50], [0.60, 0.10]])

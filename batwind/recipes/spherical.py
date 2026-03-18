@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-import importlib
 import re
 
+import griblet
 import numpy as np
 
 
@@ -111,7 +111,6 @@ def build_griblet_spherical_geometry_graph(
 
     This requires ``griblet``.
     """
-    griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
     if r_name is None:
         r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
@@ -148,7 +147,6 @@ def build_griblet_vector_spherical_components_graph(
     """
     Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components.
     """
-    griblet = importlib.import_module("griblet")
     x_name, y_name, z_name = coord_fields
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
@@ -198,7 +196,6 @@ def build_griblet_auto_vector_spherical_components_graph(
     Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged
     griblet graph for their spherical components.
     """
-    griblet = importlib.import_module("griblet")
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
 
     by_prefix: dict[tuple[str, str], dict[str, str]] = {}

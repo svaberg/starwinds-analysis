@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-import importlib
 import math
 import re
 
+import griblet
 import numpy as np
 
 
@@ -44,7 +44,6 @@ def build_griblet_batsrus_graph(
     - optional coordinate conversion X/Y/Z [R] -> [m] (requires ``body_radius_m``)
     - common derived fields: |U|, |B|, c_s, c_A, M_A
     """
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
     vars_list = list(variable_names)
@@ -65,7 +64,6 @@ def build_griblet_unit_normalization_graph(
     aux: Mapping[str, object] | None = None,
     body_radius_m: float | None = None,
 ):
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
 
     for raw_name in variable_names:
@@ -161,7 +159,6 @@ def build_griblet_unit_normalization_graph(
 
 
 def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
     normalized_varset = set(varset)
@@ -377,7 +374,6 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
 
 
 def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
@@ -405,7 +401,6 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
 
 
 def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
-    griblet = importlib.import_module("griblet")
     graph = griblet.ComputationGraph()
     names = list(variable_names)
 
