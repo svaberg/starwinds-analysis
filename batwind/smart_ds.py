@@ -8,6 +8,7 @@ import numpy as np
 
 from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
+from griblet.evaluate_tree import evaluate_tree
 from batwind._smart_ds_resample import resample_smart_ds
 
 
@@ -29,7 +30,6 @@ class SmartDs:
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = griblet.ComputationGraph()
-        self._next_recipe_id = 0
         self.clear_computation_graph()
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
@@ -119,40 +119,29 @@ class SmartDs:
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
-        value = self._evaluate_resolved_tree(tree)
+        value = evaluate_tree(tree, self._computation_graph)
         if self._cache_enabled:
             self._cache[name] = value
         return value
 
     def clear_computation_graph(self):
         self._computation_graph = griblet.ComputationGraph()
-        self._next_recipe_id = 0
         for raw_name in self._dataset.variables:
             self._computation_graph.add_recipe(
                 field=raw_name,
                 func=lambda raw_name=raw_name: self._dataset[raw_name],
                 deps=[],
                 cost=0.0,
-                metadata={
-                    "description": "Dataset raw field",
-                    "loader": True,
-                    "recipe_id": self._next_recipe_id,
-                },
+                metadata={"description": "Dataset raw field", "loader": True},
             )
-            self._next_recipe_id += 1
         for key, value in self._dataset.aux.items():
             self._computation_graph.add_recipe(
                 field=key,
                 func=lambda value=value: value,
                 deps=[],
                 cost=0.0,
-                metadata={
-                    "description": "Dataset aux",
-                    "loader": True,
-                    "recipe_id": self._next_recipe_id,
-                },
+                metadata={"description": "Dataset aux", "loader": True},
             )
-            self._next_recipe_id += 1
         return self
 
     def merge_computation_graph(self, graph):
@@ -161,8 +150,6 @@ class SmartDs:
                 metadata = dict(recipe.get("metadata", {}) or {})
                 if metadata.get("loader"):
                     continue
-                metadata["recipe_id"] = self._next_recipe_id
-                self._next_recipe_id += 1
                 self._computation_graph.add_recipe(
                     field=field,
                     func=recipe["func"],
@@ -183,41 +170,31 @@ class SmartDs:
         base_fields: list[str] = []
         solver = griblet.DependencySolver(self._computation_graph)
 
-        def add(name: str) -> None:
-            if name not in base_fields:
-                base_fields.append(name)
-
-        def raw_leaves(node) -> list[str]:
-            deps = list(getattr(node, "deps", []) or [])
-            if not deps:
-                field = getattr(node, "field", None)
-                if isinstance(field, str) and field in self._dataset.variables:
-                    return [field]
-                return []
-            leaves: list[str] = []
-            for dep in deps:
-                for leaf in raw_leaves(dep):
-                    if leaf not in leaves:
-                        leaves.append(leaf)
-            return leaves
-
         for field in tuple(dict.fromkeys(fields)):
             if field in self._dataset.variables:
-                add(field)
+                base_fields.append(field)
                 continue
             try:
                 _cost, tree = solver.resolve_field(field)
-            except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
-                add(field)
+            except UnresolvableFieldError:
+                if field not in base_fields:
+                    base_fields.append(field)
                 continue
-            leaves = raw_leaves(tree)
-            if leaves:
-                for leaf in leaves:
-                    add(leaf)
-            else:
-                add(field)
+            stack = [tree]
+            leaves: list[str] = []
+            while stack:
+                node = stack.pop()
+                if node.deps:
+                    stack.extend(reversed(node.deps))
+                    continue
+                if node.field in self._dataset.variables and node.field not in leaves:
+                    leaves.append(node.field)
+            for name in leaves or [field]:
+                if name not in base_fields:
+                    base_fields.append(name)
 
         return tuple(base_fields)
+
     def resample(
         self,
         sample_points,
@@ -292,16 +269,6 @@ class SmartDs:
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
         )
-
-    def _evaluate_resolved_tree(self, node):
-        values = [self._evaluate_resolved_tree(dep) for dep in node.deps]
-        recipe_id = node.recipe_metadata["recipe_id"]
-        recipe = next(
-            recipe
-            for recipe in self._computation_graph.recipes[node.field]
-            if recipe["metadata"]["recipe_id"] == recipe_id
-        )
-        return recipe["func"](*values)
 
 
 __all__ = ["SmartDs"]
