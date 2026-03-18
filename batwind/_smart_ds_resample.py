@@ -15,14 +15,7 @@ RESAMPLE_METHODS = ("nearest", "linear", "octree")
 def _get_spatial_cache(smart_ds, coordinate_fields):
     spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
     if spatial_cache is None:
-        source_coords = np.column_stack(
-            [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
-        )
-        coord_mask = np.isfinite(source_coords).all(axis=1)
-        if not np.any(coord_mask):
-            raise ValueError("No finite source coordinates available for resampling")
         spatial_cache = {
-            "source_coords": source_coords,
             "nearest_tree": None,
             "linear_triangulation": None,
         }
@@ -174,11 +167,13 @@ def resample_smart_ds(
 
     # Reuse coordinate-dependent spatial structures across resample calls with the
     # same coordinate field choice.
-    spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
-    source_coords = spatial_cache["source_coords"]
+    source_coords = np.column_stack(
+        [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
+    )
     coord_mask = np.isfinite(source_coords).all(axis=1)
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
+    spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
 
     out_points = np.full((flat_sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
     out_index = {name: i for i, name in enumerate(output_variables)}
