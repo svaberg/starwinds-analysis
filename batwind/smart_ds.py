@@ -8,6 +8,7 @@ import numpy as np
 
 from batread.dataset import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
+from batwind.param_in import stellar_aux_from_nearby_param_in
 from griblet.dependency_solver import UnresolvableFieldError
 from griblet.evaluate_tree import evaluate_tree
 from batwind._smart_ds_resample import resample_smart_ds
@@ -48,7 +49,18 @@ class SmartDs:
         body_radius_m: float | None = None,
         **kwargs,
     ) -> "SmartDs":
-        sds = cls(Dataset.from_file(str(file)), **kwargs)
+        raw = Dataset.from_file(str(file))
+        stellar_aux = stellar_aux_from_nearby_param_in(file)
+        if stellar_aux:
+            raw = Dataset(
+                raw.points,
+                raw.corners,
+                dict(raw.aux) | dict(stellar_aux),
+                raw.title,
+                raw.variables,
+                raw.zone,
+            )
+        sds = cls(raw, **kwargs)
         if batsrus:
             sds.computation_graph.merge(
                 build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=body_radius_m)
