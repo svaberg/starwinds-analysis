@@ -80,7 +80,7 @@ def sample_curve(
     points = np.array(points)
     log.info("sample_curve start method=%s n_points=%d", method, points.shape[0])
     requested_fields = tuple(dict.fromkeys(fields))
-    base_fields = smart_ds.base_fields_for_resample(requested_fields)
+    base_fields = smart_ds.source_fields(requested_fields)
     sampled_curve = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,

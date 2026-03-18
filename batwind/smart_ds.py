@@ -164,7 +164,7 @@ class SmartDs:
         for name in names:
             self._cache.pop(name, None)
 
-    def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
+    def source_fields(self, fields: Sequence[str]) -> tuple[str, ...]:
         base_fields: list[str] = []
         solver = griblet.DependencySolver(self._computation_graph)
 

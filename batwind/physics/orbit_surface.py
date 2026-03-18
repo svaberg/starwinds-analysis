@@ -183,7 +183,7 @@ def sample_surface_revolution(
     sampled_surface = smart_ds.resample(
         surf["points"],
         coordinate_fields=coordinate_fields,
-        fields=smart_ds.base_fields_for_resample(fields),
+        fields=smart_ds.source_fields(fields),
         method=method,
         fill_value=fill_value,
         zone=zone,

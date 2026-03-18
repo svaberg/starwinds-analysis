@@ -90,7 +90,7 @@ def resample_structured_xz_slice(
     if fields is None:
         fields = tuple(smart_ds.raw.variables)
     else:
-        fields = smart_ds.base_fields_for_resample(tuple(dict.fromkeys(fields)))
+        fields = smart_ds.source_fields(tuple(dict.fromkeys(fields)))
 
     sliced = smart_ds.resample(
         points,

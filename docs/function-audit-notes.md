@@ -318,7 +318,7 @@ Used by: `batwind/smart_ds.py`, `batwind/recipes/batsrus.py`
 - `SmartDs.prepare`: Attaches BATSRUS + spherical recipe graphs.
 - `SmartDs.__getitem__`: Main field accessor (`raw -> graph`, with cache).
 - `SmartDs.explain`: Dependency-path explanation for a requested field.
-- `SmartDs.base_fields_for_resample`: Expands requested fields to raw interpolation dependencies.
+- `SmartDs.source_fields`: Expands requested fields to raw interpolation dependencies.
 - `SmartDs.resample`: Generic resampling entrypoint returning a new `SmartDs`.
 - `SmartDs.append_fields`: Appends structured extra fields into a new dataset/wrapper.
 - `SmartDs.has_field` / `keys`: Field availability and discoverability helpers.

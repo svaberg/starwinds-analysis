@@ -117,7 +117,7 @@ def sample_spherical_shells(
         fields_arg = None
     else:
         requested_fields = tuple(dict.fromkeys(fields))
-        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
+        fields_arg = smart_ds.source_fields(requested_fields)
 
     resampled = smart_ds.resample(
         sample_points,
@@ -191,7 +191,7 @@ def sample_spherical_shells_fibonacci(
         fields_arg = None
     else:
         requested_fields = tuple(dict.fromkeys(fields))
-        fields_arg = smart_ds.base_fields_for_resample(requested_fields)
+        fields_arg = smart_ds.source_fields(requested_fields)
 
     resampled = smart_ds.resample(
         sample_points,
