@@ -76,9 +76,6 @@ def _interpolate_field(
             out = out[np.newaxis]
         return out, nearest_indices
 
-    if method == "octree":
-        raise NotImplementedError("method='octree' is not implemented")
-
     raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
 
