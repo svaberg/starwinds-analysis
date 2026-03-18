@@ -139,22 +139,6 @@ def build_unit_normalization_graph(
             metadata={"description": "Parse GAMMA from aux"},
         )
 
-    for raw_name, field_name in (
-        ("Star_radius_m", "star_radius [m]"),
-        ("Star_mass_kg", "star_mass [kg]"),
-        ("Star_rotational_period_s", "star_rotational_period [s]"),
-        ("Star_rotation_rate_rad_s", "star_rotation_rate [rad/s]"),
-    ):
-        if aux is None or raw_name not in aux:
-            continue
-        graph.add_recipe(
-            field_name,
-            float,
-            deps=[raw_name],
-            cost=0.01,
-            metadata={"description": f"Parse {raw_name} from aux"},
-        )
-
     return graph
 
 
