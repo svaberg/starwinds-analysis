@@ -40,7 +40,7 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: attach the graph-backed fields and create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
     smart_ds.merge_computation_graph(build_griblet_batsrus_graph(smart_ds.variables, aux=smart_ds.aux))
-    smart_ds.merge_computation_graph(build_griblet_spherical_graph(smart_ds.keys()))
+    smart_ds.merge_computation_graph(build_griblet_spherical_graph(tuple(smart_ds)))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)

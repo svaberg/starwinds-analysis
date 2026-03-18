@@ -65,7 +65,7 @@ def compare_curve_mass_loss_to_shell(
     shell_radii=None,
 ):
     body_radius = float(curve["RBODY [m]"])
-    weights = np.array(curve["time_weight [none]"]) if "time_weight [none]" in curve.keys() else None
+    weights = np.array(curve["time_weight [none]"]) if "time_weight [none]" in curve else None
     mass_flux = np.array(curve["mass_flux [kg/m^2/s]"])
     radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
@@ -121,7 +121,7 @@ def compare_curve_torque_to_shell(
     shell_radii=None,
 ):
     body_radius = float(curve["RBODY [m]"])
-    weights = np.array(curve["time_weight [none]"]) if "time_weight [none]" in curve.keys() else None
+    weights = np.array(curve["time_weight [none]"]) if "time_weight [none]" in curve else None
     radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
     curve_magnetic_density = np.array(curve["magnetic_torque_density [N/m]"])
@@ -236,7 +236,7 @@ def test_trajectory_velocity_rejects_nonincreasing_time():
 def test_sample_circular_curve_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     out = sample_circular_curve(
         sds,
         10.0,
@@ -262,7 +262,7 @@ def test_sample_circular_curve_runs_on_example():
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -278,7 +278,7 @@ def test_mass_loss_from_curve_runs():
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -301,7 +301,7 @@ def test_torque_from_curve_runs():
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -328,7 +328,7 @@ def test_compare_curve_mass_loss_to_shell_runs():
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -360,7 +360,7 @@ def test_compare_curve_torque_to_shell_runs():
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -388,7 +388,7 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
         10.0,

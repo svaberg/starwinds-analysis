@@ -29,7 +29,7 @@ from batwind.smart_ds import SmartDs
 sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 
 # Attach spherical geometry + auto-detected vector-component recipes
-sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
 
 r = sds["R [R]"]
 br = sds["B_r [Gauss]"]

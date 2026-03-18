@@ -30,7 +30,7 @@ def test_magnetospheric_standoff_distance_decreases_with_speed():
 def test_relative_ram_pressure_from_trajectory_runs_on_circular_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
     period_s = orbital_period(10.0 * SOLAR_RADIUS_M, SUN_MASS_KG)
     points = circular_orbit_points(10.0, n_points=96)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])

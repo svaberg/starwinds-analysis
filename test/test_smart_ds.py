@@ -77,7 +77,7 @@ def test_passthrough_raw_field():
     sds = SmartDs(make_dataset_2d())
 
     np.testing.assert_allclose(sds["Q [none]"], [0.0, 1.0, 1.0, 2.0])
-    assert "Q [none]" in sds.keys()
+    assert "Q [none]" in sds
 
 
 def test_resample_returns_new_wrapped_dataset_nearest():
@@ -117,7 +117,7 @@ def test_resample_linear_interpolates_inside_hull():
 
 def test_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors())
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
 
     r = sds["R [R]"]
     polar = sds["polar [rad]"]
@@ -144,7 +144,7 @@ def test_spherical_graph_computes_geometry_and_vector_components():
 
 def test_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
 
     x = np.asarray(sds["X [R]"])
     y = np.asarray(sds["Y [R]"])
@@ -182,7 +182,7 @@ def test_spherical_graph_on_real_example_data():
 
 def test_griblet_graph_resolution_and_explain():
     sds = SmartDs(make_dataset_3d_vectors())
-    graph = build_griblet_spherical_graph(sds.keys(), coord_fields=("X [R]", "Y [R]", "Z [R]"))
+    graph = build_griblet_spherical_graph(tuple(sds), coord_fields=("X [R]", "Y [R]", "Z [R]"))
     sds.merge_computation_graph(graph)
 
     r = sds["R [R]"]
@@ -202,16 +202,16 @@ def test_smartds_graph_is_never_none():
     graph = griblet.ComputationGraph()
     graph.add_recipe("A [none]", lambda: np.array([1.0]), deps=[], cost=0.0)
     sds.merge_computation_graph(graph)
-    assert "A [none]" in sds.keys()
+    assert "A [none]" in sds
 
     sds.clear_computation_graph()
     assert sds.computation_graph.list_fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
-    assert "A [none]" not in sds.keys()
+    assert "A [none]" not in sds
 
 
 def test_griblet_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
+    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
 
     polar = np.asarray(sds["polar [rad]"])
     b_r = np.asarray(sds["B_r [Gauss]"])

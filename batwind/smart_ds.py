@@ -86,12 +86,12 @@ class SmartDs:
     def computation_graph(self):
         return self._computation_graph
 
-    def keys(self) -> tuple[str, ...]:
+    def __iter__(self):
         names = list(self._dataset.variables)
         for name in self._computation_graph.list_fields():
             if name not in names:
                 names.append(name)
-        return tuple(names)
+        return iter(names)
 
     def __getitem__(self, index_or_name):
         if not isinstance(index_or_name, str):
