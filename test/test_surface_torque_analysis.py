@@ -79,7 +79,8 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 
 def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     radii = [2.0, 4.0, 8.0, 16.0]
 
     shells = sample_spherical_shells_fibonacci(

@@ -49,8 +49,9 @@ Files:
 
 Status: PARTIAL, usable
 
-- `SmartDs.prepare(...)` is the normal setup path.
-- BATSRUS + spherical graph fragments are attached by default in `prepare(...)`.
+- BATSRUS + spherical graph fragments are attached explicitly through:
+  - `SmartDs.add_batsrus_graph(...)`
+  - `SmartDs.add_spherical_graph(...)`
 - Active spherical names are:
   - `R [R]`
   - `polar [rad]`

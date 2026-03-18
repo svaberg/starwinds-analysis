@@ -110,7 +110,9 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
             ],
             "surface",
         )
-    ).prepare(body_radius=SOLAR_RADIUS_M)
+    )
+    sampled.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sampled.add_spherical_graph()
 
     out = pressure_components_on_surface(sampled)
     assert "relative_ram_pressure [Pa]" not in out
@@ -147,7 +149,8 @@ def test_sample_surface_revolution_runs_on_example():
 
 def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     points = circular_orbit_points(10.0, n_points=64)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
     time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)
@@ -205,7 +208,8 @@ def test_pressure_components_on_surface_runs_on_example():
 
 def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     points = circular_orbit_points(10.0, n_points=64)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
     time_weight = np.full(points.shape[0], 1.0 / float(points.shape[0]), dtype=float)

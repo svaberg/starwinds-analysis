@@ -165,11 +165,6 @@ class SmartDs:
         self.merge_computation_graph(graph)
         return self
 
-    def prepare(self, *, body_radius: float | None = None) -> "SmartDs":
-        self.add_batsrus_graph(body_radius_m=body_radius)
-        self.add_spherical_graph()
-        return self
-
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()

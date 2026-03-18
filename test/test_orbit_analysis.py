@@ -233,7 +233,8 @@ def test_trajectory_velocity_rejects_nonincreasing_time():
 
 def test_sample_circular_curve_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     out = sample_circular_curve(
         sds,
         10.0,
@@ -258,7 +259,8 @@ def test_sample_circular_curve_runs_on_example():
 
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -273,7 +275,8 @@ def test_mass_loss_from_curve_runs():
 
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -295,7 +298,8 @@ def test_torque_from_curve_runs():
 
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -321,7 +325,8 @@ def test_compare_curve_mass_loss_to_shell_runs():
 
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -352,7 +357,8 @@ def test_compare_curve_torque_to_shell_runs():
 
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
@@ -379,7 +385,8 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
 
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
+    sds.add_batsrus_graph(body_radius_m=SOLAR_RADIUS_M)
+    sds.add_spherical_graph()
     curve = sample_circular_curve(
         sds,
         10.0,
