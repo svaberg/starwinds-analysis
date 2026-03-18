@@ -119,24 +119,27 @@ def build_griblet_spherical_geometry_graph(
     azimuth_name = "azimuth [rad]"
     graph = griblet.ComputationGraph()
 
+    def _all(x, y, z):
+        return cartesian_to_spherical_angles(x, y, z)
+
     deps = [x_name, y_name, z_name]
     graph.add_recipe(
         r_name,
-        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[0],
+        lambda x, y, z: _all(x, y, z)[0],
         deps=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical radius"},
     )
     graph.add_recipe(
         polar_name,
-        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[1],
+        lambda x, y, z: _all(x, y, z)[1],
         deps=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical colatitude"},
     )
     graph.add_recipe(
         azimuth_name,
-        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[2],
+        lambda x, y, z: _all(x, y, z)[2],
         deps=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical azimuth"},
