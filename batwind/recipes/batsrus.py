@@ -32,8 +32,6 @@ def build_batsrus_graph(
     *,
     aux: Mapping[str, object] | None = None,
     body_radius_m: float | None = None,
-    include_unit_normalization: bool = True,
-    include_derived: bool = True,
 ):
     """
     Build a griblet graph for BATSRUS-style fields.
@@ -49,11 +47,8 @@ def build_batsrus_graph(
     vars_list = list(variable_names)
     vars_set = set(vars_list)
 
-    if include_unit_normalization:
-        graph.merge(build_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
-
-    if include_derived:
-        graph.merge(build_common_derived_graph(vars_set))
+    graph.merge(build_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
+    graph.merge(build_common_derived_graph(vars_set))
 
     return graph
 
