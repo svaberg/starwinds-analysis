@@ -30,6 +30,11 @@ def test_smartds_from_file_merges_nearby_stellar_aux():
     assert "Star_radius_m" in sds.raw.aux
 
 
+def test_smartds_from_file_uses_nearby_stellar_radius_as_body_radius():
+    sds = SmartDs.from_file(data_file("3d__var_4_n00000000.plt"))
+    assert float(sds["RBODY [m]"]) == float(sds.raw.aux["Star_radius_m"])
+
+
 def test_data_file_missing_lists_available_fixtures():
     with pytest.raises(FileNotFoundError) as exc:
         data_file("__definitely_missing__.plt")

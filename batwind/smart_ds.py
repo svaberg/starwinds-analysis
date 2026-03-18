@@ -60,6 +60,10 @@ class SmartDs:
                 raw.variables,
                 raw.zone,
             )
+        if body_radius_m is None:
+            radius_from_param = raw.aux.get("Star_radius_m")
+            if radius_from_param is not None:
+                body_radius_m = float(radius_from_param)
         sds = cls(raw, **kwargs)
         if batsrus:
             sds.computation_graph.merge(
