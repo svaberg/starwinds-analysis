@@ -179,10 +179,10 @@ def test_add_spherical_graph_on_real_example_data():
 
 
 def test_griblet_graph_resolution_and_explain():
-    from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
+    from batwind.recipes.spherical import build_griblet_spherical_graph
 
     sds = SmartDs(make_dataset_3d_vectors())
-    graph = build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))
+    graph = build_griblet_spherical_graph(sds.keys(), coord_fields=("X [R]", "Y [R]", "Z [R]"))
     sds.merge_computation_graph(graph)
 
     r = sds["R [R]"]

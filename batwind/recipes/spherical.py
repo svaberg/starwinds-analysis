@@ -101,11 +101,12 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     return v_r, v_p, v_a
 
 
-def build_griblet_spherical_geometry_graph(
+def build_griblet_spherical_graph(
+    variable_names: Sequence[str],
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
 ):
     """
-    Build a griblet graph for spherical geometry fields.
+    Build a griblet graph for spherical geometry and auto-detected vector components.
 
     This requires ``griblet``.
     """
@@ -137,20 +138,7 @@ def build_griblet_spherical_geometry_graph(
         cost=0.2,
         metadata={"description": "Cartesian->spherical azimuth"},
     )
-
-    return graph
-
-
-def build_griblet_vector_spherical_components_graph(
-    variable_names: Sequence[str],
-    coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-):
-    """
-    Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged
-    griblet graph for their spherical components.
-    """
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
-    x_name, y_name, z_name = coord_fields
     by_prefix: dict[tuple[str, str], set[str]] = {}
     for name in variable_names:
         m = pattern.match(name)
@@ -158,14 +146,13 @@ def build_griblet_vector_spherical_components_graph(
             continue
         by_prefix.setdefault((m.group("prefix"), m.group("unit")), set()).add(m.group("comp"))
 
-    merged = griblet.ComputationGraph()
     for (prefix, unit), found in sorted(by_prefix.items()):
         if found != {"x", "y", "z"}:
             continue
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]", x_name, y_name, z_name]
 
         if "r" in SPHERICAL_COMPONENTS:
-            merged.add_recipe(
+            graph.add_recipe(
                 f"{prefix}_r [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[0],
                 deps=deps,
@@ -173,7 +160,7 @@ def build_griblet_vector_spherical_components_graph(
                 metadata={"description": f"{prefix} radial component"},
             )
         if "p" in SPHERICAL_COMPONENTS:
-            merged.add_recipe(
+            graph.add_recipe(
                 f"{prefix}_p [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[1],
                 deps=deps,
@@ -181,11 +168,11 @@ def build_griblet_vector_spherical_components_graph(
                 metadata={"description": f"{prefix} polar component"},
             )
         if "a" in SPHERICAL_COMPONENTS:
-            merged.add_recipe(
+            graph.add_recipe(
                 f"{prefix}_a [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[2],
                 deps=deps,
                 cost=0.5,
                 metadata={"description": f"{prefix} azimuthal component"},
             )
-    return merged
+    return graph
