@@ -142,14 +142,12 @@ class SmartDs:
         self,
         *,
         coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
-        components: Sequence[str] = ("r", "p", "a"),
     ):
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
         graph.merge(
             build_griblet_vector_spherical_components_graph(
                 self.keys(),
                 coord_fields=coord_fields,
-                components=tuple(components),
             )
         )
         self.merge_computation_graph(graph)

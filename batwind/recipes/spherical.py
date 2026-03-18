@@ -6,6 +6,8 @@ import re
 import griblet
 import numpy as np
 
+SPHERICAL_COMPONENTS = ("r", "p", "a")
+
 
 def cartesian_to_spherical_angles(x, y, z):
     """
@@ -141,16 +143,11 @@ def build_griblet_vector_spherical_components_graph(
     variable_names: Sequence[str],
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged
     griblet graph for their spherical components.
     """
-    unknown = set(components) - {"r", "p", "a"}
-    if unknown:
-        raise ValueError(f"unknown spherical components: {sorted(unknown)!r}")
-
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
     x_name, y_name, z_name = coord_fields
     by_prefix: dict[tuple[str, str], set[str]] = {}
@@ -169,7 +166,7 @@ def build_griblet_vector_spherical_components_graph(
         def _all(vx, vy, vz, x, y, z):
             return spherical_vector_components(vx, vy, vz, x, y, z)
 
-        if "r" in components:
+        if "r" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_r [{unit}]",
                 lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[0],
@@ -177,7 +174,7 @@ def build_griblet_vector_spherical_components_graph(
                 cost=0.4,
                 metadata={"description": f"{prefix} radial component"},
             )
-        if "p" in components:
+        if "p" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_p [{unit}]",
                 lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[1],
@@ -185,7 +182,7 @@ def build_griblet_vector_spherical_components_graph(
                 cost=0.5,
                 metadata={"description": f"{prefix} polar component"},
             )
-        if "a" in components:
+        if "a" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_a [{unit}]",
                 lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[2],
