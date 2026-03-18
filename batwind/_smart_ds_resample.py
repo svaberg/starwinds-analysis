@@ -225,6 +225,11 @@ def resample_smart_ds(
         if coord_name not in smart_ds:
             raise IndexError(f"Coordinate field '{coord_name}' not available")
 
+    # Method intent:
+    # - `octree` is the intended 3D resampler.
+    # - `linear` is the intended 2D / structured-grid resampler.
+    # - `nearest` is mainly for showing the grid resolution.
+
     if fields is None:
         output_variables = list(smart_ds._dataset.variables)
     else:

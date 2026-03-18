@@ -199,6 +199,10 @@ class SmartDs:
         *,
         coordinate_fields: Sequence[str] | None = None,
         fields: Sequence[str] | None = None,
+        # Method guidance:
+        # - `octree` is the intended default for 3D resampling.
+        # - `linear` is the intended default for 2D resampling and structured datasets.
+        # - `nearest` is mainly for exposing the underlying grid resolution.
         method: str = "nearest",
         fill_value: float = np.nan,
         corners=None,
