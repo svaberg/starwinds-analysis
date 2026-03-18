@@ -41,8 +41,8 @@ class SmartDs:
         cls,
         file: str,
         *,
-        batsrus: bool = False,
-        spherical: bool = False,
+        batsrus: bool = True,
+        spherical: bool = True,
         body_radius_m: float | None = None,
         **kwargs,
     ) -> "SmartDs":

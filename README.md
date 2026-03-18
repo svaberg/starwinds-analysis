@@ -25,7 +25,7 @@ derived fields on demand.
 ```python
 from batwind.smart_ds import SmartDs
 
-sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt", spherical=True)
+sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 
 r = sds["R [R]"]
 br = sds["B_r [Gauss]"]
@@ -36,7 +36,7 @@ For BATSRUS-style inputs, `SmartDs` can also attach a graph for common unit
 normalization (to SI where possible) and a few derived quantities:
 
 ```python
-sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt", batsrus=True)
+sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 
 rho = sds["Rho [kg/m^3]"]
 bx = sds["B_x [T]"]
