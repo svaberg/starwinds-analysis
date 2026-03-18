@@ -101,33 +101,8 @@ def build_unit_normalization_graph(
             metadata={"description": f"Unit conversion {unit}->{si_unit}"},
         )
 
-    # Optional coordinate scale: X/Y/Z [R] -> [m]
-    body_radius = float(body_radius_m) if body_radius_m is not None else None
-    if body_radius is not None:
-        graph.add_recipe(
-            "RBODY [m]",
-            lambda: float(body_radius),
-            deps=[],
-            cost=0.0,
-            metadata={"description": "Configured body radius"},
-        )
-        for axis in ("X", "Y", "Z"):
-            source = f"{axis} [R]"
-            target = f"{axis} [m]"
-            graph.add_recipe(
-                target,
-                lambda x, rbody: np.asarray(rbody) * np.asarray(x),
-                deps=[source, "RBODY [m]"],
-                cost=0.05,
-                metadata={"description": "Scale body-radius coordinates to meters"},
-            )
-        graph.add_recipe(
-            "R [m]",
-            lambda r, rbody: np.asarray(rbody) * np.asarray(r),
-            deps=["R [R]", "RBODY [m]"],
-            cost=0.05,
-            metadata={"description": "Scale spherical radius to meters"},
-        )
+    if body_radius_m is not None:
+        graph.merge(build_coordinate_scale_graph(body_radius_m))
 
     # Parse common scalar aux values into numeric fields.
     if aux is not None and "GAMMA" in aux:
@@ -139,6 +114,35 @@ def build_unit_normalization_graph(
             metadata={"description": "Parse GAMMA from aux"},
         )
 
+    return graph
+
+
+def build_coordinate_scale_graph(body_radius_m: float):
+    graph = griblet.ComputationGraph()
+    graph.add_recipe(
+        "RBODY [m]",
+        lambda: float(body_radius_m),
+        deps=[],
+        cost=0.0,
+        metadata={"description": "Configured body radius"},
+    )
+    for axis in ("X", "Y", "Z"):
+        source = f"{axis} [R]"
+        target = f"{axis} [m]"
+        graph.add_recipe(
+            target,
+            lambda x, rbody: np.asarray(rbody) * np.asarray(x),
+            deps=[source, "RBODY [m]"],
+            cost=0.05,
+            metadata={"description": "Scale body-radius coordinates to meters"},
+        )
+    graph.add_recipe(
+        "R [m]",
+        lambda r, rbody: np.asarray(rbody) * np.asarray(r),
+        deps=["R [R]", "RBODY [m]"],
+        cost=0.05,
+        metadata={"description": "Scale spherical radius to meters"},
+    )
     return graph
 
 
@@ -407,6 +411,7 @@ def _standoff_distance_from_rho_u(rho, U):
 __all__ = [
     "build_batsrus_graph",
     "build_common_derived_graph",
+    "build_coordinate_scale_graph",
     "build_unit_normalization_graph",
     "build_vector_cartesian_graph",
     "build_vector_magnitude_graph",
