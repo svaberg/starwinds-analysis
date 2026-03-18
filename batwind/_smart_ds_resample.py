@@ -85,7 +85,12 @@ def _interpolate_field(
         return out, nearest_indices
 
     if method == "octree":
-        interp_ds = _octree_source_dataset(smart_ds, [name])
+        if name not in smart_ds.raw.variables:
+            raise ValueError(
+                f"method='octree' requires raw source fields; '{name}' is not raw. "
+                "Pass smart_ds.source_fields(...) into resample()."
+            )
+        interp_ds = smart_ds.raw
         interpolator = spatial_cache.get("octree_interpolator")
         if interpolator is None or spatial_cache.get("octree_dataset") is not interp_ds:
             interpolator = OctreeInterpolator(
@@ -117,19 +122,6 @@ def _octree_query_coord(coordinate_fields):
     raise NotImplementedError(
         f"method='octree' does not support coordinate_fields={tuple(coordinate_fields)!r}"
     )
-
-
-def _octree_source_dataset(smart_ds, value_fields):
-    raw_variable_names = tuple(smart_ds.raw.variables)
-    if all(name in raw_variable_names for name in value_fields):
-        return smart_ds.raw
-
-    extra_fields = {
-        name: np.asarray(smart_ds[name])
-        for name in value_fields
-        if name not in raw_variable_names
-    }
-    return smart_ds.append_fields(extra_fields, zone_suffix="octree source").raw
 
 
 def _interpolate_fields(
