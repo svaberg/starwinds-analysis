@@ -29,10 +29,11 @@ class SmartDs:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
+        self._include_aux_in_loader = bool(include_aux_in_loader)
         self._computation_graph = griblet.ComputationGraph()
+        self.clear_computation_graph()
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
-        self._include_aux_in_loader = bool(include_aux_in_loader)
 
     @classmethod
     def from_file(cls, file: str, **kwargs) -> "SmartDs":
@@ -108,8 +109,7 @@ class SmartDs:
                 self._cache[name] = value
             return value
 
-        graph = self._build_runtime_graph()
-        solver = griblet.DependencySolver(graph)
+        solver = griblet.DependencySolver(self._computation_graph)
         try:
             cost, tree = solver.resolve_field(name)
         except UnresolvableFieldError as e:
@@ -120,7 +120,7 @@ class SmartDs:
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
-        value = self._evaluate_resolved_tree(tree, graph)
+        value = self._evaluate_resolved_tree(tree)
         if self._cache_enabled:
             self._cache[name] = value
         return value
@@ -136,10 +136,38 @@ class SmartDs:
 
     def clear_computation_graph(self):
         self._computation_graph = griblet.ComputationGraph()
+        for raw_name in self._dataset.variables:
+            self._computation_graph.add_recipe(
+                field=raw_name,
+                func=lambda raw_name=raw_name: self._dataset[raw_name],
+                deps=[],
+                cost=0.0,
+                metadata={"description": "Dataset raw field", "loader": True},
+            )
+        if self._include_aux_in_loader:
+            for key, value in self._dataset.aux.items():
+                self._computation_graph.add_recipe(
+                    field=key,
+                    func=lambda value=value: value,
+                    deps=[],
+                    cost=0.0,
+                    metadata={"description": "Dataset aux", "loader": True},
+                )
         return self
 
     def merge_computation_graph(self, graph):
-        self._computation_graph.merge(graph)
+        for field, recipes in graph.recipes.items():
+            for recipe in recipes:
+                metadata = dict(recipe.get("metadata", {}) or {})
+                if metadata.get("loader"):
+                    continue
+                self._computation_graph.add_recipe(
+                    field=field,
+                    func=recipe["func"],
+                    deps=recipe["deps"],
+                    cost=recipe["cost"],
+                    metadata=metadata,
+                )
         return self
 
     def clear_cache(self, *names: str) -> None:
@@ -189,8 +217,7 @@ class SmartDs:
         return tuple(base_fields)
 
     def _resolve_field(self, name: str):
-        graph = self._build_runtime_graph()
-        solver = griblet.DependencySolver(graph)
+        solver = griblet.DependencySolver(self._computation_graph)
         return solver.resolve_field(name)
 
     def resample(
@@ -270,45 +297,16 @@ class SmartDs:
             "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
 
-    def _build_runtime_graph(self):
-        runtime_graph = griblet.ComputationGraph()
-        runtime_graph.merge(self._build_loader_graph())
-        runtime_graph.merge(self._computation_graph)
-        return runtime_graph
-
-    def _build_loader_graph(self):
-        graph = griblet.ComputationGraph()
-
-        for raw_name in self._dataset.variables:
-            graph.add_recipe(
-                field=raw_name,
-                func=lambda raw_name=raw_name: self._dataset[raw_name],
-                deps=[],
-                cost=0.0,
-                metadata={"description": "Dataset raw field"},
-            )
-
-        if self._include_aux_in_loader:
-            for key, value in self._dataset.aux.items():
-                graph.add_recipe(
-                    field=key,
-                    func=lambda value=value: value,
-                    deps=[],
-                    cost=0.0,
-                    metadata={"description": "Dataset aux"},
-                )
-        return graph
-
-    def _evaluate_resolved_tree(self, node, graph):
+    def _evaluate_resolved_tree(self, node):
         if getattr(node, "used_primary", False):
-            for recipe in graph.recipes[node.field]:
+            for recipe in self._computation_graph.recipes[node.field]:
                 if len(recipe["deps"]) == 0:
                     return recipe["func"]()
             raise RuntimeError(f"No zero-dependency recipe for {node.field}")
 
-        values = [self._evaluate_resolved_tree(dep, graph) for dep in node.deps]
+        values = [self._evaluate_resolved_tree(dep) for dep in node.deps]
         dep_fields = tuple(dep.field for dep in node.deps)
-        for recipe in graph.recipes[node.field]:
+        for recipe in self._computation_graph.recipes[node.field]:
             if tuple(recipe["deps"]) == dep_fields:
                 return recipe["func"](*values)
         raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")

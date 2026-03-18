@@ -197,7 +197,7 @@ def test_smartds_graph_is_never_none():
     sds = SmartDs(make_dataset_2d())
 
     assert isinstance(sds.computation_graph, griblet.ComputationGraph)
-    assert tuple(sds.computation_graph.list_fields()) == ()
+    assert sds.computation_graph.list_fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
 
     graph = griblet.ComputationGraph()
     graph.add_recipe("A [none]", lambda: np.array([1.0]), deps=[], cost=0.0)
@@ -205,7 +205,7 @@ def test_smartds_graph_is_never_none():
     assert "A [none]" in sds.keys()
 
     sds.clear_computation_graph()
-    assert tuple(sds.computation_graph.list_fields()) == ()
+    assert sds.computation_graph.list_fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
     assert "A [none]" not in sds.keys()
 
 
