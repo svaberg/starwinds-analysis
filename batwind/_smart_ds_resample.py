@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
+from scipy.spatial import cKDTree
 
 from batread.dataset import Dataset
 
@@ -54,10 +55,24 @@ def resample_smart_ds(
             if name not in output_variables:
                 output_variables.append(name)
 
-    source_coords = np.column_stack(
-        [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
-    )
-    coord_mask = np.isfinite(source_coords).all(axis=1)
+    spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
+    if spatial_cache is None:
+        source_coords = np.column_stack(
+            [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
+        )
+        coord_mask = np.isfinite(source_coords).all(axis=1)
+        if not np.any(coord_mask):
+            raise ValueError("No finite source coordinates available for resampling")
+        spatial_cache = {
+            "source_coords": source_coords,
+            "coord_mask": coord_mask,
+            "nearest_tree": None,
+        }
+        smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
+    else:
+        source_coords = spatial_cache["source_coords"]
+        coord_mask = spatial_cache["coord_mask"]
+
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
 
@@ -67,6 +82,8 @@ def resample_smart_ds(
     for dim, coord_name in enumerate(coordinate_fields):
         if coord_name in out_index:
             out_points[:, out_index[coord_name]] = sample_points_2d[:, dim]
+
+    nearest_indices = None
 
     for name in output_variables:
         if name in coordinate_fields:
@@ -80,6 +97,16 @@ def resample_smart_ds(
             )
         valid = coord_mask & np.isfinite(values)
         if not np.any(valid):
+            continue
+
+        if method == "nearest" and np.array_equal(valid, coord_mask):
+            nearest_tree = spatial_cache["nearest_tree"]
+            if nearest_tree is None:
+                nearest_tree = cKDTree(source_coords[coord_mask])
+                spatial_cache["nearest_tree"] = nearest_tree
+            if nearest_indices is None:
+                nearest_indices = nearest_tree.query(sample_points_2d)[1]
+            out_points[:, out_index[name]] = values[coord_mask][nearest_indices]
             continue
 
         out_points[:, out_index[name]] = interpolate_nd(

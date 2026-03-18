@@ -31,6 +31,7 @@ class SmartDs:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
+        self._resample_spatial_cache: dict[tuple[str, ...], dict[str, object]] = {}
         self._computation_graph = griblet.ComputationGraph()
         self.clear_computation_graph()
         if computation_graph is not None:
@@ -157,6 +158,7 @@ class SmartDs:
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()
+            self._resample_spatial_cache.clear()
             return
         for name in names:
             self._cache.pop(name, None)
