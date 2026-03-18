@@ -103,10 +103,14 @@ def _interpolate_field(
         else:
             interpolator.set_fields([name], fill_value=fill_value)
 
-        out = np.asarray(
-            interpolator(flat_sample_points, query_coord=_octree_query_coord(coordinate_fields)),
-            dtype=float,
-        )
+        query_coord = _query_coord_for_coordinate_fields(coordinate_fields)
+        if query_coord == "xyz":
+            out = np.asarray(interpolator(flat_sample_points), dtype=float)
+        else:
+            out = np.asarray(
+                interpolator(flat_sample_points, query_coord=query_coord),
+                dtype=float,
+            )
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
@@ -114,7 +118,7 @@ def _interpolate_field(
     raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
 
-def _octree_query_coord(coordinate_fields):
+def _query_coord_for_coordinate_fields(coordinate_fields):
     if tuple(coordinate_fields) == DEFAULT_XYZ_NAMES:
         return "xyz"
     if tuple(coordinate_fields) == RPA_COORD_FIELDS:
