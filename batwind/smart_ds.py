@@ -280,12 +280,6 @@ class SmartDs:
         )
 
     def _evaluate_resolved_tree(self, node):
-        if getattr(node, "used_primary", False):
-            for recipe in self._computation_graph.recipes[node.field]:
-                if len(recipe["deps"]) == 0:
-                    return recipe["func"]()
-            raise RuntimeError(f"No zero-dependency recipe for {node.field}")
-
         values = [self._evaluate_resolved_tree(dep) for dep in node.deps]
         dep_fields = tuple(dep.field for dep in node.deps)
         for recipe in self._computation_graph.recipes[node.field]:
