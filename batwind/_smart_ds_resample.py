@@ -12,7 +12,6 @@ from batread.dataset import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
-RPA_COORD_FIELDS = ("R [R]", "polar [rad]", "azimuth [rad]")
 
 
 def _get_spatial_cache(smart_ds, coordinate_fields):
@@ -100,14 +99,11 @@ def _interpolate_field(
         else:
             interpolator.set_fields([name], fill_value=fill_value)
 
-        kwargs = {}
-        if coordinate_fields == RPA_COORD_FIELDS:
-            kwargs["query_coord"] = "rpa"
-        elif coordinate_fields != DEFAULT_XYZ_NAMES:
+        if coordinate_fields != DEFAULT_XYZ_NAMES:
             raise NotImplementedError(
                 f"method='octree' does not support coordinate_fields={coordinate_fields!r}"
             )
-        out = np.asarray(interpolator(flat_sample_points, **kwargs), dtype=float)
+        out = np.asarray(interpolator(flat_sample_points), dtype=float)
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
