@@ -69,8 +69,8 @@ def resample_structured_xz_slice(
     if nx < 2 or nz < 2:
         raise ValueError("nx and nz must be >= 2")
 
-    x = np.asarray(smart_ds.variable("X [R]"), dtype=float)
-    z = np.asarray(smart_ds.variable("Z [R]"), dtype=float)
+    x = np.asarray(smart_ds["X [R]"], dtype=float)
+    z = np.asarray(smart_ds["Z [R]"], dtype=float)
 
     if x_range is None:
         x_range = infer_range(x, symmetric=symmetric_ranges, padding_frac=padding_frac)

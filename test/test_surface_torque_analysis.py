@@ -98,18 +98,18 @@ def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example()
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    magnetic_density = np.array(shells("magnetic_torque_density [N/m]"))
-    area = np.array(shells("dA [m^2]"))
-    dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
+    magnetic_density = np.array(shells["magnetic_torque_density [N/m]"])
+    area = np.array(shells["dA [m^2]"])
+    dynamic_density = np.array(shells["dynamic_torque_density [N/m]"])
     shell_magnetic, _ = integrate_shell_scalar(magnetic_density, area)
     shell_dynamic, _ = integrate_shell_scalar(dynamic_density, area)
     shell_total = shell_magnetic + shell_dynamic
 
     terms = surface_torque_terms_on_shell_samples(
         shells,
-        rho=np.array(shells("Rho [kg/m^3]")),
-        U_xyz=np.array(shells("U_xyz [m/s]")),
-        B_xyz=np.array(shells("B_xyz [T]")),
+        rho=np.array(shells["Rho [kg/m^3]"]),
+        U_xyz=np.array(shells["U_xyz [m/s]"]),
+        B_xyz=np.array(shells["B_xyz [T]"]),
         pressure=None,
         angvel=0.0,
         body_radius=SOLAR_RADIUS_M,

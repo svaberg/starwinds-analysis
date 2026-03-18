@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 
 def mass_loss_from_curve(curve):
     """Compute local mass-loss estimates along a sampled curve."""
-    mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    shell_area = 4.0 * np.pi * np.square(np.array(curve("R [m]")))
+    mass_flux = np.array(curve["mass_flux [kg/m^2/s]"])
+    shell_area = 4.0 * np.pi * np.square(np.array(curve["R [m]"]))
     out = shell_area * mass_flux
     log.info("mass_loss_from_curve done n=%d", out.size)
     return out
@@ -28,9 +28,9 @@ def mass_loss_from_curve(curve):
 
 def torque_from_curve(curve):
     """Compute local magnetic, dynamic, and total torque estimates along a curve."""
-    shell_area = 4.0 * np.pi * np.square(np.array(curve("R [m]")))
-    magnetic_torque_density = np.array(curve("magnetic_torque_density [N/m]"))
-    dynamic_torque_density = np.array(curve("dynamic_torque_density [N/m]"))
+    shell_area = 4.0 * np.pi * np.square(np.array(curve["R [m]"]))
+    magnetic_torque_density = np.array(curve["magnetic_torque_density [N/m]"])
+    dynamic_torque_density = np.array(curve["dynamic_torque_density [N/m]"])
     magnetic = shell_area * magnetic_torque_density
     dynamic = shell_area * dynamic_torque_density
     log.info("torque_from_curve done n=%d", magnetic.size)
@@ -44,9 +44,9 @@ def relative_ram_pressure_from_trajectory(
 ):
     """Compute trajectory-frame ram pressure and standoff distance."""
     log.info("relative_ram_pressure_from_trajectory start")
-    rho = np.array(trajectory("Rho [kg/m^3]"))
-    U_xyz = np.array(trajectory("U_xyz [m/s]"))
-    V_xyz = np.array(trajectory("V_xyz [m/s]"))
+    rho = np.array(trajectory["Rho [kg/m^3]"])
+    U_xyz = np.array(trajectory["U_xyz [m/s]"])
+    V_xyz = np.array(trajectory["V_xyz [m/s]"])
     if U_xyz.shape != V_xyz.shape:
         log.error("relative_ram_pressure_from_trajectory failed: U_xyz shape=%s V_xyz shape=%s", U_xyz.shape, V_xyz.shape)
         raise ValueError("U_xyz and V_xyz must have matching shapes")

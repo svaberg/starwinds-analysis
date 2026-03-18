@@ -53,7 +53,7 @@ def make_dataset_3d_vectors():
 def test_passthrough_raw_field():
     sds = SmartDs(make_dataset_2d())
 
-    np.testing.assert_allclose(sds.variable("Q [none]"), [0.0, 1.0, 1.0, 2.0])
+    np.testing.assert_allclose(sds["Q [none]"], [0.0, 1.0, 1.0, 2.0])
     assert sds.has_field("Q [none]")
     assert "Q [none]" in sds
 
@@ -74,9 +74,9 @@ def test_resample_returns_new_wrapped_dataset_nearest():
     assert out.raw is not sds.raw
     assert list(out.raw.variables) == ["X [R]", "Y [R]", "Q [none]"]
 
-    np.testing.assert_allclose(out.variable("X [R]"), target[:, 0])
-    np.testing.assert_allclose(out.variable("Y [R]"), target[:, 1])
-    np.testing.assert_allclose(out.variable("Q [none]"), [0.0, 2.0])
+    np.testing.assert_allclose(out["X [R]"], target[:, 0])
+    np.testing.assert_allclose(out["Y [R]"], target[:, 1])
+    np.testing.assert_allclose(out["Q [none]"], [0.0, 2.0])
 
 
 def test_resample_linear_interpolates_inside_hull():
@@ -90,18 +90,18 @@ def test_resample_linear_interpolates_inside_hull():
         method="linear",
     )
 
-    np.testing.assert_allclose(out.variable("Q [none]"), [0.75, 0.70], rtol=0, atol=1e-12)
+    np.testing.assert_allclose(out["Q [none]"], [0.75, 0.70], rtol=0, atol=1e-12)
 
 
 def test_add_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 
-    r = sds.variable("R [R]")
-    theta = sds.variable("theta [rad]")
-    phi = sds.variable("phi [rad]")
-    b_r = sds.variable("B_r [T]")
-    b_theta = sds.variable("B_theta [T]")
-    b_phi = sds.variable("B_phi [T]")
+    r = sds["R [R]"]
+    theta = sds["theta [rad]"]
+    phi = sds["phi [rad]"]
+    b_r = sds["B_r [T]"]
+    b_theta = sds["B_theta [T]"]
+    b_phi = sds["B_phi [T]"]
 
     assert r.shape == (3,)
     assert theta.shape == (3,)
@@ -123,13 +123,13 @@ def test_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.add_spherical_graph(vectors=("B", "U"))
 
-    x = np.asarray(sds.variable("X [R]"))
-    y = np.asarray(sds.variable("Y [R]"))
-    z = np.asarray(sds.variable("Z [R]"))
+    x = np.asarray(sds["X [R]"])
+    y = np.asarray(sds["Y [R]"])
+    z = np.asarray(sds["Z [R]"])
 
-    r = np.asarray(sds.variable("R [R]"))
-    theta = np.asarray(sds.variable("theta [rad]"))
-    phi = np.asarray(sds.variable("phi [rad]"))
+    r = np.asarray(sds["R [R]"])
+    theta = np.asarray(sds["theta [rad]"])
+    phi = np.asarray(sds["phi [rad]"])
 
     assert r.shape == x.shape
     assert theta.shape == x.shape
@@ -146,10 +146,10 @@ def test_add_spherical_graph_on_real_example_data():
     assert np.all((phi[finite_phi] >= -np.pi) & (phi[finite_phi] <= np.pi))
 
     # Check B_r against direct projection for all non-singular points.
-    bx = np.asarray(sds.variable("B_x [Gauss]"))
-    by = np.asarray(sds.variable("B_y [Gauss]"))
-    bz = np.asarray(sds.variable("B_z [Gauss]"))
-    b_r = np.asarray(sds.variable("B_r [Gauss]"))
+    bx = np.asarray(sds["B_x [Gauss]"])
+    by = np.asarray(sds["B_y [Gauss]"])
+    bz = np.asarray(sds["B_z [Gauss]"])
+    b_r = np.asarray(sds["B_r [Gauss]"])
 
     mask = np.isfinite(r) & (r > 0)
     direct = np.full_like(r, np.nan, dtype=float)
@@ -164,7 +164,7 @@ def test_griblet_graph_resolution_and_explain():
     graph = build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))
     sds.merge_computation_graph(graph)
 
-    r = sds.variable("R [R]")
+    r = sds["R [R]"]
     np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
 
     explanation = sds.explain("theta [rad]")
@@ -192,11 +192,11 @@ def test_griblet_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.add_spherical_graph(vectors=("B",))
 
-    theta = np.asarray(sds.variable("theta [rad]"))
-    b_r = np.asarray(sds.variable("B_r [Gauss]"))
+    theta = np.asarray(sds["theta [rad]"])
+    b_r = np.asarray(sds["B_r [Gauss]"])
 
-    assert theta.shape == sds.variable("X [R]").shape
-    assert b_r.shape == sds.variable("B_x [Gauss]").shape
+    assert theta.shape == sds["X [R]"].shape
+    assert b_r.shape == sds["B_x [Gauss]"].shape
 
     finite_theta = np.isfinite(theta)
     assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
@@ -211,51 +211,51 @@ def test_griblet_batsrus_si_normalization_and_derived_fields():
     sds.add_batsrus_graph()
 
     # Unit normalization examples
-    bx_g = np.asarray(sds.variable("B_x [Gauss]"))
-    bx_t = np.asarray(sds.variable("B_x [T]"))
-    rho_cgs = np.asarray(sds.variable("Rho [g/cm^3]"))
-    rho_si = np.asarray(sds.variable("Rho [kg/m^3]"))
-    p_cgs = np.asarray(sds.variable("P [dyne/cm^2]"))
-    p_si = np.asarray(sds.variable("P [Pa]"))
+    bx_g = np.asarray(sds["B_x [Gauss]"])
+    bx_t = np.asarray(sds["B_x [T]"])
+    rho_cgs = np.asarray(sds["Rho [g/cm^3]"])
+    rho_si = np.asarray(sds["Rho [kg/m^3]"])
+    p_cgs = np.asarray(sds["P [dyne/cm^2]"])
+    p_si = np.asarray(sds["P [Pa]"])
 
     np.testing.assert_allclose(bx_t, bx_g * 1e-4, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(rho_si, rho_cgs * 1e3, rtol=1e-12, atol=0.0)
     np.testing.assert_allclose(p_si, p_cgs * 1e-1, rtol=1e-12, atol=0.0)
 
     # Canonicalize unbracketed units
-    qrad_raw = np.asarray(sds.variable("qrad J/m^3/s"))
-    qrad_canonical = np.asarray(sds.variable("qrad [J/m^3/s]"))
+    qrad_raw = np.asarray(sds["qrad J/m^3/s"])
+    qrad_canonical = np.asarray(sds["qrad [J/m^3/s]"])
     np.testing.assert_allclose(qrad_canonical, qrad_raw)
 
     # Derived examples
-    gamma = float(sds.variable("GAMMA [none]"))
-    c_s = np.asarray(sds.variable("c_s [m/s]"))
+    gamma = float(sds["GAMMA [none]"])
+    c_s = np.asarray(sds["c_s [m/s]"])
     c_s_direct = np.sqrt(gamma * p_si / rho_si)
     np.testing.assert_allclose(c_s, c_s_direct, rtol=1e-10, atol=1e-10)
 
-    u = np.asarray(sds.variable("U [m/s]"))
+    u = np.asarray(sds["U [m/s]"])
     u_direct = np.sqrt(
-        np.asarray(sds.variable("U_x [m/s]")) ** 2
-        + np.asarray(sds.variable("U_y [m/s]")) ** 2
-        + np.asarray(sds.variable("U_z [m/s]")) ** 2
+        np.asarray(sds["U_x [m/s]"]) ** 2
+        + np.asarray(sds["U_y [m/s]"]) ** 2
+        + np.asarray(sds["U_z [m/s]"]) ** 2
     )
     np.testing.assert_allclose(u, u_direct, rtol=1e-12, atol=1e-12)
 
-    b = np.asarray(sds.variable("B [T]"))
-    c_a = np.asarray(sds.variable("c_A [m/s]"))
+    b = np.asarray(sds["B [T]"])
+    c_a = np.asarray(sds["c_A [m/s]"])
     c_a_direct = b / np.sqrt((4e-7 * np.pi) * rho_si)
     np.testing.assert_allclose(c_a, c_a_direct, rtol=1e-10, atol=1e-10)
 
-    m_a = np.asarray(sds.variable("M_A [none]"))
+    m_a = np.asarray(sds["M_A [none]"])
     np.testing.assert_allclose(m_a, u / c_a, rtol=1e-10, atol=1e-10)
 
-    ma = np.asarray(sds.variable("Ma [none]"))
+    ma = np.asarray(sds["Ma [none]"])
     np.testing.assert_allclose(ma, u / c_s, rtol=1e-10, atol=1e-10)
 
-    p_b = np.asarray(sds.variable("P_b [Pa]"))
+    p_b = np.asarray(sds["P_b [Pa]"])
     np.testing.assert_allclose(p_b, b**2 / (2 * (4e-7 * np.pi)), rtol=1e-10, atol=1e-10)
 
-    beta = np.asarray(sds.variable("beta [none]"))
+    beta = np.asarray(sds["beta [none]"])
     np.testing.assert_allclose(beta, p_si / p_b, rtol=1e-10, atol=1e-10)
 
     expl = sds.explain("M_A [none]")

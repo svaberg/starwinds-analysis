@@ -64,7 +64,7 @@ def test_alfven_radius_map_nan_when_no_outward_crossing():
 
 def test_alfven_radius_map_equal_level_is_not_crossing():
     shell_ds, _ = make_shell_demo()
-    m_a = np.array(shell_ds("M_A [none]"), dtype=float).copy()
+    m_a = np.array(shell_ds["M_A [none]"], dtype=float).copy()
     m_a[:, 0, 1] = np.array([0.6, 1.0, 1.2], dtype=float)
     m_a_idx = shell_ds.raw.variables.index("M_A [none]")
     shell_ds.raw.points[..., m_a_idx] = m_a
@@ -77,7 +77,7 @@ def test_alfven_radius_summary_matches_expected_weighted_values():
     shell_ds, d_omega = make_shell_demo()
     radius_map = alfven_radius_map(shell_ds)
     weights = projected_solid_angle_weights(shell_ds)
-    polar_map = np.array(shell_ds("polar [rad]"))[0]
+    polar_map = np.array(shell_ds["polar [rad]"])[0]
 
     min_r, max_r, avg_r, avg_cyl_r, coverage = summarize_alfven_radius(
         radius_map,

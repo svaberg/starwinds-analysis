@@ -227,22 +227,22 @@ def pressure_components_on_surface(
         "pressure_components_on_surface start: include_relative=%s",
         include_relative_ram,
     )
-    rho = np.array(sampled("Rho [kg/m^3]"))
-    u_xyz = np.array(sampled("U_xyz [m/s]"))
-    u = np.array(sampled("U [m/s]"))
-    b = np.array(sampled("B [T]"))
-    magnetic_pressure = np.array(sampled("magnetic_pressure [Pa]"))
-    ram = np.array(sampled("ram_pressure [Pa]"))
-    thermal_pressure = np.array(sampled("thermal_pressure [Pa]"))
-    standoff = np.array(sampled("standoff_distance [m]"))
+    rho = np.array(sampled["Rho [kg/m^3]"])
+    u_xyz = np.array(sampled["U_xyz [m/s]"])
+    u = np.array(sampled["U [m/s]"])
+    b = np.array(sampled["B [T]"])
+    magnetic_pressure = np.array(sampled["magnetic_pressure [Pa]"])
+    ram = np.array(sampled["ram_pressure [Pa]"])
+    thermal_pressure = np.array(sampled["thermal_pressure [Pa]"])
+    standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
     if include_relative_ram and sampled.has_field("V_x [m/s]"):
         object_velocity = np.stack(
             [
-                np.array(sampled("V_x [m/s]")),
-                np.array(sampled("V_y [m/s]")),
-                np.array(sampled("V_z [m/s]")),
+                np.array(sampled["V_x [m/s]"]),
+                np.array(sampled["V_y [m/s]"]),
+                np.array(sampled["V_z [m/s]"]),
             ],
             axis=-1,
         )
@@ -270,8 +270,8 @@ def pressure_components_on_surface(
             b0=standoff_b0,
         )
 
-    time_weight = np.array(sampled("time_weight [none]"))
-    phase = np.array(sampled("phase [turns]"))
+    time_weight = np.array(sampled["time_weight [none]"])
+    phase = np.array(sampled["phase [turns]"])
     if time_weight.ndim == 2:
         time_weight = time_weight[:, 0]
     if phase.ndim == 2:
@@ -326,18 +326,18 @@ def torque_components_on_surface(
         include_pressure_term,
     )
     body_radius = float(body_radius)
-    rho = np.array(sampled("Rho [kg/m^3]"))
-    u_xyz = np.array(sampled("U_xyz [m/s]"))
-    b_xyz = np.array(sampled("B_xyz [T]"))
+    rho = np.array(sampled["Rho [kg/m^3]"])
+    u_xyz = np.array(sampled["U_xyz [m/s]"])
+    b_xyz = np.array(sampled["B_xyz [T]"])
     p = None
     if include_pressure_term and sampled.has_field("thermal_pressure [Pa]"):
-        p = np.array(sampled("thermal_pressure [Pa]"))
+        p = np.array(sampled["thermal_pressure [Pa]"])
 
     points = np.stack(
         [
-            np.array(sampled("X [R]")),
-            np.array(sampled("Y [R]")),
-            np.array(sampled("Z [R]")),
+            np.array(sampled["X [R]"]),
+            np.array(sampled["Y [R]"]),
+            np.array(sampled["Z [R]"]),
         ],
         axis=-1,
     ) * body_radius
@@ -359,7 +359,7 @@ def torque_components_on_surface(
     q = np.array(quantiles)
     phase_quantiles = {}
     phase_integrals = {}
-    phase = np.array(sampled("phase [turns]"))
+    phase = np.array(sampled["phase [turns]"])
     if phase.ndim == 2:
         phase = phase[:, 0]
     for src_key, out_key in (

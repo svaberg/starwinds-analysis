@@ -36,7 +36,7 @@ def test_sample_spherical_shells_area_matches_sphere():
         length_unit_to_m=SOLAR_RADIUS_M,
     )
 
-    area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
+    area_total = np.sum(np.array(shells["dA [m^2]"], dtype=float), axis=(-2, -1))
     expected = 4.0 * np.pi * (radii * SOLAR_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=2e-2, atol=0.0)
 
@@ -64,10 +64,10 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
         length_unit_to_m=SOLAR_RADIUS_M,
     )
 
-    area_total = np.sum(np.array(shells("dA [m^2]"), dtype=float), axis=(-2, -1))
+    area_total = np.sum(np.array(shells["dA [m^2]"], dtype=float), axis=(-2, -1))
     expected = 4.0 * np.pi * (radii * SOLAR_RADIUS_M) ** 2
     np.testing.assert_allclose(area_total, expected, rtol=1e-12, atol=0.0)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
+    assert np.array(shells["X [R]"], dtype=float).shape[-1] == 1
 
 
 def test_mass_loss_profile_runs_on_example():
@@ -81,9 +81,9 @@ def test_mass_loss_profile_runs_on_example():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
-    area = np.array(shells("dA [m^2]"))
-    r_field = np.array(shells("R [R]"))
+    mass_flux = np.array(shells["mass_flux [kg/m^2/s]"])
+    area = np.array(shells["dA [m^2]"])
+    r_field = np.array(shells["R [R]"])
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     m, c = integrate_shell_scalar(mass_flux, area)
 
@@ -94,7 +94,7 @@ def test_mass_loss_profile_runs_on_example():
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
     assert radii_profile.shape == (4,)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
+    assert np.array(shells["X [R]"], dtype=float).shape[-1] == 1
 
 
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
@@ -109,16 +109,16 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    rho = np.array(shells("Rho [kg/m^3]"), dtype=float)
-    ux = np.array(shells("U_x [m/s]"), dtype=float)
-    uy = np.array(shells("U_y [m/s]"), dtype=float)
-    uz = np.array(shells("U_z [m/s]"), dtype=float)
-    x = np.array(shells("X [R]"), dtype=float)
-    y = np.array(shells("Y [R]"), dtype=float)
-    z = np.array(shells("Z [R]"), dtype=float)
+    rho = np.array(shells["Rho [kg/m^3]"], dtype=float)
+    ux = np.array(shells["U_x [m/s]"], dtype=float)
+    uy = np.array(shells["U_y [m/s]"], dtype=float)
+    uz = np.array(shells["U_z [m/s]"], dtype=float)
+    x = np.array(shells["X [R]"], dtype=float)
+    y = np.array(shells["Y [R]"], dtype=float)
+    z = np.array(shells["Z [R]"], dtype=float)
     u_r, _u_p, _u_a = cartesian_vector_to_spherical_components(ux, uy, uz, x, y, z)
     mass_flux = rho * u_r
-    integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, np.array(shells("dA [m^2]"), dtype=float))
+    integral_arr, coverage_arr = integrate_shell_scalar(mass_flux, np.array(shells["dA [m^2]"], dtype=float))
     integral = float(integral_arr[0])
     coverage = float(coverage_arr[0])
     assert np.isfinite(integral)
@@ -148,11 +148,11 @@ def test_torque_profile_runs_on_example():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    magnetic_density = np.array(shells("magnetic_torque_density [N/m]"))
-    area = np.array(shells("dA [m^2]"))
-    r_field = np.array(shells("R [R]"))
+    magnetic_density = np.array(shells["magnetic_torque_density [N/m]"])
+    area = np.array(shells["dA [m^2]"])
+    r_field = np.array(shells["R [R]"])
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    dynamic_density = np.array(shells("dynamic_torque_density [N/m]"))
+    dynamic_density = np.array(shells["dynamic_torque_density [N/m]"])
     mag, cov_mag = integrate_shell_scalar(magnetic_density, area)
     dyn, cov_dyn = integrate_shell_scalar(dynamic_density, area)
     tot = mag + dyn
@@ -164,7 +164,7 @@ def test_torque_profile_runs_on_example():
     assert np.all((cov > 0.90) & (cov <= 1.0 + 1e-12))
     assert np.any(np.isfinite(tot))
     assert radii_profile.shape == (4,)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
+    assert np.array(shells["X [R]"], dtype=float).shape[-1] == 1
 
 
 def test_unsigned_magnetic_flux_profile_runs_on_example():
@@ -178,16 +178,16 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    b_r = np.array(shells("B_r [T]"))
-    area = np.array(shells("dA [m^2]"))
-    r_field = np.array(shells("R [R]"))
+    b_r = np.array(shells["B_r [T]"])
+    area = np.array(shells["dA [m^2]"])
+    r_field = np.array(shells["R [R]"])
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    bx = np.array(shells("B_x [T]"))
-    by = np.array(shells("B_y [T]"))
-    bz = np.array(shells("B_z [T]"))
-    x = np.array(shells("X [R]"))
-    y = np.array(shells("Y [R]"))
-    z = np.array(shells("Z [R]"))
+    bx = np.array(shells["B_x [T]"])
+    by = np.array(shells["B_y [T]"])
+    bz = np.array(shells["B_z [T]"])
+    x = np.array(shells["X [R]"])
+    y = np.array(shells["Y [R]"])
+    z = np.array(shells["Z [R]"])
     r_norm = np.sqrt(x * x + y * y + z * z)
     with np.errstate(invalid="ignore", divide="ignore"):
         nx = x / r_norm
@@ -217,8 +217,8 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    b_r = np.array(shells("B_r [T]"))
-    area = np.array(shells("dA [m^2]"))
+    b_r = np.array(shells["B_r [T]"])
+    area = np.array(shells["dA [m^2]"])
     with np.errstate(invalid="ignore"):
         b_r_axi_theta = np.nanmean(b_r, axis=-1, keepdims=True)
     b_r_axi = np.broadcast_to(b_r_axi_theta, b_r.shape)
@@ -233,7 +233,7 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
     assert np.all(total[finite] >= 0)
     assert np.all(frac[finite] >= -1e-12)
     assert np.all(frac[finite] <= 1.0 + 1e-12)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] > 1
+    assert np.array(shells["X [R]"], dtype=float).shape[-1] > 1
 
 
 def test_energy_flux_profile_runs_on_example():
@@ -248,9 +248,9 @@ def test_energy_flux_profile_runs_on_example():
         method="nearest",
         length_unit_to_m=SOLAR_RADIUS_M,
     )
-    energy_flux_density = np.array(shells("energy_flux [W/m^2]"))
-    area = np.array(shells("dA [m^2]"))
-    r_field = np.array(shells("R [R]"))
+    energy_flux_density = np.array(shells["energy_flux [W/m^2]"])
+    area = np.array(shells["dA [m^2]"])
+    r_field = np.array(shells["R [R]"])
     radii_profile = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     y, c = integrate_shell_scalar(energy_flux_density, area)
     assert y.shape == (4,)

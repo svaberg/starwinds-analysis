@@ -103,11 +103,30 @@ class SmartDs:
     def __contains__(self, name: object) -> bool:
         return isinstance(name, str) and self.has_field(name)
 
-    def __call__(self, index_or_name):
-        return self.variable(index_or_name)
-
     def __getitem__(self, index_or_name):
-        return self.variable(index_or_name)
+        if not isinstance(index_or_name, str):
+            if isinstance(index_or_name, int) and hasattr(self._dataset, "variable"):
+                return self._dataset.variable(self._dataset.variables[index_or_name])
+            return self._dataset[index_or_name]
+
+        name = index_or_name
+        if self._cache_enabled and name in self._cache:
+            return self._cache[name]
+
+        raw_name = self._resolve_raw_name(name)
+        if raw_name is not None:
+            if hasattr(self._dataset, "variable"):
+                value = self._dataset.variable(raw_name)
+            else:
+                value = self._dataset[raw_name]
+            if self._cache_enabled:
+                self._cache[name] = value
+            return value
+
+        value = self._compute_via_graph(name)
+        if self._cache_enabled:
+            self._cache[name] = value
+        return value
 
     def has_raw_field(self, name: str) -> bool:
         return self._resolve_raw_name(name) is not None
@@ -123,7 +142,7 @@ class SmartDs:
 
     def get(self, name: str, default=None):
         try:
-            return self.variable(name)
+            return self[name]
         except (IndexError, KeyError):
             return default
 
@@ -197,31 +216,6 @@ class SmartDs:
             return
         for name in names:
             self._cache.pop(name, None)
-
-    def variable(self, index_or_name):
-        if not isinstance(index_or_name, str):
-            if isinstance(index_or_name, int) and hasattr(self._dataset, "variable"):
-                return self._dataset.variable(self._dataset.variables[index_or_name])
-            return self._dataset[index_or_name]
-
-        name = index_or_name
-        if self._cache_enabled and name in self._cache:
-            return self._cache[name]
-
-        raw_name = self._resolve_raw_name(name)
-        if raw_name is not None:
-            if hasattr(self._dataset, "variable"):
-                value = self._dataset.variable(raw_name)
-            else:
-                value = self._dataset[raw_name]
-            if self._cache_enabled:
-                self._cache[name] = value
-            return value
-
-        value = self._compute_via_graph(name)
-        if self._cache_enabled:
-            self._cache[name] = value
-        return value
 
     def resolve(self, name: str):
         graph = self._build_runtime_graph()

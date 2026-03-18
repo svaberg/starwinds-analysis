@@ -40,10 +40,10 @@ def shell_cell_values(
 
 def load_shell_grid(smart_ds: SmartDs):
     """Load native shell coordinates and precompute masks and cell areas."""
-    r_all = np.ravel(smart_ds("R [R]"))
-    star_radius_m = float(smart_ds("star_radius [m]"))
-    lon_all = np.ravel(smart_ds("Lon [deg]"))
-    lat_all = np.ravel(smart_ds("Lat [deg]"))
+    r_all = np.ravel(smart_ds["R [R]"])
+    star_radius_m = float(smart_ds["star_radius [m]"])
+    lon_all = np.ravel(smart_ds["Lon [deg]"])
+    lat_all = np.ravel(smart_ds["Lat [deg]"])
 
     shell_radii_r = [float(radius_r) for radius_r in np.unique(np.round(r_all, 10))]
     lon_nodes = np.unique(np.round(lon_all, 10))
@@ -119,7 +119,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell wind mass flux.
     log.debug("Computing shell wind mass flux...")
-    mass_flux = np.ravel(smart_ds("mass_flux [kg/m^2/s]"))
+    mass_flux = np.ravel(smart_ds["mass_flux [kg/m^2/s]"])
     mass_flux_map, mass_loss_kg_s = shell_map_and_profile(
         mass_flux,
         shell_masks=shell_masks,
@@ -159,7 +159,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell angular momentum flux.
     log.debug("Computing shell angular momentum flux...")
-    torque_density = np.ravel(smart_ds("total_torque_density [N/m]"))
+    torque_density = np.ravel(smart_ds["total_torque_density [N/m]"])
     torque_map, total_torque_nm = shell_map_and_profile(
         torque_density,
         shell_masks=shell_masks,
@@ -198,7 +198,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell energy flux.
     log.debug("Computing shell energy flux...")
-    energy_flux = np.ravel(smart_ds("energy_flux [W/m^2]"))
+    energy_flux = np.ravel(smart_ds["energy_flux [W/m^2]"])
     energy_map, energy_flow_w = shell_map_and_profile(
         energy_flux,
         shell_masks=shell_masks,
@@ -237,7 +237,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record shell open magnetic flux.
     log.debug("Computing shell open magnetic flux...")
-    open_flux_density = np.abs(np.ravel(smart_ds("B_r [T]")))
+    open_flux_density = np.abs(np.ravel(smart_ds["B_r [T]"]))
     open_flux_map, open_flux_wb = shell_map_and_profile(
         open_flux_density,
         shell_masks=shell_masks,

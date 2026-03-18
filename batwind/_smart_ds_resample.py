@@ -54,7 +54,7 @@ def resample_smart_ds(
                 output_variables.append(name)
 
     source_coords = np.column_stack(
-        [np.asarray(smart_ds.variable(name)).ravel() for name in coordinate_fields]
+        [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
     )
     coord_mask = np.isfinite(source_coords).all(axis=1)
     if not np.any(coord_mask):
@@ -71,7 +71,7 @@ def resample_smart_ds(
         if name in coordinate_fields:
             continue
 
-        values = np.asarray(smart_ds.variable(name)).ravel()
+        values = np.asarray(smart_ds[name]).ravel()
         if values.shape[0] != source_coords.shape[0]:
             raise ValueError(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "

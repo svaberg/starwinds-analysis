@@ -240,9 +240,9 @@ def surface_torque_terms_on_shell_samples(
     x_name, y_name, z_name = coordinate_fields
     xyz_r = np.stack(
         [
-            np.array(shells(x_name)),
-            np.array(shells(y_name)),
-            np.array(shells(z_name)),
+            np.array(shells[x_name]),
+            np.array(shells[y_name]),
+            np.array(shells[z_name]),
         ],
         axis=-1,
     )
@@ -251,7 +251,7 @@ def surface_torque_terms_on_shell_samples(
     out = surface_torque_density_terms(
         xyz=xyz,
         normals_xyz=normals,
-        area=np.array(shells(area_field)),
+        area=np.array(shells[area_field]),
         rho=rho,
         U_xyz=U_xyz,
         B_xyz=B_xyz,

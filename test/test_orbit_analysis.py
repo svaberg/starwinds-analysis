@@ -62,10 +62,10 @@ def compare_curve_mass_loss_to_shell(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    body_radius = float(curve("RBODY [m]"))
+    body_radius = float(curve["RBODY [m]"])
     weights = curve.get("time_weight [none]")
-    mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
-    radius = np.array(curve("R [m]"))
+    mass_flux = np.array(curve["mass_flux [kg/m^2/s]"])
+    radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
     estimates = mass_loss_from_curve(curve)
     stats = summarize_samples(estimates, weights=weights)
@@ -78,9 +78,9 @@ def compare_curve_mass_loss_to_shell(
         method=method,
         length_unit_to_m=body_radius,
     )
-    shell_mass_flux = np.array(shell_ds("mass_flux [kg/m^2/s]"))
-    shell_area = np.array(shell_ds("dA [m^2]"))
-    shell_r = np.array(shell_ds("R [R]"))
+    shell_mass_flux = np.array(shell_ds["mass_flux [kg/m^2/s]"])
+    shell_area = np.array(shell_ds["dA [m^2]"])
+    shell_r = np.array(shell_ds["R [R]"])
     shell_profile_radii = np.nanmean(shell_r.reshape(shell_r.shape[0], -1), axis=1)
     shell_values, _ = integrate_shell_scalar(shell_mass_flux, shell_area)
     if shell_radii is None:
@@ -118,12 +118,12 @@ def compare_curve_torque_to_shell(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    body_radius = float(curve("RBODY [m]"))
+    body_radius = float(curve["RBODY [m]"])
     weights = curve.get("time_weight [none]")
-    radius = np.array(curve("R [m]"))
+    radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
-    curve_magnetic_density = np.array(curve("magnetic_torque_density [N/m]"))
-    curve_dynamic_density = np.array(curve("dynamic_torque_density [N/m]"))
+    curve_magnetic_density = np.array(curve["magnetic_torque_density [N/m]"])
+    curve_dynamic_density = np.array(curve["dynamic_torque_density [N/m]"])
     local_magnetic, local_dynamic, local_total = torque_from_curve(curve)
     torque_shells = sample_spherical_shells_fibonacci(
         smart_ds,
@@ -141,11 +141,11 @@ def compare_curve_torque_to_shell(
         method=method,
         length_unit_to_m=body_radius,
     )
-    shell_magnetic_density = np.array(torque_shells("magnetic_torque_density [N/m]"))
-    shell_area = np.array(torque_shells("dA [m^2]"))
-    shell_r = np.array(torque_shells("R [R]"))
+    shell_magnetic_density = np.array(torque_shells["magnetic_torque_density [N/m]"])
+    shell_area = np.array(torque_shells["dA [m^2]"])
+    shell_r = np.array(torque_shells["R [R]"])
     shell_profile_radii = np.nanmean(shell_r.reshape(shell_r.shape[0], -1), axis=1)
-    shell_dynamic_density = np.array(torque_shells("dynamic_torque_density [N/m]"))
+    shell_dynamic_density = np.array(torque_shells["dynamic_torque_density [N/m]"])
     shell_magnetic, _ = integrate_shell_scalar(shell_magnetic_density, shell_area)
     shell_dynamic, _ = integrate_shell_scalar(shell_dynamic_density, shell_area)
     shell_values = shell_magnetic + shell_dynamic
@@ -242,15 +242,15 @@ def test_sample_circular_curve_runs_on_example():
         method="nearest",
     )
 
-    x = np.array(out("X [R]"))
-    y = np.array(out("Y [R]"))
-    z = np.array(out("Z [R]"))
+    x = np.array(out["X [R]"])
+    y = np.array(out["Y [R]"])
+    z = np.array(out["Z [R]"])
     radius_r = np.sqrt(x * x + y * y + z * z)
-    radius = np.array(out("R [m]"))
-    assert np.array(out("Rho [g/cm^3]")).shape == (96,)
-    assert np.array(out("phase [turns]")).shape == (96,)
-    assert np.array(out("time_weight [none]")).shape == (96,)
-    assert np.isclose(np.sum(out("time_weight [none]")), 1.0)
+    radius = np.array(out["R [m]"])
+    assert np.array(out["Rho [g/cm^3]"]).shape == (96,)
+    assert np.array(out["phase [turns]"]).shape == (96,)
+    assert np.array(out["time_weight [none]"]).shape == (96,)
+    assert np.isclose(np.sum(out["time_weight [none]"]), 1.0)
     np.testing.assert_allclose(np.nanmin(radius_r), 10.0, rtol=0, atol=1e-10)
     np.testing.assert_allclose(np.nanmax(radius_r), 10.0, rtol=0, atol=1e-10)
     np.testing.assert_allclose(radius, radius_r * SOLAR_RADIUS_M, rtol=1e-12, atol=0.0)

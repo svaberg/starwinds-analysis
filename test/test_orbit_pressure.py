@@ -52,7 +52,7 @@ def test_relative_ram_pressure_from_trajectory_runs_on_circular_example():
     )
     relative_ram_pressure, standoff_distance = relative_ram_pressure_from_trajectory(trajectory)
 
-    assert np.array(trajectory("t [s]")).shape == (96,)
-    assert np.array(trajectory("V_x [m/s]")).shape == (96,)
+    assert np.array(trajectory["t [s]"]).shape == (96,)
+    assert np.array(trajectory["V_x [m/s]"]).shape == (96,)
     assert np.count_nonzero(np.isfinite(relative_ram_pressure)) > 0
     assert np.count_nonzero(np.isfinite(standoff_distance)) > 0

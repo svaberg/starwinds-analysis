@@ -25,8 +25,8 @@ def alfven_radius_map(
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
     log.info("alfven_radius_map start level=%g", float(level))
-    radius = np.array(shell_ds(radius_field))
-    mach = np.array(shell_ds(mach_field))
+    radius = np.array(shell_ds[radius_field])
+    mach = np.array(shell_ds[mach_field])
     if radius.shape != mach.shape:
         log.error("alfven_radius_map failed: radius shape=%s mach shape=%s", radius.shape, mach.shape)
         raise ValueError("radius and mach fields must have the same shape")
@@ -79,8 +79,8 @@ def projected_solid_angle_weights(
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
     log.debug("projected_solid_angle_weights start")
-    area = np.array(shell_ds(area_field))
-    radius = np.array(shell_ds(radius_field))
+    area = np.array(shell_ds[area_field])
+    radius = np.array(shell_ds[radius_field])
     if area.shape != radius.shape:
         log.error("projected_solid_angle_weights failed: area shape=%s radius shape=%s", area.shape, radius.shape)
         raise ValueError("area and radius fields must have the same shape")

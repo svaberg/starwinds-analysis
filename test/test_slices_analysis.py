@@ -37,5 +37,5 @@ def test_resample_structured_xz_slice_on_example():
 
     assert out.raw.corners.shape[1] == 4
     assert out.raw.corners.shape[0] == (16 - 1) * (12 - 1)
-    np.testing.assert_allclose(out.variable("Y [R]"), 0.0)
-    assert out.variable("Rho [g/cm^3]").shape == (16 * 12,)
+    np.testing.assert_allclose(out["Y [R]"], 0.0)
+    assert out["Rho [g/cm^3]"].shape == (16 * 12,)

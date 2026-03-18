@@ -58,7 +58,7 @@ def process_plt_file(file_path: str | Path) -> None:
         "B_z [T]",
         energy_source,
     )
-    body_radius = float(smart_ds("star_radius [m]"))
+    body_radius = float(smart_ds["star_radius [m]"])
     shells = sample_spherical_shells_fibonacci(
         smart_ds,
         radii,
@@ -67,9 +67,9 @@ def process_plt_file(file_path: str | Path) -> None:
         method="nearest",
         length_unit_to_m=body_radius,
     )
-    mass_flux = np.array(shells("mass_flux [kg/m^2/s]"))
-    shell_area = np.array(shells("dA [m^2]"))
-    r_field = np.array(shells("R [R]"))
+    mass_flux = np.array(shells["mass_flux [kg/m^2/s]"])
+    shell_area = np.array(shells["dA [m^2]"])
+    r_field = np.array(shells["R [R]"])
     shell_radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
     log.info("Sampling shell grid once for all diagnostics complete.")
 
@@ -99,8 +99,8 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing wind torque...")
     torque_radius_ref = float("nan")
     torque_value_ref = float("nan")
-    magnetic_density = shells("magnetic_torque_density [N/m]")
-    dynamic_density = shells("dynamic_torque_density [N/m]")
+    magnetic_density = shells["magnetic_torque_density [N/m]"]
+    dynamic_density = shells["dynamic_torque_density [N/m]"]
     magnetic_torque, torque_coverage_mag = integrate_shell_scalar(magnetic_density, shell_area)
     dynamic_torque, torque_coverage_dyn = integrate_shell_scalar(dynamic_density, shell_area)
     total_torque = magnetic_torque + dynamic_torque
@@ -127,7 +127,7 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing open magnetic flux...")
     open_flux_radius_ref = float("nan")
     open_flux_value_ref = float("nan")
-    b_r = shells("B_r [T]")
+    b_r = shells["B_r [T]"]
     open_flux_values, open_flux_coverage = integrate_shell_scalar(np.abs(b_r), shell_area)
     axes[1, 0].plot(shell_radii - 1.0, open_flux_values, ".-", color="C2")
     axes[1, 0].set_title("Open Magnetic Flux")
@@ -149,7 +149,7 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Computing energy flux...")
     energy_flux_radius_ref = float("nan")
     energy_flux_value_ref = float("nan")
-    energy_flux_density = shells("energy_flux [W/m^2]")
+    energy_flux_density = shells["energy_flux [W/m^2]"]
     energy_flux_values, energy_flux_coverage = integrate_shell_scalar(energy_flux_density, shell_area)
     axes[1, 1].plot(shell_radii - 1.0, energy_flux_values, ".-", color="C3")
     axes[1, 1].set_title("Energy Flux")

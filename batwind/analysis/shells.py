@@ -27,7 +27,7 @@ def infer_cartesian_axis_radii(
     if axis_idx is None:
         raise ValueError("axis must be 'x', 'y', or 'z'")
 
-    coords = [np.array(smart_ds.variable(name)).ravel() for name in coord_fields]
+    coords = [np.array(smart_ds[name]).ravel() for name in coord_fields]
     if len(coords) != 3:
         raise ValueError("coord_fields must have length 3")
     x, y, z = coords

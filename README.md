@@ -16,7 +16,7 @@ derived fields on demand.
 
 `batwind.smart_ds.SmartDs` wraps a `batread.Dataset` and adds:
 
-- raw field passthrough (`.variable(name)`, `sds(name)`)
+- raw field passthrough (`sds["name"]`)
 - graph-based derived fields via `griblet`
 - point resampling that returns a **new wrapped dataset**
 
@@ -30,9 +30,9 @@ sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 # Attach spherical geometry + vector-component recipes
 sds.add_spherical_graph(vectors=("B", "U"))
 
-r = sds.variable("R [R]")
-br = sds.variable("B_r [Gauss]")
-uphi = sds.variable("U_phi [km/s]")
+r = sds["R [R]"]
+br = sds["B_r [Gauss]"]
+uphi = sds["U_phi [km/s]"]
 ```
 
 You can inspect the recipe path for any derived field:
@@ -47,10 +47,10 @@ normalization (to SI where possible) and a few derived quantities:
 ```python
 sds.add_batsrus_graph()
 
-rho = sds.variable("Rho [kg/m^3]")
-bx = sds.variable("B_x [T]")
-c_s = sds.variable("c_s [m/s]")
-m_a = sds.variable("M_A [none]")
+rho = sds["Rho [kg/m^3]"]
+bx = sds["B_x [T]"]
+c_s = sds["c_s [m/s]"]
+m_a = sds["M_A [none]"]
 print(sds.explain("M_A [none]"))
 ```
 

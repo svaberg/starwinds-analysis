@@ -138,11 +138,11 @@ def test_sample_surface_revolution_runs_on_example():
         n_longitudes=32,
         method="nearest",
     )
-    assert np.array(out("Rho [g/cm^3]")).shape == (64, 32)
-    assert np.array(out("U_x [km/s]")).shape == (64, 32)
-    assert np.array(out("phase [turns]")).shape == (64, 32)
-    assert np.array(out("time_weight [none]")).shape == (64, 32)
-    assert np.isclose(np.sum(np.array(out("time_weight [none]"))[:, 0]), 1.0)
+    assert np.array(out["Rho [g/cm^3]"]).shape == (64, 32)
+    assert np.array(out["U_x [km/s]"]).shape == (64, 32)
+    assert np.array(out["phase [turns]"]).shape == (64, 32)
+    assert np.array(out["time_weight [none]"]).shape == (64, 32)
+    assert np.isclose(np.sum(np.array(out["time_weight [none]"])[:, 0]), 1.0)
 
 
 def test_pressure_components_on_surface_runs_on_example():
