@@ -150,7 +150,7 @@ def resample_smart_ds(
         raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
     sample_shape = sample_points.shape[:-1]
-    sample_points_2d = sample_points.reshape(-1, sample_points.shape[-1])
+    flat_sample_points = sample_points.reshape(-1, sample_points.shape[-1])
     ndim = sample_points.shape[-1]
     if coordinate_fields is None:
         raise ValueError("coordinate_fields must be provided")
@@ -179,12 +179,12 @@ def resample_smart_ds(
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
 
-    out_points = np.full((sample_points_2d.shape[0], len(output_variables)), np.nan, dtype=float)
+    out_points = np.full((flat_sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
     out_index = {name: i for i, name in enumerate(output_variables)}
 
     for dim, coord_name in enumerate(coordinate_fields):
         if coord_name in out_index:
-            out_points[:, out_index[coord_name]] = sample_points_2d[:, dim]
+            out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
     nearest_indices = None
 
@@ -203,7 +203,7 @@ def resample_smart_ds(
             coord_mask,
             spatial_cache,
             values,
-            sample_points_2d,
+            flat_sample_points,
             method=method,
             fill_value=fill_value,
             nearest_indices=nearest_indices,
