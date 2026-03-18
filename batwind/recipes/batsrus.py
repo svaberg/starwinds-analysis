@@ -102,7 +102,7 @@ def build_griblet_unit_normalization_graph(
         )
 
     # Optional coordinate scale: X/Y/Z [R] -> [m]
-    body_radius = _resolve_body_radius_m(aux=aux, body_radius_m=body_radius_m)
+    body_radius = float(body_radius_m) if body_radius_m is not None else None
     if body_radius is not None:
         graph.add_recipe(
             "RBODY [m]",
@@ -448,23 +448,6 @@ def _standoff_distance_from_rho_u(rho, U):
     p_ram = np.asarray(rho) * (np.asarray(U) ** 2)
     numer = (0.7e-4**2) / (2.0 * _MU0)
     return np.power(numer / p_ram, 1.0 / 6.0)
-
-
-def _resolve_body_radius_m(*, aux: Mapping[str, object] | None, body_radius_m: float | None):
-    if body_radius_m is not None:
-        return float(body_radius_m)
-
-    if aux is None:
-        return None
-
-    # Leave room for future conventions; current example files do not include SI radius.
-    for key in ("RBODY_M", "RBODY[m]", "RBODY [m]", "BODY_RADIUS_M"):
-        if key in aux:
-            try:
-                return float(aux[key])
-            except Exception:
-                return None
-    return None
 
 
 __all__ = [
