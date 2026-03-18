@@ -161,35 +161,10 @@ def build_unit_normalization_graph(
 def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
-    normalized_varset = set(varset)
-    for name in varset:
-        parsed = _parse_var_name(name)
-        if parsed is None:
-            continue
-        base, unit = parsed
-        unit_match = _UNIT_FACTORS.get(unit)
-        if unit_match is None:
-            continue
-        si_unit, _factor = unit_match
-        normalized_varset.add(f"{base} [{si_unit}]")
 
     # Cartesian vector stacks and magnitudes.
-    graph.merge(build_vector_cartesian_graph(normalized_varset))
-    graph.merge(build_vector_magnitude_graph(normalized_varset))
-    graph.add_recipe(
-        "U [m/s]",
-        lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
-        deps=["U_x [m/s]", "U_y [m/s]", "U_z [m/s]"],
-        cost=0.1,
-        metadata={"description": "Flow speed magnitude"},
-    )
-    graph.add_recipe(
-        "B [T]",
-        lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
-        deps=["B_x [T]", "B_y [T]", "B_z [T]"],
-        cost=0.1,
-        metadata={"description": "Magnetic field magnitude"},
-    )
+    graph.merge(build_vector_cartesian_graph(varset))
+    graph.merge(build_vector_magnitude_graph(varset))
 
     # Sound speed c_s [m/s]
     if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
@@ -345,16 +320,9 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
 
 def build_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
-    names = list(variable_names)
-    pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
-
     by_prefix: dict[tuple[str, str], set[str]] = {}
-    for name in names:
-        m = pattern.match(name)
-        if not m:
-            continue
-        key = (m.group("prefix"), m.group("unit"))
-        by_prefix.setdefault(key, set()).add(m.group("comp"))
+    for prefix, comp, unit in _available_xyz_components(variable_names):
+        by_prefix.setdefault((prefix, unit), set()).add(comp)
 
     for (prefix, unit), comps in sorted(by_prefix.items()):
         if comps != {"x", "y", "z"}:
@@ -372,16 +340,10 @@ def build_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
 
 def build_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
-    names = list(variable_names)
 
     by_prefix: dict[tuple[str, str], set[str]] = {}
-    for name in names:
-        parsed = _parse_xyz_component_name(name)
-        if parsed is None:
-            continue
-        prefix, comp, unit = parsed
-        key = (prefix, unit)
-        by_prefix.setdefault(key, set()).add(comp)
+    for prefix, comp, unit in _available_xyz_components(variable_names):
+        by_prefix.setdefault((prefix, unit), set()).add(comp)
 
     for (prefix, unit), comps in sorted(by_prefix.items()):
         if comps != {"x", "y", "z"}:
@@ -393,13 +355,6 @@ def build_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
             deps=deps,
             cost=0.05,
             metadata={"description": f"{prefix} Cartesian vector"},
-        )
-        graph.add_recipe(
-            f"{prefix} [{unit}]",
-            lambda x, y, z: np.sqrt(np.array(x) ** 2 + np.array(y) ** 2 + np.array(z) ** 2),
-            deps=deps,
-            cost=0.1,
-            metadata={"description": f"{prefix} magnitude"},
         )
     return graph
 
@@ -435,6 +390,21 @@ def _parse_xyz_component_name(name: str):
     if comp not in ("x", "y", "z") or not prefix:
         return None
     return prefix, comp, unit
+
+
+def _available_xyz_components(variable_names: set[str] | Sequence[str]):
+    seen: set[tuple[str, str, str]] = set()
+    for name in variable_names:
+        parsed = _parse_xyz_component_name(name)
+        if parsed is None:
+            continue
+        prefix, comp, unit = parsed
+        seen.add((prefix, comp, unit))
+        unit_match = _UNIT_FACTORS.get(unit)
+        if unit_match is not None:
+            si_unit, _factor = unit_match
+            seen.add((prefix, comp, si_unit))
+    return seen
 
 
 def _safe_gamma(gamma):
