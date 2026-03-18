@@ -29,6 +29,7 @@ class SmartDs:
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = griblet.ComputationGraph()
+        self._next_recipe_id = 0
         self.clear_computation_graph()
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
@@ -125,22 +126,33 @@ class SmartDs:
 
     def clear_computation_graph(self):
         self._computation_graph = griblet.ComputationGraph()
+        self._next_recipe_id = 0
         for raw_name in self._dataset.variables:
             self._computation_graph.add_recipe(
                 field=raw_name,
                 func=lambda raw_name=raw_name: self._dataset[raw_name],
                 deps=[],
                 cost=0.0,
-                metadata={"description": "Dataset raw field", "loader": True},
+                metadata={
+                    "description": "Dataset raw field",
+                    "loader": True,
+                    "recipe_id": self._next_recipe_id,
+                },
             )
+            self._next_recipe_id += 1
         for key, value in self._dataset.aux.items():
             self._computation_graph.add_recipe(
                 field=key,
                 func=lambda value=value: value,
                 deps=[],
                 cost=0.0,
-                metadata={"description": "Dataset aux", "loader": True},
+                metadata={
+                    "description": "Dataset aux",
+                    "loader": True,
+                    "recipe_id": self._next_recipe_id,
+                },
             )
+            self._next_recipe_id += 1
         return self
 
     def merge_computation_graph(self, graph):
@@ -149,6 +161,8 @@ class SmartDs:
                 metadata = dict(recipe.get("metadata", {}) or {})
                 if metadata.get("loader"):
                     continue
+                metadata["recipe_id"] = self._next_recipe_id
+                self._next_recipe_id += 1
                 self._computation_graph.add_recipe(
                     field=field,
                     func=recipe["func"],
@@ -281,11 +295,11 @@ class SmartDs:
 
     def _evaluate_resolved_tree(self, node):
         values = [self._evaluate_resolved_tree(dep) for dep in node.deps]
-        dep_fields = tuple(dep.field for dep in node.deps)
+        recipe_id = node.recipe_metadata["recipe_id"]
         recipe = next(
             recipe
             for recipe in self._computation_graph.recipes[node.field]
-            if tuple(recipe["deps"]) == dep_fields
+            if recipe["metadata"]["recipe_id"] == recipe_id
         )
         return recipe["func"](*values)
 
