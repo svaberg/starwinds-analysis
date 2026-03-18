@@ -296,10 +296,10 @@ Used by: `batwind/pipelines/batwind_pipe.py`
 
 ## `batwind/recipes/batsrus.py`
 
-- `build_griblet_batsrus_graph`: Top-level BATSRUS recipe graph builder (normalization + derived).
-- `build_griblet_unit_normalization_graph`: Raw-unit -> SI conversions + scalar aux parsing recipes.
-- `build_griblet_common_derived_graph`: Derived SI recipes (Mach, pressure, fluxes, torque densities, helpers).
-- `build_griblet_vector_cartesian_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
+- `build_batsrus_graph`: Top-level BATSRUS recipe graph builder (normalization + derived).
+- `build_unit_normalization_graph`: Raw-unit -> SI conversions + scalar aux parsing recipes.
+- `build_common_derived_graph`: Derived SI recipes (Mach, pressure, fluxes, torque densities, helpers).
+- `build_vector_cartesian_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
 - `body_radius_from_inputs`: Resolves body radius from explicit input or aux keys.
 
 Used by: `batwind/smart_ds.py`, `batwind/analysis/trajectories.py`
@@ -307,7 +307,7 @@ Used by: `batwind/smart_ds.py`, `batwind/analysis/trajectories.py`
 ## `batwind/recipes/spherical.py`
 
 - `_vector_triplets`: Finds Cartesian vector triplets (`*_x/_y/_z`) by prefix/unit.
-- `build_griblet_spherical_graph`: Adds spherical geometry plus auto-detected vector component recipes.
+- `build_spherical_graph`: Adds spherical geometry plus auto-detected vector component recipes.
 
 Used by: `batwind/smart_ds.py`, `batwind/recipes/batsrus.py`
 

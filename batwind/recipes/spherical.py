@@ -101,7 +101,7 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     return v_r, v_p, v_a
 
 
-def build_griblet_spherical_graph(
+def build_spherical_graph(
     variable_names: Sequence[str],
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
 ):

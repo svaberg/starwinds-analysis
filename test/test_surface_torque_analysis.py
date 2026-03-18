@@ -10,8 +10,8 @@ from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.torque import integrate_surface_torque_terms
 from batwind.physics.torque import surface_torque_density_terms
 from batwind.physics.torque import surface_torque_terms_on_shell_samples
-from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_spherical_graph
+from batwind.recipes.batsrus import build_batsrus_graph
+from batwind.recipes.spherical import build_spherical_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -81,8 +81,8 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 
 def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
-    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     radii = [2.0, 4.0, 8.0, 16.0]
 
     shells = sample_spherical_shells_fibonacci(

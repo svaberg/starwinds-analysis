@@ -27,7 +27,7 @@ _UNIT_FACTORS = {
 }
 
 
-def build_griblet_batsrus_graph(
+def build_batsrus_graph(
     variable_names: Sequence[str],
     *,
     aux: Mapping[str, object] | None = None,
@@ -50,15 +50,15 @@ def build_griblet_batsrus_graph(
     vars_set = set(vars_list)
 
     if include_unit_normalization:
-        graph.merge(build_griblet_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
+        graph.merge(build_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
 
     if include_derived:
-        graph.merge(build_griblet_common_derived_graph(vars_set))
+        graph.merge(build_common_derived_graph(vars_set))
 
     return graph
 
 
-def build_griblet_unit_normalization_graph(
+def build_unit_normalization_graph(
     variable_names: Sequence[str],
     *,
     aux: Mapping[str, object] | None = None,
@@ -158,7 +158,7 @@ def build_griblet_unit_normalization_graph(
     return graph
 
 
-def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str]):
+def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
     normalized_varset = set(varset)
@@ -174,8 +174,8 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         normalized_varset.add(f"{base} [{si_unit}]")
 
     # Cartesian vector stacks and magnitudes.
-    graph.merge(build_griblet_vector_cartesian_graph(normalized_varset))
-    graph.merge(build_griblet_vector_magnitude_graph(normalized_varset))
+    graph.merge(build_vector_cartesian_graph(normalized_varset))
+    graph.merge(build_vector_magnitude_graph(normalized_varset))
     graph.add_recipe(
         "U [m/s]",
         lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
@@ -343,7 +343,7 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
     return graph
 
 
-def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
+def build_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
     names = list(variable_names)
     pattern = re.compile(r"^(?P<prefix>.+)_(?P<comp>[xyz]) \[(?P<unit>.+)\]$")
@@ -370,7 +370,7 @@ def build_griblet_vector_magnitude_graph(variable_names: set[str] | Sequence[str
     return graph
 
 
-def build_griblet_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
+def build_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
     names = list(variable_names)
 
@@ -451,9 +451,9 @@ def _standoff_distance_from_rho_u(rho, U):
 
 
 __all__ = [
-    "build_griblet_batsrus_graph",
-    "build_griblet_common_derived_graph",
-    "build_griblet_unit_normalization_graph",
-    "build_griblet_vector_cartesian_graph",
-    "build_griblet_vector_magnitude_graph",
+    "build_batsrus_graph",
+    "build_common_derived_graph",
+    "build_unit_normalization_graph",
+    "build_vector_cartesian_graph",
+    "build_vector_magnitude_graph",
 ]

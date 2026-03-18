@@ -6,8 +6,8 @@ import pytest
 
 from batread.dataset import Dataset
 
-from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_spherical_graph
+from batwind.recipes.batsrus import build_batsrus_graph
+from batwind.recipes.spherical import build_spherical_graph
 from batwind.smart_ds import SmartDs
 
 
@@ -118,7 +118,7 @@ def test_resample_linear_interpolates_inside_hull():
 
 def test_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors())
-    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
+    sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
 
     r = sds["R [R]"]
     polar = sds["polar [rad]"]
@@ -182,7 +182,7 @@ def test_spherical_graph_on_real_example_data():
 
 def test_griblet_graph_resolution_and_explain():
     sds = SmartDs(make_dataset_3d_vectors())
-    graph = build_griblet_spherical_graph(tuple(sds), coord_fields=("X [R]", "Y [R]", "Z [R]"))
+    graph = build_spherical_graph(tuple(sds), coord_fields=("X [R]", "Y [R]", "Z [R]"))
     sds.merge_computation_graph(graph)
 
     r = sds["R [R]"]
