@@ -48,6 +48,7 @@ def build_batsrus_graph(
     vars_set = set(vars_list)
 
     graph.merge(build_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
+    graph.merge(build_vector_graph(vars_set))
     graph.merge(build_common_derived_graph(vars_set))
 
     return graph
@@ -144,9 +145,6 @@ def build_coordinate_scale_graph(body_radius_m: float):
 def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
     varset = set(variable_names)
-
-    # Cartesian vector stacks and magnitudes.
-    graph.merge(build_vector_graph(varset))
 
     # Sound speed c_s [m/s]
     if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
