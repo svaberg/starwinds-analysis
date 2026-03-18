@@ -41,13 +41,9 @@ def build_batsrus_graph(
     - common derived fields: |U|, |B|, c_s, c_A, M_A
     """
     graph = griblet.ComputationGraph()
-
-    vars_list = list(variable_names)
-    vars_set = set(vars_list)
-
-    graph.merge(build_unit_normalization_graph(vars_list, aux=aux, body_radius_m=body_radius_m))
-    graph.merge(build_vector_graph(vars_set))
-    graph.merge(build_common_derived_graph(vars_set))
+    graph.merge(build_unit_normalization_graph(variable_names, aux=aux, body_radius_m=body_radius_m))
+    graph.merge(build_vector_graph(variable_names))
+    graph.merge(build_common_derived_graph())
 
     return graph
 
@@ -140,26 +136,24 @@ def build_coordinate_scale_graph(body_radius_m: float):
     return graph
 
 
-def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
+def build_common_derived_graph():
     graph = griblet.ComputationGraph()
-    varset = set(variable_names)
 
     # Sound speed c_s [m/s]
-    if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
-        graph.add_recipe(
-            "c_s [m/s]",
-            lambda P, rho: np.sqrt(_DEFAULT_GAMMA * np.asarray(P) / np.asarray(rho)),
-            deps=["P [Pa]", "Rho [kg/m^3]"],
-            cost=0.25,
-            metadata={"description": "Adiabatic sound speed with fallback gamma=5/3"},
-        )
-        graph.add_recipe(
-            "c_s [m/s]",
-            lambda P, rho, gamma: np.sqrt(_safe_gamma(gamma) * np.asarray(P) / np.asarray(rho)),
-            deps=["P [Pa]", "Rho [kg/m^3]", "GAMMA [none]"],
-            cost=0.2,
-            metadata={"description": "Adiabatic sound speed using GAMMA aux"},
-        )
+    graph.add_recipe(
+        "c_s [m/s]",
+        lambda P, rho: np.sqrt(_DEFAULT_GAMMA * np.asarray(P) / np.asarray(rho)),
+        deps=["P [Pa]", "Rho [kg/m^3]"],
+        cost=0.25,
+        metadata={"description": "Adiabatic sound speed with fallback gamma=5/3"},
+    )
+    graph.add_recipe(
+        "c_s [m/s]",
+        lambda P, rho, gamma: np.sqrt(_safe_gamma(gamma) * np.asarray(P) / np.asarray(rho)),
+        deps=["P [Pa]", "Rho [kg/m^3]", "GAMMA [none]"],
+        cost=0.2,
+        metadata={"description": "Adiabatic sound speed using GAMMA aux"},
+    )
 
     # Alfven speed and Alfven Mach
     graph.add_recipe(
