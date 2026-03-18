@@ -108,7 +108,19 @@ class SmartDs:
                 self._cache[name] = value
             return value
 
-        value = self._compute_via_graph(name)
+        graph = self._build_runtime_graph()
+        solver = griblet.DependencySolver(graph)
+        try:
+            cost, tree = solver.resolve_field(name)
+        except UnresolvableFieldError as e:
+            raise IndexError(
+                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
+            ) from e
+        if not np.isfinite(cost):
+            raise IndexError(
+                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
+            )
+        value = self._evaluate_resolved_tree(tree, graph)
         if self._cache_enabled:
             self._cache[name] = value
         return value
@@ -175,21 +187,6 @@ class SmartDs:
                 add(field)
 
         return tuple(base_fields)
-
-    def _compute_via_graph(self, name: str):
-        graph = self._build_runtime_graph()
-        solver = griblet.DependencySolver(graph)
-        try:
-            cost, tree = solver.resolve_field(name)
-        except UnresolvableFieldError as e:
-            raise IndexError(
-                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
-            ) from e
-        if not np.isfinite(cost):
-            raise IndexError(
-                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
-            )
-        return self._evaluate_resolved_tree(tree, graph)
 
     def _resolve_field(self, name: str):
         graph = self._build_runtime_graph()
