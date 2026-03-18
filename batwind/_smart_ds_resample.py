@@ -8,8 +8,10 @@ from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
 from batread.dataset import Dataset
+from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
+RPA_COORD_FIELDS = ("R [R]", "polar [rad]", "azimuth [rad]")
 
 
 def _get_spatial_cache(smart_ds, coordinate_fields):
@@ -78,6 +80,65 @@ def _interpolate_field(
         raise NotImplementedError("method='octree' is not implemented")
 
     raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
+
+
+def _octree_query_coord(coordinate_fields):
+    if tuple(coordinate_fields) == DEFAULT_XYZ_NAMES:
+        return "xyz"
+    if tuple(coordinate_fields) == RPA_COORD_FIELDS:
+        return "rpa"
+    raise NotImplementedError(
+        f"method='octree' does not support coordinate_fields={tuple(coordinate_fields)!r}"
+    )
+
+
+def _octree_source_dataset(smart_ds, value_fields):
+    raw_variable_names = tuple(smart_ds.raw.variables)
+    if all(name in raw_variable_names for name in value_fields):
+        return smart_ds.raw
+
+    extra_fields = {
+        name: np.asarray(smart_ds[name])
+        for name in value_fields
+        if name not in raw_variable_names
+    }
+    return smart_ds.append_fields(extra_fields, zone_suffix="octree source").raw
+
+
+def _interpolate_fields_octree(
+    smart_ds,
+    coordinate_fields,
+    output_variables,
+    flat_sample_points,
+    *,
+    fill_value: float,
+    spatial_cache,
+):
+    from batcamp import OctreeInterpolator
+
+    value_fields = [name for name in output_variables if name not in coordinate_fields]
+    if not value_fields:
+        return np.empty((flat_sample_points.shape[0], 0), dtype=float)
+
+    interp_ds = _octree_source_dataset(smart_ds, value_fields)
+    interpolator = spatial_cache.get("octree_interpolator")
+    if interpolator is None or getattr(interpolator, "_ds", None) is not interp_ds:
+        interpolator = OctreeInterpolator(
+            interp_ds,
+            value_fields,
+            fill_value=fill_value,
+        )
+        spatial_cache["octree_interpolator"] = interpolator
+    else:
+        interpolator.set_fields(value_fields, fill_value=fill_value)
+
+    out = np.asarray(
+        interpolator(flat_sample_points, query_coord=_octree_query_coord(coordinate_fields)),
+        dtype=float,
+    )
+    if out.ndim == 1:
+        out = out[:, None]
+    return out
 
 
 def _build_resampled_dataset(
@@ -183,6 +244,34 @@ def resample_smart_ds(
             out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
     nearest_indices = None
+
+    if method == "octree":
+        out_values = _interpolate_fields_octree(
+            smart_ds,
+            coordinate_fields,
+            output_variables,
+            flat_sample_points,
+            fill_value=fill_value,
+            spatial_cache=spatial_cache,
+        )
+        value_names = [name for name in output_variables if name not in coordinate_fields]
+        for i, name in enumerate(value_names):
+            out_points[:, out_index[name]] = out_values[:, i]
+        new_dataset = _build_resampled_dataset(
+            smart_ds,
+            out_points,
+            sample_shape,
+            output_variables,
+            corners=corners,
+            copy_aux=copy_aux,
+            title=title,
+            zone=zone,
+        )
+        return type(smart_ds)(
+            new_dataset,
+            cache_enabled=smart_ds._cache_enabled,
+            computation_graph=smart_ds._computation_graph,
+        )
 
     # Interpolate each non-coordinate field onto the target points. 
     # Cached spatial structures are used for efficiency.

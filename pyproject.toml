@@ -2,7 +2,7 @@
 name = "batwind"
 description = "Process SWMF/BATSRUS output"
 version = "0.1.0"
-dependencies = ["scipy", "numpy", "matplotlib", "slugify", "batread", "griblet"]
+dependencies = ["scipy", "numpy", "matplotlib", "slugify", "batread", "griblet", "batcamp"]
 
 [project.scripts]
 batwind-pipe = "batwind.pipelines.batwind_pipe:main"
