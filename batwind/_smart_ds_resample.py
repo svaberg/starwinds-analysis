@@ -4,9 +4,12 @@ from copy import deepcopy
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
 from batread.dataset import Dataset
+
+RESAMPLE_METHODS = ("nearest", "linear", "octree")
 
 
 def _get_spatial_cache(smart_ds, coordinate_fields):
@@ -22,6 +25,8 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
             "source_coords": source_coords,
             "coord_mask": coord_mask,
             "nearest_tree": None,
+            "linear_triangulation": None,
+            "octree": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
     return spatial_cache
@@ -57,17 +62,31 @@ def _interpolate_field(
         return values[valid][nearest_indices], nearest_indices
 
     if method == "linear":
-        interpolator = LinearNDInterpolator(
-            source_coords[valid],
-            values[valid],
-            fill_value=fill_value,
-        )
+        if np.array_equal(valid, coord_mask):
+            linear_triangulation = spatial_cache["linear_triangulation"]
+            if linear_triangulation is None:
+                linear_triangulation = Delaunay(source_coords[coord_mask])
+                spatial_cache["linear_triangulation"] = linear_triangulation
+            interpolator = LinearNDInterpolator(
+                linear_triangulation,
+                values[coord_mask],
+                fill_value=fill_value,
+            )
+        else:
+            interpolator = LinearNDInterpolator(
+                source_coords[valid],
+                values[valid],
+                fill_value=fill_value,
+            )
         out = np.asarray(interpolator(sample_points_2d), dtype=float)
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
 
-    raise ValueError("method must be 'nearest' or 'linear'")
+    if method == "octree":
+        raise NotImplementedError("method='octree' is not implemented")
+
+    raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
 
 def _build_resampled_dataset(
@@ -127,6 +146,8 @@ def resample_smart_ds(
         sample_points = sample_points[np.newaxis, :]
     if sample_points.ndim < 2:
         raise ValueError("sample_points must have shape (..., ndim)")
+    if method not in RESAMPLE_METHODS:
+        raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
     sample_shape = sample_points.shape[:-1]
     sample_points_2d = sample_points.reshape(-1, sample_points.shape[-1])
