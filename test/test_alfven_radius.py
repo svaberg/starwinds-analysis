@@ -1,6 +1,6 @@
 import numpy as np
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 from batwind.physics.alfven_radius import alfven_radius_map
 from batwind.physics.alfven_radius import projected_solid_angle_weights
@@ -64,7 +64,7 @@ def test_alfven_radius_map_nan_when_no_outward_crossing():
 
 def test_alfven_radius_map_equal_level_is_not_crossing():
     shell_ds, _ = make_shell_demo()
-    m_a = shell_ds.raw.variable("M_A [none]").copy()
+    m_a = np.array(shell_ds("M_A [none]"), dtype=float).copy()
     m_a[:, 0, 1] = np.array([0.6, 1.0, 1.2], dtype=float)
     m_a_idx = shell_ds.raw.variables.index("M_A [none]")
     shell_ds.raw.points[..., m_a_idx] = m_a

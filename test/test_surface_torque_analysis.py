@@ -1,20 +1,19 @@
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from batwind.algorithms.sphere_sampling import fibonacci_sphere
-from batwind.constants import MU0
-from batwind.constants import SOLAR_RADIUS_M
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.constants import MU0
+from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.torque import integrate_surface_torque_terms
 from batwind.physics.torque import surface_torque_density_terms
 from batwind.physics.torque import surface_torque_terms_on_shell_samples
 from batwind.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def _cart_from_spherical_components(v_r, v_phi, xyz):
@@ -78,7 +77,6 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
     assert np.isclose(ints["coverage [none]"][0], 1.0, rtol=0, atol=1e-12)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)

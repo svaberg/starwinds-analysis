@@ -1,15 +1,16 @@
 from pathlib import Path
 
 import numpy as np
-import pytest
 
-from batwind.analysis.slices import infer_range
-from batwind.analysis.slices import resample_structured_xz_slice
-from batwind.analysis.slices import structured_quad_corners
+from batwind.analysis.slices import (
+    infer_range,
+    resample_structured_xz_slice,
+    structured_quad_corners,
+)
 from batwind.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def test_structured_quad_corners_shape_and_values():
@@ -23,7 +24,6 @@ def test_infer_range_symmetric_padding():
     assert np.isclose(abs(lo), abs(hi))
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_resample_structured_xz_slice_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     out = resample_structured_xz_slice(
@@ -39,4 +39,3 @@ def test_resample_structured_xz_slice_on_example():
     assert out.raw.corners.shape[0] == (16 - 1) * (12 - 1)
     np.testing.assert_allclose(out.variable("Y [R]"), 0.0)
     assert out.variable("Rho [g/cm^3]").shape == (16 * 12,)
-

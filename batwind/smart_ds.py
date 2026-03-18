@@ -1,49 +1,19 @@
-"""Public SmartDs dataset wrapper API.
-"""
-
-# It is the facade for raw field access, graph integration, and resampling delegation.
-# It should not contain domain-specific physics formulas or plotting code.
-
-
 from __future__ import annotations
 
 from collections.abc import Mapping
 from collections.abc import Sequence
-import logging
-from os import PathLike
-from pathlib import Path
 
+import griblet
 import numpy as np
+
+from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
-
-from starwinds_readplt.dataset import Dataset
-from batwind._smart_ds_graph import compute_via_graph as _compute_via_graph
-from batwind._smart_ds_graph import explain_field as _explain_field
-from batwind._smart_ds_graph import graph_field_names as _graph_field_names
 from batwind._smart_ds_resample import resample_smart_ds
-from batwind.param_in import stellar_aux_from_nearby_param_in
 
-log = logging.getLogger(__name__)
 
 class SmartDs:
     """
-    Lightweight wrapper around ``starwinds_readplt.Dataset``.
-
-    Initial goals:
-    - Provide a stable place for on-demand derived fields (lazy + cached).
-    - Support resampling into a new wrapped dataset without involving VTK/PyVista.
-
-    The current implementation is intentionally simple: if a requested field exists
-    in the underlying dataset it is returned directly; otherwise the attached graph
-    is used to derive it.
-
-    Data model note (current limitation):
-    - SmartDs reads the dataset as unstructured point samples.
-    - SmartDs does not track centering metadata (point-centered vs cell-centered).
-    - If cell-centered quantities are needed, they must be constructed explicitly from
-      the available point data.
-    - TODO geometry metrics: points/cells should be able to report finite geometric
-      measures (e.g. `length [..]`, `area [..^2]`, `volume [..^3]`) for regular grids.
+    Lightweight wrapper around ``batread.Dataset`` with graph-backed derived fields.
     """
 
     DEFAULT_COORD_FIELDS = ("X [R]", "Y [R]", "Z [R]")
@@ -56,236 +26,155 @@ class SmartDs:
         computation_graph=None,
         include_aux_in_loader: bool = True,
     ) -> None:
-        """
-        Wrap a raw Dataset and initialize graph hooks.
-        Used by: `SmartDs` users and internal methods
-        """
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
-        self._resample_spatial_cache: dict[tuple[str, ...], dict[str, object]] = {}
-        self._computation_graph = computation_graph
+        self._computation_graph = (
+            griblet.ComputationGraph() if computation_graph is None else computation_graph
+        )
         self._include_aux_in_loader = bool(include_aux_in_loader)
 
+    @classmethod
+    def from_file(cls, file: str, **kwargs) -> "SmartDs":
+        return cls(Dataset.from_file(str(file)), **kwargs)
+
+    @property
+    def raw(self) -> Dataset:
+        return self._dataset
+
+    @property
+    def dataset(self) -> Dataset:
+        return self._dataset
+
     def __repr__(self) -> str:
-        """
-        Debug-style summary string for interactive use.
-        Used by: `SmartDs` users and internal methods
-        """
         return (
             f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
-            f"points={len(self.points)}, variables={len(self.variables)})"
+            f"points={np.shape(self.points)}, variables={len(self.variables)})"
         )
 
     def __str__(self) -> str:
-        """
-        Human-readable dataset summary for notebooks/examples (`print(sds)`).
-        Used by: `SmartDs` users and internal methods
-        """
         return "\n".join(
             (
                 "SmartDs",
                 f"  Title: {self.title}",
                 f"  Zone : {self.zone}",
-                f"  Points: {len(self.points)}",
+                f"  Points: {np.shape(self.points)}",
                 f"  Variables: {len(self.variables)}",
             )
         )
 
-    @classmethod
-    def from_file(cls, file: str | PathLike[str], **kwargs) -> "SmartDs":
-        """
-        Construct a SmartDs directly from a `.plt` file path.
-        Used by: `SmartDs` users and internal methods
-        """
-        dataset = Dataset.from_file(str(file))
-        log.info("SmartDs.from_file loaded %s", str(file))
-        for key, value in stellar_aux_from_nearby_param_in(Path(file)).items():
-            dataset.aux.setdefault(key, value)
-        return cls(dataset, **kwargs)
-
-    @property
-    def raw(self) -> Dataset:
-        """
-        Direct access to the underlying `starwinds_readplt.Dataset`.
-        Used by: `SmartDs` users and internal methods
-        """
-        return self._dataset
-
     @property
     def aux(self):
-        """
-        AUX metadata passthrough from the raw dataset.
-        Used by: `SmartDs` users and internal methods
-        """
         return self._dataset.aux
 
     @property
     def title(self):
-        """
-        Dataset title passthrough.
-        Used by: `SmartDs` users and internal methods
-        """
         return self._dataset.title
 
     @property
     def zone(self):
-        """
-        Zone name passthrough.
-        Used by: `SmartDs` users and internal methods
-        """
         return self._dataset.zone
 
     @property
     def points(self):
-        """
-        Raw point array passthrough.
-        Used by: `SmartDs` users and internal methods
-        """
         return self._dataset.points
 
     @property
     def corners(self):
-        """
-        Raw cell connectivity passthrough.
-        Used by: `SmartDs` users and internal methods
-        """
         return self._dataset.corners
 
     @property
     def variables(self) -> tuple[str, ...]:
-        """
-        Raw variable names as an immutable tuple.
-        Used by: `SmartDs` users and internal methods
-        """
         return tuple(self._dataset.variables)
 
     @property
     def computation_graph(self):
-        """
-        Attached griblet graph (or None).
-        Used by: `SmartDs` users and internal methods
-        """
         return self._computation_graph
 
     def keys(self) -> tuple[str, ...]:
-        """
-        Known field names from raw variables and attached graph fields.
-        Used by: `SmartDs` users and internal methods
-        """
         names = list(self._dataset.variables)
-        for name in _graph_field_names(self):
+        for name in self._computation_graph.list_fields():
             if name not in names:
                 names.append(name)
         return tuple(names)
 
     def __contains__(self, name: object) -> bool:
-        """
-        Support `name in sds` by checking field availability.
-        Used by: `SmartDs` users and internal methods
-        """
         return isinstance(name, str) and self.has_field(name)
 
-    def __call__(self, name: str):
-        """
-        `sds(name)` is shorthand for `sds.variable(name)`.
-        Used by: `SmartDs` users and internal methods
-        """
-        return self.variable(name)
+    def __call__(self, index_or_name):
+        return self.variable(index_or_name)
+
+    def __getitem__(self, index_or_name):
+        return self.variable(index_or_name)
 
     def has_raw_field(self, name: str) -> bool:
-        """
-        Check only raw dataset fields.
-        Used by: `SmartDs` users and internal methods
-        """
-        return name in self._dataset.variables
+        return self._resolve_raw_name(name) is not None
 
     def has_field(self, name: str) -> bool:
-        """
-        Check whether a field is available from raw data or the attached graph.
-        Used by: `SmartDs` users and internal methods
-        """
         if self.has_raw_field(name):
             return True
-        if self._computation_graph is None:
+        try:
+            cost, _tree = self.resolve(name)
+        except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
             return False
-        return name in _graph_field_names(self)
+        return np.isfinite(cost)
 
     def get(self, name: str, default=None):
-        """
-        Dict-like getter wrapper around `variable(...)` with a default.
-        Used by: `SmartDs` users and internal methods
-        """
         try:
             return self.variable(name)
         except (IndexError, KeyError):
             return default
 
     def set_computation_graph(self, graph, *, merge: bool = False):
-        """
-        Attach or merge a griblet computation graph used for unresolved fields.
-        Used by: `SmartDs` users and internal methods
-        """
         if graph is None:
-            log.info("SmartDs graph cleared")
-            self._computation_graph = None
+            self._computation_graph = griblet.ComputationGraph()
             return self
 
-        if merge and self._computation_graph is not None:
-            log.debug("SmartDs merging computation graph")
+        if merge:
             self._computation_graph.merge(graph)
         else:
-            log.debug("SmartDs setting computation graph")
             self._computation_graph = graph
         return self
 
     def add_spherical_graph(
         self,
         *,
-        coord_fields: Sequence[str] | None = None,
-        vectors: Sequence[str] | None = None,
+        coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
+        vectors: Sequence[str] = ("B", "U"),
+        components: Sequence[str] = ("r", "theta", "phi"),
         merge: bool = True,
     ):
-        """
-        Add griblet spherical geometry/vector recipes to the attached graph.
-        Used by: `SmartDs` users and internal methods
-        """
-        from batwind.recipes.spherical import _vector_triplets
-        from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
-        from batwind.recipes.spherical import build_griblet_vector_spherical_components_graph
+        from batwind.recipes.spherical import (
+            build_griblet_auto_vector_spherical_components_graph,
+            build_griblet_spherical_geometry_graph,
+        )
 
-        if coord_fields is None:
-            coord_fields = self.DEFAULT_COORD_FIELDS
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
-        for prefix, unit in _vector_triplets(self.variables, prefixes=vectors):
-            graph.merge(
-                build_griblet_vector_spherical_components_graph(
-                    prefix=prefix,
-                    unit=unit,
-                    coord_fields=coord_fields,
-                )
+        graph.merge(
+            build_griblet_auto_vector_spherical_components_graph(
+                self.keys(),
+                coord_fields=coord_fields,
+                prefixes=tuple(vectors),
+                components=tuple(components),
             )
+        )
         self.set_computation_graph(graph, merge=merge)
         return self
 
     def add_batsrus_graph(
         self,
         *,
-        body_radius: float | None = None,
+        body_radius_m: float | None = None,
         include_unit_normalization: bool = True,
         include_derived: bool = True,
         merge: bool = True,
     ):
-        """
-        Add the BATSRUS SI-normalization and derived-field recipe graph.
-        Used by: `SmartDs` users and internal methods
-        """
         from batwind.recipes.batsrus import build_griblet_batsrus_graph
 
         graph = build_griblet_batsrus_graph(
             self.variables,
             aux=self.aux,
-            body_radius=body_radius,
+            body_radius_m=body_radius_m,
             include_unit_normalization=include_unit_normalization,
             include_derived=include_derived,
         )
@@ -293,82 +182,79 @@ class SmartDs:
         return self
 
     def prepare(self, *, body_radius: float | None = None) -> "SmartDs":
-        """
-        Attach the standard SI and spherical graphs used by common workflows.
-        If `body_radius` is omitted, the BATSRUS graph must be able to infer it
-        from available metadata (for example nearby `PARAM.in` stellar parameters).
-        Used by: `batwind/pipelines/slice.py`, `batwind/pipelines/volume.py`, `batwind/pipelines/shell.py`
-        """
-        log.info("SmartDs.prepare start")
-        self.add_batsrus_graph(body_radius=body_radius)
+        self.add_batsrus_graph(body_radius_m=body_radius)
         self.add_spherical_graph()
-        log.info("SmartDs.prepare done")
         return self
 
     def clear_cache(self, *names: str) -> None:
-        """
-        Clear cached field values (all or selected names).
-        Used by: `SmartDs` users and internal methods
-        """
         if not names:
-            log.debug("SmartDs clearing all field and spatial caches")
             self._cache.clear()
-            self._resample_spatial_cache.clear()
             return
         for name in names:
-            log.debug("SmartDs clearing field cache entry '%s'", name)
             self._cache.pop(name, None)
 
-    def variable(self, name: str):
-        """
-        Main name-based field accessor. Raw loader fields win when present; otherwise
-        SmartDs produces the field from the attached graph.
-        Used by: `SmartDs` users and internal methods
-        """
-        if not isinstance(name, str):
-            log.error("SmartDs.variable failed: non-string field key")
-            raise TypeError("SmartDs fields must be requested by name")
+    def variable(self, index_or_name):
+        if not isinstance(index_or_name, str):
+            if isinstance(index_or_name, int) and hasattr(self._dataset, "variable"):
+                return self._dataset.variable(self._dataset.variables[index_or_name])
+            return self._dataset[index_or_name]
+
+        name = index_or_name
         if self._cache_enabled and name in self._cache:
-            log.debug("SmartDs.variable cache hit '%s'", name)
             return self._cache[name]
 
-        if name in self._dataset.variables:
-            log.debug("SmartDs.variable raw field '%s'", name)
-            value = self._dataset.variable(name)
-        else:
-            try:
-                log.debug("SmartDs.variable graph field '%s'", name)
-                value = _compute_via_graph(self, name)
-            except UnresolvableFieldError as exc:
-                log.error("SmartDs.variable failed: cannot resolve '%s'", name)
-                raise IndexError(str(exc)) from exc
+        raw_name = self._resolve_raw_name(name)
+        if raw_name is not None:
+            if hasattr(self._dataset, "variable"):
+                value = self._dataset.variable(raw_name)
+            else:
+                value = self._dataset[raw_name]
+            if self._cache_enabled:
+                self._cache[name] = value
+            return value
 
+        value = self._compute_via_graph(name)
         if self._cache_enabled:
             self._cache[name] = value
         return value
 
+    def resolve(self, name: str):
+        graph = self._build_runtime_graph()
+        solver = griblet.DependencySolver(graph)
+        return solver.resolve_field(name)
+
     def explain(self, name: str, *, return_tree: bool = False):
-        """
-        Human-readable explanation of the chosen griblet path for a field.
-        Used by: `SmartDs` users and internal methods
-        """
-        return _explain_field(self, name, return_tree=return_tree)
+        cost, tree = self.resolve(name)
+        if return_tree:
+            return cost, tree
+
+        lines: list[str] = []
+
+        def walk(node, depth=0):
+            meta = getattr(node, "recipe_metadata", {}) or {}
+            desc = meta.get("description", "")
+            planned = getattr(node, "cost", None)
+            parts = [node.field]
+            if planned is not None:
+                parts.append(f"(cost={planned})")
+            if desc:
+                parts.append(f"- {desc}")
+            lines.append("  " * depth + " ".join(parts))
+            for dep in getattr(node, "deps", []):
+                walk(dep, depth + 1)
+
+        walk(tree)
+        header = f"{name} total_cost={cost}"
+        return "\n".join([header, *lines])
 
     def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
-        """
-        Resolve requested fields to raw field dependencies for interpolation.
-        Used by: `batwind/analysis/trajectories.py`, `batwind/analysis/shells.py`,
-          `batwind/analysis/slices.py`
-        """
         base_fields: list[str] = []
 
         def add(name: str) -> None:
-            """Append a field name once while preserving insertion order."""
             if name not in base_fields:
                 base_fields.append(name)
 
         def raw_leaves(node) -> list[str]:
-            """Collect raw dataset leaf fields from one resolved dependency tree node."""
             deps = list(getattr(node, "deps", []) or [])
             if not deps:
                 field = getattr(node, "field", None)
@@ -387,8 +273,8 @@ class SmartDs:
                 add(field)
                 continue
             try:
-                _cost, tree = self.explain(field, return_tree=True)
-            except (IndexError, KeyError, RuntimeError):
+                _cost, tree = self.resolve(field)
+            except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
                 add(field)
                 continue
             leaves = raw_leaves(tree)
@@ -397,7 +283,23 @@ class SmartDs:
                     add(leaf)
             else:
                 add(field)
+
         return tuple(base_fields)
+
+    def _compute_via_graph(self, name: str):
+        graph = self._build_runtime_graph()
+        solver = griblet.DependencySolver(graph)
+        try:
+            cost, tree = solver.resolve_field(name)
+        except UnresolvableFieldError as e:
+            raise IndexError(
+                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
+            ) from e
+        if not np.isfinite(cost):
+            raise IndexError(
+                f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
+            )
+        return self._evaluate_resolved_tree(tree, graph)
 
     def resample(
         self,
@@ -412,20 +314,6 @@ class SmartDs:
         title: str | None = None,
         zone: str | None = None,
     ) -> "SmartDs":
-        """
-        Generic resampling entry point returning a new SmartDs (flat or structured targets).
-
-        Expected workflow:
-        1. Create target points.
-        2. Resample this SmartDs onto those points.
-        3. Append any extra context fields to the returned SmartDs if needed.
-
-        Future implementation target:
-        - allow `sample_points` to be another `SmartDs` so one dataset can be resampled
-          directly onto another dataset's coordinate points.
-
-        Used by: `SmartDs` users and internal methods
-        """
         return resample_smart_ds(
             self,
             sample_points,
@@ -445,14 +333,10 @@ class SmartDs:
         *,
         zone_suffix: str = "derived fields",
     ) -> "SmartDs":
-        """
-        Return a new SmartDs with extra point-shaped fields appended to the raw dataset.
-        Used by: `batwind/analysis/shells.py`
-        """
         if not extra_fields:
             return self
 
-        base_points = np.array(self.raw.points)
+        base_points = np.asarray(self.raw.points)
         if base_points.ndim < 2:
             raise ValueError("Expected raw points to have shape (..., nvars)")
         base_shape = base_points.shape[:-1]
@@ -460,7 +344,7 @@ class SmartDs:
         arrays = []
         names = []
         for name, values in extra_fields.items():
-            arr = np.array(values)
+            arr = np.asarray(values)
             if arr.shape != base_shape:
                 raise ValueError(
                     f"Extra field '{name}' shape {arr.shape} does not match dataset grid shape {base_shape}"
@@ -484,16 +368,13 @@ class SmartDs:
             include_aux_in_loader=self._include_aux_in_loader,
         )
 
+    def _resolve_raw_name(self, name: str) -> str | None:
+        if name in self._dataset.variables:
+            return name
+        return None
+
     def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:
-        """
-        Infer coordinate fields from common BATSRUS-style XYZ names.
-        Used by: `SmartDs` users and internal methods
-        """
-        preferred = [
-            "X [R]",
-            "Y [R]",
-            "Z [R]",
-        ]
+        preferred = ["X [R]", "Y [R]", "Z [R]"]
         available = [name for name in preferred if name in self._dataset.variables]
         if len(available) >= ndim:
             return tuple(available[:ndim])
@@ -501,3 +382,53 @@ class SmartDs:
         raise ValueError(
             "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
+
+    def _build_runtime_graph(self):
+        runtime_graph = griblet.ComputationGraph()
+        runtime_graph.merge(self._build_loader_graph())
+        runtime_graph.merge(self._computation_graph)
+        return runtime_graph
+
+    def _build_loader_graph(self):
+        graph = griblet.ComputationGraph()
+
+        for raw_name in self._dataset.variables:
+            graph.add_recipe(
+                field=raw_name,
+                func=lambda raw_name=raw_name: (
+                    self._dataset.variable(raw_name)
+                    if hasattr(self._dataset, "variable")
+                    else self._dataset[raw_name]
+                ),
+                deps=[],
+                cost=0.0,
+                metadata={"description": "Dataset raw field"},
+            )
+
+        if self._include_aux_in_loader:
+            for key, value in self._dataset.aux.items():
+                graph.add_recipe(
+                    field=key,
+                    func=lambda value=value: value,
+                    deps=[],
+                    cost=0.0,
+                    metadata={"description": "Dataset aux"},
+                )
+        return graph
+
+    def _evaluate_resolved_tree(self, node, graph):
+        if getattr(node, "used_primary", False):
+            for recipe in graph.recipes[node.field]:
+                if len(recipe["deps"]) == 0:
+                    return recipe["func"]()
+            raise RuntimeError(f"No zero-dependency recipe for {node.field}")
+
+        values = [self._evaluate_resolved_tree(dep, graph) for dep in node.deps]
+        dep_fields = tuple(dep.field for dep in node.deps)
+        for recipe in graph.recipes[node.field]:
+            if tuple(recipe["deps"]) == dep_fields:
+                return recipe["func"](*values)
+        raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
+
+
+__all__ = ["SmartDs"]

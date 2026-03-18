@@ -1,10 +1,6 @@
 """Small weighted-statistics primitives.
 """
 
-# It provides reusable numerical helpers (weighted mean/std/quantile).
-# It should remain pure math with no dataset or plotting dependencies.
-
-
 from __future__ import annotations
 
 import logging
@@ -13,11 +9,10 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+
 def weighted_mean_std(values, weights=None):
     """
     Weighted mean and standard deviation over finite values.
-    Used by: `test/test_shell_analysis.py`, `batwind/analysis/shell_summary.py`,
-      `batwind/analysis/stats.py`
     """
     v = np.array(values)
     if weights is None:
@@ -30,25 +25,22 @@ def weighted_mean_std(values, weights=None):
 
     mask = np.isfinite(v) & np.isfinite(w) & (w >= 0)
     if not np.any(mask):
-        log.warning("weighted_mean_std: no active finite/non-negative samples")
         return np.nan, np.nan
 
     v = v[mask]
     w = w[mask]
     wsum = float(np.sum(w))
     if wsum <= 0:
-        log.warning("weighted_mean_std: non-positive total weight")
         return np.nan, np.nan
 
     mean = float(np.average(v, weights=w))
     var = float(np.average((v - mean) ** 2, weights=w))
     return mean, float(np.sqrt(var))
 
+
 def weighted_quantile(values, quantiles, weights=None):
     """
     Weighted quantiles for 1D data.
-    Used by: `test/test_shell_analysis.py`, `batwind/analysis/shell_summary.py`,
-      `batwind/analysis/stats.py`
     """
     v = np.array(values).ravel()
     q = np.array(quantiles)
@@ -58,12 +50,10 @@ def weighted_quantile(values, quantiles, weights=None):
     else:
         w = np.array(weights).ravel()
         if w.shape != v.shape:
-            log.error("weighted_quantile failed: weights shape %s values shape %s", w.shape, v.shape)
             raise ValueError("weights must have the same shape as values")
 
     mask = np.isfinite(v) & np.isfinite(w) & (w > 0)
     if not np.any(mask):
-        log.warning("weighted_quantile: no active finite/positive-weight samples")
         out = np.full_like(q, np.nan, dtype=float)
         return float(out) if out.ndim == 0 else out
 
@@ -80,18 +70,20 @@ def weighted_quantile(values, quantiles, weights=None):
     out = v[np.searchsorted(cdf, q, side="left")]
     return float(out) if np.ndim(quantiles) == 0 else out
 
+
 def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=None):
     """
     Weighted quantiles + mean/std summary for 1D samples.
-    Used by: `batwind/physics/curve.py`, `batwind/physics/orbit_surface.py`
     """
     v = np.array(values)
     qv = weighted_quantile(v, quantiles, weights=weights)
     mean, std = weighted_mean_std(v, weights=weights)
-    log.debug("summarize_samples done n=%d", v.size)
     return {
         "quantiles": np.array(quantiles),
         "values": np.array(qv),
         "mean": float(mean),
         "std": float(std),
     }
+
+
+__all__ = ["summarize_samples", "weighted_mean_std", "weighted_quantile"]

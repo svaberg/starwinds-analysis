@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 from scipy import constants as const
 
-from batwind.analysis.trajectories import circular_orbit_points
-from batwind.analysis.trajectories import sample_curve
-from batwind.analysis.trajectories import trajectory_velocity
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
 from batwind.analysis.stats import summarize_samples
+from batwind.analysis.trajectories import circular_orbit_points
+from batwind.analysis.trajectories import sample_curve
+from batwind.analysis.trajectories import trajectory_velocity
 from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.curve import mass_loss_from_curve
 from batwind.physics.curve import torque_from_curve
@@ -18,11 +18,10 @@ from batwind.physics.orbits import orbital_velocity
 from batwind.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def sample_circular_curve(sds, radius_r, *, fields, n_points, method):
-    """Sample requested fields on a circular XY curve and append phase/weights."""
     points = circular_orbit_points(radius_r, n_points=n_points)
     curve = sample_curve(sds, points, fields=fields, method=method)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
@@ -38,7 +37,6 @@ def sample_circular_curve(sds, radius_r, *, fields, n_points, method):
 
 
 def interpolate_profile(radii, values, x):
-    """Interpolate one shell profile onto curve radii, using NaN outside range."""
     r = np.array(radii)
     y = np.array(values)
     x = np.array(x)
@@ -64,8 +62,7 @@ def compare_curve_mass_loss_to_shell(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    """Compare local curve mass-loss estimates against shell-integrated values."""
-    body_radius = float(curve("star_radius [m]"))
+    body_radius = float(curve("RBODY [m]"))
     weights = curve.get("time_weight [none]")
     mass_flux = np.array(curve("mass_flux [kg/m^2/s]"))
     radius = np.array(curve("R [m]"))
@@ -121,8 +118,7 @@ def compare_curve_torque_to_shell(
     shell_n_azimuth: int,
     shell_radii=None,
 ):
-    """Compare local curve torque estimates against shell-integrated values."""
-    body_radius = float(curve("star_radius [m]"))
+    body_radius = float(curve("RBODY [m]"))
     weights = curve.get("time_weight [none]")
     radius = np.array(curve("R [m]"))
     radius_r = radius / body_radius
@@ -193,13 +189,11 @@ def test_circular_orbit_points_constant_radius():
 def test_circular_orbit_points_uniform_weights_and_radius():
     pts = circular_orbit_points(10.0, n_points=256)
     r = np.sqrt(np.sum(pts * pts, axis=1))
-
     np.testing.assert_allclose(np.nanmin(r), 10.0, rtol=0, atol=1e-10)
     np.testing.assert_allclose(np.nanmax(r), 10.0, rtol=0, atol=1e-10)
 
 
 def test_orbital_velocity_is_constant_for_circular_case():
-    # Adapted from the old batplotlib elliptic-orbit test: circular speed is constant.
     r = np.full(64, 1.0 * const.au)
     v = orbital_velocity(r, 1.98847e30, 1.0 * const.au)
     np.testing.assert_allclose(v, v[0], rtol=1e-12, atol=0)
@@ -237,28 +231,6 @@ def test_trajectory_velocity_rejects_nonincreasing_time():
         trajectory_velocity(points, time, coordinate_scale=1.0)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
-def test_sample_zero_eccentricity_orbit_runs_on_example():
-    sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.prepare(body_radius=SOLAR_RADIUS_M)
-    out = sample_circular_curve(
-        sds,
-        10.0,
-        fields=("Rho [g/cm^3]", "U_x [km/s]", "B_x [Gauss]"),
-        n_points=72,
-        method="nearest",
-    )
-
-    x = np.array(out("X [R]"))
-    y = np.array(out("Y [R]"))
-    z = np.array(out("Z [R]"))
-    radius = np.array(out("R [m]"))
-    assert np.array(out("Rho [g/cm^3]")).shape == (72,)
-    np.testing.assert_allclose(np.sqrt(x * x + y * y + z * z), 10.0, rtol=1e-12, atol=0.0)
-    np.testing.assert_allclose(radius, SOLAR_RADIUS_M * 10.0, rtol=1e-12, atol=0.0)
-
-
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_circular_curve_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -284,7 +256,6 @@ def test_sample_circular_curve_runs_on_example():
     np.testing.assert_allclose(radius, radius_r * SOLAR_RADIUS_M, rtol=1e-12, atol=0.0)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -300,7 +271,6 @@ def test_mass_loss_from_curve_runs():
     assert np.count_nonzero(np.isfinite(values)) > 0
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -323,7 +293,6 @@ def test_torque_from_curve_runs():
     np.testing.assert_allclose(total, magnetic + dynamic, rtol=1e-12, atol=1e-12)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -350,7 +319,6 @@ def test_compare_curve_mass_loss_to_shell_runs():
     assert np.isfinite(out["mean_to_shell [none]"])
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -382,7 +350,6 @@ def test_compare_curve_torque_to_shell_runs():
     assert np.isfinite(out["mean_to_shell [none]"])
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -410,7 +377,6 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
     assert np.count_nonzero(np.isfinite(local_vals)) > 0
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)

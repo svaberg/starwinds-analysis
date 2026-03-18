@@ -1,56 +1,19 @@
-[build-system]
-requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "batwind"
+description = "Process SWMF/BATSRUS output"
 version = "0.1.0"
-description = "Analysis tools for SWMF/BATSRUS output"
-readme = "README.md"
-requires-python = ">=3.10"
-authors = [
-  { name = "Dagfinn Evensen" },
-]
-dependencies = [
-  "numpy",
-  "scipy",
-  "matplotlib",
-  "griblet @ git+https://github.com/svaberg/griblet.git",
-  "starwinds_readplt @ git+https://github.com/svaberg/starwinds-readplt",
-]
-
-[project.optional-dependencies]
-viz3d = [
-  "pyvista",
-]
-tests = [
-  "pytest",
-  "pytest-console-scripts",
-  "pytest-cov",
-  "nbmake",
-  "nbstripout",
-  "ipykernel",
-]
-dev = [
-  "nbmake",
-  "nbstripout",
-  "ipykernel",
-]
-
-[project.urls]
-Repository = "https://github.com/svaberg/batwind"
-Issues = "https://github.com/svaberg/batwind/issues"
+dependencies = ["scipy", "numpy", "matplotlib", "slugify", "batread", "griblet"]
 
 [project.scripts]
 batwind-pipe = "batwind.pipelines.batwind_pipe:main"
 batwind-pipe-results = "batwind.pipelines.batwind_pipe_results:main"
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.packages.find]
 include = ["batwind*"]
-namespaces = true
 
-[tool.pytest.ini_options]
-markers = [
-  "design_lockin: tests that primarily lock in current implementation details or schema/log formatting rather than core functionality",
-  "interactive: tests requiring user interaction / graphics",
-]
+[project.optional-dependencies]
+tests = ["pytest", "pytest-console-scripts", ]

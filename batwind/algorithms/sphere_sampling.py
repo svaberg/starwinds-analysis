@@ -1,14 +1,10 @@
 """Low-level spherical sampling algorithms and angular grids.
 """
 
-# It provides geometry/sampling primitives (for example Fibonacci sphere and polar-azimuth grids).
-# It should stay independent of SmartDs, BATSRUS field names, and plotting.
-
-
+import logging
 import math
 import random
 
-import logging
 import numpy as np
 
 log = logging.getLogger(__name__)
@@ -17,13 +13,24 @@ log = logging.getLogger(__name__)
 def fibonacci_sphere(num_points, randomize=False):
     """
     Generate approximately uniformly distributed points on the unit sphere
-    Used by: `test/test_surface_torque_analysis.py`, `batwind/analysis/shells.py`
-    """
+    using the Fibonacci (golden angle) spiral method.
+
+    Parameters
+    ----------
+    num_points : int
+        Number of points to generate on the sphere.
+    randomize : bool, optional
+        If True, applies a random phase shift to the azimuthal angle to
+        decorrelate point sets between calls. Default is False.
+
+    Returns
+    -------
+    points : ndarray of shape (num_points, 3)
+        Cartesian coordinates (x, y, z) of points on the unit sphere.
+    """    
     num_points = int(num_points)
     if num_points <= 0:
-        log.error("fibonacci_sphere failed: num_points=%d", num_points)
         raise ValueError("num_points must be > 0")
-    log.debug("fibonacci_sphere start num_points=%d randomize=%s", num_points, randomize)
     points = np.empty((num_points, 3))
 
     rnd = 1.
@@ -44,7 +51,6 @@ def fibonacci_sphere(num_points, randomize=False):
 
         points[i, :] = np.array((x, y, z))
 
-    log.info("fibonacci_sphere done num_points=%d", num_points)
     return points
 
 
@@ -57,99 +63,55 @@ class PolarAzimuthalGrid:
         azimuthal_edges
         polar_centres
         azimuthal_centres
-        cell_solid_angle
-        cell_area(radius)
-        corners_cartesian(radius)
-        centres_cartesian(radius)
+        cell_area
     """
 
     def __init__(self, polar_edge_1d, azimuthal_edge_1d):
-        """
-        Store angular shell-grid edges; radius is supplied when embedding in 3D.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         self._polar = np.array(polar_edge_1d, float)
         self._azimuthal = np.array(azimuthal_edge_1d, float)
         if self._polar.ndim != 1 or self._azimuthal.ndim != 1:
-            log.error("PolarAzimuthalGrid failed: edges must be 1D")
             raise ValueError("polar and azimuthal edges must be 1D")
         if self._polar.size < 2 or self._azimuthal.size < 2:
-            log.error("PolarAzimuthalGrid failed: insufficient edge counts")
             raise ValueError("polar and azimuthal edges must have at least two entries")
         self._meshgrid_kwargs = dict(indexing="ij")
-        log.debug(
-            "PolarAzimuthalGrid init n_polar_edges=%d n_azimuth_edges=%d",
-            self._polar.size,
-            self._azimuthal.size,
-        )
 
 
     @property
     def polar_edges(self):
-        """
-        Polar (colatitude) edge mesh for corner-based shell workflows.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         return np.meshgrid(self._azimuthal, self._polar, **self._meshgrid_kwargs)[1]
 
     @property
     def azimuthal_edges(self):
-        """
-        Azimuth edge mesh for corner-based shell workflows.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         return np.meshgrid(self._azimuthal, self._polar, **self._meshgrid_kwargs)[0]
 
     @property
     def polar_centres(self):
-        """
-        Polar centre mesh for cell-centered shell workflows.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         polar_c = 0.5 * (self._polar[:-1] + self._polar[1:])
         azimuthal_c = 0.5 * (self._azimuthal[:-1] + self._azimuthal[1:])
         return np.meshgrid(azimuthal_c, polar_c, **self._meshgrid_kwargs)[1]
 
     @property
     def azimuthal_centres(self):
-        """
-        Azimuth centre mesh for cell-centered shell workflows.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         polar_c = 0.5 * (self._polar[:-1] + self._polar[1:])
         azimuthal_c = 0.5 * (self._azimuthal[:-1] + self._azimuthal[1:])
         return np.meshgrid(azimuthal_c, polar_c, **self._meshgrid_kwargs)[0]
 
     @property
     def cell_solid_angle(self):
-        """
-        Per-cell solid angle on the angular grid (steradians).
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         dphi = np.diff(self._azimuthal)[None, :]
         band = (np.cos(self._polar[:-1]) - np.cos(self._polar[1:]))[:, None]
         return band * dphi
 
     def cell_area(self, radius=1.0):
-        """
-        Per-cell area on a spherical shell of radius `radius`.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         radius = float(radius)
         if radius <= 0:
-            log.error("cell_area failed: radius=%g", radius)
             raise ValueError("radius must be > 0")
         return (radius**2) * self.cell_solid_angle
 
     @staticmethod
     def _angles_to_cartesian(theta, phi, *, radius=1.0):
-        """
-        Convert angular coordinates to embedded 3D Cartesian points.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         radius = float(radius)
         if radius <= 0:
-            log.error("_angles_to_cartesian failed: radius=%g", radius)
             raise ValueError("radius must be > 0")
         sin_theta = np.sin(theta)
         x = radius * sin_theta * np.cos(phi)
@@ -158,17 +120,9 @@ class PolarAzimuthalGrid:
         return np.stack((x, y, z), axis=-1)
 
     def corners_cartesian(self, radius=1.0):
-        """
-        Corner-point Cartesian grid for shell plotting/resampling.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         return self._angles_to_cartesian(self.polar_edges, self.azimuthal_edges, radius=radius)
-    
+
     def centres_cartesian(self, radius=1.0):
-        """
-        Centre-point Cartesian grid for cell-centered shell sampling.
-        Used by: `PolarAzimuthalGrid` users and internal methods
-        """
         return self._angles_to_cartesian(
             self.polar_centres,
             self.azimuthal_centres,

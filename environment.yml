@@ -1,21 +1,28 @@
 name: batwind
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.11
+  - python
   - numpy
   - scipy
   - matplotlib
-  - cmocean
-  - pyvista
+  - slugify
   - pip
-  - pytest
-  - pytest-cov
-  - nbmake
-  - nbstripout
-  - ipykernel
   - git
   - pip:
-      - pytest-console-scripts
-      - git+https://github.com/svaberg/griblet.git
-      - git+https://github.com/svaberg/starwinds-readplt.git
+    - pytest-console-scripts
+    - batread
+    - griblet
+    
+  #
+  # These packages are used for testing
+  #
+  - pytest
+  - pytest-cov
+    
+  #
+  # This package is used for Codacy integration
+  #
+  - codacy-coverage
+  

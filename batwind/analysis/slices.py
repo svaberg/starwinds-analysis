@@ -1,10 +1,6 @@
 """Structured 2D slice resampling helpers (for example XZ from 3D).
 """
 
-# It resamples onto structured planes and returns SmartDs-compatible datasets.
-# It should not own plotting behavior.
-
-
 from __future__ import annotations
 
 import logging
@@ -13,13 +9,12 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+
 def structured_quad_corners(nx: int, nz: int):
     """
     Quad connectivity for a row-major `(nz, nx)` point grid.
-    Used by: `test/test_slices_analysis.py`, `batwind/analysis/slices.py`
     """
     if nx < 2 or nz < 2:
-        log.error("structured_quad_corners failed: nx=%d nz=%d", nx, nz)
         raise ValueError("nx and nz must be >= 2")
 
     corners = np.empty(((nx - 1) * (nz - 1), 4), dtype=int)
@@ -32,15 +27,11 @@ def structured_quad_corners(nx: int, nz: int):
             k += 1
     return corners
 
+
 def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
-    """
-    Infer a plotting/resampling range from data with optional symmetry/padding.
-    Used by: `test/test_slices_analysis.py`, `batwind/analysis/slices.py`
-    """
     v = np.array(values)
     v = v[np.isfinite(v)]
     if v.size == 0:
-        log.error("infer_range failed: no finite values")
         raise ValueError("No finite values to infer range from")
     lo = float(np.min(v))
     hi = float(np.max(v))
@@ -53,6 +44,7 @@ def infer_range(values, *, symmetric: bool = False, padding_frac: float = 0.0):
         hi += pad
     log.debug("infer_range lo=%g hi=%g symmetric=%s padding_frac=%g", lo, hi, symmetric, padding_frac)
     return lo, hi
+
 
 def resample_structured_xz_slice(
     smart_ds,
@@ -70,15 +62,15 @@ def resample_structured_xz_slice(
 ):
     """
     Resample a 3D dataset onto a structured XZ plane and return a new `SmartDs`.
-    Used by: `test/test_slices_analysis.py`, `batwind/pipelines/slice.py`, `batwind/pipelines/volume.py`
+
+    The resulting dataset has quad connectivity and can be used with the existing
+    2D slice plotting helpers.
     """
-    log.info("resample_structured_xz_slice start method=%s", method)
     if nx < 2 or nz < 2:
-        log.error("resample_structured_xz_slice failed: nx=%d nz=%d", nx, nz)
         raise ValueError("nx and nz must be >= 2")
 
-    x = np.array(smart_ds.variable("X [R]"))
-    z = np.array(smart_ds.variable("Z [R]"))
+    x = np.asarray(smart_ds.variable("X [R]"), dtype=float)
+    z = np.asarray(smart_ds.variable("Z [R]"), dtype=float)
 
     if x_range is None:
         x_range = infer_range(x, symmetric=symmetric_ranges, padding_frac=padding_frac)
@@ -106,12 +98,5 @@ def resample_structured_xz_slice(
         fill_value=fill_value,
         corners=corners,
         zone=f"{smart_ds.zone} (XZ slice y={y_value:g})",
-    )
-    log.info(
-        "resample_structured_xz_slice done nx=%d nz=%d y=%g fields=%d",
-        nx,
-        nz,
-        float(y_value),
-        len(fields),
     )
     return sliced

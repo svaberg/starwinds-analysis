@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import numpy as np
-import pytest
 
-from starwinds_readplt.dataset import Dataset
+from batread.dataset import Dataset
 
 from batwind.analysis.trajectories import circular_orbit_points
 from batwind.analysis.trajectories import trajectory_velocity
@@ -17,7 +16,7 @@ from batwind.physics.orbit_surface import torque_components_on_surface
 from batwind.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 SUN_MASS_KG = 1.98847e30
 
 
@@ -92,7 +91,7 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
         Dataset(
             points,
             np.empty((0, 0), dtype=int),
-            {"star_radius [m]": SOLAR_RADIUS_M},
+            {"RBODY [m]": SOLAR_RADIUS_M},
             "surface-demo",
             [
                 "X [R]",
@@ -121,7 +120,6 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
     assert np.isfinite(out["summary"]["ram_pressure [Pa]"]["mean"])
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_surface_revolution_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     points = circular_orbit_points(10.0, n_points=64)
@@ -147,7 +145,6 @@ def test_sample_surface_revolution_runs_on_example():
     assert np.isclose(np.sum(np.array(out("time_weight [none]"))[:, 0]), 1.0)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -190,9 +187,7 @@ def test_pressure_components_on_surface_runs_on_example():
         n_longitudes=48,
         method="nearest",
     )
-    out = pressure_components_on_surface(
-        sampled,
-    )
+    out = pressure_components_on_surface(sampled)
     for key in (
         "ram_pressure [Pa]",
         "magnetic_pressure [Pa]",
@@ -208,7 +203,6 @@ def test_pressure_components_on_surface_runs_on_example():
     assert out["phase_quantiles"]["ram_pressure [Pa]"]["values"].shape[0] == 64
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)

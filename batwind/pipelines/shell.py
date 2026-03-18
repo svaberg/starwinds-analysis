@@ -109,10 +109,11 @@ def process_plt_file(file_path: str | Path) -> None:
     log.info("%s", path.name)
     log.info("Resolving shell pipeline paths complete.")
 
-    # Start: load dataset and shell grid geometry.
+    # Start: load dataset, attach the graph-backed fields, and build shell geometry.
     log.debug("Loading shell dataset and preparing native shell grid...")
     smart_ds = SmartDs.from_file(path)
-    smart_ds.prepare()
+    smart_ds.add_batsrus_graph()
+    smart_ds.add_spherical_graph(vectors=("B", "U"))
     lon_all, lat_all, shell_radii_r, lon_nodes, lat_nodes, shell_masks, shell_areas_m2, height_r = load_shell_grid(smart_ds)
     log.info("Loading shell dataset and preparing native shell grid complete.")
 

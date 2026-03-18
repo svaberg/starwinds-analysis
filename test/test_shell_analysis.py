@@ -1,10 +1,8 @@
 from pathlib import Path
 
 import numpy as np
-import pytest
 
-from batwind.constants import SOLAR_RADIUS_M
-from batwind.analysis.stats import summarize_samples
+from batwind.algorithms.spherical import cartesian_vector_to_spherical_components
 from batwind.analysis.shell_summary import boxcar_shell_weights
 from batwind.analysis.shell_summary import summarize_shell_diagnostics_band
 from batwind.analysis.shell_summary import summarize_shell_series
@@ -12,18 +10,18 @@ from batwind.analysis.shells import infer_cartesian_axis_radii
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.analysis.stats import summarize_samples
 from batwind.analysis.stats import weighted_mean_std
 from batwind.analysis.stats import weighted_quantile
-from batwind.algorithms.spherical import cartesian_vector_to_spherical_components
+from batwind.constants import SOLAR_RADIUS_M
 from batwind.physics.wind_scaling import open_wind_magnetisation
 from batwind.physics.wind_scaling import surface_escape_speed
 from batwind.smart_ds import SmartDs
 
 
-EXAMPLE_PLT = Path("sample_data/3d__var_4_n00000000.plt")
+EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_spherical_shells_area_matches_sphere():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     radii = np.array([2.0, 5.0, 10.0])
@@ -43,7 +41,6 @@ def test_sample_spherical_shells_area_matches_sphere():
     np.testing.assert_allclose(area_total, expected, rtol=2e-2, atol=0.0)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_infer_cartesian_axis_radii_returns_sorted_positive_values():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     radii = infer_cartesian_axis_radii(sds, axis="x", r_min=1.0)
@@ -54,7 +51,6 @@ def test_infer_cartesian_axis_radii_returns_sorted_positive_values():
     assert np.all(np.diff(radii) >= 0)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_sample_spherical_shells_fibonacci_area_matches_sphere():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     radii = np.array([2.0, 5.0, 10.0])
@@ -74,7 +70,6 @@ def test_sample_spherical_shells_fibonacci_area_matches_sphere():
     assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_mass_loss_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -99,10 +94,9 @@ def test_mass_loss_profile_runs_on_example():
     assert np.count_nonzero(np.isfinite(m)) == 4
     assert np.any(np.abs(m) > 0)
     assert radii_profile.shape == (4,)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_grid_shell_mass_flux_primitives_match_shell_integral():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -135,7 +129,6 @@ def test_grid_shell_mass_flux_primitives_match_shell_integral():
     assert arr.size == 12 * 24
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_torque_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -171,13 +164,10 @@ def test_torque_profile_runs_on_example():
     assert np.all((cov > 0.90) & (cov <= 1.0 + 1e-12))
     assert np.any(np.isfinite(tot))
     assert radii_profile.shape == (4,)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1  # Fibonacci default
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] == 1
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_unsigned_magnetic_flux_profile_runs_on_example():
-    # Adapted from batplotlib's test_unsigned_magnetic_flux: compare signed flux from
-    # B_r with signed flux from B·n, and compute unsigned/open flux.
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
     shells = sample_spherical_shells_fibonacci(
@@ -215,7 +205,6 @@ def test_unsigned_magnetic_flux_profile_runs_on_example():
     assert radii_profile.shape == (4,)
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_axisymmetric_open_flux_fraction_is_bounded():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)
@@ -239,16 +228,14 @@ def test_axisymmetric_open_flux_fraction_is_bounded():
         frac = np.divide(axi, total, out=np.full_like(axi, np.nan), where=total != 0)
 
     finite = np.isfinite(frac)
-
     assert np.any(finite)
     assert np.all(axi[finite] >= 0)
     assert np.all(total[finite] >= 0)
     assert np.all(frac[finite] >= -1e-12)
     assert np.all(frac[finite] <= 1.0 + 1e-12)
-    assert np.array(shells("X [R]"), dtype=float).shape[-1] > 1  # grid sampler retained for axisymmetry
+    assert np.array(shells("X [R]"), dtype=float).shape[-1] > 1
 
 
-@pytest.mark.skipif(not EXAMPLE_PLT.exists(), reason="example BATSRUS file not present")
 def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.prepare(body_radius=SOLAR_RADIUS_M)

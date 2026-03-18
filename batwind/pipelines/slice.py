@@ -29,10 +29,11 @@ def process_plt_file(file_path: str | Path) -> None:
     log.info("%s", path.name)
     log.info("Resolving slice pipeline paths complete.")
 
-    # Start: load and prepare the dataset for direct plotting.
+    # Start: load the dataset and attach the graph-backed derived fields it needs.
     log.debug("Loading and preparing slice dataset...")
     smart_ds = SmartDs.from_file(path)
-    smart_ds.prepare()
+    smart_ds.add_batsrus_graph()
+    smart_ds.add_spherical_graph(vectors=("B", "U"))
     output_dir.mkdir(parents=True, exist_ok=True)
     prefix = output_prefix_from_input_file(path.name)
     log.info("Loading and preparing slice dataset complete.")
