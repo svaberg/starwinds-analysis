@@ -146,7 +146,6 @@ class SmartDs:
         coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
         vectors: Sequence[str] = ("B", "U"),
         components: Sequence[str] = ("r", "p", "a"),
-        merge: bool = True,
     ):
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
         graph.merge(
@@ -157,8 +156,6 @@ class SmartDs:
                 components=tuple(components),
             )
         )
-        if not merge:
-            self.clear_computation_graph()
         self.merge_computation_graph(graph)
         return self
 
@@ -168,7 +165,6 @@ class SmartDs:
         body_radius_m: float | None = None,
         include_unit_normalization: bool = True,
         include_derived: bool = True,
-        merge: bool = True,
     ):
         graph = build_griblet_batsrus_graph(
             self.variables,
@@ -177,8 +173,6 @@ class SmartDs:
             include_unit_normalization=include_unit_normalization,
             include_derived=include_derived,
         )
-        if not merge:
-            self.clear_computation_graph()
         self.merge_computation_graph(graph)
         return self
 
