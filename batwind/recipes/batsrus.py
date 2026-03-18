@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-import math
 import re
 
 import griblet
 import numpy as np
+from scipy.constants import atomic_mass, mu_0
 
 
-_AMU_KG = 1.66053906660e-27
-_MU0 = 4.0e-7 * math.pi
 _DEFAULT_GAMMA = 5.0 / 3.0
 
 
 _UNIT_FACTORS = {
     "g/cm^3": ("kg/m^3", 1e3),
-    "amu/cm^3": ("kg/m^3", _AMU_KG * 1e6),
+    "amu/cm^3": ("kg/m^3", atomic_mass * 1e6),
     "km/s": ("m/s", 1e3),
     "Gauss": ("T", 1e-4),
     "G": ("T", 1e-4),
@@ -166,7 +164,7 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     # Alfven speed and Alfven Mach
     graph.add_recipe(
         "c_A [m/s]",
-        lambda B, rho: np.asarray(B) / np.sqrt(_MU0 * np.asarray(rho)),
+        lambda B, rho: np.asarray(B) / np.sqrt(mu_0 * np.asarray(rho)),
         deps=["B [T]", "Rho [kg/m^3]"],
         cost=0.2,
         metadata={"description": "Alfven speed"},
@@ -187,7 +185,7 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     )
     graph.add_recipe(
         "P_b [Pa]",
-        lambda B: np.asarray(B) ** 2 / (2.0 * _MU0),
+        lambda B: np.asarray(B) ** 2 / (2.0 * mu_0),
         deps=["B [T]"],
         cost=0.12,
         metadata={"description": "Magnetic pressure"},
@@ -246,7 +244,7 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
 
     graph.add_recipe(
         "magnetic_torque_density [N/m]",
-        lambda varpi, bphi, br: -np.asarray(varpi) * np.asarray(bphi) * np.asarray(br) / _MU0,
+        lambda varpi, bphi, br: -np.asarray(varpi) * np.asarray(bphi) * np.asarray(br) / mu_0,
         deps=["cylindrical_radius [m]", "B_a [T]", "B_r [T]"],
         cost=0.2,
         metadata={"description": "Magnetic z-torque density (shell form)"},
@@ -369,7 +367,7 @@ def _safe_gamma(gamma):
 
 def _standoff_distance_from_rho_u(rho, U):
     p_ram = np.asarray(rho) * (np.asarray(U) ** 2)
-    numer = (0.7e-4**2) / (2.0 * _MU0)
+    numer = (0.7e-4**2) / (2.0 * mu_0)
     return np.power(numer / p_ram, 1.0 / 6.0)
 
 
