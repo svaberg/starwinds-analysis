@@ -3,8 +3,7 @@ from .batsrus import (
     build_common_derived_graph,
     build_coordinate_scale_graph,
     build_unit_normalization_graph,
-    build_vector_cartesian_graph,
-    build_vector_magnitude_graph,
+    build_vector_graph,
 )
 from .spherical import (
     build_spherical_graph,
@@ -18,8 +17,7 @@ __all__ = [
     "build_common_derived_graph",
     "build_coordinate_scale_graph",
     "build_unit_normalization_graph",
-    "build_vector_cartesian_graph",
-    "build_vector_magnitude_graph",
+    "build_vector_graph",
     "build_spherical_graph",
     "cartesian_to_spherical_angles",
     "radial_component",

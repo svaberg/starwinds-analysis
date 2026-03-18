@@ -146,8 +146,7 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     varset = set(variable_names)
 
     # Cartesian vector stacks and magnitudes.
-    graph.merge(build_vector_cartesian_graph(varset))
-    graph.merge(build_vector_magnitude_graph(varset))
+    graph.merge(build_vector_graph(varset))
 
     # Sound speed c_s [m/s]
     if {"P [Pa]", "Rho [kg/m^3]"}.issubset(varset) or True:
@@ -301,27 +300,7 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
     return graph
 
 
-def build_vector_magnitude_graph(variable_names: set[str] | Sequence[str]):
-    graph = griblet.ComputationGraph()
-    by_prefix: dict[tuple[str, str], set[str]] = {}
-    for prefix, comp, unit in _available_xyz_components(variable_names):
-        by_prefix.setdefault((prefix, unit), set()).add(comp)
-
-    for (prefix, unit), comps in sorted(by_prefix.items()):
-        if comps != {"x", "y", "z"}:
-            continue
-        deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
-        graph.add_recipe(
-            f"{prefix} [{unit}]",
-            lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
-            deps=deps,
-            cost=0.1,
-            metadata={"description": f"{prefix} magnitude"},
-        )
-    return graph
-
-
-def build_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
+def build_vector_graph(variable_names: set[str] | Sequence[str]):
     graph = griblet.ComputationGraph()
 
     by_prefix: dict[tuple[str, str], set[str]] = {}
@@ -338,6 +317,13 @@ def build_vector_cartesian_graph(variable_names: set[str] | Sequence[str]):
             deps=deps,
             cost=0.05,
             metadata={"description": f"{prefix} Cartesian vector"},
+        )
+        graph.add_recipe(
+            f"{prefix} [{unit}]",
+            lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
+            deps=deps,
+            cost=0.1,
+            metadata={"description": f"{prefix} magnitude"},
         )
     return graph
 
@@ -408,6 +394,5 @@ __all__ = [
     "build_common_derived_graph",
     "build_coordinate_scale_graph",
     "build_unit_normalization_graph",
-    "build_vector_cartesian_graph",
-    "build_vector_magnitude_graph",
+    "build_vector_graph",
 ]

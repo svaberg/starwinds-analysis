@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from batwind.recipes.batsrus import build_vector_cartesian_graph
+from batwind.recipes.batsrus import build_vector_graph
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +141,6 @@ def sample_trajectory(
     context_fields["V_y [m/s]"] = velocity[:, 1]
     context_fields["V_z [m/s]"] = velocity[:, 2]
     sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
-    sampled_curve.merge_computation_graph(build_vector_cartesian_graph(sampled_curve.variables))
+    sampled_curve.merge_computation_graph(build_vector_graph(sampled_curve.variables))
     log.info("sample_trajectory done with velocity fields")
     return sampled_curve

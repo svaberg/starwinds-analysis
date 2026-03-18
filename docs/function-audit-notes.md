@@ -299,7 +299,7 @@ Used by: `batwind/pipelines/batwind_pipe.py`
 - `build_batsrus_graph`: Top-level BATSRUS recipe graph builder (normalization + derived).
 - `build_unit_normalization_graph`: Raw-unit -> SI conversions + scalar aux parsing recipes.
 - `build_common_derived_graph`: Derived SI recipes (Mach, pressure, fluxes, torque densities, helpers).
-- `build_vector_cartesian_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
+- `build_vector_graph`: `prefix_xyz` and vector magnitudes from Cartesian components.
 - `body_radius_from_inputs`: Resolves body radius from explicit input or aux keys.
 
 Used by: `batwind/smart_ds.py`, `batwind/analysis/trajectories.py`
