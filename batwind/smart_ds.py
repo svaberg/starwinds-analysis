@@ -33,7 +33,7 @@ class SmartDs:
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = griblet.ComputationGraph()
         if computation_graph is not _UNSET_COMPUTATION_GRAPH:
-            self.set_computation_graph(computation_graph, merge=True)
+            self.merge_computation_graph(computation_graph)
         self._include_aux_in_loader = bool(include_aux_in_loader)
 
     @classmethod
@@ -127,14 +127,14 @@ class SmartDs:
         except (IndexError, KeyError):
             return default
 
-    def set_computation_graph(self, graph, *, merge: bool = False):
+    def clear_computation_graph(self):
+        self._computation_graph = griblet.ComputationGraph()
+        return self
+
+    def merge_computation_graph(self, graph):
         if not isinstance(graph, griblet.ComputationGraph):
             raise TypeError("graph must be a griblet.ComputationGraph")
-
-        if merge:
-            self._computation_graph.merge(graph)
-        else:
-            self._computation_graph = graph
+        self._computation_graph.merge(graph)
         return self
 
     def add_spherical_graph(
@@ -159,7 +159,9 @@ class SmartDs:
                 components=tuple(components),
             )
         )
-        self.set_computation_graph(graph, merge=merge)
+        if not merge:
+            self.clear_computation_graph()
+        self.merge_computation_graph(graph)
         return self
 
     def add_batsrus_graph(
@@ -179,7 +181,9 @@ class SmartDs:
             include_unit_normalization=include_unit_normalization,
             include_derived=include_derived,
         )
-        self.set_computation_graph(graph, merge=merge)
+        if not merge:
+            self.clear_computation_graph()
+        self.merge_computation_graph(graph)
         return self
 
     def prepare(self, *, body_radius: float | None = None) -> "SmartDs":

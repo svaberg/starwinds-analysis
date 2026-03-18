@@ -162,7 +162,7 @@ def test_griblet_graph_resolution_and_explain():
 
     sds = SmartDs(make_dataset_3d_vectors())
     graph = build_griblet_spherical_geometry_graph(coord_fields=("X [R]", "Y [R]", "Z [R]"))
-    sds.set_computation_graph(graph)
+    sds.merge_computation_graph(graph)
 
     r = sds.variable("R [R]")
     np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
@@ -176,9 +176,16 @@ def test_smartds_graph_is_never_none():
     sds = SmartDs(make_dataset_2d())
 
     assert isinstance(sds.computation_graph, griblet.ComputationGraph)
+    assert tuple(sds.computation_graph.list_fields()) == ()
 
-    with pytest.raises(TypeError, match="griblet.ComputationGraph"):
-        sds.set_computation_graph(None)
+    graph = griblet.ComputationGraph()
+    graph.add_recipe("A [none]", lambda: np.array([1.0]), deps=[], cost=0.0)
+    sds.merge_computation_graph(graph)
+    assert "A [none]" in sds.keys()
+
+    sds.clear_computation_graph()
+    assert tuple(sds.computation_graph.list_fields()) == ()
+    assert "A [none]" not in sds.keys()
 
 
 def test_griblet_add_spherical_graph_on_real_example_data():
