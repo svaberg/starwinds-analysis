@@ -37,7 +37,7 @@ def _interpolate_field(
     coord_mask,
     spatial_cache,
     values,
-    sample_points_2d,
+    flat_sample_points,
     *,
     method: str,
     fill_value: float,
@@ -54,11 +54,11 @@ def _interpolate_field(
                 nearest_tree = cKDTree(source_coords[coord_mask])
                 spatial_cache["nearest_tree"] = nearest_tree
             if nearest_indices is None:
-                nearest_indices = nearest_tree.query(sample_points_2d)[1]
+                nearest_indices = nearest_tree.query(flat_sample_points)[1]
             return values[coord_mask][nearest_indices], nearest_indices
 
         nearest_tree = cKDTree(source_coords[valid])
-        nearest_indices = nearest_tree.query(sample_points_2d)[1]
+        nearest_indices = nearest_tree.query(flat_sample_points)[1]
         return values[valid][nearest_indices], nearest_indices
 
     if method == "linear":
@@ -78,7 +78,7 @@ def _interpolate_field(
                 values[valid],
                 fill_value=fill_value,
             )
-        out = np.asarray(interpolator(sample_points_2d), dtype=float)
+        out = np.asarray(interpolator(flat_sample_points), dtype=float)
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
