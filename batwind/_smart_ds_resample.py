@@ -25,7 +25,7 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
     return spatial_cache
 
 
-def _interpolate_field(
+def _interpolate_field_standard(
     source_coords,
     coord_mask,
     spatial_cache,
@@ -138,6 +138,58 @@ def _interpolate_fields_octree(
     return out
 
 
+def _interpolate_fields(
+    smart_ds,
+    source_coords,
+    coord_mask,
+    coordinate_fields,
+    output_variables,
+    flat_sample_points,
+    *,
+    method: str,
+    fill_value: float,
+    spatial_cache,
+):
+    value_names = [name for name in output_variables if name not in coordinate_fields]
+    if not value_names:
+        return value_names, np.empty((flat_sample_points.shape[0], 0), dtype=float)
+
+    if method == "octree":
+        return value_names, _interpolate_fields_octree(
+            smart_ds,
+            coordinate_fields,
+            output_variables,
+            flat_sample_points,
+            fill_value=fill_value,
+            spatial_cache=spatial_cache,
+        )
+
+    out_values = np.full((flat_sample_points.shape[0], len(value_names)), np.nan, dtype=float)
+    nearest_indices = None
+    for i, name in enumerate(value_names):
+        values = np.asarray(smart_ds[name]).ravel()
+        if values.shape[0] != source_coords.shape[0]:
+            raise ValueError(
+                f"Field '{name}' has length {values.shape[0]} but coordinates have "
+                f"length {source_coords.shape[0]}"
+            )
+        out, nearest_indices = _interpolate_field_standard(
+            source_coords,
+            coord_mask,
+            spatial_cache,
+            values,
+            flat_sample_points,
+            method=method,
+            fill_value=fill_value,
+            nearest_indices=nearest_indices,
+        )
+        if out is None:
+            continue
+        out_values[:, i] = out
+
+    return value_names, out_values
+
+
 def _build_resampled_dataset(
     smart_ds,
     out_points,
@@ -240,61 +292,19 @@ def resample_smart_ds(
         if coord_name in out_index:
             out_points[:, out_index[coord_name]] = flat_sample_points[:, dim]
 
-    nearest_indices = None
-
-    if method == "octree":
-        out_values = _interpolate_fields_octree(
-            smart_ds,
-            coordinate_fields,
-            output_variables,
-            flat_sample_points,
-            fill_value=fill_value,
-            spatial_cache=spatial_cache,
-        )
-        value_names = [name for name in output_variables if name not in coordinate_fields]
-        for i, name in enumerate(value_names):
-            out_points[:, out_index[name]] = out_values[:, i]
-        new_dataset = _build_resampled_dataset(
-            smart_ds,
-            out_points,
-            sample_shape,
-            output_variables,
-            corners=corners,
-            copy_aux=copy_aux,
-            title=title,
-            zone=zone,
-        )
-        return type(smart_ds)(
-            new_dataset,
-            cache_enabled=smart_ds._cache_enabled,
-            computation_graph=smart_ds._computation_graph,
-        )
-
-    # Interpolate each non-coordinate field onto the target points. 
-    # Cached spatial structures are used for efficiency.
-    for name in output_variables:
-        if name in coordinate_fields:
-            continue
-
-        values = np.asarray(smart_ds[name]).ravel()
-        if values.shape[0] != source_coords.shape[0]:
-            raise ValueError(
-                f"Field '{name}' has length {values.shape[0]} but coordinates have "
-                f"length {source_coords.shape[0]}"
-            )
-        out, nearest_indices = _interpolate_field(
-            source_coords,
-            coord_mask,
-            spatial_cache,
-            values,
-            flat_sample_points,
-            method=method,
-            fill_value=fill_value,
-            nearest_indices=nearest_indices,
-        )
-        if out is None:
-            continue
-        out_points[:, out_index[name]] = out
+    value_names, out_values = _interpolate_fields(
+        smart_ds,
+        source_coords,
+        coord_mask,
+        coordinate_fields,
+        output_variables,
+        flat_sample_points,
+        method=method,
+        fill_value=fill_value,
+        spatial_cache=spatial_cache,
+    )
+    for i, name in enumerate(value_names):
+        out_points[:, out_index[name]] = out_values[:, i]
 
     # Build the resampled raw Dataset and wrap it back into the same SmartDs type,
     # carrying forward the derived-field graph.
