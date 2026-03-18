@@ -13,8 +13,6 @@ from batwind.recipes.batsrus import build_griblet_batsrus_graph
 from batwind.recipes.spherical import build_griblet_auto_vector_spherical_components_graph
 from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
 
-_UNSET_COMPUTATION_GRAPH = object()
-
 
 class SmartDs:
     """
@@ -28,14 +26,14 @@ class SmartDs:
         dataset: Dataset,
         *,
         cache_enabled: bool = True,
-        computation_graph=_UNSET_COMPUTATION_GRAPH,
+        computation_graph: griblet.ComputationGraph | None = None,
         include_aux_in_loader: bool = True,
     ) -> None:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._computation_graph = griblet.ComputationGraph()
-        if computation_graph is not _UNSET_COMPUTATION_GRAPH:
+        if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
         self._include_aux_in_loader = bool(include_aux_in_loader)
 
