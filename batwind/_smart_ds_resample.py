@@ -103,29 +103,22 @@ def _interpolate_field(
         else:
             interpolator.set_fields([name], fill_value=fill_value)
 
-        query_coord = _query_coord_for_coordinate_fields(coordinate_fields)
-        if query_coord == "xyz":
+        if tuple(coordinate_fields) == DEFAULT_XYZ_NAMES:
             out = np.asarray(interpolator(flat_sample_points), dtype=float)
-        else:
+        elif tuple(coordinate_fields) == RPA_COORD_FIELDS:
             out = np.asarray(
-                interpolator(flat_sample_points, query_coord=query_coord),
+                interpolator(flat_sample_points, query_coord="rpa"),
                 dtype=float,
+            )
+        else:
+            raise NotImplementedError(
+                f"method='octree' does not support coordinate_fields={tuple(coordinate_fields)!r}"
             )
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
 
     raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
-
-
-def _query_coord_for_coordinate_fields(coordinate_fields):
-    if tuple(coordinate_fields) == DEFAULT_XYZ_NAMES:
-        return "xyz"
-    if tuple(coordinate_fields) == RPA_COORD_FIELDS:
-        return "rpa"
-    raise NotImplementedError(
-        f"method='octree' does not support coordinate_fields={tuple(coordinate_fields)!r}"
-    )
 
 
 def _interpolate_fields(
