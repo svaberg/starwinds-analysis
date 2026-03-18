@@ -7,6 +7,7 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
+from batcamp import OctreeInterpolator
 from batread.dataset import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
@@ -111,8 +112,6 @@ def _interpolate_fields_octree(
     fill_value: float,
     spatial_cache,
 ):
-    from batcamp import OctreeInterpolator
-
     value_fields = [name for name in output_variables if name not in coordinate_fields]
     if not value_fields:
         return np.empty((flat_sample_points.shape[0], 0), dtype=float)
