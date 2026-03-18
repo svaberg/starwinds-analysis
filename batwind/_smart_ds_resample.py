@@ -146,9 +146,6 @@ def resample_smart_ds(
         sample_points = sample_points[np.newaxis, :]
     if sample_points.ndim < 2:
         raise ValueError("sample_points must have shape (..., ndim)")
-    if method not in RESAMPLE_METHODS:
-        raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
-
     sample_shape = sample_points.shape[:-1]
     flat_sample_points = sample_points.reshape(-1, sample_points.shape[-1])
     ndim = sample_points.shape[-1]
