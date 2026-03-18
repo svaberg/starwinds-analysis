@@ -104,9 +104,6 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
 def build_griblet_spherical_geometry_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    r_name: str | None = None,
-    polar_name: str = "polar [rad]",
-    azimuth_name: str = "azimuth [rad]",
 ):
     """
     Build a griblet graph for spherical geometry fields.
@@ -114,27 +111,36 @@ def build_griblet_spherical_geometry_graph(
     This requires ``griblet``.
     """
     x_name, y_name, z_name = coord_fields
+    r_name = _infer_radius_name_from_coord(x_name)
     if r_name is None:
-        r_name = _infer_radius_name_from_coord(x_name) or "R [unknown]"
+        raise ValueError(f"could not infer radius name from coordinate field {x_name!r}")
 
+    polar_name = "polar [rad]"
+    azimuth_name = "azimuth [rad]"
     graph = griblet.ComputationGraph()
 
-    def _r(x, y, z):
-        r, _polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
-        return r
-
-    def _polar(x, y, z):
-        _r, polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
-        return polar
-
-    def _azimuth(x, y, z):
-        _r, _polar, azimuth = cartesian_to_spherical_angles(x, y, z)
-        return azimuth
-
     deps = [x_name, y_name, z_name]
-    graph.add_recipe(r_name, _r, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical radius"})
-    graph.add_recipe(polar_name, _polar, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical colatitude"})
-    graph.add_recipe(azimuth_name, _azimuth, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical azimuth"})
+    graph.add_recipe(
+        r_name,
+        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[0],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical radius"},
+    )
+    graph.add_recipe(
+        polar_name,
+        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[1],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical colatitude"},
+    )
+    graph.add_recipe(
+        azimuth_name,
+        lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[2],
+        deps=deps,
+        cost=0.2,
+        metadata={"description": "Cartesian->spherical azimuth"},
+    )
 
     return graph
 
