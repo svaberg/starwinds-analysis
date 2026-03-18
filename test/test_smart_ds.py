@@ -15,7 +15,8 @@ EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def explain_field(sds: SmartDs, name: str) -> str:
-    cost, tree = sds._resolve_field(name)
+    solver = griblet.DependencySolver(sds.computation_graph)
+    cost, tree = solver.resolve_field(name)
     lines: list[str] = []
 
     def walk(node, depth=0):

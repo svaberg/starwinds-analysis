@@ -167,6 +167,7 @@ class SmartDs:
 
     def base_fields_for_resample(self, fields: Sequence[str]) -> tuple[str, ...]:
         base_fields: list[str] = []
+        solver = griblet.DependencySolver(self._computation_graph)
 
         def add(name: str) -> None:
             if name not in base_fields:
@@ -191,7 +192,7 @@ class SmartDs:
                 add(field)
                 continue
             try:
-                _cost, tree = self._resolve_field(field)
+                _cost, tree = solver.resolve_field(field)
             except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
                 add(field)
                 continue
@@ -203,11 +204,6 @@ class SmartDs:
                 add(field)
 
         return tuple(base_fields)
-
-    def _resolve_field(self, name: str):
-        solver = griblet.DependencySolver(self._computation_graph)
-        return solver.resolve_field(name)
-
     def resample(
         self,
         sample_points,
