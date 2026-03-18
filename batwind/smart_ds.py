@@ -10,8 +10,8 @@ from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
 from batwind._smart_ds_resample import resample_smart_ds
 from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_auto_vector_spherical_components_graph
 from batwind.recipes.spherical import build_griblet_spherical_geometry_graph
+from batwind.recipes.spherical import build_griblet_vector_spherical_components_graph
 
 
 class SmartDs:
@@ -146,7 +146,7 @@ class SmartDs:
     ):
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
         graph.merge(
-            build_griblet_auto_vector_spherical_components_graph(
+            build_griblet_vector_spherical_components_graph(
                 self.keys(),
                 coord_fields=coord_fields,
                 components=tuple(components),

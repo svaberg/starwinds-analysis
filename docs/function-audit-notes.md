@@ -308,7 +308,7 @@ Used by: `batwind/smart_ds.py`, `batwind/analysis/trajectories.py`
 
 - `_vector_triplets`: Finds Cartesian vector triplets (`*_x/_y/_z`) by prefix/unit.
 - `build_griblet_spherical_geometry_graph`: Adds coordinate recipes (`XYZ <-> R/polar/azimuth`, `lat/lon`).
-- `build_griblet_vector_spherical_components_graph`: Adds vector component recipes (`xyz -> r/p/a`, stacked `*_rpa`).
+- `build_griblet_vector_spherical_components_graph`: Auto-detects Cartesian vector triplets and adds spherical component recipes (`xyz -> r/p/a`).
 
 Used by: `batwind/smart_ds.py`, `batwind/recipes/batsrus.py`
 

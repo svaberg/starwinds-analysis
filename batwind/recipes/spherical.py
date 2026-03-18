@@ -137,7 +137,7 @@ def build_griblet_spherical_geometry_graph(
     return graph
 
 
-def build_griblet_vector_spherical_components_graph(
+def _build_single_vector_spherical_components_graph(
     *,
     prefix: str,
     unit: str,
@@ -145,7 +145,7 @@ def build_griblet_vector_spherical_components_graph(
     register_components: Sequence[str] = ("r", "p", "a"),
 ):
     """
-    Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
+    Build griblet recipes for one ``prefix_{r,p,a}`` vector from Cartesian components.
     """
     unknown = set(register_components) - {"r", "p", "a"}
     if unknown:
@@ -189,7 +189,7 @@ def build_griblet_vector_spherical_components_graph(
     return graph
 
 
-def build_griblet_auto_vector_spherical_components_graph(
+def build_griblet_vector_spherical_components_graph(
     variable_names: Sequence[str],
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
@@ -217,7 +217,7 @@ def build_griblet_auto_vector_spherical_components_graph(
         if not {"x", "y", "z"}.issubset(info):
             continue
         merged.merge(
-            build_griblet_vector_spherical_components_graph(
+            _build_single_vector_spherical_components_graph(
                 prefix=prefix,
                 unit=unit,
                 coord_fields=coord_fields,
