@@ -235,7 +235,7 @@ def test_trajectory_velocity_rejects_nonincreasing_time():
 
 def test_sample_circular_curve_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     out = sample_circular_curve(
         sds,
@@ -261,7 +261,7 @@ def test_sample_circular_curve_runs_on_example():
 
 def test_mass_loss_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
@@ -277,7 +277,7 @@ def test_mass_loss_from_curve_runs():
 
 def test_torque_from_curve_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
@@ -300,7 +300,7 @@ def test_torque_from_curve_runs():
 
 def test_compare_curve_mass_loss_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
@@ -327,7 +327,7 @@ def test_compare_curve_mass_loss_to_shell_runs():
 
 def test_compare_curve_torque_to_shell_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
@@ -359,7 +359,7 @@ def test_compare_curve_torque_to_shell_runs():
 
 def test_compare_curve_mass_loss_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,
@@ -387,7 +387,7 @@ def test_compare_curve_mass_loss_to_shell_profile_runs():
 
 def test_compare_curve_torque_to_shell_profile_runs():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     curve = sample_circular_curve(
         sds,

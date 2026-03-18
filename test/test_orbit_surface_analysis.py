@@ -113,7 +113,7 @@ def test_pressure_components_on_surface_skips_relative_when_no_trajectory_veloci
             "surface",
         )
     )
-    sampled.merge_computation_graph(build_batsrus_graph(sampled.variables, aux=sampled.aux, body_radius_m=SOLAR_RADIUS_M))
+    sampled.merge_computation_graph(build_batsrus_graph(sampled.variables, gamma=sampled.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sampled.merge_computation_graph(build_spherical_graph(tuple(sampled)))
 
     out = pressure_components_on_surface(sampled)
@@ -151,7 +151,7 @@ def test_sample_surface_revolution_runs_on_example():
 
 def test_pressure_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     points = circular_orbit_points(10.0, n_points=64)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])
@@ -210,7 +210,7 @@ def test_pressure_components_on_surface_runs_on_example():
 
 def test_torque_components_on_surface_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     points = circular_orbit_points(10.0, n_points=64)
     phase = np.arange(points.shape[0], dtype=float) / float(points.shape[0])

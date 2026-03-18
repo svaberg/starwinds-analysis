@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 import re
 
 import griblet
@@ -30,7 +30,7 @@ _UNIT_FACTORS = {
 def build_batsrus_graph(
     variable_names: Sequence[str],
     *,
-    aux: Mapping[str, object] | None = None,
+    gamma: float | None = None,
     body_radius_m: float | None = None,
 ):
     """
@@ -43,7 +43,7 @@ def build_batsrus_graph(
     - common derived fields: |U|, |B|, c_s, c_A, M_A
     """
     graph = griblet.ComputationGraph()
-    graph.merge(build_unit_normalization_graph(variable_names, aux=aux, body_radius_m=body_radius_m))
+    graph.merge(build_unit_normalization_graph(variable_names, gamma=gamma, body_radius_m=body_radius_m))
     graph.merge(build_vector_graph(tuple(variable_names) + tuple(graph.list_fields())))
     graph.merge(build_common_derived_graph())
 
@@ -53,7 +53,7 @@ def build_batsrus_graph(
 def build_unit_normalization_graph(
     variable_names: Sequence[str],
     *,
-    aux: Mapping[str, object] | None = None,
+    gamma: float | None = None,
     body_radius_m: float | None = None,
 ):
     graph = griblet.ComputationGraph()
@@ -95,14 +95,13 @@ def build_unit_normalization_graph(
 
     graph.merge(build_coordinate_scale_graph(body_radius_m))
 
-    # Parse common scalar aux values into numeric fields.
-    if aux is not None and "GAMMA" in aux:
+    if gamma is not None:
         graph.add_recipe(
             "GAMMA [none]",
-            float,
-            deps=["GAMMA"],
+            lambda: float(gamma),
+            deps=[],
             cost=0.01,
-            metadata={"description": "Parse GAMMA from aux"},
+            metadata={"description": "Configured gamma"},
         )
 
     return graph

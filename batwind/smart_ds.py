@@ -49,7 +49,7 @@ class SmartDs:
         sds = cls(Dataset.from_file(str(file)), **kwargs)
         if batsrus:
             sds.computation_graph.merge(
-                build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=body_radius_m)
+                build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=body_radius_m)
             )
         if spherical:
             sds.computation_graph.merge(build_spherical_graph(tuple(sds)))

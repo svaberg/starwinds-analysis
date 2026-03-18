@@ -81,7 +81,7 @@ def test_surface_torque_density_terms_matches_analytic_sphere_integral():
 
 def test_surface_torque_terms_on_shell_samples_matches_shell_torque_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
+    sds.merge_computation_graph(build_batsrus_graph(sds.variables, gamma=sds.aux.get("GAMMA"), body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
     radii = [2.0, 4.0, 8.0, 16.0]
 
