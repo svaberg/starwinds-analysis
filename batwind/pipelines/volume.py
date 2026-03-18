@@ -8,16 +8,19 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LogNorm
 
 from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.pipelines.utils import output_prefix_from_input_file
 from batwind.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
+LOS_GRID_N = 64
 
 
 def process_plt_file(file_path: str | Path) -> None:
@@ -164,6 +167,47 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record("energy_flux_radius_R %r", energy_flux_radius_ref)
         add_record("energy_flux_value_w %r", energy_flux_value_ref)
     log.info("Computing energy flux complete.")
+
+    # Start: resample onto a regular 3D cube and make a fake LOS rho^2 image.
+    log.debug("Computing fake LOS rho^2 image...")
+    x = np.asarray(smart_ds["X [R]"], dtype=float)
+    y = np.asarray(smart_ds["Y [R]"], dtype=float)
+    z = np.asarray(smart_ds["Z [R]"], dtype=float)
+    cube_n = LOS_GRID_N
+    x_lin = np.linspace(float(np.nanmin(x)), float(np.nanmax(x)), cube_n)
+    y_lin = np.linspace(float(np.nanmin(y)), float(np.nanmax(y)), cube_n)
+    z_lin = np.linspace(float(np.nanmin(z)), float(np.nanmax(z)), cube_n)
+    grid_x, grid_y, grid_z = np.meshgrid(x_lin, y_lin, z_lin, indexing="ij")
+    cube_points = np.stack([grid_x, grid_y, grid_z], axis=-1)
+    los_cube = smart_ds.resample(
+        cube_points,
+        coordinate_fields=DEFAULT_XYZ_NAMES,
+        fields=smart_ds.source_fields(("Rho [kg/m^3]",)),
+        method="octree",
+    )
+    rho = np.asarray(los_cube["Rho [kg/m^3]"], dtype=float)
+    rho_sq_los = np.nansum(rho**2, axis=2)
+    positive = rho_sq_los[np.isfinite(rho_sq_los) & (rho_sq_los > 0.0)]
+    los_fig, los_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
+    los_norm = LogNorm(vmin=float(np.nanmin(positive)), vmax=float(np.nanmax(positive))) if positive.size else None
+    image = los_ax.imshow(
+        rho_sq_los.T,
+        origin="lower",
+        extent=(x_lin[0], x_lin[-1], y_lin[0], y_lin[-1]),
+        cmap="magma",
+        norm=los_norm,
+        aspect="equal",
+    )
+    los_ax.set_title(r"Fake LOS $\rho^2$")
+    los_ax.set_xlabel("X [R]")
+    los_ax.set_ylabel("Y [R]")
+    los_fig.colorbar(image, ax=los_ax, label=r"$\sum \rho^2$")
+    los_png = output_dir / f"{prefix}.rho2_los.png"
+    los_fig.savefig(los_png)
+    plt.close(los_fig)
+    add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
+    add_record("volume_rho2_los_grid_n %r", cube_n)
+    log.info("Computing fake LOS rho^2 image complete.")
 
     # Start: save the figure and record the output artifact.
     log.debug("Saving volume figure...")
