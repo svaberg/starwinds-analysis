@@ -282,10 +282,12 @@ class SmartDs:
     def _evaluate_resolved_tree(self, node):
         values = [self._evaluate_resolved_tree(dep) for dep in node.deps]
         dep_fields = tuple(dep.field for dep in node.deps)
-        for recipe in self._computation_graph.recipes[node.field]:
-            if tuple(recipe["deps"]) == dep_fields:
-                return recipe["func"](*values)
-        raise RuntimeError(f"No matching recipe for {node.field} with deps={dep_fields}")
+        recipe = next(
+            recipe
+            for recipe in self._computation_graph.recipes[node.field]
+            if tuple(recipe["deps"]) == dep_fields
+        )
+        return recipe["func"](*values)
 
 
 __all__ = ["SmartDs"]
