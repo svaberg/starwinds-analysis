@@ -44,18 +44,7 @@ def build_batsrus_graph(
     """
     graph = griblet.ComputationGraph()
     graph.merge(build_unit_normalization_graph(variable_names, aux=aux, body_radius_m=body_radius_m))
-    graph.merge(
-        build_vector_graph(
-            (
-                "U_x [m/s]",
-                "U_y [m/s]",
-                "U_z [m/s]",
-                "B_x [T]",
-                "B_y [T]",
-                "B_z [T]",
-            )
-        )
-    )
+    graph.merge(build_vector_graph(tuple(variable_names) + tuple(graph.list_fields())))
     graph.merge(build_common_derived_graph())
 
     return graph
