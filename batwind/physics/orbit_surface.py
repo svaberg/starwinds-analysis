@@ -20,7 +20,7 @@ import math
 import numpy as np
 
 from batwind.analysis.stats import summarize_samples
-from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
+from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.physics.pressure import magnetospheric_standoff_distance
 from batwind.physics.pressure import ram_pressure
 from batwind.physics.torque import integrate_surface_torque_terms
@@ -129,7 +129,7 @@ def sample_surface_revolution(
     time_weight=None,
     velocity_xyz=None,
     trajectory_meta=None,
-    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
+    coordinate_fields=DEFAULT_XYZ_NAMES,
     method: str = "nearest",
     fill_value: float = np.nan,
     zone: str = "surface",

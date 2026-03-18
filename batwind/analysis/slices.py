@@ -7,7 +7,7 @@ import logging
 
 import numpy as np
 
-from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
+from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
 log = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def resample_structured_xz_slice(
 
     sliced = smart_ds.resample(
         points,
-        coordinate_fields=CARTESIAN_COORD_FIELDS_R,
+        coordinate_fields=DEFAULT_XYZ_NAMES,
         fields=fields,
         method=method,
         fill_value=fill_value,

@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-CARTESIAN_COORD_FIELDS_R = ("X [R]", "Y [R]", "Z [R]")
+DEFAULT_XYZ_NAMES = ("X [R]", "Y [R]", "Z [R]")
 
 
 def unit_from_brackets(name: str) -> str | None:

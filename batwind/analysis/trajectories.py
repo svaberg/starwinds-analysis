@@ -11,7 +11,7 @@ import logging
 
 import numpy as np
 
-from batwind.data.field_names import CARTESIAN_COORD_FIELDS_R
+from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.recipes.vectors import build_vector_graph
 
 log = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ def sample_curve(
     points,
     *,
     fields,
-    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
+    coordinate_fields=DEFAULT_XYZ_NAMES,
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
@@ -99,7 +99,7 @@ def sample_trajectory(
     fields,
     time,
     velocity_xyz=None,
-    coordinate_fields=CARTESIAN_COORD_FIELDS_R,
+    coordinate_fields=DEFAULT_XYZ_NAMES,
     method: str = "nearest",
     fill_value: float = np.nan,
 ):
