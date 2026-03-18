@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 import numpy as np
+from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
 
 from batread.dataset import Dataset
 
@@ -121,14 +122,6 @@ def resample_smart_ds(
 
 
 def interpolate_nd(source_points, values, sample_points, *, method: str, fill_value: float):
-    try:
-        from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
-    except ImportError as e:
-        raise ImportError(
-            "Resampling requires scipy (scipy.interpolate). Install scipy to use "
-            "SmartDs.resample()."
-        ) from e
-
     if method == "nearest":
         interpolator = NearestNDInterpolator(source_points, values)
         out = interpolator(sample_points)
