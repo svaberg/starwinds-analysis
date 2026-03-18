@@ -41,7 +41,7 @@ def shell_cell_values(
 def load_shell_grid(smart_ds: SmartDs):
     """Load native shell coordinates and precompute masks and cell areas."""
     r_all = np.ravel(smart_ds["R [R]"])
-    star_radius_m = float(smart_ds["star_radius [m]"])
+    star_radius_m = float(smart_ds["RBODY [m]"])
     lon_all = np.ravel(smart_ds["Lon [deg]"])
     lat_all = np.ravel(smart_ds["Lat [deg]"])
 

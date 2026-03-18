@@ -56,7 +56,7 @@ def process_plt_file(file_path: str | Path) -> None:
         "B_z [T]",
         energy_source,
     )
-    body_radius = float(smart_ds["star_radius [m]"])
+    body_radius = float(smart_ds["RBODY [m]"])
     shells = sample_spherical_shells_fibonacci(
         smart_ds,
         radii,
