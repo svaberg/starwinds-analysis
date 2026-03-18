@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 import numpy as np
-from scipy.interpolate import LinearNDInterpolator, NearestNDInterpolator
+from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import cKDTree
 
 from batread.dataset import Dataset
@@ -99,23 +99,35 @@ def resample_smart_ds(
         if not np.any(valid):
             continue
 
-        if method == "nearest" and np.array_equal(valid, coord_mask):
-            nearest_tree = spatial_cache["nearest_tree"]
-            if nearest_tree is None:
-                nearest_tree = cKDTree(source_coords[coord_mask])
-                spatial_cache["nearest_tree"] = nearest_tree
-            if nearest_indices is None:
+        if method == "nearest":
+            if np.array_equal(valid, coord_mask):
+                nearest_tree = spatial_cache["nearest_tree"]
+                if nearest_tree is None:
+                    nearest_tree = cKDTree(source_coords[coord_mask])
+                    spatial_cache["nearest_tree"] = nearest_tree
+                if nearest_indices is None:
+                    nearest_indices = nearest_tree.query(sample_points_2d)[1]
+                out_points[:, out_index[name]] = values[coord_mask][nearest_indices]
+            else:
+                nearest_tree = cKDTree(source_coords[valid])
                 nearest_indices = nearest_tree.query(sample_points_2d)[1]
-            out_points[:, out_index[name]] = values[coord_mask][nearest_indices]
+                out_points[:, out_index[name]] = values[valid][nearest_indices]
             continue
 
-        out_points[:, out_index[name]] = interpolate_nd(
-            source_coords[valid],
-            values[valid],
-            sample_points_2d,
-            method=method,
-            fill_value=fill_value,
-        )
+        if method == "linear":
+            interpolator = LinearNDInterpolator(
+                source_coords[valid],
+                values[valid],
+                fill_value=fill_value,
+            )
+            out = interpolator(sample_points_2d)
+            out = np.asarray(out, dtype=float)
+            if out.ndim == 0:
+                out = out[np.newaxis]
+            out_points[:, out_index[name]] = out
+            continue
+
+        raise ValueError("method must be 'nearest' or 'linear'")
 
     if corners is None:
         corners_arr = np.empty((0, 0), dtype=int)
@@ -146,22 +158,4 @@ def resample_smart_ds(
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
     )
-
-
-def interpolate_nd(source_points, values, sample_points, *, method: str, fill_value: float):
-    if method == "nearest":
-        interpolator = NearestNDInterpolator(source_points, values)
-        out = interpolator(sample_points)
-    elif method == "linear":
-        interpolator = LinearNDInterpolator(source_points, values, fill_value=fill_value)
-        out = interpolator(sample_points)
-    else:
-        raise ValueError("method must be 'nearest' or 'linear'")
-
-    out = np.asarray(out, dtype=float)
-    if out.ndim == 0:
-        out = out[np.newaxis]
-    return out
-
-
-__all__ = ["interpolate_nd", "resample_smart_ds"]
+__all__ = ["resample_smart_ds"]
