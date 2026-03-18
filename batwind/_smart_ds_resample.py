@@ -23,10 +23,8 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
             raise ValueError("No finite source coordinates available for resampling")
         spatial_cache = {
             "source_coords": source_coords,
-            "coord_mask": coord_mask,
             "nearest_tree": None,
             "linear_triangulation": None,
-            "octree": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
     return spatial_cache
@@ -178,7 +176,7 @@ def resample_smart_ds(
     # same coordinate field choice.
     spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
     source_coords = spatial_cache["source_coords"]
-    coord_mask = spatial_cache["coord_mask"]
+    coord_mask = np.isfinite(source_coords).all(axis=1)
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
 
@@ -191,9 +189,8 @@ def resample_smart_ds(
 
     nearest_indices = None
 
-    # Interpolate each non-coordinate field onto the target points. The `nearest`
-    # and `linear` paths both reuse cached spatial structures when the field's
-    # finite mask matches the coordinate mask.
+    # Interpolate each non-coordinate field onto the target points. 
+    # Cached spatial structures are used for efficiency.
     for name in output_variables:
         if name in coordinate_fields:
             continue
