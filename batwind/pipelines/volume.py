@@ -49,7 +49,7 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: sample shells once for all diagnostics.
     log.debug("Sampling shell grid once for all diagnostics...")
     energy_source = "E [J/m^3]"
-    shared_source_fields = (
+    shared_source_fields = [
         "Rho [kg/m^3]",
         "U_x [m/s]",
         "U_y [m/s]",
@@ -57,8 +57,10 @@ def process_plt_file(file_path: str | Path) -> None:
         "B_x [T]",
         "B_y [T]",
         "B_z [T]",
-        energy_source,
-    )
+    ]
+    has_energy_source = energy_source in smart_ds
+    if has_energy_source:
+        shared_source_fields.append(energy_source)
     body_radius = float(smart_ds["RBODY [m]"])
     shells = sample_spherical_shells_fibonacci(
         smart_ds,
@@ -148,24 +150,29 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: compute, plot, and record energy flux.
     log.debug("Computing energy flux...")
-    energy_flux_radius_ref = float("nan")
-    energy_flux_value_ref = float("nan")
-    energy_flux_density = shells["energy_flux [W/m^2]"]
-    energy_flux_values, energy_flux_coverage = integrate_shell_scalar(energy_flux_density, shell_area)
-    axes[1, 1].plot(shell_radii - 1.0, energy_flux_values, ".-", color="C3")
-    axes[1, 1].set_title("Energy Flux")
-    axes[1, 1].set_ylabel("Energy flux [W]")
-    axes[1, 1].set_xlabel("Height [R]")
-    axes[1, 1].grid(True, alpha=0.3)
-    add_record("energy_flux_w %r", energy_flux_values)
-    add_record("energy_flux_coverage %r", energy_flux_coverage)
-    for radius_value, energy_flux_value in zip(shell_radii, energy_flux_values):
-        if isfinite(radius_value) and isfinite(energy_flux_value):
-            energy_flux_radius_ref = float(radius_value)
-            energy_flux_value_ref = float(energy_flux_value)
-    if isfinite(energy_flux_radius_ref):
-        add_record("energy_flux_radius_R %r", energy_flux_radius_ref)
-        add_record("energy_flux_value_w %r", energy_flux_value_ref)
+    if has_energy_source:
+        energy_flux_radius_ref = float("nan")
+        energy_flux_value_ref = float("nan")
+        energy_flux_density = shells["energy_flux [W/m^2]"]
+        energy_flux_values, energy_flux_coverage = integrate_shell_scalar(energy_flux_density, shell_area)
+        axes[1, 1].plot(shell_radii - 1.0, energy_flux_values, ".-", color="C3")
+        axes[1, 1].set_title("Energy Flux")
+        axes[1, 1].set_ylabel("Energy flux [W]")
+        axes[1, 1].set_xlabel("Height [R]")
+        axes[1, 1].grid(True, alpha=0.3)
+        add_record("energy_flux_w %r", energy_flux_values)
+        add_record("energy_flux_coverage %r", energy_flux_coverage)
+        for radius_value, energy_flux_value in zip(shell_radii, energy_flux_values):
+            if isfinite(radius_value) and isfinite(energy_flux_value):
+                energy_flux_radius_ref = float(radius_value)
+                energy_flux_value_ref = float(energy_flux_value)
+        if isfinite(energy_flux_radius_ref):
+            add_record("energy_flux_radius_R %r", energy_flux_radius_ref)
+            add_record("energy_flux_value_w %r", energy_flux_value_ref)
+    else:
+        axes[1, 1].set_title("Energy Flux")
+        axes[1, 1].text(0.5, 0.5, "E [J/m^3] unavailable", ha="center", va="center")
+        axes[1, 1].set_axis_off()
     log.info("Computing energy flux complete.")
 
     # Start: resample onto a regular 3D cube and make a fake LOS rho^2 image.
