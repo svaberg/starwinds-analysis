@@ -135,8 +135,6 @@ class SmartDs:
         return self
 
     def merge_computation_graph(self, graph):
-        if not isinstance(graph, griblet.ComputationGraph):
-            raise TypeError("graph must be a griblet.ComputationGraph")
         self._computation_graph.merge(graph)
         return self
 
