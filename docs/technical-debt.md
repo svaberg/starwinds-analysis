@@ -82,20 +82,6 @@ Debt:
 
 - docs can drift quickly after architecture moves unless refreshed as part of each batch
 
-### TD-07 (P1) Spherical naming cleanup
-
-Area:
-
-- `batwind/recipes/spherical.py`
-- `batwind/smart_ds.py`
-- `README.md`
-- `test/test_smart_ds.py`
-
-Debt:
-
-- user-facing spherical coordinate names are still mixed between `theta`/`phi` and `polar`/`azimuth`
-- spherical component naming still needs one canonical `polar`/`azimuth` vocabulary across graph fields, docs, and tests
-
 ## Debt Baseline Rule
 
 When code changes architecture or API boundaries, update these in the same batch:

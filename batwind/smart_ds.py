@@ -161,7 +161,7 @@ class SmartDs:
         *,
         coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
         vectors: Sequence[str] = ("B", "U"),
-        components: Sequence[str] = ("r", "theta", "phi"),
+        components: Sequence[str] = ("r", "p", "a"),
         merge: bool = True,
     ):
         from batwind.recipes.spherical import (

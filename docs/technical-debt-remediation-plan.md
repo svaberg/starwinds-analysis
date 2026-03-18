@@ -76,22 +76,7 @@ Execution focus:
 - optimize shared-geometry linear workflows
 - keep nearest default practical path intact
 
-### Step 6: TD-07 (Spherical naming cleanup)
-
-Targets:
-
-- `batwind/recipes/spherical.py`
-- `batwind/smart_ds.py`
-- `README.md`
-- `test/test_smart_ds.py`
-
-Execution focus:
-
-- finish the `theta`/`phi` -> `polar`/`azimuth` rename in user-facing graph fields
-- align spherical component naming with the canonical `polar`/`azimuth` vocabulary
-- remove mixed-name examples and tests
-
-### Step 7: TD-06 (Docs sync pass)
+### Step 6: TD-06 (Docs sync pass)
 
 Targets:
 

@@ -32,7 +32,7 @@ sds.add_spherical_graph(vectors=("B", "U"))
 
 r = sds["R [R]"]
 br = sds["B_r [Gauss]"]
-uphi = sds["U_phi [km/s]"]
+ua = sds["U_a [km/s]"]
 ```
 
 You can inspect the recipe path for any derived field:
@@ -56,6 +56,6 @@ print(sds.explain("M_A [none]"))
 
 Spherical conventions used by the helper recipes:
 
-- `theta [rad]`: colatitude in `[0, pi]`
-- `phi [rad]`: azimuth from `atan2(y, x)` in `[-pi, pi]`
+- `polar [rad]`: colatitude in `[0, pi]`
+- `azimuth [rad]`: azimuth from `atan2(y, x)` in `[-pi, pi]`
 - singular points (e.g. `r=0`, polar axis for some components) produce `NaN`

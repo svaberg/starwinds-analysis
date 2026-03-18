@@ -97,26 +97,26 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
     sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
 
     r = sds["R [R]"]
-    theta = sds["theta [rad]"]
-    phi = sds["phi [rad]"]
+    polar = sds["polar [rad]"]
+    azimuth = sds["azimuth [rad]"]
     b_r = sds["B_r [T]"]
-    b_theta = sds["B_theta [T]"]
-    b_phi = sds["B_phi [T]"]
+    b_p = sds["B_p [T]"]
+    b_a = sds["B_a [T]"]
 
     assert r.shape == (3,)
-    assert theta.shape == (3,)
-    assert phi.shape == (3,)
+    assert polar.shape == (3,)
+    assert azimuth.shape == (3,)
     assert b_r.shape == (3,)
-    assert b_theta.shape == (3,)
-    assert b_phi.shape == (3,)
+    assert b_p.shape == (3,)
+    assert b_a.shape == (3,)
 
     # First point is on +x axis.
     np.testing.assert_allclose(r[0], 1.0)
-    np.testing.assert_allclose(theta[0], np.pi / 2)
-    np.testing.assert_allclose(phi[0], 0.0)
+    np.testing.assert_allclose(polar[0], np.pi / 2)
+    np.testing.assert_allclose(azimuth[0], 0.0)
     np.testing.assert_allclose(b_r[0], 1.0)
-    np.testing.assert_allclose(b_theta[0], -3.0)
-    np.testing.assert_allclose(b_phi[0], 2.0)
+    np.testing.assert_allclose(b_p[0], -3.0)
+    np.testing.assert_allclose(b_a[0], 2.0)
 
 
 def test_add_spherical_graph_on_real_example_data():
@@ -128,22 +128,22 @@ def test_add_spherical_graph_on_real_example_data():
     z = np.asarray(sds["Z [R]"])
 
     r = np.asarray(sds["R [R]"])
-    theta = np.asarray(sds["theta [rad]"])
-    phi = np.asarray(sds["phi [rad]"])
+    polar = np.asarray(sds["polar [rad]"])
+    azimuth = np.asarray(sds["azimuth [rad]"])
 
     assert r.shape == x.shape
-    assert theta.shape == x.shape
-    assert phi.shape == x.shape
+    assert polar.shape == x.shape
+    assert azimuth.shape == x.shape
 
     finite_r = np.isfinite(r)
     assert np.any(finite_r)
     assert np.nanmin(r) >= 0.0
 
-    finite_theta = np.isfinite(theta)
-    assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
+    finite_polar = np.isfinite(polar)
+    assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
-    finite_phi = np.isfinite(phi)
-    assert np.all((phi[finite_phi] >= -np.pi) & (phi[finite_phi] <= np.pi))
+    finite_azimuth = np.isfinite(azimuth)
+    assert np.all((azimuth[finite_azimuth] >= -np.pi) & (azimuth[finite_azimuth] <= np.pi))
 
     # Check B_r against direct projection for all non-singular points.
     bx = np.asarray(sds["B_x [Gauss]"])
@@ -167,8 +167,8 @@ def test_griblet_graph_resolution_and_explain():
     r = sds["R [R]"]
     np.testing.assert_allclose(r, np.sqrt(np.sum(sds.points[:, :3] ** 2, axis=1)))
 
-    explanation = sds.explain("theta [rad]")
-    assert "theta [rad]" in explanation
+    explanation = sds.explain("polar [rad]")
+    assert "polar [rad]" in explanation
     assert "X [R]" in explanation
 
 
@@ -192,14 +192,14 @@ def test_griblet_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.add_spherical_graph(vectors=("B",))
 
-    theta = np.asarray(sds["theta [rad]"])
+    polar = np.asarray(sds["polar [rad]"])
     b_r = np.asarray(sds["B_r [Gauss]"])
 
-    assert theta.shape == sds["X [R]"].shape
+    assert polar.shape == sds["X [R]"].shape
     assert b_r.shape == sds["B_x [Gauss]"].shape
 
-    finite_theta = np.isfinite(theta)
-    assert np.all((theta[finite_theta] >= 0.0) & (theta[finite_theta] <= np.pi))
+    finite_polar = np.isfinite(polar)
+    assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
     expl = sds.explain("B_r [Gauss]")
     assert "B_r [Gauss]" in expl

@@ -13,8 +13,8 @@ def cartesian_to_spherical_angles(x, y, z):
 
     Conventions:
     - ``r >= 0``
-    - ``theta`` is colatitude in ``[0, pi]`` (NaN at ``r == 0``)
-    - ``phi`` is azimuth from ``atan2(y, x)`` in ``[-pi, pi]``
+    - ``polar`` is colatitude in ``[0, pi]`` (NaN at ``r == 0``)
+    - ``azimuth`` is azimuth from ``atan2(y, x)`` in ``[-pi, pi]``
       (NaN where ``x == y == 0``)
     """
     x = np.asarray(x, dtype=float)
@@ -24,20 +24,20 @@ def cartesian_to_spherical_angles(x, y, z):
     r = np.sqrt(x * x + y * y + z * z)
     rho_xy = np.sqrt(x * x + y * y)
 
-    theta = np.full_like(r, np.nan, dtype=float)
-    phi = np.full_like(r, np.nan, dtype=float)
+    polar = np.full_like(r, np.nan, dtype=float)
+    azimuth = np.full_like(r, np.nan, dtype=float)
 
     with np.errstate(invalid="ignore", divide="ignore"):
         mask_r = r > 0
-        cos_theta = np.empty_like(r, dtype=float)
-        cos_theta.fill(np.nan)
-        cos_theta[mask_r] = np.clip(z[mask_r] / r[mask_r], -1.0, 1.0)
-        theta[mask_r] = np.arccos(cos_theta[mask_r])
+        cos_polar = np.empty_like(r, dtype=float)
+        cos_polar.fill(np.nan)
+        cos_polar[mask_r] = np.clip(z[mask_r] / r[mask_r], -1.0, 1.0)
+        polar[mask_r] = np.arccos(cos_polar[mask_r])
 
-        mask_phi = rho_xy > 0
-        phi[mask_phi] = np.arctan2(y[mask_phi], x[mask_phi])
+        mask_azimuth = rho_xy > 0
+        azimuth[mask_azimuth] = np.arctan2(y[mask_azimuth], x[mask_azimuth])
 
-    return r, theta, phi
+    return r, polar, azimuth
 
 
 def radial_component(vx, vy, vz, x, y, z):
@@ -57,9 +57,9 @@ def radial_component(vx, vy, vz, x, y, z):
 
 def spherical_vector_components(vx, vy, vz, x, y, z):
     """
-    Return ``(v_r, v_theta, v_phi)`` using physics convention ``theta=colatitude``.
+    Return ``(v_r, v_p, v_a)`` using physics convention ``polar=colatitude``.
 
-    ``v_theta`` and ``v_phi`` are undefined on the polar axis (``x=y=0``) and are
+    ``v_p`` and ``v_a`` are undefined on the polar axis (``x=y=0``) and are
     returned as NaN there. All components are NaN at ``r=0``.
     """
     x = np.asarray(x, dtype=float)
@@ -73,8 +73,8 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
     rho_xy = np.sqrt(x * x + y * y)
 
     v_r = np.full_like(r, np.nan, dtype=float)
-    v_theta = np.full_like(r, np.nan, dtype=float)
-    v_phi = np.full_like(r, np.nan, dtype=float)
+    v_p = np.full_like(r, np.nan, dtype=float)
+    v_a = np.full_like(r, np.nan, dtype=float)
 
     mask_r = r > 0
     v_r[mask_r] = (vx[mask_r] * x[mask_r] + vy[mask_r] * y[mask_r] + vz[mask_r] * z[mask_r]) / r[mask_r]
@@ -90,21 +90,21 @@ def spherical_vector_components(vx, vy, vz, x, y, z):
         vyy = vy[mask_axis]
         vzz = vz[mask_axis]
 
-        # e_theta = (cos(theta)cos(phi), cos(theta)sin(phi), -sin(theta))
+        # e_p = (cos(polar)cos(azimuth), cos(polar)sin(azimuth), -sin(polar))
         # Derived directly in Cartesian coordinates to avoid angle singularities.
-        v_theta[mask_axis] = (zz * (xx * vxx + yy * vyy) - (xx * xx + yy * yy) * vzz) / (rr * rho)
-        # e_phi = (-sin(phi), cos(phi), 0)
-        v_phi[mask_axis] = (-yy * vxx + xx * vyy) / rho
+        v_p[mask_axis] = (zz * (xx * vxx + yy * vyy) - (xx * xx + yy * yy) * vzz) / (rr * rho)
+        # e_a = (-sin(azimuth), cos(azimuth), 0)
+        v_a[mask_axis] = (-yy * vxx + xx * vyy) / rho
 
-    return v_r, v_theta, v_phi
+    return v_r, v_p, v_a
 
 
 def build_griblet_spherical_geometry_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
     r_name: str | None = None,
-    theta_name: str = "theta [rad]",
-    phi_name: str = "phi [rad]",
+    polar_name: str = "polar [rad]",
+    azimuth_name: str = "azimuth [rad]",
 ):
     """
     Build a griblet graph for spherical geometry fields.
@@ -118,21 +118,21 @@ def build_griblet_spherical_geometry_graph(
     graph = griblet.ComputationGraph()
 
     def _r(x, y, z):
-        r, _theta, _phi = cartesian_to_spherical_angles(x, y, z)
+        r, _polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
         return r
 
-    def _theta(x, y, z):
-        _r, theta, _phi = cartesian_to_spherical_angles(x, y, z)
-        return theta
+    def _polar(x, y, z):
+        _r, polar, _azimuth = cartesian_to_spherical_angles(x, y, z)
+        return polar
 
-    def _phi(x, y, z):
-        _r, _theta, phi = cartesian_to_spherical_angles(x, y, z)
-        return phi
+    def _azimuth(x, y, z):
+        _r, _polar, azimuth = cartesian_to_spherical_angles(x, y, z)
+        return azimuth
 
     deps = [x_name, y_name, z_name]
     graph.add_recipe(r_name, _r, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical radius"})
-    graph.add_recipe(theta_name, _theta, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical colatitude"})
-    graph.add_recipe(phi_name, _phi, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical azimuth"})
+    graph.add_recipe(polar_name, _polar, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical colatitude"})
+    graph.add_recipe(azimuth_name, _azimuth, deps=deps, cost=0.2, metadata={"description": "Cartesian->spherical azimuth"})
 
     return graph
 
@@ -142,11 +142,15 @@ def build_griblet_vector_spherical_components_graph(
     prefix: str,
     unit: str,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    register_components: Sequence[str] = ("r", "theta", "phi"),
+    register_components: Sequence[str] = ("r", "p", "a"),
 ):
     """
-    Build griblet recipes for ``prefix_{r,theta,phi}`` from Cartesian components.
+    Build griblet recipes for ``prefix_{r,p,a}`` from Cartesian components.
     """
+    unknown = set(register_components) - {"r", "p", "a"}
+    if unknown:
+        raise ValueError(f"unknown spherical components: {sorted(unknown)!r}")
+
     x_name, y_name, z_name = coord_fields
     vx_name = f"{prefix}_x [{unit}]"
     vy_name = f"{prefix}_y [{unit}]"
@@ -166,17 +170,17 @@ def build_griblet_vector_spherical_components_graph(
             cost=0.4,
             metadata={"description": f"{prefix} radial component"},
         )
-    if "theta" in register_components:
+    if "p" in register_components:
         graph.add_recipe(
-            f"{prefix}_theta [{unit}]",
+            f"{prefix}_p [{unit}]",
             lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[1],
             deps=deps,
             cost=0.5,
-            metadata={"description": f"{prefix} colatitudinal component"},
+            metadata={"description": f"{prefix} polar component"},
         )
-    if "phi" in register_components:
+    if "a" in register_components:
         graph.add_recipe(
-            f"{prefix}_phi [{unit}]",
+            f"{prefix}_a [{unit}]",
             lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[2],
             deps=deps,
             cost=0.5,
@@ -190,7 +194,7 @@ def build_griblet_auto_vector_spherical_components_graph(
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
     prefixes: Sequence[str] | None = None,
-    components: Sequence[str] = ("r", "theta", "phi"),
+    components: Sequence[str] = ("r", "p", "a"),
 ):
     """
     Auto-detect Cartesian vector triplets in ``variable_names`` and build a merged

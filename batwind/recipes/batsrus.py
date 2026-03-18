@@ -273,36 +273,6 @@ def build_griblet_common_derived_graph(variable_names: set[str] | Sequence[str])
         metadata={"description": "Plasma beta"},
     )
 
-    # Spherical-component aliases used by the split shell/orbit code.
-    graph.add_recipe(
-        "U_p [m/s]",
-        lambda x: np.asarray(x),
-        deps=["U_theta [m/s]"],
-        cost=0.01,
-        metadata={"description": "Polar velocity alias"},
-    )
-    graph.add_recipe(
-        "U_a [m/s]",
-        lambda x: np.asarray(x),
-        deps=["U_phi [m/s]"],
-        cost=0.01,
-        metadata={"description": "Azimuthal velocity alias"},
-    )
-    graph.add_recipe(
-        "B_p [T]",
-        lambda x: np.asarray(x),
-        deps=["B_theta [T]"],
-        cost=0.01,
-        metadata={"description": "Polar magnetic-field alias"},
-    )
-    graph.add_recipe(
-        "B_a [T]",
-        lambda x: np.asarray(x),
-        deps=["B_phi [T]"],
-        cost=0.01,
-        metadata={"description": "Azimuthal magnetic-field alias"},
-    )
-
     graph.add_recipe(
         "mass_flux [kg/m^2/s]",
         lambda rho, ur: np.asarray(rho) * np.asarray(ur),
