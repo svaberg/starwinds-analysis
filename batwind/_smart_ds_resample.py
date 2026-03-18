@@ -21,6 +21,8 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
         spatial_cache = {
             "nearest_tree": None,
             "linear_triangulation": None,
+            "octree_interpolator": None,
+            "octree_dataset": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
     return spatial_cache
@@ -85,13 +87,14 @@ def _interpolate_field(
     if method == "octree":
         interp_ds = _octree_source_dataset(smart_ds, [name])
         interpolator = spatial_cache.get("octree_interpolator")
-        if interpolator is None or getattr(interpolator, "_ds", None) is not interp_ds:
+        if interpolator is None or spatial_cache.get("octree_dataset") is not interp_ds:
             interpolator = OctreeInterpolator(
                 interp_ds,
                 [name],
                 fill_value=fill_value,
             )
             spatial_cache["octree_interpolator"] = interpolator
+            spatial_cache["octree_dataset"] = interp_ds
         else:
             interpolator.set_fields([name], fill_value=fill_value)
 
