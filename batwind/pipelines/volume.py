@@ -49,7 +49,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: sample shells once for all diagnostics.
     log.debug("Sampling shell grid once for all diagnostics...")
-    energy_source = "E [J/m^3]" if smart_ds.has_field("E [J/m^3]") else "E [erg/cm^3]"
+    energy_source = "E [J/m^3]"
     shared_source_fields = (
         "Rho [kg/m^3]",
         "U_x [m/s]",

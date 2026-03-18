@@ -42,7 +42,7 @@ def resample_smart_ds(
         )
 
     for coord_name in coordinate_fields:
-        if not smart_ds.has_field(coord_name):
+        if coord_name not in smart_ds.keys():
             raise IndexError(f"Coordinate field '{coord_name}' not available")
 
     if fields is None:

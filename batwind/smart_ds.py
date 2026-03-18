@@ -123,15 +123,6 @@ class SmartDs:
             self._cache[name] = value
         return value
 
-    def has_field(self, name: str) -> bool:
-        if name in self._dataset.variables:
-            return True
-        try:
-            cost, _tree = self._resolve_field(name)
-        except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
-            return False
-        return np.isfinite(cost)
-
     def clear_computation_graph(self):
         self._computation_graph = griblet.ComputationGraph()
         for raw_name in self._dataset.variables:

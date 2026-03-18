@@ -247,7 +247,7 @@ def test_energy_flux_profile_runs_on_example():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
     sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=SOLAR_RADIUS_M))
     sds.merge_computation_graph(build_griblet_spherical_graph(sds.keys()))
-    energy_source = "E [J/m^3]" if sds.has_field("E [J/m^3]") else "E [erg/cm^3]"
+    energy_source = "E [J/m^3]"
     shells = sample_spherical_shells_fibonacci(
         sds,
         [2.0, 4.0, 8.0, 16.0],
