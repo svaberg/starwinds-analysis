@@ -45,10 +45,6 @@ class SmartDs:
     def raw(self) -> Dataset:
         return self._dataset
 
-    @property
-    def dataset(self) -> Dataset:
-        return self._dataset
-
     def __repr__(self) -> str:
         return (
             f"SmartDs(title={self.title!r}, zone={self.zone!r}, "
