@@ -110,12 +110,11 @@ class SmartDs:
         if self._cache_enabled and name in self._cache:
             return self._cache[name]
 
-        raw_name = self._resolve_raw_name(name)
-        if raw_name is not None:
+        if name in self._dataset.variables:
             if hasattr(self._dataset, "variable"):
-                value = self._dataset.variable(raw_name)
+                value = self._dataset.variable(name)
             else:
-                value = self._dataset[raw_name]
+                value = self._dataset[name]
             if self._cache_enabled:
                 self._cache[name] = value
             return value
@@ -125,11 +124,8 @@ class SmartDs:
             self._cache[name] = value
         return value
 
-    def has_raw_field(self, name: str) -> bool:
-        return self._resolve_raw_name(name) is not None
-
     def has_field(self, name: str) -> bool:
-        if self.has_raw_field(name):
+        if name in self._dataset.variables:
             return True
         try:
             cost, _tree = self.resolve(name)
@@ -258,7 +254,7 @@ class SmartDs:
             return leaves
 
         for field in tuple(dict.fromkeys(fields)):
-            if self.has_raw_field(field):
+            if field in self._dataset.variables:
                 add(field)
                 continue
             try:
@@ -356,11 +352,6 @@ class SmartDs:
             computation_graph=self._computation_graph,
             include_aux_in_loader=self._include_aux_in_loader,
         )
-
-    def _resolve_raw_name(self, name: str) -> str | None:
-        if name in self._dataset.variables:
-            return name
-        return None
 
     def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:
         preferred = ["X [R]", "Y [R]", "Z [R]"]

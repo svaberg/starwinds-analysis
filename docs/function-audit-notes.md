@@ -314,15 +314,15 @@ Used by: `batwind/smart_ds.py`, `batwind/recipes/batsrus.py`
 
 ## `batwind/smart_ds.py`
 
-- `SmartDs`: Main wrapper around `starwinds_readplt.Dataset`.
+- `SmartDs`: Main wrapper around `batread.Dataset`.
 - `SmartDs.from_file`: File loader + nearby `PARAM.in` stellar aux ingestion.
 - `SmartDs.prepare`: Attaches BATSRUS + spherical recipe graphs.
-- `SmartDs.variable`: Main field accessor (`raw -> graph`, with cache).
+- `SmartDs.__getitem__`: Main field accessor (`raw -> graph`, with cache).
 - `SmartDs.explain`: Dependency-path explanation for a requested field.
 - `SmartDs.base_fields_for_resample`: Expands requested fields to raw interpolation dependencies.
 - `SmartDs.resample`: Generic resampling entrypoint returning a new `SmartDs`.
 - `SmartDs.append_fields`: Appends structured extra fields into a new dataset/wrapper.
-- `SmartDs.has_field` / `has_raw_field` / `keys`: Field availability and discoverability helpers.
+- `SmartDs.has_field` / `keys`: Field availability and discoverability helpers.
 - `SmartDs.clear_cache`: Clears field cache + resample spatial caches.
 
 Used by: all pipelines, recipes, analysis primitives, and examples/notebooks.
