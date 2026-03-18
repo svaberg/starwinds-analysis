@@ -27,8 +27,8 @@ from batwind.smart_ds import SmartDs
 
 sds = SmartDs.from_file("examples/3d__var_1_n00000000.plt")
 
-# Attach spherical geometry + vector-component recipes
-sds.add_spherical_graph(vectors=("B", "U"))
+# Attach spherical geometry + auto-detected vector-component recipes
+sds.add_spherical_graph()
 
 r = sds["R [R]"]
 br = sds["B_r [Gauss]"]

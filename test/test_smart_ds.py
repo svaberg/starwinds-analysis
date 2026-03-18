@@ -93,7 +93,7 @@ def test_resample_linear_interpolates_inside_hull():
 
 
 def test_add_spherical_graph_computes_geometry_and_vector_components():
-    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph(vectors=("B",))
+    sds = SmartDs(make_dataset_3d_vectors()).add_spherical_graph()
 
     r = sds["R [R]"]
     polar = sds["polar [rad]"]
@@ -120,7 +120,7 @@ def test_add_spherical_graph_computes_geometry_and_vector_components():
 
 def test_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_spherical_graph(vectors=("B", "U"))
+    sds.add_spherical_graph()
 
     x = np.asarray(sds["X [R]"])
     y = np.asarray(sds["Y [R]"])
@@ -189,7 +189,7 @@ def test_smartds_graph_is_never_none():
 
 def test_griblet_add_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.add_spherical_graph(vectors=("B",))
+    sds.add_spherical_graph()
 
     polar = np.asarray(sds["polar [rad]"])
     b_r = np.asarray(sds["B_r [Gauss]"])

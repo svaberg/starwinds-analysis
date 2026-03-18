@@ -142,7 +142,6 @@ class SmartDs:
         self,
         *,
         coord_fields: Sequence[str] = DEFAULT_COORD_FIELDS,
-        vectors: Sequence[str] = ("B", "U"),
         components: Sequence[str] = ("r", "p", "a"),
     ):
         graph = build_griblet_spherical_geometry_graph(coord_fields=coord_fields)
@@ -150,7 +149,6 @@ class SmartDs:
             build_griblet_auto_vector_spherical_components_graph(
                 self.keys(),
                 coord_fields=coord_fields,
-                prefixes=tuple(vectors),
                 components=tuple(components),
             )
         )

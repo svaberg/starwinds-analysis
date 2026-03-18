@@ -38,7 +38,7 @@ def process_plt_file(file_path: str | Path) -> None:
     # Start: attach the graph-backed fields and create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
     smart_ds.add_batsrus_graph()
-    smart_ds.add_spherical_graph(vectors=("B", "U"))
+    smart_ds.add_spherical_graph()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)

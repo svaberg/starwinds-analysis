@@ -193,7 +193,6 @@ def build_griblet_auto_vector_spherical_components_graph(
     variable_names: Sequence[str],
     *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
-    prefixes: Sequence[str] | None = None,
     components: Sequence[str] = ("r", "p", "a"),
 ):
     """
@@ -213,11 +212,8 @@ def build_griblet_auto_vector_spherical_components_graph(
         slot = by_prefix.setdefault((prefix, unit), {})
         slot[comp] = name
 
-    wanted = set(prefixes) if prefixes is not None else None
     merged = griblet.ComputationGraph()
     for (prefix, unit), info in sorted(by_prefix.items()):
-        if wanted is not None and prefix not in wanted:
-            continue
         if not {"x", "y", "z"}.issubset(info):
             continue
         merged.merge(

@@ -113,7 +113,7 @@ def process_plt_file(file_path: str | Path) -> None:
     log.debug("Loading shell dataset and preparing native shell grid...")
     smart_ds = SmartDs.from_file(path)
     smart_ds.add_batsrus_graph()
-    smart_ds.add_spherical_graph(vectors=("B", "U"))
+    smart_ds.add_spherical_graph()
     lon_all, lat_all, shell_radii_r, lon_nodes, lat_nodes, shell_masks, shell_areas_m2, height_r = load_shell_grid(smart_ds)
     log.info("Loading shell dataset and preparing native shell grid complete.")
 
