@@ -217,6 +217,15 @@ class SmartDs:
         title: str | None = None,
         zone: str | None = None,
     ) -> "SmartDs":
+        if coordinate_fields is None:
+            preferred = ["X [R]", "Y [R]", "Z [R]"]
+            ndim = np.asarray(sample_points, dtype=float).shape[-1]
+            coordinate_fields = tuple(name for name in preferred if name in self._dataset.variables)
+            if len(coordinate_fields) < ndim:
+                raise ValueError(
+                    "Could not infer coordinate fields. Pass coordinate_fields explicitly."
+                )
+            coordinate_fields = coordinate_fields[:ndim]
         return resample_smart_ds(
             self,
             sample_points,
@@ -268,16 +277,6 @@ class SmartDs:
             new_dataset,
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
-        )
-
-    def _infer_coordinate_fields(self, ndim: int) -> tuple[str, ...]:
-        preferred = ["X [R]", "Y [R]", "Z [R]"]
-        available = [name for name in preferred if name in self._dataset.variables]
-        if len(available) >= ndim:
-            return tuple(available[:ndim])
-
-        raise ValueError(
-            "Could not infer coordinate fields. Pass coordinate_fields explicitly."
         )
 
     def _evaluate_resolved_tree(self, node):

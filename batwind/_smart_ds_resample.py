@@ -33,7 +33,7 @@ def resample_smart_ds(
     sample_points_2d = sample_points.reshape(-1, sample_points.shape[-1])
     ndim = sample_points.shape[-1]
     if coordinate_fields is None:
-        coordinate_fields = smart_ds._infer_coordinate_fields(ndim)
+        raise ValueError("coordinate_fields must be provided")
     coordinate_fields = tuple(coordinate_fields)
     if len(coordinate_fields) != ndim:
         raise ValueError(
