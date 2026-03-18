@@ -49,9 +49,9 @@ Files:
 
 Status: PARTIAL, usable
 
-- BATSRUS + spherical graph fragments are attached explicitly through:
-  - `SmartDs.merge_computation_graph(build_griblet_batsrus_graph(...))`
-  - `SmartDs.merge_computation_graph(build_griblet_spherical_graph(...))`
+- BATSRUS + spherical graph fragments are commonly attached through:
+  - `SmartDs.from_file(..., batsrus=True, spherical=True, body_radius_m=...)`
+  - or explicitly on `sds.computation_graph`
 - Active spherical names are:
   - `R [R]`
   - `polar [rad]`

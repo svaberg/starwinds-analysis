@@ -144,8 +144,7 @@ def test_spherical_graph_computes_geometry_and_vector_components():
 
 
 def test_spherical_graph_on_real_example_data():
-    sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
+    sds = SmartDs.from_file(str(EXAMPLE_PLT), spherical=True)
 
     x = np.asarray(sds["X [R]"])
     y = np.asarray(sds["Y [R]"])
@@ -211,8 +210,7 @@ def test_smartds_graph_is_never_none():
 
 
 def test_griblet_spherical_graph_on_real_example_data():
-    sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_spherical_graph(tuple(sds)))
+    sds = SmartDs.from_file(str(EXAMPLE_PLT), spherical=True)
 
     polar = np.asarray(sds["polar [rad]"])
     b_r = np.asarray(sds["B_r [Gauss]"])
@@ -229,8 +227,7 @@ def test_griblet_spherical_graph_on_real_example_data():
 
 
 def test_griblet_batsrus_si_normalization_and_derived_fields():
-    sds = SmartDs.from_file(str(EXAMPLE_PLT))
-    sds.merge_computation_graph(build_griblet_batsrus_graph(sds.variables, aux=sds.aux))
+    sds = SmartDs.from_file(str(EXAMPLE_PLT), batsrus=True)
 
     # Unit normalization examples
     bx_g = np.asarray(sds["B_x [Gauss]"])

@@ -10,6 +10,8 @@ from batread.dataset import Dataset
 from griblet.dependency_solver import UnresolvableFieldError
 from griblet.evaluate_tree import evaluate_tree
 from batwind._smart_ds_resample import resample_smart_ds
+from batwind.recipes.batsrus import build_griblet_batsrus_graph
+from batwind.recipes.spherical import build_griblet_spherical_graph
 
 
 class SmartDs:
@@ -35,8 +37,23 @@ class SmartDs:
             self.merge_computation_graph(computation_graph)
 
     @classmethod
-    def from_file(cls, file: str, **kwargs) -> "SmartDs":
-        return cls(Dataset.from_file(str(file)), **kwargs)
+    def from_file(
+        cls,
+        file: str,
+        *,
+        batsrus: bool = False,
+        spherical: bool = False,
+        body_radius_m: float | None = None,
+        **kwargs,
+    ) -> "SmartDs":
+        sds = cls(Dataset.from_file(str(file)), **kwargs)
+        if batsrus:
+            sds.computation_graph.merge(
+                build_griblet_batsrus_graph(sds.variables, aux=sds.aux, body_radius_m=body_radius_m)
+            )
+        if spherical:
+            sds.computation_graph.merge(build_griblet_spherical_graph(tuple(sds)))
+        return sds
 
     @property
     def raw(self) -> Dataset:

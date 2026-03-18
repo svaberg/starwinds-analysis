@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from batwind.pipelines.utils import output_prefix_from_input_file
-from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_spherical_graph
 from batwind.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -113,9 +111,7 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: load dataset, attach the graph-backed fields, and build shell geometry.
     log.debug("Loading shell dataset and preparing native shell grid...")
-    smart_ds = SmartDs.from_file(path)
-    smart_ds.merge_computation_graph(build_griblet_batsrus_graph(smart_ds.variables, aux=smart_ds.aux))
-    smart_ds.merge_computation_graph(build_griblet_spherical_graph(tuple(smart_ds)))
+    smart_ds = SmartDs.from_file(path, batsrus=True, spherical=True)
     lon_all, lat_all, shell_radii_r, lon_nodes, lat_nodes, shell_masks, shell_areas_m2, height_r = load_shell_grid(smart_ds)
     log.info("Loading shell dataset and preparing native shell grid complete.")
 

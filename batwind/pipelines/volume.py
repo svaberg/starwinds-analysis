@@ -13,8 +13,6 @@ from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
 from batwind.pipelines.utils import output_prefix_from_input_file
-from batwind.recipes.batsrus import build_griblet_batsrus_graph
-from batwind.recipes.spherical import build_griblet_spherical_graph
 from batwind.smart_ds import SmartDs
 
 log = logging.getLogger(__name__)
@@ -34,13 +32,11 @@ def process_plt_file(file_path: str | Path) -> None:
 
     # Start: load the dataset.
     log.debug("Loading volume dataset...")
-    smart_ds = SmartDs.from_file(path)
+    smart_ds = SmartDs.from_file(path, batsrus=True, spherical=True)
     log.info("Loading volume dataset complete.")
 
-    # Start: attach the graph-backed fields and create the output figure canvas.
+    # Start: create the output figure canvas.
     log.debug("Preparing volume dataset and figure canvas...")
-    smart_ds.merge_computation_graph(build_griblet_batsrus_graph(smart_ds.variables, aux=smart_ds.aux))
-    smart_ds.merge_computation_graph(build_griblet_spherical_graph(tuple(smart_ds)))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
