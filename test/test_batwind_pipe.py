@@ -149,7 +149,7 @@ def test_run_batwind_pipe_offloads_large_numpy_array_to_artifact(tmp_path):
     assert entry["source"]["module"] == "test_pipeline"
 
 
-def test_run_batwind_pipe_auto_routes_by_filename_prefix(tmp_path):
+def test_run_batwind_pipe_auto_routes_by_filename_prefix_and_records_failures(tmp_path):
     (tmp_path / "3d__one.plt").write_text("")
     (tmp_path / "shl_one.plt").write_text("")
     (tmp_path / "x=0_one.plt").write_text("")
