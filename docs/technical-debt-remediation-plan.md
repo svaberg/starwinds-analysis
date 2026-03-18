@@ -90,6 +90,19 @@ Execution focus:
 
 - refresh docs in same PR/batch as architecture/API changes
 
+### Step 7: TD-07 (`PARAM.in` stellar naming cleanup)
+
+Targets:
+
+- `batwind/param_in.py`
+- `batwind/pipelines/volume.py`
+- `batwind/pipelines/shell.py`
+
+Execution focus:
+
+- have `ParamIn.stellar_params()` expose what the file actually provides instead of renamed bridge keys
+- align pipeline/body-radius consumers to that direct `PARAM.in` output path
+
 ## Batch Validation Rule
 
 For each completed step:

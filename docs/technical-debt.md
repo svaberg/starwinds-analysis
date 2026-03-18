@@ -82,6 +82,19 @@ Debt:
 
 - docs can drift quickly after architecture moves unless refreshed as part of each batch
 
+### TD-07 (P1) `PARAM.in` stellar naming bridge
+
+Area:
+
+- `batwind/param_in.py`
+- `batwind/pipelines/volume.py`
+- `batwind/pipelines/shell.py`
+
+Debt:
+
+- `ParamIn.stellar_params()` still manufactures renamed `Star_*` keys instead of exposing the parsed stellar values directly
+- pipeline/runtime code still depends on a broken naming bridge between `ParamIn` stellar output and graph field names
+
 ## Debt Baseline Rule
 
 When code changes architecture or API boundaries, update these in the same batch:
