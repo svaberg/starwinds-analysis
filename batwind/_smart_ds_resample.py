@@ -9,6 +9,103 @@ from scipy.spatial import cKDTree
 from batread.dataset import Dataset
 
 
+def _get_spatial_cache(smart_ds, coordinate_fields):
+    spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
+    if spatial_cache is None:
+        source_coords = np.column_stack(
+            [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
+        )
+        coord_mask = np.isfinite(source_coords).all(axis=1)
+        if not np.any(coord_mask):
+            raise ValueError("No finite source coordinates available for resampling")
+        spatial_cache = {
+            "source_coords": source_coords,
+            "coord_mask": coord_mask,
+            "nearest_tree": None,
+        }
+        smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
+    return spatial_cache
+
+
+def _interpolate_field(
+    source_coords,
+    coord_mask,
+    spatial_cache,
+    values,
+    sample_points_2d,
+    *,
+    method: str,
+    fill_value: float,
+    nearest_indices,
+):
+    valid = coord_mask & np.isfinite(values)
+    if not np.any(valid):
+        return None, nearest_indices
+
+    if method == "nearest":
+        if np.array_equal(valid, coord_mask):
+            nearest_tree = spatial_cache["nearest_tree"]
+            if nearest_tree is None:
+                nearest_tree = cKDTree(source_coords[coord_mask])
+                spatial_cache["nearest_tree"] = nearest_tree
+            if nearest_indices is None:
+                nearest_indices = nearest_tree.query(sample_points_2d)[1]
+            return values[coord_mask][nearest_indices], nearest_indices
+
+        nearest_tree = cKDTree(source_coords[valid])
+        nearest_indices = nearest_tree.query(sample_points_2d)[1]
+        return values[valid][nearest_indices], nearest_indices
+
+    if method == "linear":
+        interpolator = LinearNDInterpolator(
+            source_coords[valid],
+            values[valid],
+            fill_value=fill_value,
+        )
+        out = np.asarray(interpolator(sample_points_2d), dtype=float)
+        if out.ndim == 0:
+            out = out[np.newaxis]
+        return out, nearest_indices
+
+    raise ValueError("method must be 'nearest' or 'linear'")
+
+
+def _build_resampled_dataset(
+    smart_ds,
+    out_points,
+    sample_shape,
+    output_variables,
+    *,
+    corners,
+    copy_aux: bool,
+    title: str | None,
+    zone: str | None,
+):
+    if corners is None:
+        corners_arr = np.empty((0, 0), dtype=int)
+    else:
+        corners_arr = np.asarray(corners)
+
+    if copy_aux:
+        aux = deepcopy(smart_ds._dataset.aux)
+    else:
+        aux = smart_ds._dataset.aux
+
+    if title is None:
+        title = smart_ds._dataset.title
+    if zone is None:
+        zone = f"{smart_ds._dataset.zone} (resampled)"
+
+    return Dataset(
+        out_points.reshape(*sample_shape, len(output_variables)),
+        corners_arr,
+        aux,
+        title,
+        output_variables,
+        zone,
+    )
+
+
 def resample_smart_ds(
     smart_ds,
     sample_points,
@@ -55,24 +152,9 @@ def resample_smart_ds(
             if name not in output_variables:
                 output_variables.append(name)
 
-    spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
-    if spatial_cache is None:
-        source_coords = np.column_stack(
-            [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
-        )
-        coord_mask = np.isfinite(source_coords).all(axis=1)
-        if not np.any(coord_mask):
-            raise ValueError("No finite source coordinates available for resampling")
-        spatial_cache = {
-            "source_coords": source_coords,
-            "coord_mask": coord_mask,
-            "nearest_tree": None,
-        }
-        smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
-    else:
-        source_coords = spatial_cache["source_coords"]
-        coord_mask = spatial_cache["coord_mask"]
-
+    spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
+    source_coords = spatial_cache["source_coords"]
+    coord_mask = spatial_cache["coord_mask"]
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
 
@@ -95,62 +177,29 @@ def resample_smart_ds(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "
                 f"length {source_coords.shape[0]}"
             )
-        valid = coord_mask & np.isfinite(values)
-        if not np.any(valid):
+        out, nearest_indices = _interpolate_field(
+            source_coords,
+            coord_mask,
+            spatial_cache,
+            values,
+            sample_points_2d,
+            method=method,
+            fill_value=fill_value,
+            nearest_indices=nearest_indices,
+        )
+        if out is None:
             continue
+        out_points[:, out_index[name]] = out
 
-        if method == "nearest":
-            if np.array_equal(valid, coord_mask):
-                nearest_tree = spatial_cache["nearest_tree"]
-                if nearest_tree is None:
-                    nearest_tree = cKDTree(source_coords[coord_mask])
-                    spatial_cache["nearest_tree"] = nearest_tree
-                if nearest_indices is None:
-                    nearest_indices = nearest_tree.query(sample_points_2d)[1]
-                out_points[:, out_index[name]] = values[coord_mask][nearest_indices]
-            else:
-                nearest_tree = cKDTree(source_coords[valid])
-                nearest_indices = nearest_tree.query(sample_points_2d)[1]
-                out_points[:, out_index[name]] = values[valid][nearest_indices]
-            continue
-
-        if method == "linear":
-            interpolator = LinearNDInterpolator(
-                source_coords[valid],
-                values[valid],
-                fill_value=fill_value,
-            )
-            out = interpolator(sample_points_2d)
-            out = np.asarray(out, dtype=float)
-            if out.ndim == 0:
-                out = out[np.newaxis]
-            out_points[:, out_index[name]] = out
-            continue
-
-        raise ValueError("method must be 'nearest' or 'linear'")
-
-    if corners is None:
-        corners_arr = np.empty((0, 0), dtype=int)
-    else:
-        corners_arr = np.asarray(corners)
-
-    if copy_aux:
-        aux = deepcopy(smart_ds._dataset.aux)
-    else:
-        aux = smart_ds._dataset.aux
-
-    if title is None:
-        title = smart_ds._dataset.title
-    if zone is None:
-        zone = f"{smart_ds._dataset.zone} (resampled)"
-
-    new_dataset = Dataset(
-        out_points.reshape(*sample_shape, len(output_variables)),
-        corners_arr,
-        aux,
-        title,
+    new_dataset = _build_resampled_dataset(
+        smart_ds,
+        out_points,
+        sample_shape,
         output_variables,
-        zone,
+        corners=corners,
+        copy_aux=copy_aux,
+        title=title,
+        zone=zone,
     )
 
     return type(smart_ds)(
@@ -158,4 +207,6 @@ def resample_smart_ds(
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
     )
+
+
 __all__ = ["resample_smart_ds"]
