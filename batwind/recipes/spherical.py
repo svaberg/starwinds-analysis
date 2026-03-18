@@ -111,9 +111,10 @@ def build_griblet_spherical_geometry_graph(
     This requires ``griblet``.
     """
     x_name, y_name, z_name = coord_fields
-    r_name = _infer_radius_name_from_coord(x_name)
-    if r_name is None:
+    match = re.match(r"^X \[(.+)\]$", x_name)
+    if match is None:
         raise ValueError(f"could not infer radius name from coordinate field {x_name!r}")
+    r_name = f"R [{match.group(1)}]"
 
     polar_name = "polar [rad]"
     azimuth_name = "azimuth [rad]"
@@ -200,10 +201,3 @@ def build_griblet_vector_spherical_components_graph(
                 metadata={"description": f"{prefix} azimuthal component"},
             )
     return merged
-
-
-def _infer_radius_name_from_coord(x_name: str) -> str | None:
-    m = re.match(r"^X \[(.+)\]$", x_name)
-    if m:
-        return f"R [{m.group(1)}]"
-    return None

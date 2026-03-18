@@ -99,8 +99,6 @@ class SmartDs:
 
     def __getitem__(self, index_or_name):
         if not isinstance(index_or_name, str):
-            if isinstance(index_or_name, int) and hasattr(self._dataset, "variable"):
-                return self._dataset.variable(self._dataset.variables[index_or_name])
             return self._dataset[index_or_name]
 
         name = index_or_name
@@ -108,10 +106,7 @@ class SmartDs:
             return self._cache[name]
 
         if name in self._dataset.variables:
-            if hasattr(self._dataset, "variable"):
-                value = self._dataset.variable(name)
-            else:
-                value = self._dataset[name]
+            value = self._dataset[name]
             if self._cache_enabled:
                 self._cache[name] = value
             return value
@@ -354,11 +349,7 @@ class SmartDs:
         for raw_name in self._dataset.variables:
             graph.add_recipe(
                 field=raw_name,
-                func=lambda raw_name=raw_name: (
-                    self._dataset.variable(raw_name)
-                    if hasattr(self._dataset, "variable")
-                    else self._dataset[raw_name]
-                ),
+                func=lambda raw_name=raw_name: self._dataset[raw_name],
                 deps=[],
                 cost=0.0,
                 metadata={"description": "Dataset raw field"},
