@@ -63,7 +63,7 @@ def compare_curve_mass_loss_to_shell(
     shell_radii=None,
 ):
     body_radius = float(curve["RBODY [m]"])
-    weights = curve.get("time_weight [none]")
+    weights = np.array(curve["time_weight [none]"]) if curve.has_field("time_weight [none]") else None
     mass_flux = np.array(curve["mass_flux [kg/m^2/s]"])
     radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
@@ -119,7 +119,7 @@ def compare_curve_torque_to_shell(
     shell_radii=None,
 ):
     body_radius = float(curve["RBODY [m]"])
-    weights = curve.get("time_weight [none]")
+    weights = np.array(curve["time_weight [none]"]) if curve.has_field("time_weight [none]") else None
     radius = np.array(curve["R [m]"])
     radius_r = radius / body_radius
     curve_magnetic_density = np.array(curve["magnetic_torque_density [N/m]"])

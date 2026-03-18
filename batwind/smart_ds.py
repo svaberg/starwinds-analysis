@@ -97,9 +97,6 @@ class SmartDs:
                 names.append(name)
         return tuple(names)
 
-    def __contains__(self, name: object) -> bool:
-        return isinstance(name, str) and self.has_field(name)
-
     def __getitem__(self, index_or_name):
         if not isinstance(index_or_name, str):
             if isinstance(index_or_name, int) and hasattr(self._dataset, "variable"):
@@ -132,12 +129,6 @@ class SmartDs:
         except (IndexError, KeyError, RuntimeError, ValueError, UnresolvableFieldError):
             return False
         return np.isfinite(cost)
-
-    def get(self, name: str, default=None):
-        try:
-            return self[name]
-        except (IndexError, KeyError):
-            return default
 
     def clear_computation_graph(self):
         self._computation_graph = griblet.ComputationGraph()

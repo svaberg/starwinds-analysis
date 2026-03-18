@@ -55,7 +55,6 @@ def test_passthrough_raw_field():
 
     np.testing.assert_allclose(sds["Q [none]"], [0.0, 1.0, 1.0, 2.0])
     assert sds.has_field("Q [none]")
-    assert "Q [none]" in sds
 
 
 def test_resample_returns_new_wrapped_dataset_nearest():
