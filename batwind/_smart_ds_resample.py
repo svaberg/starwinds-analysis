@@ -26,10 +26,13 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
     return spatial_cache
 
 
-def _interpolate_field_standard(
+def _interpolate_field(
+    smart_ds,
     source_coords,
     coord_mask,
+    coordinate_fields,
     spatial_cache,
+    name,
     values,
     flat_sample_points,
     *,
@@ -37,11 +40,10 @@ def _interpolate_field_standard(
     fill_value: float,
     nearest_indices,
 ):
-    valid = coord_mask & np.isfinite(values)
-    if not np.any(valid):
-        return None, nearest_indices
-
     if method == "nearest":
+        valid = coord_mask & np.isfinite(values)
+        if not np.any(valid):
+            return None, nearest_indices
         if np.array_equal(valid, coord_mask):
             nearest_tree = spatial_cache["nearest_tree"]
             if nearest_tree is None:
@@ -56,6 +58,9 @@ def _interpolate_field_standard(
         return values[valid][nearest_indices], nearest_indices
 
     if method == "linear":
+        valid = coord_mask & np.isfinite(values)
+        if not np.any(valid):
+            return None, nearest_indices
         if np.array_equal(valid, coord_mask):
             linear_triangulation = spatial_cache["linear_triangulation"]
             if linear_triangulation is None:
@@ -73,6 +78,27 @@ def _interpolate_field_standard(
                 fill_value=fill_value,
             )
         out = np.asarray(interpolator(flat_sample_points), dtype=float)
+        if out.ndim == 0:
+            out = out[np.newaxis]
+        return out, nearest_indices
+
+    if method == "octree":
+        interp_ds = _octree_source_dataset(smart_ds, [name])
+        interpolator = spatial_cache.get("octree_interpolator")
+        if interpolator is None or getattr(interpolator, "_ds", None) is not interp_ds:
+            interpolator = OctreeInterpolator(
+                interp_ds,
+                [name],
+                fill_value=fill_value,
+            )
+            spatial_cache["octree_interpolator"] = interpolator
+        else:
+            interpolator.set_fields([name], fill_value=fill_value)
+
+        out = np.asarray(
+            interpolator(flat_sample_points, query_coord=_octree_query_coord(coordinate_fields)),
+            dtype=float,
+        )
         if out.ndim == 0:
             out = out[np.newaxis]
         return out, nearest_indices
@@ -103,40 +129,6 @@ def _octree_source_dataset(smart_ds, value_fields):
     return smart_ds.append_fields(extra_fields, zone_suffix="octree source").raw
 
 
-def _interpolate_fields_octree(
-    smart_ds,
-    coordinate_fields,
-    output_variables,
-    flat_sample_points,
-    *,
-    fill_value: float,
-    spatial_cache,
-):
-    value_fields = [name for name in output_variables if name not in coordinate_fields]
-    if not value_fields:
-        return np.empty((flat_sample_points.shape[0], 0), dtype=float)
-
-    interp_ds = _octree_source_dataset(smart_ds, value_fields)
-    interpolator = spatial_cache.get("octree_interpolator")
-    if interpolator is None or getattr(interpolator, "_ds", None) is not interp_ds:
-        interpolator = OctreeInterpolator(
-            interp_ds,
-            value_fields,
-            fill_value=fill_value,
-        )
-        spatial_cache["octree_interpolator"] = interpolator
-    else:
-        interpolator.set_fields(value_fields, fill_value=fill_value)
-
-    out = np.asarray(
-        interpolator(flat_sample_points, query_coord=_octree_query_coord(coordinate_fields)),
-        dtype=float,
-    )
-    if out.ndim == 1:
-        out = out[:, None]
-    return out
-
-
 def _interpolate_fields(
     smart_ds,
     source_coords,
@@ -153,16 +145,6 @@ def _interpolate_fields(
     if not value_names:
         return value_names, np.empty((flat_sample_points.shape[0], 0), dtype=float)
 
-    if method == "octree":
-        return value_names, _interpolate_fields_octree(
-            smart_ds,
-            coordinate_fields,
-            output_variables,
-            flat_sample_points,
-            fill_value=fill_value,
-            spatial_cache=spatial_cache,
-        )
-
     out_values = np.full((flat_sample_points.shape[0], len(value_names)), np.nan, dtype=float)
     nearest_indices = None
     for i, name in enumerate(value_names):
@@ -172,10 +154,13 @@ def _interpolate_fields(
                 f"Field '{name}' has length {values.shape[0]} but coordinates have "
                 f"length {source_coords.shape[0]}"
             )
-        out, nearest_indices = _interpolate_field_standard(
+        out, nearest_indices = _interpolate_field(
+            smart_ds,
             source_coords,
             coord_mask,
+            coordinate_fields,
             spatial_cache,
+            name,
             values,
             flat_sample_points,
             method=method,
