@@ -231,9 +231,9 @@ def pressure_components_on_surface(
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
     b = np.array(sampled["B [T]"])
-    magnetic_pressure = np.array(sampled["magnetic_pressure [Pa]"])
+    magnetic_pressure = np.array(sampled["P_b [Pa]"])
     ram = np.array(sampled["ram_pressure [Pa]"])
-    thermal_pressure = np.array(sampled["thermal_pressure [Pa]"])
+    thermal_pressure = np.array(sampled["P [Pa]"])
     standoff = np.array(sampled["standoff_distance [m]"])
 
     object_velocity = None
@@ -250,9 +250,9 @@ def pressure_components_on_surface(
     comps = {
         "U [m/s]": u,
         "B [T]": b,
-        "magnetic_pressure [Pa]": magnetic_pressure,
+        "P_b [Pa]": magnetic_pressure,
         "ram_pressure [Pa]": ram,
-        "thermal_pressure [Pa]": thermal_pressure,
+        "P [Pa]": thermal_pressure,
         "standoff_distance [m]": standoff,
     }
 
@@ -330,8 +330,8 @@ def torque_components_on_surface(
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     b_xyz = np.array(sampled["B_xyz [T]"])
     p = None
-    if include_pressure_term and "thermal_pressure [Pa]" in sampled:
-        p = np.array(sampled["thermal_pressure [Pa]"])
+    if include_pressure_term and "P [Pa]" in sampled:
+        p = np.array(sampled["P [Pa]"])
 
     points = np.stack(
         [

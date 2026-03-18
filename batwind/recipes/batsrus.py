@@ -195,20 +195,6 @@ def build_common_derived_graph(variable_names: set[str] | Sequence[str]):
         metadata={"description": "Magnetic pressure"},
     )
     graph.add_recipe(
-        "magnetic_pressure [Pa]",
-        lambda pb: np.asarray(pb),
-        deps=["P_b [Pa]"],
-        cost=0.01,
-        metadata={"description": "Magnetic pressure alias"},
-    )
-    graph.add_recipe(
-        "thermal_pressure [Pa]",
-        lambda p: np.asarray(p),
-        deps=["P [Pa]"],
-        cost=0.01,
-        metadata={"description": "Thermal pressure alias"},
-    )
-    graph.add_recipe(
         "ram_pressure [Pa]",
         lambda rho, U: np.asarray(rho) * (np.asarray(U) ** 2),
         deps=["Rho [kg/m^3]", "U [m/s]"],

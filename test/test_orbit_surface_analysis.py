@@ -175,9 +175,9 @@ def test_pressure_components_on_surface_runs_on_example():
             "B_z [T]",
             "U [m/s]",
             "B [T]",
-            "magnetic_pressure [Pa]",
+            "P_b [Pa]",
             "ram_pressure [Pa]",
-            "thermal_pressure [Pa]",
+            "P [Pa]",
             "standoff_distance [m]",
         ),
         trajectory_points=points,
@@ -195,8 +195,8 @@ def test_pressure_components_on_surface_runs_on_example():
     out = pressure_components_on_surface(sampled)
     for key in (
         "ram_pressure [Pa]",
-        "magnetic_pressure [Pa]",
-        "thermal_pressure [Pa]",
+        "P_b [Pa]",
+        "P [Pa]",
         "standoff_distance [m]",
     ):
         arr = np.array(out[key], dtype=float)
@@ -225,7 +225,7 @@ def test_torque_components_on_surface_runs_on_example():
             "B_x [T]",
             "B_y [T]",
             "B_z [T]",
-            "thermal_pressure [Pa]",
+            "P [Pa]",
         ),
         trajectory_points=points,
         phase=phase,
