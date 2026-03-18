@@ -143,7 +143,6 @@ def build_griblet_spherical_geometry_graph(
 
 def build_griblet_vector_spherical_components_graph(
     variable_names: Sequence[str],
-    *,
     coord_fields: Sequence[str] = ("X [R]", "Y [R]", "Z [R]"),
 ):
     """
@@ -165,13 +164,10 @@ def build_griblet_vector_spherical_components_graph(
             continue
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]", x_name, y_name, z_name]
 
-        def _all(vx, vy, vz, x, y, z):
-            return spherical_vector_components(vx, vy, vz, x, y, z)
-
         if "r" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_r [{unit}]",
-                lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[0],
+                lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[0],
                 deps=deps,
                 cost=0.4,
                 metadata={"description": f"{prefix} radial component"},
@@ -179,7 +175,7 @@ def build_griblet_vector_spherical_components_graph(
         if "p" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_p [{unit}]",
-                lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[1],
+                lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[1],
                 deps=deps,
                 cost=0.5,
                 metadata={"description": f"{prefix} polar component"},
@@ -187,7 +183,7 @@ def build_griblet_vector_spherical_components_graph(
         if "a" in SPHERICAL_COMPONENTS:
             merged.add_recipe(
                 f"{prefix}_a [{unit}]",
-                lambda vx, vy, vz, x, y, z: _all(vx, vy, vz, x, y, z)[2],
+                lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[2],
                 deps=deps,
                 cost=0.5,
                 metadata={"description": f"{prefix} azimuthal component"},
