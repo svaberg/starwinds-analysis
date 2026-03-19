@@ -137,12 +137,7 @@ def sample_surface_revolution(
 ):
     """Sample explicit fields on a surface of revolution and return a surface SmartDs."""
     fields = tuple(fields)
-    log.info(
-        "sample_surface_revolution start: n_fields=%s, n_longitudes=%d, method=%s",
-        len(fields),
-        n_longitudes,
-        method,
-    )
+    log.info("sample_surface_revolution...")
     trajectory_points = np.array(trajectory_points)
     if trajectory_points.ndim != 2 or trajectory_points.shape[1] != 3:
         raise ValueError("trajectory_points must have shape (n_phase, 3)")
@@ -180,10 +175,19 @@ def sample_surface_revolution(
 
     meta = dict(trajectory_meta or {})
     surf = surface_of_revolution_from_trajectory(trajectory_points, n_longitudes=n_longitudes)
+    source_fields = smart_ds.source_fields(fields)
+    log.debug(
+        "sample_surface_revolution method=%s n_phase=%d n_longitudes=%d requested_fields=%d source_fields=%d",
+        method,
+        n_phase,
+        n_longitudes,
+        len(fields),
+        len(source_fields),
+    )
     sampled_surface = smart_ds.resample(
         surf["points"],
         coordinate_fields=coordinate_fields,
-        fields=smart_ds.source_fields(fields),
+        fields=source_fields,
         method=method,
         fill_value=fill_value,
         zone=zone,
@@ -203,11 +207,7 @@ def sample_surface_revolution(
     sampled_surface = sampled_surface.append_fields(context_fields, zone_suffix="surface context")
     sampled_surface.raw.aux["trajectory_meta"] = meta
 
-    log.info(
-        "sample_surface_revolution done: n_phase=%d, n_lon=%d",
-        n_phase,
-        n_lon,
-    )
+    log.debug("sample_surface_revolution complete n_phase=%d n_lon=%d", n_phase, n_lon)
     return sampled_surface
 
 
@@ -224,10 +224,7 @@ def pressure_components_on_surface(
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
     """Pressure-component analytics on an already sampled surface SmartDs."""
-    log.info(
-        "pressure_components_on_surface start: include_relative=%s",
-        include_relative_ram,
-    )
+    log.info("pressure_components_on_surface...")
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
@@ -247,6 +244,11 @@ def pressure_components_on_surface(
             ],
             axis=-1,
         )
+    log.debug(
+        "pressure_components_on_surface relative_frame=%s shape=%s",
+        object_velocity is not None,
+        rho.shape,
+    )
 
     comps = {
         "U [m/s]": u,
@@ -304,7 +306,7 @@ def pressure_components_on_surface(
             out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     elif "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
-    log.info("pressure_components_on_surface done")
+    log.debug("pressure_components_on_surface complete components=%d", len(comps))
     return out
 
 
@@ -322,10 +324,7 @@ def torque_components_on_surface(
     quantiles=(0.0, 0.25, 0.5, 0.75, 1.0),
 ):
     """Explicit-surface torque diagnostics on an already sampled surface SmartDs."""
-    log.info(
-        "torque_components_on_surface start: include_pressure=%s",
-        include_pressure_term,
-    )
+    log.info("torque_components_on_surface...")
     body_radius = float(body_radius)
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
@@ -343,6 +342,12 @@ def torque_components_on_surface(
         axis=-1,
     ) * body_radius
     normals, area = surface_point_normals_and_areas(points)
+    log.debug(
+        "torque_components_on_surface include_pressure=%s shape=%s body_radius=%g",
+        p is not None,
+        rho.shape,
+        body_radius,
+    )
 
     terms = surface_torque_density_terms(
         xyz=points,
@@ -418,8 +423,5 @@ def torque_components_on_surface(
             out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     if "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
-    log.info(
-        "torque_components_on_surface done: total=%s",
-        float(out["total [Nm]"]),
-    )
+    log.debug("torque_components_on_surface complete total=%s", float(out["total [Nm]"]))
     return out

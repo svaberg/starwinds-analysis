@@ -24,7 +24,7 @@ def alfven_radius_map(
     Compute first outward radial crossing radius where `M_A` goes `< level -> > level`.
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
-    log.info("alfven_radius_map start level=%g", float(level))
+    log.info("alfven_radius_map...")
     radius = np.array(shell_ds[radius_field])
     mach = np.array(shell_ds[mach_field])
     if radius.shape != mach.shape:
@@ -43,6 +43,7 @@ def alfven_radius_map(
     out = np.full(flat_r.shape[1], np.nan)
 
     target = float(level)
+    log.debug("alfven_radius_map level=%g n_r=%d n_columns=%d", target, n_r, flat_r.shape[1])
     crossings = 0
     for col in range(flat_r.shape[1]):
         r_col = flat_r[:, col]
@@ -64,7 +65,7 @@ def alfven_radius_map(
             out[col] = r0 + (target - m0) * (r1 - r0) / (m1 - m0)
             crossings += 1
 
-    log.info("alfven_radius_map done crossings=%d/%d", crossings, flat_r.shape[1])
+    log.debug("alfven_radius_map complete crossings=%d/%d", crossings, flat_r.shape[1])
     return out.reshape(radius.shape[1:])
 
 
@@ -78,7 +79,7 @@ def projected_solid_angle_weights(
     Compute projected angular weights dOmega = dA / R^2 from shell geometry.
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
-    log.debug("projected_solid_angle_weights start")
+    log.debug("projected_solid_angle_weights...")
     area = np.array(shell_ds[area_field])
     radius = np.array(shell_ds[radius_field])
     if area.shape != radius.shape:
@@ -120,7 +121,7 @@ def summarize_alfven_radius(
     Summarize min/max/mean/mean-cyl and coverage for an Alfven-radius map.
     Used by: `test/test_alfven_radius.py`, `examples/alfven_radius_shell.ipynb`
     """
-    log.debug("summarize_alfven_radius start")
+    log.info("summarize_alfven_radius...")
     radius = np.array(radius_map)
     polar = np.array(polar_map)
     if radius.shape != polar.shape:
@@ -165,5 +166,5 @@ def summarize_alfven_radius(
         float(avg_cyl),
         float(coverage),
     )
-    log.info("summarize_alfven_radius done coverage=%g", result[4])
+    log.debug("summarize_alfven_radius complete coverage=%g", result[4])
     return result

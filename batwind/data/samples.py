@@ -28,7 +28,7 @@ def data_file(name: str, *, echo: bool = False) -> Path:
     if path.exists():
         if echo:
             print(f"Using: {path}")
-        log.info("data_file resolved %s", path)
+        log.debug("data_file resolved %s", path)
         return path
 
     available = sorted(p.name for p in data_dir().glob("*.plt"))

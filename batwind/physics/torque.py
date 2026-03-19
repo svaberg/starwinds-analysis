@@ -103,6 +103,7 @@ def surface_torque_density_terms(
     # TODO(griblet): The local explicit-surface torque terms (`T1..T4`, `total`) are
     # physical quantities and should eventually be requestable via SmartDs/griblet in
     # SI units, with geometry inputs supplied explicitly.
+    log.info("surface_torque_density_terms...")
     xyz = np.array(xyz)
     n = normalize_surface_normals(normals_xyz)
     area = np.array(area)
@@ -137,6 +138,12 @@ def surface_torque_density_terms(
             p = np.broadcast_to(p, scalar_shape)
 
     omega = float(angvel)
+    log.debug(
+        "surface_torque_density_terms using %s frame pressure_term=%s shape=%s",
+        "rotating" if use_rotating_frame else "inertial",
+        pressure is not None,
+        scalar_shape,
+    )
     v = rotational_frame_velocity(u, xyz, omega) if use_rotating_frame else u
 
     x = xyz[..., 0]
@@ -178,7 +185,7 @@ def surface_torque_density_terms(
     non_finite = int(np.count_nonzero(~np.isfinite(total)))
     if non_finite > 0:
         log.warning("surface_torque_density_terms total has %d/%d non-finite values", non_finite, total.size)
-    log.info("surface_torque_density_terms done")
+    log.debug("surface_torque_density_terms complete")
     return out
 
 
@@ -188,7 +195,7 @@ def integrate_surface_torque_terms(terms):
     Used by: `test/test_surface_torque_analysis.py`, `batwind/physics/orbit_surface.py`,
       `batwind/physics/torque.py`
     """
-    log.info("integrate_surface_torque_terms start")
+    log.info("integrate_surface_torque_terms...")
     area = np.array(terms["area [m^2]"])
     out = {}
     coverages = []
@@ -216,7 +223,7 @@ def integrate_surface_torque_terms(terms):
         len(component_keys),
         np.shape(out.get("coverage [none]")),
     )
-    log.info("integrate_surface_torque_terms done")
+    log.debug("integrate_surface_torque_terms complete")
     return out
 
 
@@ -238,6 +245,7 @@ def surface_torque_terms_on_shell_samples(
     Convenience wrapper for explicit-surface torque terms on shell samples.
     Used by: `batwind/physics/torque.py`
     """
+    log.info("surface_torque_terms_on_shell_samples...")
     x_name, y_name, z_name = coordinate_fields
     xyz_r = np.stack(
         [
@@ -249,6 +257,12 @@ def surface_torque_terms_on_shell_samples(
     )
     xyz = xyz_r * float(body_radius)
     normals = radial_surface_normals(xyz) if normals_xyz is None else normals_xyz
+    log.debug(
+        "surface_torque_terms_on_shell_samples body_radius=%g coordinate_fields=%s radial_normals=%s",
+        float(body_radius),
+        coordinate_fields,
+        normals_xyz is None,
+    )
     out = surface_torque_density_terms(
         xyz=xyz,
         normals_xyz=normals,
@@ -260,7 +274,5 @@ def surface_torque_terms_on_shell_samples(
         angvel=angvel,
         use_rotating_frame=use_rotating_frame,
     )
-    log.info("surface_torque_terms_on_shell_samples done")
+    log.debug("surface_torque_terms_on_shell_samples complete")
     return out
-    log.info("surface_torque_density_terms start")
-    log.info("surface_torque_terms_on_shell_samples start")

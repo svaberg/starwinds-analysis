@@ -76,7 +76,7 @@ def summarize_shell_series(
         weight_sum = 0.0
         log.warning("summarize_shell_series: no active weighted samples")
 
-    log.info("summarize_shell_series done n_active=%d", n_active)
+    log.debug("summarize_shell_series n_active=%d", n_active)
     return {
         "rmin [R]": rmin_eff,
         "rmax [R]": rmax_eff,
@@ -101,7 +101,7 @@ def summarize_shell_diagnostics_band(
     Summarize all 1D shell-profile series in a diagnostics bundle over a shell-radius band.
     """
     out = {}
-    log.info("summarize_shell_diagnostics_band start")
+    log.info("summarize_shell_diagnostics_band...")
     for name, profile in diagnostics.items():
         if not isinstance(profile, dict):
             continue
@@ -129,5 +129,5 @@ def summarize_shell_diagnostics_band(
             )
         if per_profile:
             out[name] = per_profile
-    log.info("summarize_shell_diagnostics_band done groups=%d", len(out))
+    log.debug("summarize_shell_diagnostics_band complete groups=%d", len(out))
     return out

@@ -22,7 +22,7 @@ def mass_loss_from_curve(curve):
     mass_flux = np.array(curve["mass_flux [kg/m^2/s]"])
     shell_area = 4.0 * np.pi * np.square(np.array(curve["R [m]"]))
     out = shell_area * mass_flux
-    log.info("mass_loss_from_curve done n=%d", out.size)
+    log.debug("mass_loss_from_curve n=%d", out.size)
     return out
 
 
@@ -33,7 +33,7 @@ def torque_from_curve(curve):
     dynamic_torque_density = np.array(curve["dynamic_torque_density [N/m]"])
     magnetic = shell_area * magnetic_torque_density
     dynamic = shell_area * dynamic_torque_density
-    log.info("torque_from_curve done n=%d", magnetic.size)
+    log.debug("torque_from_curve n=%d", magnetic.size)
     return magnetic, dynamic, magnetic + dynamic
 
 
@@ -43,7 +43,7 @@ def relative_ram_pressure_from_trajectory(
     standoff_b0: float = 0.7e-4,
 ):
     """Compute trajectory-frame ram pressure and standoff distance."""
-    log.info("relative_ram_pressure_from_trajectory start")
+    log.info("relative_ram_pressure_from_trajectory...")
     rho = np.array(trajectory["Rho [kg/m^3]"])
     U_xyz = np.array(trajectory["U_xyz [m/s]"])
     V_xyz = np.array(trajectory["V_xyz [m/s]"])
@@ -58,5 +58,5 @@ def relative_ram_pressure_from_trajectory(
         U_minus_V_speed,
         b0=standoff_b0,
     )
-    log.info("relative_ram_pressure_from_trajectory done n=%d", relative_ram_pressure.size)
+    log.debug("relative_ram_pressure_from_trajectory complete n=%d", relative_ram_pressure.size)
     return relative_ram_pressure, standoff_distance

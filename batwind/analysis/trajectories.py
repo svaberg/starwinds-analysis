@@ -61,7 +61,7 @@ def circular_orbit_points(
     points[:, 0] = radius * np.cos(theta)
     points[:, 1] = radius * np.sin(theta)
     points[:, 2] = 0.0
-    log.info("circular_orbit_points done radius=%g n_points=%d", radius, points.shape[0])
+    log.debug("circular_orbit_points radius=%g n_points=%d", radius, points.shape[0])
     return points
 
 def sample_curve(
@@ -78,9 +78,16 @@ def sample_curve(
     Used by: `batwind/physics/orbit_surface.py`
     """
     points = np.array(points)
-    log.info("sample_curve start method=%s n_points=%d", method, points.shape[0])
+    log.info("sample_curve...")
     requested_fields = tuple(dict.fromkeys(fields))
     base_fields = smart_ds.source_fields(requested_fields)
+    log.debug(
+        "sample_curve method=%s n_points=%d requested_fields=%d source_fields=%d",
+        method,
+        points.shape[0],
+        len(requested_fields),
+        len(base_fields),
+    )
     sampled_curve = smart_ds.resample(
         points,
         coordinate_fields=coordinate_fields,
@@ -89,7 +96,7 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    log.info("sample_curve done fields=%d base_fields=%d", len(requested_fields), len(base_fields))
+    log.debug("sample_curve complete")
     return sampled_curve
 
 def sample_trajectory(
@@ -107,6 +114,7 @@ def sample_trajectory(
     Resample `fields` onto explicit Cartesian trajectory points and append `t` and optional `V`.
     The returned SmartDs exposes `V_xyz` via graph recipes when `velocity_xyz` is provided.
     """
+    log.info("sample_trajectory...")
     sampled_curve = sample_curve(
         smart_ds,
         points,
@@ -127,7 +135,7 @@ def sample_trajectory(
 
     context_fields = {"t [s]": time}
     if velocity_xyz is None:
-        log.info("sample_trajectory done without velocity fields")
+        log.debug("sample_trajectory complete without velocity fields")
         return sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
 
     velocity = np.array(velocity_xyz)
@@ -143,5 +151,6 @@ def sample_trajectory(
     context_fields["V_z [m/s]"] = velocity[:, 2]
     sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
     sampled_curve.merge_computation_graph(build_vector_graph(sampled_curve.raw.variables))
-    log.info("sample_trajectory done with velocity fields")
+    log.debug("sample_trajectory attached V_xyz graph from appended velocity components")
+    log.debug("sample_trajectory complete with velocity fields")
     return sampled_curve
