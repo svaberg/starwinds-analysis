@@ -101,22 +101,22 @@ def shell_map_and_profile(
 def process_plt_file(file_path: str | Path) -> None:
     """Process one shell-like file into maps, profiles, and recorded diagnostics."""
     # Start: resolve input/output paths and log file.
-    log.debug("Resolving shell pipeline paths...")
+    log.info("Resolving shell pipeline paths...")
     path = Path(file_path)
     output_dir = path.parent / "shell"
     prefix = output_prefix_from_input_file(path.name)
     output_dir.mkdir(parents=True, exist_ok=True)
     log.info("%s", path.name)
-    log.info("Resolving shell pipeline paths complete.")
+    log.debug("Resolving shell pipeline paths complete.")
 
     # Start: load dataset, attach the graph-backed fields, and build shell geometry.
-    log.debug("Loading shell dataset and preparing native shell grid...")
+    log.info("Loading shell dataset and preparing native shell grid...")
     smart_ds = SmartDs.from_file(path, batsrus=True, spherical=True)
     lon_all, lat_all, shell_radii_r, lon_nodes, lat_nodes, shell_masks, shell_areas_m2, height_r = load_shell_grid(smart_ds)
-    log.info("Loading shell dataset and preparing native shell grid complete.")
+    log.debug("Loading shell dataset and preparing native shell grid complete.")
 
     # Start: compute, plot, and record shell wind mass flux.
-    log.debug("Computing shell wind mass flux...")
+    log.info("Computing shell wind mass flux...")
     mass_flux = np.ravel(smart_ds["mass_flux [kg/m^2/s]"])
     mass_flux_map, mass_loss_kg_s = shell_map_and_profile(
         mass_flux,
@@ -153,10 +153,10 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("shell_radius_R %r", shell_radii_r)
     add_record("shell_mass_loss_kg_s %r", mass_loss_kg_s)
     add_record("shell_mass_loss_value_kg_s %r", mass_loss_kg_s[-1])
-    log.info("Computing shell wind mass flux complete.")
+    log.debug("Computing shell wind mass flux complete.")
 
     # Start: compute, plot, and record shell angular momentum flux.
-    log.debug("Computing shell angular momentum flux...")
+    log.info("Computing shell angular momentum flux...")
     torque_density = np.ravel(smart_ds["total_torque_density [N/m]"])
     torque_map, total_torque_nm = shell_map_and_profile(
         torque_density,
@@ -192,10 +192,10 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("shell_torque_profile_png %r", str(torque_profile_png.relative_to(path.parent)))
     add_record("shell_total_torque_nm %r", total_torque_nm)
     add_record("shell_total_torque_value_nm %r", total_torque_nm[-1])
-    log.info("Computing shell angular momentum flux complete.")
+    log.debug("Computing shell angular momentum flux complete.")
 
     # Start: compute, plot, and record shell energy flux.
-    log.debug("Computing shell energy flux...")
+    log.info("Computing shell energy flux...")
     energy_flux = np.ravel(smart_ds["energy_flux [W/m^2]"])
     energy_map, energy_flow_w = shell_map_and_profile(
         energy_flux,
@@ -231,10 +231,10 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("shell_energy_flow_profile_png %r", str(energy_profile_png.relative_to(path.parent)))
     add_record("shell_energy_flow_w %r", energy_flow_w)
     add_record("shell_energy_flow_value_w %r", energy_flow_w[-1])
-    log.info("Computing shell energy flux complete.")
+    log.debug("Computing shell energy flux complete.")
 
     # Start: compute, plot, and record shell open magnetic flux.
-    log.debug("Computing shell open magnetic flux...")
+    log.info("Computing shell open magnetic flux...")
     open_flux_density = np.abs(np.ravel(smart_ds["B_r [T]"]))
     open_flux_map, open_flux_wb = shell_map_and_profile(
         open_flux_density,
@@ -270,4 +270,4 @@ def process_plt_file(file_path: str | Path) -> None:
     add_record("shell_open_flux_profile_png %r", str(open_flux_profile_png.relative_to(path.parent)))
     add_record("shell_open_flux_wb %r", open_flux_wb)
     add_record("shell_open_flux_value_wb %r", open_flux_wb[-1])
-    log.info("Computing shell open magnetic flux complete.")
+    log.debug("Computing shell open magnetic flux complete.")
