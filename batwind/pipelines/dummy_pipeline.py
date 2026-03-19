@@ -69,7 +69,9 @@ def process_plt_file(file_path: str | Path) -> None:
     path = Path(file_path)
     log.info("%s", path.name)
     name = path.stem
+    log.debug("dummy pipeline name=%s", name)
     name_letter_counts(name)
     name_profile_payload(name)
     name_codepoints_payload(name)
     name_waveform_payload(name)
+    log.debug("dummy pipeline complete")

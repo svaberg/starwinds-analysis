@@ -69,9 +69,9 @@ def configure_logger(level_name: str) -> None:
                     style="%",
                 )
             )
-            log.info("colorlog enabled")
+            log.debug("configure_logger using colorlog formatter")
         except ImportError:
-            log.info("colorlog not installed, using plain logging")
+            log.debug("configure_logger using plain formatter")
 
     if handler.formatter is None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
@@ -158,6 +158,7 @@ def run_batwind_pipe(
     """
     Run `batwind-pipe` over discovered input files in a directory.
     """
+    log.info("run_batwind_pipe...")
     files = discover_input_files(directory, recursive=recursive)
     directory_path = Path(directory)
     pipeline_label = "auto" if pipeline is None else str(pipeline)
@@ -233,7 +234,7 @@ def run_batwind_pipe(
             results.computed_results[file_key] = payload
 
     log.debug(
-        "batwind_pipe.discovered | count=%s, directory=%s, noclobber=%s, pipeline=%s, recursive=%s",
+        "run_batwind_pipe discovered=%s directory=%s noclobber=%s pipeline=%s recursive=%s",
         len(selected),
         directory_path,
         noclobber,
@@ -249,6 +250,7 @@ def run_batwind_pipe(
                 computed_results=known_computed_by_pipeline[state_pipeline_name],
                 json_warn_bytes=int(json_warn_bytes),
             )
+        log.debug("run_batwind_pipe complete with no selected files")
         return results
 
     recorder = logging.getLogger("recorder")
@@ -317,6 +319,12 @@ def run_batwind_pipe(
         if failure is not None and fail_fast:
             raise failure.with_traceback(failure_traceback)
 
+    log.debug(
+        "run_batwind_pipe complete processed=%d failed=%d skipped=%d",
+        len(results.processed_files),
+        len(results.failed_files),
+        len(results.skipped_files),
+    )
     return results
 
 

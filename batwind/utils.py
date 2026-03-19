@@ -1,29 +1,33 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import tri
-
+import logging
 from pathlib import Path
+import re
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import tri
 
 from batread.dataset import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
 from matplotlib.colors import LogNorm
 
-import re
+log = logging.getLogger(__name__)
 
 
 def auto_coords(ds, names=None):
 
     if names is None:
         names = DEFAULT_XYZ_NAMES
-
-    all_zero = np.allclose([ds[name] for name in names], 0)
+    log.debug("auto_coords names=%s", names)
 
     if np.allclose(ds["X [R]"], 0):
+        log.debug("auto_coords selected Y/Z plane")
         return "Y [R]", "Z [R]"
     if np.allclose(ds["Y [R]"], 0):
+        log.debug("auto_coords selected X/Z plane")
         return "X [R]", "Z [R]"
     if np.allclose(ds["Z [R]"], 0):
+        log.debug("auto_coords selected X/Y plane")
         return "X [R]", "Y [R]"
 
 
@@ -42,6 +46,7 @@ def triangles(ds, uname=None, vname=None):
         raise ValueError("Can only triangulate a 2D dataset with 4 corners per element")
 
     triangles = np.vstack((ds.corners[:, [0, 1, 2]], ds.corners[:, [2, 3, 0]]))
+    log.debug("triangles u=%s v=%s triangles=%d", uname, vname, triangles.shape[0])
     return tri.Triangulation(pu, pv, triangles)
 
 

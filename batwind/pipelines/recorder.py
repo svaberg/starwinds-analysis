@@ -285,6 +285,7 @@ def load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, ob
 
     path = Path(state_file)
     if not path.exists():
+        log.debug("load_state missing path=%s", path)
         return set(), {}
     try:
         payload = json.loads(path.read_text())
@@ -295,6 +296,7 @@ def load_state(state_file: str | Path) -> tuple[set[str], dict[str, dict[str, ob
     processed_keys = {str(item) for item in files} if isinstance(files, list) else set()
     computed = payload.get("computed_results", {})
     if isinstance(computed, dict):
+        log.debug("load_state path=%s processed=%d computed=%d", path, len(processed_keys), len(computed))
         return processed_keys, {str(key): value for key, value in computed.items() if isinstance(value, dict)}
     return processed_keys, {}
 
@@ -307,6 +309,7 @@ def load_state_payload(state_file: str | Path) -> dict[str, object]:
 
     path = Path(state_file)
     if not path.exists():
+        log.debug("load_state_payload missing path=%s", path)
         return {}
     try:
         payload = json.loads(path.read_text())
@@ -314,6 +317,7 @@ def load_state_payload(state_file: str | Path) -> dict[str, object]:
         log.info("Could not load recorder payload %s (%s); returning empty payload.", path, exc)
         return {}
     if isinstance(payload, dict):
+        log.debug("load_state_payload path=%s keys=%d", path, len(payload))
         return payload
     return {}
 
@@ -346,3 +350,10 @@ def save_state(
             path,
         )
     path.write_text(payload_text)
+    log.debug(
+        "save_state path=%s processed=%d computed=%d size_bytes=%d",
+        path,
+        len(processed_keys),
+        len(computed_results),
+        payload_size_bytes,
+    )

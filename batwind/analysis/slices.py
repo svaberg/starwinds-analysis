@@ -68,6 +68,7 @@ def resample_structured_xz_slice(
     The resulting dataset has quad connectivity and can be used with the existing
     2D slice plotting helpers.
     """
+    log.info("resample_structured_xz_slice...")
     if nx < 2 or nz < 2:
         raise ValueError("nx and nz must be >= 2")
 
@@ -91,6 +92,14 @@ def resample_structured_xz_slice(
         fields = tuple(smart_ds.raw.variables)
     else:
         fields = smart_ds.source_fields(tuple(dict.fromkeys(fields)))
+    log.debug(
+        "resample_structured_xz_slice nx=%d nz=%d method=%s fields=%d y=%g",
+        nx,
+        nz,
+        method,
+        len(fields),
+        float(y_value),
+    )
 
     sliced = smart_ds.resample(
         points,
@@ -101,4 +110,5 @@ def resample_structured_xz_slice(
         corners=corners,
         zone=f"{smart_ds.raw.zone} (XZ slice y={y_value:g})",
     )
+    log.debug("resample_structured_xz_slice complete")
     return sliced

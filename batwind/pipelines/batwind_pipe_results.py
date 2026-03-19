@@ -134,21 +134,27 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = build_parser()
     args = parser.parse_args(argv)
-    log.info("batwind-pipe-results start state=%s", args.state)
+    log.info("batwind-pipe-results...")
 
     payload = load_state_payload(args.state)
     computed = _computed_results(payload)
     available_files = _iter_file_keys(payload, computed)
     available_fields = _iter_fields(computed)
+    log.debug(
+        "batwind-pipe-results state=%s files=%d fields=%d",
+        args.state,
+        len(available_files),
+        len(available_fields),
+    )
 
     if args.list_files:
-        log.info("batwind-pipe-results listing files")
+        log.debug("batwind-pipe-results listing files")
         for file_key in available_files:
             print(file_key)
         return 0
 
     if args.list_fields:
-        log.info("batwind-pipe-results listing fields")
+        log.debug("batwind-pipe-results listing fields")
         for field in available_fields:
             print(field)
         return 0
@@ -169,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
                 parser.error("field '%s' not found in file '%s'" % (resolved, args.file_key))
                 return 2
             print(json.dumps(_extract_field_value(file_entry[resolved], with_source=bool(args.with_source)), indent=2))
-            log.info("batwind-pipe-results field query done file=%s field=%s", args.file_key, resolved)
+            log.debug("batwind-pipe-results field query complete file=%s field=%s", args.file_key, resolved)
             return 0
 
         selected: dict[str, object] = {}
@@ -177,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             if resolved in entry:
                 selected[file_key] = _extract_field_value(entry[resolved], with_source=bool(args.with_source))
         print(json.dumps(selected, indent=2))
-        log.info("batwind-pipe-results field query done field=%s matches=%d", resolved, len(selected))
+        log.debug("batwind-pipe-results field query complete field=%s matches=%d", resolved, len(selected))
         return 0
 
     if args.file_key:
@@ -186,11 +192,11 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("file key '%s' not found" % args.file_key)
             return 2
         print(json.dumps(file_entry, indent=2))
-        log.info("batwind-pipe-results dumped file=%s", args.file_key)
+        log.debug("batwind-pipe-results dumped file=%s", args.file_key)
         return 0
 
     print(json.dumps(payload, indent=2))
-    log.info("batwind-pipe-results dumped full payload")
+    log.debug("batwind-pipe-results dumped full payload")
     return 0
 
 

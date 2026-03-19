@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 
 import numpy as np
@@ -11,6 +12,8 @@ from batwind.algorithms.sphere_sampling import PolarAzimuthalGrid
 from batwind.algorithms.sphere_sampling import fibonacci_sphere
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.data.field_names import unit_from_brackets
+
+log = logging.getLogger(__name__)
 
 
 def infer_cartesian_axis_radii(
@@ -23,6 +26,7 @@ def infer_cartesian_axis_radii(
     r_min: float | None = None,
     r_max: float | None = None,
 ):
+    log.debug("infer_cartesian_axis_radii axis=%s coord_fields=%s", axis, coord_fields)
     axis_key = str(axis).lower()
     axis_idx = {"x": 0, "y": 1, "z": 2}.get(axis_key)
     if axis_idx is None:
@@ -55,6 +59,7 @@ def infer_cartesian_axis_radii(
         radii = radii[radii <= float(r_max)]
     if radii.size == 0:
         raise ValueError("Could not infer any axis-aligned radii from the dataset points")
+    log.debug("infer_cartesian_axis_radii complete n_radii=%d", radii.size)
     return radii
 
 
@@ -72,6 +77,7 @@ def sample_spherical_shells(
     fill_value: float = np.nan,
     length_unit_to_m: float | None = None,
 ):
+    log.info("sample_spherical_shells...")
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
@@ -118,6 +124,14 @@ def sample_spherical_shells(
     else:
         requested_fields = tuple(dict.fromkeys(fields))
         fields_arg = smart_ds.source_fields(requested_fields)
+    log.debug(
+        "sample_spherical_shells radii=%d grid=(%d,%d) method=%s requested_fields=%s",
+        radii.size,
+        ntheta,
+        nphi,
+        method,
+        0 if fields is None else len(requested_fields),
+    )
 
     resampled = smart_ds.resample(
         sample_points,
@@ -145,7 +159,7 @@ def sample_spherical_shells(
     azimuth_field = np.broadcast_to(phi[None, :, :], (radii.size, ntheta, nphi)).copy()
     area_field = np.array(area)
 
-    return resampled.append_fields(
+    out = resampled.append_fields(
         {
             r_name: r_field,
             polar_name: polar_field,
@@ -154,6 +168,8 @@ def sample_spherical_shells(
         },
         zone_suffix="shell-grid-structured",
     )
+    log.debug("sample_spherical_shells complete")
+    return out
 
 
 def sample_spherical_shells_fibonacci(
@@ -168,6 +184,7 @@ def sample_spherical_shells_fibonacci(
     fill_value: float = np.nan,
     length_unit_to_m: float | None = None,
 ):
+    log.info("sample_spherical_shells_fibonacci...")
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
@@ -192,6 +209,13 @@ def sample_spherical_shells_fibonacci(
     else:
         requested_fields = tuple(dict.fromkeys(fields))
         fields_arg = smart_ds.source_fields(requested_fields)
+    log.debug(
+        "sample_spherical_shells_fibonacci radii=%d n_points=%d method=%s requested_fields=%s",
+        radii.size,
+        n_points,
+        method,
+        0 if fields is None else len(requested_fields),
+    )
 
     resampled = smart_ds.resample(
         sample_points,
@@ -221,7 +245,7 @@ def sample_spherical_shells_fibonacci(
     azimuth_field = np.broadcast_to(phi[None, :, :], (radii.size, n_points, 1)).copy()
     area_field = np.broadcast_to(area, (radii.size, n_points, 1)).copy()
 
-    return resampled.append_fields(
+    out = resampled.append_fields(
         {
             r_name: r_field,
             polar_name: polar_field,
@@ -230,9 +254,12 @@ def sample_spherical_shells_fibonacci(
         },
         zone_suffix="shell-fibonacci-structured",
     )
+    log.debug("sample_spherical_shells_fibonacci complete")
+    return out
 
 
 def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
+    log.debug("integrate_shell_scalar ignore_nan=%s shape=%s", ignore_nan, np.shape(values))
     v = np.array(values)
     a = np.array(area)
     if v.shape != a.shape:

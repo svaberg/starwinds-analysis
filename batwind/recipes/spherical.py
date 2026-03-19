@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import logging
 import re
 
 import griblet
@@ -9,6 +10,7 @@ import numpy as np
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 
 SPHERICAL_COMPONENTS = ("r", "p", "a")
+log = logging.getLogger(__name__)
 
 
 def cartesian_to_spherical_angles(x, y, z):
@@ -112,6 +114,7 @@ def build_spherical_graph(
 
     This requires ``griblet``.
     """
+    log.info("build_spherical_graph...")
     x_name, y_name, z_name = coord_fields
     match = re.match(r"^X \[(.+)\]$", x_name)
     if match is None:
@@ -148,9 +151,11 @@ def build_spherical_graph(
             continue
         by_prefix.setdefault((m.group("prefix"), m.group("unit")), set()).add(m.group("comp"))
 
+    n_vectors = 0
     for (prefix, unit), found in sorted(by_prefix.items()):
         if found != {"x", "y", "z"}:
             continue
+        n_vectors += 1
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]", x_name, y_name, z_name]
 
         if "r" in SPHERICAL_COMPONENTS:
@@ -177,4 +182,11 @@ def build_spherical_graph(
                 cost=0.5,
                 metadata={"description": f"{prefix} azimuthal component"},
             )
+    log.debug(
+        "build_spherical_graph coord_fields=%s vectors=%d components=%s",
+        coord_fields,
+        n_vectors,
+        SPHERICAL_COMPONENTS,
+    )
+    log.debug("build_spherical_graph complete fields=%d", len(tuple(graph.list_fields())))
     return graph

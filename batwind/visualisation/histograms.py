@@ -1,6 +1,10 @@
+import logging
+
 import numpy as np
 from batread.dataset import Dataset
+from matplotlib.colors import LogNorm
 
+log = logging.getLogger(__name__)
 
 def plot_cumulative_hists(
     ds,
@@ -22,6 +26,7 @@ def plot_cumulative_hists(
     axes = np.asarray(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
+    log.debug("plot_cumulative_hists fields=%d bins=%s", len(fields), bins)
 
     for i, (ax, field) in enumerate(zip(axes, fields)):
         x = np.asarray(ds(field)).ravel()
@@ -66,6 +71,7 @@ def plot_vs_radius(
     s=1.0,
     alpha=0.3,
 ):
+    log.debug("plot_vs_radius fields=%d", len(fields))
     axes = np.asarray(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
@@ -87,10 +93,6 @@ def plot_vs_radius(
         ax.set_xlabel("r [R]")
 
 
-
-import numpy as np
-
-
 def plot_binned_vs_radius(
     ds,
     axes,
@@ -105,6 +107,7 @@ def plot_binned_vs_radius(
     color=None,
     statistic="mean",   # "mean", "median", or "sum"
 ):
+    log.debug("plot_binned_vs_radius fields=%d bins=%s statistic=%s", len(fields), bins, statistic)
     axes = np.asarray(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
@@ -186,11 +189,10 @@ def plot_radial_hist2d(
     `normalize="per_radius"` scales each radial bin to unit sum, which makes the
     distribution shape visible even when density changes strongly with radius.
     """
-    from matplotlib.colors import LogNorm
-
     axes = np.asarray(axes).ravel()
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
+    log.debug("plot_radial_hist2d fields=%d bins=%s normalize=%s", len(fields), bins, normalize)
 
     X = np.asarray(ds("X [R]")).ravel()
     Y = np.asarray(ds("Y [R]")).ravel()

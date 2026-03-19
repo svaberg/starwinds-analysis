@@ -1,22 +1,28 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import logging
 import re
 
 import griblet
 import numpy as np
 
+log = logging.getLogger(__name__)
 
 def build_vector_graph(variable_names: set[str] | Sequence[str]):
+    variable_names = tuple(variable_names)
+    log.info("build_vector_graph...")
     graph = griblet.ComputationGraph()
 
     by_prefix: dict[tuple[str, str], set[str]] = {}
     for prefix, comp, unit in _available_xyz_components(variable_names):
         by_prefix.setdefault((prefix, unit), set()).add(comp)
 
+    n_vectors = 0
     for (prefix, unit), comps in sorted(by_prefix.items()):
         if comps != {"x", "y", "z"}:
             continue
+        n_vectors += 1
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
         graph.add_recipe(
             f"{prefix}_xyz [{unit}]",
@@ -32,6 +38,7 @@ def build_vector_graph(variable_names: set[str] | Sequence[str]):
             cost=0.1,
             metadata={"description": f"{prefix} magnitude"},
         )
+    log.debug("build_vector_graph vectors=%d fields=%d", n_vectors, len(tuple(graph.list_fields())))
     return graph
 
 

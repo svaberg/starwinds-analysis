@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import logging
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
@@ -11,16 +12,21 @@ from batcamp import OctreeInterpolator
 from batread.dataset import Dataset
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
 
+log = logging.getLogger(__name__)
+
 
 def _get_spatial_cache(smart_ds, coordinate_fields):
     spatial_cache = smart_ds._resample_spatial_cache.get(coordinate_fields)
     if spatial_cache is None:
+        log.debug("_get_spatial_cache creating cache for coordinate_fields=%s", coordinate_fields)
         spatial_cache = {
             "nearest_tree": None,
             "linear_triangulation": None,
             "octree_interpolator": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
+    else:
+        log.debug("_get_spatial_cache reusing cache for coordinate_fields=%s", coordinate_fields)
     return spatial_cache
 
 
@@ -41,16 +47,20 @@ def _interpolate_field(
     if method == "nearest":
         valid = coord_mask & np.isfinite(values)
         if not np.any(valid):
+            log.debug("_interpolate_field nearest skipped field=%s no finite values", name)
             return None, nearest_indices
         if np.array_equal(valid, coord_mask):
             nearest_tree = spatial_cache["nearest_tree"]
             if nearest_tree is None:
+                log.debug("_interpolate_field nearest building shared KD-tree field=%s", name)
                 nearest_tree = cKDTree(source_coords[coord_mask])
                 spatial_cache["nearest_tree"] = nearest_tree
             if nearest_indices is None:
+                log.debug("_interpolate_field nearest querying shared KD-tree field=%s", name)
                 nearest_indices = nearest_tree.query(flat_sample_points)[1]
             return values[coord_mask][nearest_indices], nearest_indices
 
+        log.debug("_interpolate_field nearest building field-local KD-tree field=%s", name)
         nearest_tree = cKDTree(source_coords[valid])
         nearest_indices = nearest_tree.query(flat_sample_points)[1]
         return values[valid][nearest_indices], nearest_indices
@@ -58,10 +68,12 @@ def _interpolate_field(
     if method == "linear":
         valid = coord_mask & np.isfinite(values)
         if not np.any(valid):
+            log.debug("_interpolate_field linear skipped field=%s no finite values", name)
             return None, nearest_indices
         if np.array_equal(valid, coord_mask):
             linear_triangulation = spatial_cache["linear_triangulation"]
             if linear_triangulation is None:
+                log.debug("_interpolate_field linear building shared triangulation field=%s", name)
                 linear_triangulation = Delaunay(source_coords[coord_mask])
                 spatial_cache["linear_triangulation"] = linear_triangulation
             interpolator = LinearNDInterpolator(
@@ -70,6 +82,7 @@ def _interpolate_field(
                 fill_value=fill_value,
             )
         else:
+            log.debug("_interpolate_field linear using field-local triangulation field=%s", name)
             interpolator = LinearNDInterpolator(
                 source_coords[valid],
                 values[valid],
@@ -88,6 +101,7 @@ def _interpolate_field(
             )
         interpolator = spatial_cache.get("octree_interpolator")
         if interpolator is None:
+            log.debug("_interpolate_field octree building interpolator field=%s", name)
             interpolator = OctreeInterpolator(
                 smart_ds.raw,
                 [name],
@@ -95,6 +109,7 @@ def _interpolate_field(
             )
             spatial_cache["octree_interpolator"] = interpolator
         else:
+            log.debug("_interpolate_field octree reusing interpolator field=%s", name)
             interpolator.set_fields([name], fill_value=fill_value)
 
         out = np.asarray(interpolator(flat_sample_points), dtype=float)
@@ -121,6 +136,12 @@ def _interpolate_fields(
     if not value_names:
         return value_names, np.empty((flat_sample_points.shape[0], 0), dtype=float)
 
+    log.debug(
+        "_interpolate_fields method=%s coordinate_fields=%s value_fields=%d",
+        method,
+        coordinate_fields,
+        len(value_names),
+    )
     out_values = np.full((flat_sample_points.shape[0], len(value_names)), np.nan, dtype=float)
     nearest_indices = None
     for i, name in enumerate(value_names):
@@ -176,6 +197,12 @@ def _build_resampled_dataset(
     if zone is None:
         zone = f"{smart_ds._dataset.zone} (resampled)"
 
+    log.debug(
+        "_build_resampled_dataset zone=%s sample_shape=%s variables=%d",
+        zone,
+        sample_shape,
+        len(output_variables),
+    )
     return Dataset(
         out_points.reshape(*sample_shape, len(output_variables)),
         corners_arr,
@@ -204,6 +231,7 @@ def resample_smart_ds(
     """
     # Normalize target points to a flat (n_points, ndim) form for interpolation,
     # then reshape back to the requested grid shape at the end.
+    log.info("resample_smart_ds...")
     sample_points = np.asarray(sample_points, dtype=float)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
@@ -239,6 +267,13 @@ def resample_smart_ds(
         for name in fields:
             if name not in output_variables:
                 output_variables.append(name)
+    log.debug(
+        "resample_smart_ds method=%s sample_shape=%s coordinate_fields=%s output_variables=%d",
+        method,
+        sample_shape,
+        coordinate_fields,
+        len(output_variables),
+    )
 
     # Reuse coordinate-dependent spatial structures across resample calls with the
     # same coordinate field choice.
@@ -284,11 +319,13 @@ def resample_smart_ds(
         zone=zone,
     )
 
-    return type(smart_ds)(
+    out = type(smart_ds)(
         new_dataset,
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
     )
+    log.debug("resample_smart_ds complete")
+    return out
 
 
 __all__ = ["resample_smart_ds"]

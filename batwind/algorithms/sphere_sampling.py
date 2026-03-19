@@ -31,6 +31,7 @@ def fibonacci_sphere(num_points, randomize=False):
     num_points = int(num_points)
     if num_points <= 0:
         raise ValueError("num_points must be > 0")
+    log.debug("fibonacci_sphere num_points=%d randomize=%s", num_points, randomize)
     points = np.empty((num_points, 3))
 
     rnd = 1.
@@ -51,6 +52,7 @@ def fibonacci_sphere(num_points, randomize=False):
 
         points[i, :] = np.array((x, y, z))
 
+    log.debug("fibonacci_sphere complete")
     return points
 
 
@@ -74,6 +76,11 @@ class PolarAzimuthalGrid:
         if self._polar.size < 2 or self._azimuthal.size < 2:
             raise ValueError("polar and azimuthal edges must have at least two entries")
         self._meshgrid_kwargs = dict(indexing="ij")
+        log.debug(
+            "PolarAzimuthalGrid n_polar=%d n_azimuth=%d",
+            self._polar.size - 1,
+            self._azimuthal.size - 1,
+        )
 
 
     @property

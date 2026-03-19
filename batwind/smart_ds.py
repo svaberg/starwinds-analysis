@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from collections.abc import Sequence
+import logging
 
 import griblet
 import numpy as np
@@ -15,6 +16,7 @@ from batwind._smart_ds_resample import resample_smart_ds
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
 
+log = logging.getLogger(__name__)
 
 class SmartDs:
     """
@@ -38,6 +40,12 @@ class SmartDs:
         self.clear_computation_graph()
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
+        log.debug(
+            "SmartDs.__init__ points=%s variables=%d cache_enabled=%s",
+            np.shape(self._dataset.points),
+            len(self._dataset.variables),
+            self._cache_enabled,
+        )
 
     @classmethod
     def from_file(
@@ -49,9 +57,11 @@ class SmartDs:
         body_radius_m: float | None = None,
         **kwargs,
     ) -> "SmartDs":
+        log.info("SmartDs.from_file...")
         raw = Dataset.from_file(str(file))
         stellar_aux = stellar_aux_from_nearby_param_in(file)
         if stellar_aux:
+            log.debug("SmartDs.from_file merged nearby PARAM.in aux keys=%d", len(stellar_aux))
             raw = Dataset(
                 raw.points,
                 raw.corners,
@@ -64,13 +74,17 @@ class SmartDs:
             radius_from_param = raw.aux.get("Star_radius_m")
             if radius_from_param is not None:
                 body_radius_m = float(radius_from_param)
+                log.debug("SmartDs.from_file using Star_radius_m as body_radius_m")
         sds = cls(raw, **kwargs)
         if batsrus:
+            log.debug("SmartDs.from_file merging BATSRUS graph")
             sds.computation_graph.merge(
                 build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=body_radius_m)
             )
         if spherical:
+            log.debug("SmartDs.from_file merging spherical graph")
             sds.computation_graph.merge(build_spherical_graph(tuple(sds)))
+        log.debug("SmartDs.from_file complete")
         return sds
 
     @property
@@ -111,6 +125,7 @@ class SmartDs:
 
         name = index_or_name
         if self._cache_enabled and name in self._cache:
+            log.debug("SmartDs.__getitem__ cache hit field=%s", name)
             return self._cache[name]
 
         if name in self._dataset.variables:
@@ -130,12 +145,18 @@ class SmartDs:
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
+        log.debug("SmartDs.__getitem__ graph resolve field=%s cost=%s", name, cost)
         value = evaluate_tree(tree, self._computation_graph)
         if self._cache_enabled:
             self._cache[name] = value
         return value
 
     def clear_computation_graph(self):
+        log.debug(
+            "SmartDs.clear_computation_graph raw_fields=%d aux_fields=%d",
+            len(self._dataset.variables),
+            len(self._dataset.aux),
+        )
         self._computation_graph = griblet.ComputationGraph()
         for raw_name in self._dataset.variables:
             self._computation_graph.add_recipe(
@@ -158,11 +179,13 @@ class SmartDs:
     def merge_computation_graph(self, graph):
         # Loader recipes close over this SmartDs' dataset, so we must not blindly
         # merge them forward into another SmartDs that may wrap different raw data.
+        merged = 0
         for field, recipes in graph.recipes.items():
             for recipe in recipes:
                 metadata = dict(recipe.get("metadata", {}) or {})
                 if metadata.get("loader"):
                     continue
+                merged += 1
                 self._computation_graph.add_recipe(
                     field=field,
                     func=recipe["func"],
@@ -170,17 +193,21 @@ class SmartDs:
                     cost=recipe["cost"],
                     metadata=metadata,
                 )
+        log.debug("SmartDs.merge_computation_graph merged_recipes=%d", merged)
         return self
 
     def clear_cache(self, *names: str) -> None:
         if not names:
             self._cache.clear()
             self._resample_spatial_cache.clear()
+            log.debug("SmartDs.clear_cache cleared all caches")
             return
         for name in names:
             self._cache.pop(name, None)
+        log.debug("SmartDs.clear_cache cleared fields=%s", names)
 
     def source_fields(self, fields: Sequence[str]) -> tuple[str, ...]:
+        log.debug("SmartDs.source_fields requested_fields=%d", len(tuple(dict.fromkeys(fields))))
         base_fields: list[str] = []
         solver = griblet.DependencySolver(self._computation_graph)
 
@@ -207,6 +234,7 @@ class SmartDs:
                 if name not in base_fields:
                     base_fields.append(name)
 
+        log.debug("SmartDs.source_fields complete source_fields=%d", len(base_fields))
         return tuple(base_fields)
 
     def resample(
@@ -226,6 +254,7 @@ class SmartDs:
         title: str | None = None,
         zone: str | None = None,
     ) -> "SmartDs":
+        log.info("SmartDs.resample...")
         if coordinate_fields is None:
             preferred = DEFAULT_XYZ_NAMES
             ndim = np.asarray(sample_points, dtype=float).shape[-1]
@@ -235,7 +264,13 @@ class SmartDs:
                     "Could not infer coordinate fields. Pass coordinate_fields explicitly."
                 )
             coordinate_fields = coordinate_fields[:ndim]
-        return resample_smart_ds(
+        log.debug(
+            "SmartDs.resample method=%s coordinate_fields=%s explicit_fields=%s",
+            method,
+            coordinate_fields,
+            fields is not None,
+        )
+        out = resample_smart_ds(
             self,
             sample_points,
             coordinate_fields=coordinate_fields,
@@ -247,6 +282,8 @@ class SmartDs:
             title=title,
             zone=zone,
         )
+        log.debug("SmartDs.resample complete")
+        return out
 
     def append_fields(
         self,
@@ -256,6 +293,7 @@ class SmartDs:
     ) -> "SmartDs":
         if not extra_fields:
             return self
+        log.debug("SmartDs.append_fields fields=%d zone_suffix=%s", len(extra_fields), zone_suffix)
 
         base_points = np.asarray(self.raw.points)
         if base_points.ndim < 2:
@@ -282,11 +320,13 @@ class SmartDs:
             list(self.raw.variables) + names,
             f"{self.raw.zone} ({zone_suffix})",
         )
-        return type(self)(
+        out = type(self)(
             new_dataset,
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
         )
+        log.debug("SmartDs.append_fields complete")
+        return out
 
 
 __all__ = ["SmartDs"]

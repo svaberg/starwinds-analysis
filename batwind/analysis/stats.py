@@ -75,6 +75,7 @@ def summarize_samples(values, *, quantiles=(0.0, 0.25, 0.5, 0.75, 1.0), weights=
     """
     Weighted quantiles + mean/std summary for 1D samples.
     """
+    log.debug("summarize_samples n=%d n_quantiles=%d", np.size(values), len(np.atleast_1d(quantiles)))
     v = np.array(values)
     qv = weighted_quantile(v, quantiles, weights=weights)
     mean, std = weighted_mean_std(v, weights=weights)

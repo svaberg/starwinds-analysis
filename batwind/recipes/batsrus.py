@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import logging
 import re
 
 import griblet
@@ -9,6 +10,7 @@ from scipy.constants import atomic_mass, mu_0
 
 from batwind.recipes.vectors import build_vector_graph
 
+log = logging.getLogger(__name__)
 
 _DEFAULT_GAMMA = 5.0 / 3.0
 
@@ -42,11 +44,19 @@ def build_batsrus_graph(
     - coordinate conversion X/Y/Z [R] -> [m] via ``RBODY [m]``
     - common derived fields: |U|, |B|, c_s, c_A, M_A
     """
+    variable_names = tuple(variable_names)
+    log.info("build_batsrus_graph...")
+    log.debug(
+        "build_batsrus_graph variables=%d gamma=%s body_radius_m=%s",
+        len(variable_names),
+        gamma is not None,
+        body_radius_m is not None,
+    )
     graph = griblet.ComputationGraph()
     graph.merge(build_unit_normalization_graph(variable_names, gamma=gamma, body_radius_m=body_radius_m))
     graph.merge(build_vector_graph(tuple(variable_names) + tuple(graph.list_fields())))
     graph.merge(build_common_derived_graph())
-
+    log.debug("build_batsrus_graph complete fields=%d", len(tuple(graph.list_fields())))
     return graph
 
 
@@ -56,6 +66,13 @@ def build_unit_normalization_graph(
     gamma: float | None = None,
     body_radius_m: float | None = None,
 ):
+    variable_names = tuple(variable_names)
+    log.debug(
+        "build_unit_normalization_graph variables=%d gamma=%s body_radius_m=%s",
+        len(variable_names),
+        gamma is not None,
+        body_radius_m is not None,
+    )
     graph = griblet.ComputationGraph()
 
     for raw_name in variable_names:
@@ -104,10 +121,12 @@ def build_unit_normalization_graph(
             metadata={"description": "Configured gamma"},
         )
 
+    log.debug("build_unit_normalization_graph complete fields=%d", len(tuple(graph.list_fields())))
     return graph
 
 
 def build_coordinate_scale_graph(body_radius_m: float | None = None):
+    log.debug("build_coordinate_scale_graph body_radius_m=%s", body_radius_m is not None)
     graph = griblet.ComputationGraph()
     if body_radius_m is not None:
         graph.add_recipe(
@@ -138,6 +157,7 @@ def build_coordinate_scale_graph(body_radius_m: float | None = None):
 
 
 def build_common_derived_graph():
+    log.debug("build_common_derived_graph...")
     graph = griblet.ComputationGraph()
 
     # Sound speed c_s [m/s]
@@ -274,6 +294,7 @@ def build_common_derived_graph():
         metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )
 
+    log.debug("build_common_derived_graph complete fields=%d", len(tuple(graph.list_fields())))
     return graph
 
 def _parse_var_name(name: str):

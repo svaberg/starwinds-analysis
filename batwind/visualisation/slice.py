@@ -1,11 +1,12 @@
+import logging
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 from batwind.utils import triangles
+
+log = logging.getLogger(__name__)
 
 
 def plot_xz_slice_tripcolor_with_marginals(
@@ -17,6 +18,7 @@ def plot_xz_slice_tripcolor_with_marginals(
     figsize=(9, 7),
     tripcolor_kwargs=None,
 ):
+    log.debug("plot_xz_slice_tripcolor_with_marginals var=%s bins=(%d,%d)", var, bins_x, bins_z)
     if tripcolor_kwargs is None:
         tripcolor_kwargs = {"shading": "flat"}
 
@@ -90,9 +92,8 @@ def plot_xz_slice_tripcolor_with_marginals(
     cbar = fig.colorbar(img, ax=[ax_main, ax_left, ax_bottom], location="right")
     cbar.set_label(var)
 
+    log.debug("plot_xz_slice_tripcolor_with_marginals complete")
     return fig, (ax_main, ax_left, ax_bottom), cbar
-import numpy as np
-import matplotlib.pyplot as plt
 
 def plot_xz_slice_tripcolor_with_cross_quantiles(
     ds,
@@ -104,6 +105,7 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(
     figsize=(10, 8),
     tripcolor_kwargs=None,
 ):
+    log.debug("plot_xz_slice_tripcolor_with_cross_quantiles var=%s qlevels=%s", var, qlevels)
     if tripcolor_kwargs is None:
         tripcolor_kwargs = {"shading": "flat"}
 
@@ -208,6 +210,7 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(
     cbar = fig.colorbar(img, ax=[ax_main, ax_left, ax_bottom], location="right")
     cbar.set_label(var)
 
+    log.debug("plot_xz_slice_tripcolor_with_cross_quantiles complete")
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
@@ -220,6 +223,7 @@ def plot_xz_slice_with_marginal_points(
     tripcolor_kwargs=None,
     scatter_kwargs=None,
 ):
+    log.debug("plot_xz_slice_with_marginal_points var=%s", var)
     if tripcolor_kwargs is None:
         tripcolor_kwargs = {"shading": "flat"}
     if scatter_kwargs is None:
@@ -257,6 +261,7 @@ def plot_xz_slice_with_marginal_points(
     ax_left.invert_xaxis()
     plt.setp(ax_left.get_yticklabels(), visible=False)
     ax_left.tick_params(axis="y", length=0)
+    log.debug("plot_xz_slice_with_marginal_points complete")
 
     cbar = fig.colorbar(img, ax=[ax_main, ax_left, ax_bottom], location="right")
     cbar.set_label(var)

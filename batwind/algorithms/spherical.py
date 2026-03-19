@@ -67,7 +67,7 @@ def spherical_to_cartesian_coordinates(r, polar, azimuth):
     x = r * sin_polar * np.cos(azimuth)
     y = r * sin_polar * np.sin(azimuth)
     z = r * np.cos(polar)
-    log.debug("spherical_to_cartesian_coordinates done shape=%s", x.shape)
+    log.debug("spherical_to_cartesian_coordinates complete shape=%s", x.shape)
     return x, y, z
 
 
@@ -188,5 +188,5 @@ def spherical_vector_to_cartesian_components(v_r, v_p, v_a, polar, azimuth):
     vx = v_r * sin_polar * cos_azimuth + v_p * cos_polar * cos_azimuth - v_a * sin_azimuth
     vy = v_r * sin_polar * sin_azimuth + v_p * cos_polar * sin_azimuth + v_a * cos_azimuth
     vz = v_r * cos_polar - v_p * sin_polar
-    log.debug("spherical_vector_to_cartesian_components done shape=%s", vx.shape)
+    log.debug("spherical_vector_to_cartesian_components complete shape=%s", vx.shape)
     return vx, vy, vz
