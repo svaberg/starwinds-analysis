@@ -50,12 +50,13 @@ def configure_logger(level_name: str) -> None:
     """
     Configure the root logger for human-readable pipeline logs on stdout.
     """
+    level = getattr(logging, str(level_name).upper())
     logger = logging.getLogger()
     logger.handlers.clear()
-    logger.setLevel(getattr(logging, str(level_name).upper()))
+    logger.setLevel(level)
 
     handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(getattr(logging, str(level_name).upper()))
+    handler.setLevel(level)
     handler.addFilter(PipelineSourceFilter())
 
     if sys.stdout.isatty():
@@ -77,6 +78,11 @@ def configure_logger(level_name: str) -> None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
 
     logger.addHandler(handler)
+
+    # Pin noisy third-party libraries to saner defaults while letting batwind
+    # follow the active root/capture configuration.
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
+    logging.getLogger("griblet").setLevel(logging.INFO)
 
 
 def configure_recorder(level_name: str = "WARNING") -> None:
