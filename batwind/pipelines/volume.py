@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from math import isfinite
 from pathlib import Path
+from time import perf_counter
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,27 +27,31 @@ LOS_GRID_N = 512
 def process_plt_file(file_path: str | Path) -> None:
     """Process one 3D `.plt` file into a shell PNG and recorded diagnostics."""
     # Start: resolve input/output paths and log the file being processed.
+    stage_start = perf_counter()
     log.info("Resolving volume pipeline paths...")
     path = Path(file_path)
     output_dir = path.parent / "volume"
     prefix = output_prefix_from_input_file(path.name)
     log.info("%s", path.name)
-    log.debug("Resolving volume pipeline paths complete.")
+    log.debug("Resolving volume pipeline paths complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: load the dataset.
+    stage_start = perf_counter()
     log.info("Loading volume dataset...")
     smart_ds = SmartDs.from_file(path, batsrus=True, spherical=True)
-    log.debug("Loading volume dataset complete.")
+    log.debug("Loading volume dataset complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: create the output figure canvas.
+    stage_start = perf_counter()
     log.info("Preparing volume dataset and figure canvas...")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8), constrained_layout=True)
     radii = DEFAULT_QUICKLOOK_RADII_R
-    log.debug("Preparing volume dataset and figure canvas complete.")
+    log.debug("Preparing volume dataset and figure canvas complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: sample shells once for all diagnostics.
+    stage_start = perf_counter()
     log.info("Sampling shell grid once for all diagnostics...")
     energy_source = "E [J/m^3]"
     shared_source_fields = [
@@ -74,9 +79,10 @@ def process_plt_file(file_path: str | Path) -> None:
     shell_area = np.array(shells["dA [m^2]"])
     r_field = np.array(shells["R [R]"])
     shell_radii = np.nanmean(r_field.reshape(r_field.shape[0], -1), axis=1)
-    log.debug("Sampling shell grid once for all diagnostics complete.")
+    log.debug("Sampling shell grid once for all diagnostics complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: compute, plot, and record wind mass loss.
+    stage_start = perf_counter()
     log.info("Computing wind mass loss...")
     mass_loss_radius_ref = float("nan")
     mass_loss_value_ref = float("nan")
@@ -96,9 +102,10 @@ def process_plt_file(file_path: str | Path) -> None:
     if isfinite(mass_loss_radius_ref):
         add_record("mass_loss_radius_R %r", mass_loss_radius_ref)
         add_record("mass_loss_value_kg_s %r", mass_loss_value_ref)
-    log.debug("Computing wind mass loss complete.")
+    log.debug("Computing wind mass loss complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: compute, plot, and record wind torque.
+    stage_start = perf_counter()
     log.info("Computing wind torque...")
     torque_radius_ref = float("nan")
     torque_value_ref = float("nan")
@@ -124,9 +131,10 @@ def process_plt_file(file_path: str | Path) -> None:
     if isfinite(torque_radius_ref):
         add_record("total_torque_radius_R %r", torque_radius_ref)
         add_record("total_torque_value_nm %r", torque_value_ref)
-    log.debug("Computing wind torque complete.")
+    log.debug("Computing wind torque complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: compute, plot, and record open magnetic flux.
+    stage_start = perf_counter()
     log.info("Computing open magnetic flux...")
     open_flux_radius_ref = float("nan")
     open_flux_value_ref = float("nan")
@@ -146,9 +154,10 @@ def process_plt_file(file_path: str | Path) -> None:
     if isfinite(open_flux_radius_ref):
         add_record("open_flux_radius_R %r", open_flux_radius_ref)
         add_record("open_flux_value_wb %r", open_flux_value_ref)
-    log.debug("Computing open magnetic flux complete.")
+    log.debug("Computing open magnetic flux complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: compute, plot, and record energy flux.
+    stage_start = perf_counter()
     log.info("Computing energy flux...")
     if has_energy_source:
         energy_flux_radius_ref = float("nan")
@@ -173,9 +182,10 @@ def process_plt_file(file_path: str | Path) -> None:
         axes[1, 1].set_title("Energy Flux")
         axes[1, 1].text(0.5, 0.5, "E [J/m^3] unavailable", ha="center", va="center")
         axes[1, 1].set_axis_off()
-    log.debug("Computing energy flux complete.")
+    log.debug("Computing energy flux complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: resample onto a regular 3D cube and make a fake LOS rho^2 image.
+    stage_start = perf_counter()
     log.info("Computing fake LOS rho^2 image...")
     x = np.asarray(smart_ds["X [R]"], dtype=float)
     y = np.asarray(smart_ds["Y [R]"], dtype=float)
@@ -214,12 +224,13 @@ def process_plt_file(file_path: str | Path) -> None:
     plt.close(los_fig)
     add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
     add_record("volume_rho2_los_grid_n %r", cube_n)
-    log.debug("Computing fake LOS rho^2 image complete.")
+    log.debug("Computing fake LOS rho^2 image complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: save the figure and record the output artifact.
+    stage_start = perf_counter()
     log.info("Saving volume figure...")
     shell_png = output_dir / f"{prefix}.shells.png"
     fig.savefig(shell_png)
     plt.close(fig)
     add_record("volume_shell_png %r", str(shell_png.relative_to(path.parent)))
-    log.debug("Saving volume figure complete.")
+    log.debug("Saving volume figure complete in %.2f s.", perf_counter() - stage_start)
