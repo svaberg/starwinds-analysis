@@ -8,6 +8,7 @@ dependencies:
   - scipy
   - matplotlib
   - slugify
+  - colorlog
   - pip
   - git
   - pip:

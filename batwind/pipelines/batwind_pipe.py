@@ -15,6 +15,8 @@ from pathlib import Path
 import sys
 from typing import Callable
 
+import colorlog
+
 from batwind.pipelines.recorder import DEFAULT_ARRAY_OFFLOAD_MIN_BYTES
 from batwind.pipelines.recorder import DEFAULT_JSON_WARN_BYTES
 from batwind.pipelines.recorder import BatwindPipeResults
@@ -60,19 +62,14 @@ def configure_logger(level_name: str) -> None:
     handler.addFilter(PipelineSourceFilter())
 
     if sys.stdout.isatty():
-        try:
-            import colorlog
-
-            handler.setFormatter(
-                colorlog.ColoredFormatter(
-                    PIPELINE_COLOR_LOG_FORMAT,
-                    reset=True,
-                    style="%",
-                )
+        handler.setFormatter(
+            colorlog.ColoredFormatter(
+                PIPELINE_COLOR_LOG_FORMAT,
+                reset=True,
+                style="%",
             )
-            log.debug("configure_logger using colorlog formatter")
-        except ImportError:
-            log.debug("configure_logger using plain formatter")
+        )
+        log.debug("configure_logger using colorlog formatter")
 
     if handler.formatter is None:
         handler.setFormatter(logging.Formatter(PIPELINE_LOG_FORMAT))
