@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 
 import numpy as np
 
@@ -79,6 +80,7 @@ def sample_curve(
     """
     points = np.array(points)
     log.info("sample_curve...")
+    stage_start = perf_counter()
     requested_fields = tuple(dict.fromkeys(fields))
     base_fields = smart_ds.source_fields(requested_fields)
     log.debug(
@@ -96,7 +98,11 @@ def sample_curve(
         fill_value=fill_value,
         zone="orbit-samples",
     )
-    log.debug("sample_curve complete")
+    log.debug(
+        "sample_curve complete in %.2f s. output_shape=%s",
+        perf_counter() - stage_start,
+        sampled_curve.raw.points.shape,
+    )
     return sampled_curve
 
 def sample_trajectory(
@@ -115,6 +121,7 @@ def sample_trajectory(
     The returned SmartDs exposes `V_xyz` via graph recipes when `velocity_xyz` is provided.
     """
     log.info("sample_trajectory...")
+    stage_start = perf_counter()
     sampled_curve = sample_curve(
         smart_ds,
         points,
@@ -135,8 +142,13 @@ def sample_trajectory(
 
     context_fields = {"t [s]": time}
     if velocity_xyz is None:
-        log.debug("sample_trajectory complete without velocity fields")
-        return sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
+        out = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
+        log.debug(
+            "sample_trajectory complete without velocity fields in %.2f s. output_shape=%s",
+            perf_counter() - stage_start,
+            out.raw.points.shape,
+        )
+        return out
 
     velocity = np.array(velocity_xyz)
     if velocity.shape != (sampled_curve.raw.points.shape[0], 3):
@@ -152,5 +164,9 @@ def sample_trajectory(
     sampled_curve = sampled_curve.append_fields(context_fields, zone_suffix="trajectory")
     sampled_curve.merge_computation_graph(build_vector_graph(sampled_curve.raw.variables))
     log.debug("sample_trajectory attached V_xyz graph from appended velocity components")
-    log.debug("sample_trajectory complete with velocity fields")
+    log.debug(
+        "sample_trajectory complete with velocity fields in %.2f s. output_shape=%s",
+        perf_counter() - stage_start,
+        sampled_curve.raw.points.shape,
+    )
     return sampled_curve

@@ -48,6 +48,7 @@ def orbital_period(semi_major_axis_m, star_mass_kg):
     if m <= 0:
         log.error("orbital_period failed: star_mass_kg=%g", m)
         raise ValueError("star_mass_kg must be > 0")
+    log.debug("orbital_period semi_major_axis_m=%g star_mass_kg=%g", a, m)
     period = 2.0 * math.pi * math.sqrt(a**3 / (GRAVITATIONAL_CONSTANT * m))
     log.debug("orbital_period computed period=%g", period)
     return period
@@ -66,9 +67,16 @@ def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     if a <= 0:
         log.error("orbital_velocity failed: semi_major_axis_m=%g", a)
         raise ValueError("semi_major_axis_m must be > 0")
+    log.debug(
+        "orbital_velocity radial_shape=%s star_mass_kg=%g semi_major_axis_m=%g",
+        r.shape,
+        m,
+        a,
+    )
     with np.errstate(invalid="ignore"):
         v = np.sqrt(GRAVITATIONAL_CONSTANT * m * (2.0 / r - 1.0 / a))
     non_finite = int(np.count_nonzero(~np.isfinite(v)))
     if non_finite > 0:
         log.warning("orbital_velocity output has %d/%d non-finite values", non_finite, v.size)
+    log.debug("orbital_velocity complete shape=%s", v.shape)
     return v

@@ -119,11 +119,13 @@ def build_spherical_graph(
     match = re.match(r"^X \[(.+)\]$", x_name)
     if match is None:
         raise ValueError(f"could not infer radius name from coordinate field {x_name!r}")
+    r_name = f"R [{match.group(1)}]"
+    log.debug("build_spherical_graph coord_fields=%s radius_field=%s", coord_fields, r_name)
 
     graph = griblet.ComputationGraph()
     deps = [x_name, y_name, z_name]
     graph.add_recipe(
-        f"R [{match.group(1)}]",
+        r_name,
         lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[0],
         deps=deps,
         cost=0.2,
@@ -152,10 +154,12 @@ def build_spherical_graph(
         by_prefix.setdefault((m.group("prefix"), m.group("unit")), set()).add(m.group("comp"))
 
     n_vectors = 0
+    detected_vectors: list[str] = []
     for (prefix, unit), found in sorted(by_prefix.items()):
         if found != {"x", "y", "z"}:
             continue
         n_vectors += 1
+        detected_vectors.append(f"{prefix} [{unit}]")
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]", x_name, y_name, z_name]
 
         if "r" in SPHERICAL_COMPONENTS:
@@ -183,9 +187,9 @@ def build_spherical_graph(
                 metadata={"description": f"{prefix} azimuthal component"},
             )
     log.debug(
-        "build_spherical_graph coord_fields=%s vectors=%d components=%s",
-        coord_fields,
+        "build_spherical_graph vectors=%d detected=%s components=%s",
         n_vectors,
+        tuple(detected_vectors),
         SPHERICAL_COMPONENTS,
     )
     log.debug("build_spherical_graph complete fields=%d", len(tuple(graph.list_fields())))

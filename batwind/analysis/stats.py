@@ -25,12 +25,14 @@ def weighted_mean_std(values, weights=None):
 
     mask = np.isfinite(v) & np.isfinite(w) & (w >= 0)
     if not np.any(mask):
+        log.debug("weighted_mean_std no finite non-negative weighted samples")
         return np.nan, np.nan
 
     v = v[mask]
     w = w[mask]
     wsum = float(np.sum(w))
     if wsum <= 0:
+        log.debug("weighted_mean_std non-positive total weight")
         return np.nan, np.nan
 
     mean = float(np.average(v, weights=w))
@@ -54,6 +56,7 @@ def weighted_quantile(values, quantiles, weights=None):
 
     mask = np.isfinite(v) & np.isfinite(w) & (w > 0)
     if not np.any(mask):
+        log.debug("weighted_quantile no finite positive-weight samples")
         out = np.full_like(q, np.nan, dtype=float)
         return float(out) if out.ndim == 0 else out
 

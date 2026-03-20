@@ -43,6 +43,7 @@ def flatten_includes(file_path) -> list[str]:
             child_name = content[line_id + 1].split()[0]
             child_path = path.parent / child_name
             if child_path.exists():
+                log.debug("flatten_includes expanding %s -> %s", path.name, child_path.name)
                 flat_lines.extend(flatten_includes(child_path))
                 line_id += 2
                 continue
@@ -191,6 +192,12 @@ class ParamIn:
         self.path = Path(file_path)
         self.flat_lines = flatten_includes(self.path)
         self.sessions = parse_sessions(self.flat_lines)
+        log.debug(
+            "ParamIn.__init__ path=%s flat_lines=%d sessions=%d",
+            self.path,
+            len(self.flat_lines),
+            len(self.sessions),
+        )
 
     @classmethod
     def from_file(cls, file_path):
@@ -317,6 +324,7 @@ class ParamIn:
             out["Star_mass_kg"] = mass_msun * SOLAR_MASS_KG
             out["Star_rotational_period_s"] = period_days * day
             out["Star_rotation_rate_rad_s"] = 2.0 * 3.141592653589793 / out["Star_rotational_period_s"]
+            log.debug("stellar_params parsed keys=%s", tuple(out))
             return out
 
         return OrderedDict()

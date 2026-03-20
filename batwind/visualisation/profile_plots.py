@@ -54,5 +54,11 @@ def plot_shell_height_series(
         ax.plot(x, -y, ".--", color=color, fillstyle="none")
     ax.set_xlabel(SHELL_HEIGHT_XLABEL)
     ax.set_ylabel(ylabel)
-    log.debug("plot_shell_height_series key=%s n=%d", y_key, y.size)
+    log.debug(
+        "plot_shell_height_series key=%s n=%d show_negative=%s label=%s",
+        y_key,
+        y.size,
+        show_negative,
+        label,
+    )
     return ax

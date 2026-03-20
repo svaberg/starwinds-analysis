@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import math
+from time import perf_counter
 
 import numpy as np
 
@@ -78,6 +79,7 @@ def sample_spherical_shells(
     length_unit_to_m: float | None = None,
 ):
     log.info("sample_spherical_shells...")
+    stage_start = perf_counter()
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
@@ -125,12 +127,14 @@ def sample_spherical_shells(
         requested_fields = tuple(dict.fromkeys(fields))
         fields_arg = smart_ds.source_fields(requested_fields)
     log.debug(
-        "sample_spherical_shells radii=%d grid=(%d,%d) method=%s requested_fields=%s",
+        "sample_spherical_shells radii=%d grid=(%d,%d) method=%s requested_fields=%s source_fields=%s coordinate_fields=%s",
         radii.size,
         ntheta,
         nphi,
         method,
         0 if fields is None else len(requested_fields),
+        None if fields is None else len(fields_arg),
+        coordinate_fields,
     )
 
     resampled = smart_ds.resample(
@@ -168,7 +172,7 @@ def sample_spherical_shells(
         },
         zone_suffix="shell-grid-structured",
     )
-    log.debug("sample_spherical_shells complete")
+    log.debug("sample_spherical_shells complete in %.2f s.", perf_counter() - stage_start)
     return out
 
 
@@ -185,6 +189,7 @@ def sample_spherical_shells_fibonacci(
     length_unit_to_m: float | None = None,
 ):
     log.info("sample_spherical_shells_fibonacci...")
+    stage_start = perf_counter()
     radii = np.atleast_1d(np.array(radii))
     if radii.ndim != 1:
         raise ValueError("radii must be 1D")
@@ -210,11 +215,13 @@ def sample_spherical_shells_fibonacci(
         requested_fields = tuple(dict.fromkeys(fields))
         fields_arg = smart_ds.source_fields(requested_fields)
     log.debug(
-        "sample_spherical_shells_fibonacci radii=%d n_points=%d method=%s requested_fields=%s",
+        "sample_spherical_shells_fibonacci radii=%d n_points=%d method=%s requested_fields=%s source_fields=%s coordinate_fields=%s",
         radii.size,
         n_points,
         method,
         0 if fields is None else len(requested_fields),
+        None if fields is None else len(fields_arg),
+        coordinate_fields,
     )
 
     resampled = smart_ds.resample(
@@ -254,7 +261,7 @@ def sample_spherical_shells_fibonacci(
         },
         zone_suffix="shell-fibonacci-structured",
     )
-    log.debug("sample_spherical_shells_fibonacci complete")
+    log.debug("sample_spherical_shells_fibonacci complete in %.2f s.", perf_counter() - stage_start)
     return out
 
 
@@ -284,4 +291,5 @@ def integrate_shell_scalar(values, area, *, ignore_nan: bool = True):
             out=np.full_like(sum_area, np.nan, dtype=float),
             where=total_area > 0,
         )
+    log.debug("integrate_shell_scalar complete result_shape=%s", np.shape(sum_val))
     return sum_val, coverage

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from collections.abc import Sequence
 import logging
+from time import perf_counter
 
 import griblet
 import numpy as np
@@ -58,6 +59,14 @@ class SmartDs:
         **kwargs,
     ) -> "SmartDs":
         log.info("SmartDs.from_file...")
+        stage_start = perf_counter()
+        log.debug(
+            "SmartDs.from_file file=%s batsrus=%s spherical=%s body_radius_arg=%s",
+            file,
+            batsrus,
+            spherical,
+            body_radius_m is not None,
+        )
         raw = Dataset.from_file(str(file))
         stellar_aux = stellar_aux_from_nearby_param_in(file)
         if stellar_aux:
@@ -70,11 +79,17 @@ class SmartDs:
                 raw.variables,
                 raw.zone,
             )
+        else:
+            log.debug("SmartDs.from_file found no nearby PARAM.in stellar aux")
         if body_radius_m is None:
             radius_from_param = raw.aux.get("Star_radius_m")
             if radius_from_param is not None:
                 body_radius_m = float(radius_from_param)
                 log.debug("SmartDs.from_file using Star_radius_m as body_radius_m")
+            else:
+                log.debug("SmartDs.from_file has no body_radius_m source")
+        else:
+            log.debug("SmartDs.from_file using explicit body_radius_m")
         sds = cls(raw, **kwargs)
         if batsrus:
             log.debug("SmartDs.from_file merging BATSRUS graph")
@@ -84,7 +99,7 @@ class SmartDs:
         if spherical:
             log.debug("SmartDs.from_file merging spherical graph")
             sds.computation_graph.merge(build_spherical_graph(tuple(sds)))
-        log.debug("SmartDs.from_file complete")
+        log.debug("SmartDs.from_file complete in %.2f s.", perf_counter() - stage_start)
         return sds
 
     @property
@@ -129,19 +144,23 @@ class SmartDs:
             return self._cache[name]
 
         if name in self._dataset.variables:
+            log.debug("SmartDs.__getitem__ raw field=%s", name)
             value = self._dataset[name]
             if self._cache_enabled:
                 self._cache[name] = value
+                log.debug("SmartDs.__getitem__ cached raw field=%s", name)
             return value
 
         solver = griblet.DependencySolver(self._computation_graph)
         try:
             cost, tree = solver.resolve_field(name)
         except UnresolvableFieldError as e:
+            log.debug("SmartDs.__getitem__ unresolved field=%s", name)
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             ) from e
         if not np.isfinite(cost):
+            log.debug("SmartDs.__getitem__ non-finite resolve cost field=%s cost=%s", name, cost)
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
@@ -149,6 +168,7 @@ class SmartDs:
         value = evaluate_tree(tree, self._computation_graph)
         if self._cache_enabled:
             self._cache[name] = value
+            log.debug("SmartDs.__getitem__ cached derived field=%s", name)
         return value
 
     def clear_computation_graph(self):
@@ -207,19 +227,22 @@ class SmartDs:
         log.debug("SmartDs.clear_cache cleared fields=%s", names)
 
     def source_fields(self, fields: Sequence[str]) -> tuple[str, ...]:
-        log.debug("SmartDs.source_fields requested_fields=%d", len(tuple(dict.fromkeys(fields))))
+        unique_fields = tuple(dict.fromkeys(fields))
+        log.debug("SmartDs.source_fields requested_fields=%d", len(unique_fields))
         base_fields: list[str] = []
         solver = griblet.DependencySolver(self._computation_graph)
 
-        for field in tuple(dict.fromkeys(fields)):
+        for field in unique_fields:
             if field in self._dataset.variables:
                 base_fields.append(field)
+                log.debug("SmartDs.source_fields raw field=%s", field)
                 continue
             try:
                 _cost, tree = solver.resolve_field(field)
             except UnresolvableFieldError:
                 if field not in base_fields:
                     base_fields.append(field)
+                log.debug("SmartDs.source_fields unresolved passthrough=%s", field)
                 continue
             stack = [tree]
             leaves: list[str] = []
@@ -233,6 +256,7 @@ class SmartDs:
             for name in leaves or [field]:
                 if name not in base_fields:
                     base_fields.append(name)
+            log.debug("SmartDs.source_fields field=%s leaves=%s", field, tuple(leaves) or (field,))
 
         log.debug("SmartDs.source_fields complete source_fields=%d", len(base_fields))
         return tuple(base_fields)
@@ -255,6 +279,8 @@ class SmartDs:
         zone: str | None = None,
     ) -> "SmartDs":
         log.info("SmartDs.resample...")
+        stage_start = perf_counter()
+        inferred_coordinate_fields = coordinate_fields is None
         if coordinate_fields is None:
             preferred = DEFAULT_XYZ_NAMES
             ndim = np.asarray(sample_points, dtype=float).shape[-1]
@@ -264,11 +290,13 @@ class SmartDs:
                     "Could not infer coordinate fields. Pass coordinate_fields explicitly."
                 )
             coordinate_fields = coordinate_fields[:ndim]
+            log.debug("SmartDs.resample inferred coordinate_fields=%s ndim=%d", coordinate_fields, ndim)
         log.debug(
-            "SmartDs.resample method=%s coordinate_fields=%s explicit_fields=%s",
+            "SmartDs.resample method=%s coordinate_fields=%s explicit_fields=%s inferred_coordinate_fields=%s",
             method,
             coordinate_fields,
             fields is not None,
+            inferred_coordinate_fields,
         )
         out = resample_smart_ds(
             self,
@@ -282,7 +310,7 @@ class SmartDs:
             title=title,
             zone=zone,
         )
-        log.debug("SmartDs.resample complete")
+        log.debug("SmartDs.resample complete in %.2f s.", perf_counter() - stage_start)
         return out
 
     def append_fields(
@@ -325,7 +353,10 @@ class SmartDs:
             cache_enabled=self._cache_enabled,
             computation_graph=self._computation_graph,
         )
-        log.debug("SmartDs.append_fields complete")
+        log.debug(
+            "SmartDs.append_fields complete new_variables=%d",
+            len(out.raw.variables),
+        )
         return out
 
 

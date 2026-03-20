@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import math
+from time import perf_counter
 
 import numpy as np
 
@@ -138,6 +139,7 @@ def sample_surface_revolution(
     """Sample explicit fields on a surface of revolution and return a surface SmartDs."""
     fields = tuple(fields)
     log.info("sample_surface_revolution...")
+    stage_start = perf_counter()
     trajectory_points = np.array(trajectory_points)
     if trajectory_points.ndim != 2 or trajectory_points.shape[1] != 3:
         raise ValueError("trajectory_points must have shape (n_phase, 3)")
@@ -207,7 +209,12 @@ def sample_surface_revolution(
     sampled_surface = sampled_surface.append_fields(context_fields, zone_suffix="surface context")
     sampled_surface.raw.aux["trajectory_meta"] = meta
 
-    log.debug("sample_surface_revolution complete n_phase=%d n_lon=%d", n_phase, n_lon)
+    log.debug(
+        "sample_surface_revolution complete n_phase=%d n_lon=%d in %.2f s.",
+        n_phase,
+        n_lon,
+        perf_counter() - stage_start,
+    )
     return sampled_surface
 
 
@@ -225,6 +232,7 @@ def pressure_components_on_surface(
 ):
     """Pressure-component analytics on an already sampled surface SmartDs."""
     log.info("pressure_components_on_surface...")
+    stage_start = perf_counter()
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
     u = np.array(sampled["U [m/s]"])
@@ -306,7 +314,11 @@ def pressure_components_on_surface(
             out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     elif "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
-    log.debug("pressure_components_on_surface complete components=%d", len(comps))
+    log.debug(
+        "pressure_components_on_surface complete components=%d in %.2f s.",
+        len(comps),
+        perf_counter() - stage_start,
+    )
     return out
 
 
@@ -325,6 +337,7 @@ def torque_components_on_surface(
 ):
     """Explicit-surface torque diagnostics on an already sampled surface SmartDs."""
     log.info("torque_components_on_surface...")
+    stage_start = perf_counter()
     body_radius = float(body_radius)
     rho = np.array(sampled["Rho [kg/m^3]"])
     u_xyz = np.array(sampled["U_xyz [m/s]"])
@@ -423,5 +436,9 @@ def torque_components_on_surface(
             out["eccentricity [none]"] = float(meta["eccentricity [none]"])
     if "radius [R]" in meta:
         out["radius [R]"] = float(meta["radius [R]"])
-    log.debug("torque_components_on_surface complete total=%s", float(out["total [Nm]"]))
+    log.debug(
+        "torque_components_on_surface complete total=%s in %.2f s.",
+        float(out["total [Nm]"]),
+        perf_counter() - stage_start,
+    )
     return out

@@ -19,10 +19,12 @@ def build_vector_graph(variable_names: set[str] | Sequence[str]):
         by_prefix.setdefault((prefix, unit), set()).add(comp)
 
     n_vectors = 0
+    detected_vectors: list[str] = []
     for (prefix, unit), comps in sorted(by_prefix.items()):
         if comps != {"x", "y", "z"}:
             continue
         n_vectors += 1
+        detected_vectors.append(f"{prefix} [{unit}]")
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
         graph.add_recipe(
             f"{prefix}_xyz [{unit}]",
@@ -38,7 +40,12 @@ def build_vector_graph(variable_names: set[str] | Sequence[str]):
             cost=0.1,
             metadata={"description": f"{prefix} magnitude"},
         )
-    log.debug("build_vector_graph vectors=%d fields=%d", n_vectors, len(tuple(graph.list_fields())))
+    log.debug(
+        "build_vector_graph vectors=%d detected=%s fields=%d",
+        n_vectors,
+        tuple(detected_vectors),
+        len(tuple(graph.list_fields())),
+    )
     return graph
 
 

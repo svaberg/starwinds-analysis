@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import logging
+from time import perf_counter
 
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
@@ -95,6 +96,7 @@ def _interpolate_field(
 
     if method == "octree":
         if name not in smart_ds.raw.variables:
+            log.debug("_interpolate_field octree rejected non-raw field=%s", name)
             raise ValueError(
                 f"method='octree' requires raw source fields; '{name}' is not raw. "
                 "Pass smart_ds.source_fields(...) into resample()."
@@ -134,8 +136,10 @@ def _interpolate_fields(
 ):
     value_names = [name for name in output_variables if name not in coordinate_fields]
     if not value_names:
+        log.debug("_interpolate_fields no value fields beyond coordinates")
         return value_names, np.empty((flat_sample_points.shape[0], 0), dtype=float)
 
+    stage_start = perf_counter()
     log.debug(
         "_interpolate_fields method=%s coordinate_fields=%s value_fields=%d",
         method,
@@ -168,6 +172,12 @@ def _interpolate_fields(
             continue
         out_values[:, i] = out
 
+    log.debug(
+        "_interpolate_fields complete method=%s value_fields=%d in %.2f s.",
+        method,
+        len(value_names),
+        perf_counter() - stage_start,
+    )
     return value_names, out_values
 
 
@@ -232,6 +242,7 @@ def resample_smart_ds(
     # Normalize target points to a flat (n_points, ndim) form for interpolation,
     # then reshape back to the requested grid shape at the end.
     log.info("resample_smart_ds...")
+    stage_start = perf_counter()
     sample_points = np.asarray(sample_points, dtype=float)
     if sample_points.ndim == 1:
         sample_points = sample_points[np.newaxis, :]
@@ -277,12 +288,20 @@ def resample_smart_ds(
 
     # Reuse coordinate-dependent spatial structures across resample calls with the
     # same coordinate field choice.
+    coord_start = perf_counter()
     source_coords = np.column_stack(
         [np.asarray(smart_ds[name]).ravel() for name in coordinate_fields]
     )
     coord_mask = np.isfinite(source_coords).all(axis=1)
     if not np.any(coord_mask):
         raise ValueError("No finite source coordinates available for resampling")
+    log.debug(
+        "resample_smart_ds source_coords_shape=%s finite_source_points=%d/%d assembled in %.2f s.",
+        source_coords.shape,
+        int(np.count_nonzero(coord_mask)),
+        coord_mask.size,
+        perf_counter() - coord_start,
+    )
     spatial_cache = _get_spatial_cache(smart_ds, coordinate_fields)
 
     out_points = np.full((flat_sample_points.shape[0], len(output_variables)), np.nan, dtype=float)
@@ -324,7 +343,7 @@ def resample_smart_ds(
         cache_enabled=smart_ds._cache_enabled,
         computation_graph=smart_ds._computation_graph,
     )
-    log.debug("resample_smart_ds complete")
+    log.debug("resample_smart_ds complete in %.2f s.", perf_counter() - stage_start)
     return out
 
 

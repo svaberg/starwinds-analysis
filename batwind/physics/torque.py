@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 
 import numpy as np
 
@@ -104,6 +105,7 @@ def surface_torque_density_terms(
     # physical quantities and should eventually be requestable via SmartDs/griblet in
     # SI units, with geometry inputs supplied explicitly.
     log.info("surface_torque_density_terms...")
+    stage_start = perf_counter()
     xyz = np.array(xyz)
     n = normalize_surface_normals(normals_xyz)
     area = np.array(area)
@@ -185,7 +187,7 @@ def surface_torque_density_terms(
     non_finite = int(np.count_nonzero(~np.isfinite(total)))
     if non_finite > 0:
         log.warning("surface_torque_density_terms total has %d/%d non-finite values", non_finite, total.size)
-    log.debug("surface_torque_density_terms complete")
+    log.debug("surface_torque_density_terms complete in %.2f s.", perf_counter() - stage_start)
     return out
 
 
@@ -196,6 +198,7 @@ def integrate_surface_torque_terms(terms):
       `batwind/physics/torque.py`
     """
     log.info("integrate_surface_torque_terms...")
+    stage_start = perf_counter()
     area = np.array(terms["area [m^2]"])
     out = {}
     coverages = []
@@ -223,7 +226,7 @@ def integrate_surface_torque_terms(terms):
         len(component_keys),
         np.shape(out.get("coverage [none]")),
     )
-    log.debug("integrate_surface_torque_terms complete")
+    log.debug("integrate_surface_torque_terms complete in %.2f s.", perf_counter() - stage_start)
     return out
 
 
@@ -246,6 +249,7 @@ def surface_torque_terms_on_shell_samples(
     Used by: `batwind/physics/torque.py`
     """
     log.info("surface_torque_terms_on_shell_samples...")
+    stage_start = perf_counter()
     x_name, y_name, z_name = coordinate_fields
     xyz_r = np.stack(
         [
@@ -274,5 +278,5 @@ def surface_torque_terms_on_shell_samples(
         angvel=angvel,
         use_rotating_frame=use_rotating_frame,
     )
-    log.debug("surface_torque_terms_on_shell_samples complete")
+    log.debug("surface_torque_terms_on_shell_samples complete in %.2f s.", perf_counter() - stage_start)
     return out

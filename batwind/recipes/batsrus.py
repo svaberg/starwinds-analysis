@@ -53,9 +53,15 @@ def build_batsrus_graph(
         body_radius_m is not None,
     )
     graph = griblet.ComputationGraph()
-    graph.merge(build_unit_normalization_graph(variable_names, gamma=gamma, body_radius_m=body_radius_m))
-    graph.merge(build_vector_graph(tuple(variable_names) + tuple(graph.list_fields())))
-    graph.merge(build_common_derived_graph())
+    unit_graph = build_unit_normalization_graph(variable_names, gamma=gamma, body_radius_m=body_radius_m)
+    log.debug("build_batsrus_graph merging unit-normalization graph fields=%d", len(tuple(unit_graph.list_fields())))
+    graph.merge(unit_graph)
+    vector_graph = build_vector_graph(tuple(variable_names) + tuple(graph.list_fields()))
+    log.debug("build_batsrus_graph merging vector graph fields=%d", len(tuple(vector_graph.list_fields())))
+    graph.merge(vector_graph)
+    derived_graph = build_common_derived_graph()
+    log.debug("build_batsrus_graph merging common-derived graph fields=%d", len(tuple(derived_graph.list_fields())))
+    graph.merge(derived_graph)
     log.debug("build_batsrus_graph complete fields=%d", len(tuple(graph.list_fields())))
     return graph
 
@@ -74,6 +80,8 @@ def build_unit_normalization_graph(
         body_radius_m is not None,
     )
     graph = griblet.ComputationGraph()
+    n_canonicalized = 0
+    n_converted = 0
 
     for raw_name in variable_names:
         parsed = _parse_var_name(raw_name)
@@ -83,6 +91,7 @@ def build_unit_normalization_graph(
 
         canonical_name = f"{base} [{unit}]"
         if canonical_name != raw_name:
+            n_canonicalized += 1
             graph.add_recipe(
                 canonical_name,
                 lambda x: x,
@@ -102,6 +111,7 @@ def build_unit_normalization_graph(
         target_name = f"{base} [{si_unit}]"
         if target_name == source_name and factor == 1:
             continue
+        n_converted += 1
         graph.add_recipe(
             target_name,
             lambda x, factor=factor: factor * np.asarray(x),
@@ -121,7 +131,12 @@ def build_unit_normalization_graph(
             metadata={"description": "Configured gamma"},
         )
 
-    log.debug("build_unit_normalization_graph complete fields=%d", len(tuple(graph.list_fields())))
+    log.debug(
+        "build_unit_normalization_graph canonicalized=%d converted=%d fields=%d",
+        n_canonicalized,
+        n_converted,
+        len(tuple(graph.list_fields())),
+    )
     return graph
 
 
@@ -129,6 +144,7 @@ def build_coordinate_scale_graph(body_radius_m: float | None = None):
     log.debug("build_coordinate_scale_graph body_radius_m=%s", body_radius_m is not None)
     graph = griblet.ComputationGraph()
     if body_radius_m is not None:
+        log.debug("build_coordinate_scale_graph adding RBODY [m]")
         graph.add_recipe(
             "RBODY [m]",
             lambda: float(body_radius_m),
@@ -153,6 +169,7 @@ def build_coordinate_scale_graph(body_radius_m: float | None = None):
         cost=0.05,
         metadata={"description": "Scale spherical radius to meters"},
     )
+    log.debug("build_coordinate_scale_graph complete fields=%s", tuple(graph.list_fields()))
     return graph
 
 
@@ -294,7 +311,11 @@ def build_common_derived_graph():
         metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )
 
-    log.debug("build_common_derived_graph complete fields=%d", len(tuple(graph.list_fields())))
+    log.debug(
+        "build_common_derived_graph complete fields=%d names=%s",
+        len(tuple(graph.list_fields())),
+        tuple(graph.list_fields()),
+    )
     return graph
 
 def _parse_var_name(name: str):
