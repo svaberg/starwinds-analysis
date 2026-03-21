@@ -57,7 +57,7 @@ def resample_structured_xz_slice(
     nx: int = 200,
     nz: int = 200,
     fields=None,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
     symmetric_ranges: bool = False,
     padding_frac: float = 0.0,

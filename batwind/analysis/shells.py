@@ -74,7 +74,7 @@ def sample_spherical_shells(
     n_azimuth: int = 48,
     polar_edges=None,
     azimuthal_edges=None,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
     length_unit_to_m: float | None = None,
 ):
@@ -184,7 +184,7 @@ def sample_spherical_shells_fibonacci(
     coordinate_fields=DEFAULT_XYZ_NAMES,
     n_points: int = 512,
     randomize: bool = False,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
     length_unit_to_m: float | None = None,
 ):

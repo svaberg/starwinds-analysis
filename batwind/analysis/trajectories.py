@@ -71,7 +71,7 @@ def sample_curve(
     *,
     fields,
     coordinate_fields=DEFAULT_XYZ_NAMES,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
 ):
     """
@@ -113,7 +113,7 @@ def sample_trajectory(
     time,
     velocity_xyz=None,
     coordinate_fields=DEFAULT_XYZ_NAMES,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
 ):
     """

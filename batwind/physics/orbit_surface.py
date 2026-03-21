@@ -131,7 +131,7 @@ def sample_surface_revolution(
     velocity_xyz=None,
     trajectory_meta=None,
     coordinate_fields=DEFAULT_XYZ_NAMES,
-    method: str = "nearest",
+    method: str = "auto",
     fill_value: float = np.nan,
     zone: str = "surface",
     n_longitudes: int = 199,

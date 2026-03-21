@@ -26,6 +26,17 @@ class SmartDs:
 
     DEFAULT_COORD_FIELDS = DEFAULT_XYZ_NAMES
 
+    @staticmethod
+    def _resolve_resample_method(sample_points, method: str) -> str:
+        ndim = np.asarray(sample_points, dtype=float).shape[-1]
+        if method == "auto":
+            if ndim == 3:
+                return "octree"
+            if ndim == 2:
+                return "linear"
+            raise ValueError(f"method='auto' does not support ndim={ndim}")
+        return method
+
     def __init__(
         self,
         dataset: Dataset,
@@ -268,10 +279,10 @@ class SmartDs:
         coordinate_fields: Sequence[str] | None = None,
         fields: Sequence[str] | None = None,
         # Method guidance:
-        # - `octree` is the intended default for 3D resampling.
-        # - `linear` is the intended default for 2D resampling and structured datasets.
+        # - `auto` resolves to `octree` for 3D resampling.
+        # - `auto` resolves to `linear` for 2D resampling and structured datasets.
         # - `nearest` is mainly for exposing the underlying grid resolution.
-        method: str = "nearest",
+        method: str = "auto",
         fill_value: float = np.nan,
         corners=None,
         copy_aux: bool = True,
@@ -291,9 +302,11 @@ class SmartDs:
                 )
             coordinate_fields = coordinate_fields[:ndim]
             log.debug("SmartDs.resample inferred coordinate_fields=%s ndim=%d", coordinate_fields, ndim)
+        resolved_method = self._resolve_resample_method(sample_points, method)
         log.debug(
-            "SmartDs.resample method=%s coordinate_fields=%s explicit_fields=%s inferred_coordinate_fields=%s",
+            "SmartDs.resample method=%s resolved_method=%s coordinate_fields=%s explicit_fields=%s inferred_coordinate_fields=%s",
             method,
+            resolved_method,
             coordinate_fields,
             fields is not None,
             inferred_coordinate_fields,
@@ -303,7 +316,7 @@ class SmartDs:
             sample_points,
             coordinate_fields=coordinate_fields,
             fields=fields,
-            method=method,
+            method=resolved_method,
             fill_value=fill_value,
             corners=corners,
             copy_aux=copy_aux,
