@@ -1,6 +1,6 @@
 # Technical Debt Remediation Plan
 
-Last reviewed: 2026-03-07 (`dev`)
+Last reviewed: 2026-03-21 (`main`)
 
 ## Document Role
 
@@ -65,7 +65,7 @@ Execution focus:
 - collapse unnecessary tiny APIs
 - keep only boundaries with real reuse
 
-### Step 5: TD-04 (Linear resampling performance)
+### Step 5: TD-04 (Structured/2D linear resampling performance)
 
 Targets:
 
@@ -73,8 +73,8 @@ Targets:
 
 Execution focus:
 
-- optimize shared-geometry linear workflows
-- keep nearest default practical path intact
+- optimize shared-geometry linear workflows where `linear` is still the right method
+- do not treat 3D octree-backed workflows as part of this problem
 
 ### Step 6: TD-06 (Docs sync pass)
 

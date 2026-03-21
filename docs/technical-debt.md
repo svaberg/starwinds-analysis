@@ -1,6 +1,6 @@
 # Technical Debt Ledger (Current)
 
-Last reviewed: 2026-03-07 (`dev`)
+Last reviewed: 2026-03-21 (`main`)
 
 ## Document Role (Source of Truth)
 
@@ -50,7 +50,7 @@ Debt:
 - avoidable internal complexity remains in graph registration/access paths
 - strict fail-fast and fragment-based graph composition still needs cleanup passes
 
-### TD-04 (P1) Linear resampling performance
+### TD-04 (P1) Structured/2D linear resampling performance
 
 Area:
 
@@ -58,7 +58,10 @@ Area:
 
 Debt:
 
-- linear interpolation remains slow for larger 3D -> curve/surface workflows
+- linear interpolation is no longer the main 3D workflow concern now that `octree`
+  is the intended 3D path
+- performance work, if kept, should focus on structured/2D and other shared-geometry
+  linear workflows
 
 ### TD-05 (P1) Analysis/physics API hygiene
 

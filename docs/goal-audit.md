@@ -1,7 +1,7 @@
 # Goal Audit
 
-Date: 2026-03-07  
-Branch: `dev`
+Date: 2026-03-21  
+Branch: `main`
 
 ## Current Status Snapshot
 
@@ -66,15 +66,14 @@ Files:
 
 ### 4) Nearby config and stellar parameters
 
-Status: DONE (first pass)
+Status: PARTIAL
 
 - `PARAM.in` parsing is available via `ParamIn`.
 - `SmartDs.from_file(...)` searches nearby `PARAM.in` / `param.in`.
-- Parsed stellar values are exposed in graph-accessible SI fields:
-  - `star_radius [m]`
-  - `star_mass [kg]`
-  - `star_rotational_period [s]`
-  - `star_rotation_rate [rad/s]`
+- Nearby stellar aux is merged into the raw dataset aux.
+- `Star_radius_m` can seed `body_radius_m`, which then exposes:
+  - `RBODY [m]`
+- Direct graph exposure of the broader stellar `Star_*` values is not yet the final cleaned-up shape.
 
 Files:
 
@@ -92,7 +91,7 @@ Focused checks that should stay green:
 - `test/test_smart_ds.py`
 - `test/test_alfven_radius.py`
 
-Last verified: 2026-03-07  
+Last verified: 2026-03-21  
 Environment: `batwind` conda env
 
 ```bash
@@ -105,6 +104,7 @@ conda run -n batwind python -m pytest -q \
 ```
 
 Result: `50 passed in 0.96s`
+Result: `85 passed, 2 warnings`
 
 ## Boundary Note
 
