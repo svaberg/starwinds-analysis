@@ -82,6 +82,18 @@ unless the task explicitly requires backward compatibility.
 - During important work, especially before pushing or releasing, check that GitHub Actions is green on the exact pushed commit.
 - Remove generated test artifacts before finishing work.
 
+## Public-facing text discipline
+- Do not publish release notes, package descriptions, Zenodo text, README summaries, or other public-facing copy without treating them as their own writing task.
+- Show the exact proposed text before publishing when the text is user-facing or public-facing.
+- Say explicitly when text is a rough draft.
+- Keep maintainer checklist items out of public release summaries.
+- Do not present items like license, tests passing, wheel builds, or metadata cleanup as release highlights.
+- Public-facing text should explain:
+  - what the package does
+  - what changed
+  - what users can now do
+- Before finalizing public-facing text, do a render/readability pass instead of stopping at the first technically correct draft.
+
 ## Notebook hygiene
 - Notebooks should demonstrate basic use cases and showcase the library code.
 - Notebooks should be committed in unexecuted form; use standard tools and git plugins to manage this.
