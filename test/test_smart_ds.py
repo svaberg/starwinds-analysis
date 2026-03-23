@@ -4,7 +4,7 @@ import griblet
 import numpy as np
 import pytest
 
-from batread.dataset import Dataset
+from batread import Dataset
 
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph

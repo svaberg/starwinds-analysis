@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 
-from batread.dataset import Dataset
+from batread import Dataset
 
 from batwind.analysis.trajectories import circular_orbit_points
 from batwind.analysis.trajectories import trajectory_velocity

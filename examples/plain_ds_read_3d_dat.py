@@ -6,7 +6,7 @@ from time import perf_counter
 
 import numpy as np
 
-from batread.dataset import Dataset
+from batread import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.smart_ds import SmartDs
 

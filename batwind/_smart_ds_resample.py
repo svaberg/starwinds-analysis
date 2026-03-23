@@ -10,7 +10,7 @@ from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
 from batcamp import OctreeInterpolator
-from batread.dataset import Dataset
+from batread import Dataset
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
 
 log = logging.getLogger(__name__)

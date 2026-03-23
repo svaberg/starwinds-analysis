@@ -8,7 +8,7 @@ from time import perf_counter
 import griblet
 import numpy as np
 
-from batread.dataset import Dataset
+from batread import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.param_in import stellar_aux_from_nearby_param_in
 from griblet.dependency_solver import UnresolvableFieldError

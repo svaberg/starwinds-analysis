@@ -1,6 +1,6 @@
 import numpy as np
 
-from batread.dataset import Dataset
+from batread import Dataset
 
 from batwind.physics.alfven_radius import alfven_radius_map
 from batwind.physics.alfven_radius import projected_solid_angle_weights
