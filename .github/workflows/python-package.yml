@@ -13,6 +13,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
@@ -38,8 +40,7 @@ jobs:
         run: |
           pytest --cov=batwind
           pytest --cov=batwind --cov-report=xml:pytest-cobertura.xml
-      # - name: Codacy Coverage Reporter
-      #   with:
-      #     project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-      #     coverage-reports: pytest-cobertura.xml
-      #   uses: codacy/codacy-coverage-reporter-action@v1.3.0
+      - name: Upload coverage to Codacy
+        if: ${{ env.CODACY_PROJECT_TOKEN != '' }}
+        run: |
+          bash <(curl -Ls https://coverage.codacy.com/get.sh) report -r pytest-cobertura.xml
