@@ -122,26 +122,26 @@ def build_spherical_graph(
     r_name = f"R [{match.group(1)}]"
     log.debug("build_spherical_graph coord_fields=%s radius_field=%s", coord_fields, r_name)
 
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
     deps = [x_name, y_name, z_name]
-    graph.add_recipe(
+    graph.add(
         r_name,
         lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[0],
-        deps=deps,
+        needs=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical radius"},
     )
-    graph.add_recipe(
+    graph.add(
         "polar [rad]",
         lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[1],
-        deps=deps,
+        needs=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical colatitude"},
     )
-    graph.add_recipe(
+    graph.add(
         "azimuth [rad]",
         lambda x, y, z: cartesian_to_spherical_angles(x, y, z)[2],
-        deps=deps,
+        needs=deps,
         cost=0.2,
         metadata={"description": "Cartesian->spherical azimuth"},
     )
@@ -163,26 +163,26 @@ def build_spherical_graph(
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]", x_name, y_name, z_name]
 
         if "r" in SPHERICAL_COMPONENTS:
-            graph.add_recipe(
+            graph.add(
                 f"{prefix}_r [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[0],
-                deps=deps,
+                needs=deps,
                 cost=0.4,
                 metadata={"description": f"{prefix} radial component"},
             )
         if "p" in SPHERICAL_COMPONENTS:
-            graph.add_recipe(
+            graph.add(
                 f"{prefix}_p [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[1],
-                deps=deps,
+                needs=deps,
                 cost=0.5,
                 metadata={"description": f"{prefix} polar component"},
             )
         if "a" in SPHERICAL_COMPONENTS:
-            graph.add_recipe(
+            graph.add(
                 f"{prefix}_a [{unit}]",
                 lambda vx, vy, vz, x, y, z: spherical_vector_components(vx, vy, vz, x, y, z)[2],
-                deps=deps,
+                needs=deps,
                 cost=0.5,
                 metadata={"description": f"{prefix} azimuthal component"},
             )
@@ -192,5 +192,5 @@ def build_spherical_graph(
         tuple(detected_vectors),
         SPHERICAL_COMPONENTS,
     )
-    log.debug("build_spherical_graph complete fields=%d", len(tuple(graph.list_fields())))
+    log.debug("build_spherical_graph complete fields=%d", len(tuple(graph.fields())))
     return graph

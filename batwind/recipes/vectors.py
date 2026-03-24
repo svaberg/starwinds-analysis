@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 def build_vector_graph(variable_names: set[str] | Sequence[str]):
     variable_names = tuple(variable_names)
     log.info("build_vector_graph...")
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
 
     by_prefix: dict[tuple[str, str], set[str]] = {}
     for prefix, comp, unit in _available_xyz_components(variable_names):
@@ -26,17 +26,17 @@ def build_vector_graph(variable_names: set[str] | Sequence[str]):
         n_vectors += 1
         detected_vectors.append(f"{prefix} [{unit}]")
         deps = [f"{prefix}_x [{unit}]", f"{prefix}_y [{unit}]", f"{prefix}_z [{unit}]"]
-        graph.add_recipe(
+        graph.add(
             f"{prefix}_xyz [{unit}]",
             lambda x, y, z: np.stack([np.array(x), np.array(y), np.array(z)], axis=-1),
-            deps=deps,
+            needs=deps,
             cost=0.05,
             metadata={"description": f"{prefix} Cartesian vector"},
         )
-        graph.add_recipe(
+        graph.add(
             f"{prefix} [{unit}]",
             lambda x, y, z: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2 + np.asarray(z) ** 2),
-            deps=deps,
+            needs=deps,
             cost=0.1,
             metadata={"description": f"{prefix} magnitude"},
         )
@@ -44,7 +44,7 @@ def build_vector_graph(variable_names: set[str] | Sequence[str]):
         "build_vector_graph vectors=%d detected=%s fields=%d",
         n_vectors,
         tuple(detected_vectors),
-        len(tuple(graph.list_fields())),
+        len(tuple(graph.fields())),
     )
     return graph
 

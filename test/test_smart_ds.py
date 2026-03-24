@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 
 from batread import Dataset
+from griblet.pathfinder import Pathfinder
+from griblet.pathfinder import explain_field as explain_graph_field
 
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
@@ -15,21 +17,20 @@ EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def explain_field(sds: SmartDs, name: str) -> str:
-    solver = griblet.DependencySolver(sds.computation_graph)
-    cost, tree = solver.resolve_field(name)
+    cost, tree = Pathfinder(sds.computation_graph).find_path(name)
     lines: list[str] = []
 
     def walk(node, depth=0):
-        meta = getattr(node, "recipe_metadata", {}) or {}
+        meta = getattr(node, "metadata", {}) or {}
         desc = meta.get("description", "")
         planned = getattr(node, "cost", None)
-        parts = [node.field]
+        parts = [node.name]
         if planned is not None:
             parts.append(f"(cost={planned})")
         if desc:
             parts.append(f"- {desc}")
         lines.append("  " * depth + " ".join(parts))
-        for dep in getattr(node, "deps", []):
+        for dep in getattr(node, "needs", []):
             walk(dep, depth + 1)
 
     walk(tree)
@@ -196,16 +197,16 @@ def test_griblet_graph_resolution_and_explain():
 def test_smartds_graph_is_never_none():
     sds = SmartDs(make_dataset_2d())
 
-    assert isinstance(sds.computation_graph, griblet.ComputationGraph)
-    assert sds.computation_graph.list_fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
+    assert isinstance(sds.computation_graph, griblet.Graph)
+    assert sds.computation_graph.fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
 
-    graph = griblet.ComputationGraph()
-    graph.add_recipe("A [none]", lambda: np.array([1.0]), deps=[], cost=0.0)
+    graph = griblet.Graph()
+    graph.add("A [none]", lambda: np.array([1.0]), needs=[], cost=0.0)
     sds.merge_computation_graph(graph)
     assert "A [none]" in sds
 
     sds.clear_computation_graph()
-    assert sds.computation_graph.list_fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
+    assert sds.computation_graph.fields() == {"X [R]", "Y [R]", "Q [none]", "demo"}
     assert "A [none]" not in sds
 
 
@@ -221,7 +222,7 @@ def test_griblet_spherical_graph_on_real_example_data():
     finite_polar = np.isfinite(polar)
     assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
-    expl = explain_field(sds, "B_r [Gauss]")
+    expl = explain_graph_field(sds.computation_graph, "B_r [Gauss]")
     assert "B_r [Gauss]" in expl
     assert "B_x [Gauss]" in expl
 

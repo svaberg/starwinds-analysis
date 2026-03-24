@@ -11,11 +11,10 @@ import numpy as np
 from batread import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.param_in import stellar_aux_from_nearby_param_in
-from griblet.dependency_solver import UnresolvableFieldError
-from griblet.evaluate_tree import evaluate_tree
 from batwind._smart_ds_resample import resample_smart_ds
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
+from griblet.pathfinder import Pathfinder
 
 log = logging.getLogger(__name__)
 
@@ -42,13 +41,13 @@ class SmartDs:
         dataset: Dataset,
         *,
         cache_enabled: bool = True,
-        computation_graph: griblet.ComputationGraph | None = None,
+        computation_graph: griblet.Graph | None = None,
     ) -> None:
         self._dataset = dataset
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._resample_spatial_cache: dict[tuple[str, ...], dict[str, object]] = {}
-        self._computation_graph = griblet.ComputationGraph()
+        self._computation_graph = griblet.Graph()
         self.clear_computation_graph()
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
@@ -140,7 +139,7 @@ class SmartDs:
 
     def __iter__(self):
         names = list(self._dataset.variables)
-        for name in self._computation_graph.list_fields():
+        for name in self._computation_graph.fields():
             if name not in names:
                 names.append(name)
         return iter(names)
@@ -162,10 +161,9 @@ class SmartDs:
                 log.debug("SmartDs.__getitem__ cached raw field=%s", name)
             return value
 
-        solver = griblet.DependencySolver(self._computation_graph)
         try:
-            cost, tree = solver.resolve_field(name)
-        except UnresolvableFieldError as e:
+            cost, _path = Pathfinder(self._computation_graph).find_path(name)
+        except griblet.NoPathError as e:
             log.debug("SmartDs.__getitem__ unresolved field=%s", name)
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
@@ -176,7 +174,7 @@ class SmartDs:
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
         log.debug("SmartDs.__getitem__ graph resolve field=%s cost=%s", name, cost)
-        value = evaluate_tree(tree, self._computation_graph)
+        value = self._computation_graph.compute(name)
         if self._cache_enabled:
             self._cache[name] = value
             log.debug("SmartDs.__getitem__ cached derived field=%s", name)
@@ -188,20 +186,20 @@ class SmartDs:
             len(self._dataset.variables),
             len(self._dataset.aux),
         )
-        self._computation_graph = griblet.ComputationGraph()
+        self._computation_graph = griblet.Graph()
         for raw_name in self._dataset.variables:
-            self._computation_graph.add_recipe(
-                field=raw_name,
-                func=lambda raw_name=raw_name: self._dataset[raw_name],
-                deps=[],
+            self._computation_graph.add(
+                raw_name,
+                lambda raw_name=raw_name: self._dataset[raw_name],
+                needs=[],
                 cost=0.0,
                 metadata={"description": "Dataset raw field", "loader": True},
             )
         for key, value in self._dataset.aux.items():
-            self._computation_graph.add_recipe(
-                field=key,
-                func=lambda value=value: value,
-                deps=[],
+            self._computation_graph.add(
+                key,
+                lambda value=value: value,
+                needs=[],
                 cost=0.0,
                 metadata={"description": "Dataset aux", "loader": True},
             )
@@ -211,17 +209,17 @@ class SmartDs:
         # Loader recipes close over this SmartDs' dataset, so we must not blindly
         # merge them forward into another SmartDs that may wrap different raw data.
         merged = 0
-        for field, recipes in graph.recipes.items():
-            for recipe in recipes:
-                metadata = dict(recipe.get("metadata", {}) or {})
+        for field, ways in graph.ways.items():
+            for way in ways:
+                metadata = dict(way.get("metadata", {}) or {})
                 if metadata.get("loader"):
                     continue
                 merged += 1
-                self._computation_graph.add_recipe(
-                    field=field,
-                    func=recipe["func"],
-                    deps=recipe["deps"],
-                    cost=recipe["cost"],
+                self._computation_graph.add(
+                    field,
+                    way["func"],
+                    needs=way["needs"],
+                    cost=way["cost"],
                     metadata=metadata,
                 )
         log.debug("SmartDs.merge_computation_graph merged_recipes=%d", merged)
@@ -241,7 +239,6 @@ class SmartDs:
         unique_fields = tuple(dict.fromkeys(fields))
         log.debug("SmartDs.source_fields requested_fields=%d", len(unique_fields))
         base_fields: list[str] = []
-        solver = griblet.DependencySolver(self._computation_graph)
 
         for field in unique_fields:
             if field in self._dataset.variables:
@@ -249,21 +246,21 @@ class SmartDs:
                 log.debug("SmartDs.source_fields raw field=%s", field)
                 continue
             try:
-                _cost, tree = solver.resolve_field(field)
-            except UnresolvableFieldError:
+                _cost, path = Pathfinder(self._computation_graph).find_path(field)
+            except griblet.NoPathError:
                 if field not in base_fields:
                     base_fields.append(field)
                 log.debug("SmartDs.source_fields unresolved passthrough=%s", field)
                 continue
-            stack = [tree]
+            stack = [path]
             leaves: list[str] = []
             while stack:
                 node = stack.pop()
-                if node.deps:
-                    stack.extend(reversed(node.deps))
+                if node.needs:
+                    stack.extend(reversed(node.needs))
                     continue
-                if node.field in self._dataset.variables and node.field not in leaves:
-                    leaves.append(node.field)
+                if node.name in self._dataset.variables and node.name not in leaves:
+                    leaves.append(node.name)
             for name in leaves or [field]:
                 if name not in base_fields:
                     base_fields.append(name)

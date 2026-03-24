@@ -52,17 +52,17 @@ def build_batsrus_graph(
         gamma is not None,
         body_radius_m is not None,
     )
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
     unit_graph = build_unit_normalization_graph(variable_names, gamma=gamma, body_radius_m=body_radius_m)
-    log.debug("build_batsrus_graph merging unit-normalization graph fields=%d", len(tuple(unit_graph.list_fields())))
+    log.debug("build_batsrus_graph merging unit-normalization graph fields=%d", len(tuple(unit_graph.fields())))
     graph.merge(unit_graph)
-    vector_graph = build_vector_graph(tuple(variable_names) + tuple(graph.list_fields()))
-    log.debug("build_batsrus_graph merging vector graph fields=%d", len(tuple(vector_graph.list_fields())))
+    vector_graph = build_vector_graph(tuple(variable_names) + tuple(graph.fields()))
+    log.debug("build_batsrus_graph merging vector graph fields=%d", len(tuple(vector_graph.fields())))
     graph.merge(vector_graph)
     derived_graph = build_common_derived_graph()
-    log.debug("build_batsrus_graph merging common-derived graph fields=%d", len(tuple(derived_graph.list_fields())))
+    log.debug("build_batsrus_graph merging common-derived graph fields=%d", len(tuple(derived_graph.fields())))
     graph.merge(derived_graph)
-    log.debug("build_batsrus_graph complete fields=%d", len(tuple(graph.list_fields())))
+    log.debug("build_batsrus_graph complete fields=%d", len(tuple(graph.fields())))
     return graph
 
 
@@ -79,7 +79,7 @@ def build_unit_normalization_graph(
         gamma is not None,
         body_radius_m is not None,
     )
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
     n_canonicalized = 0
     n_converted = 0
 
@@ -92,10 +92,10 @@ def build_unit_normalization_graph(
         canonical_name = f"{base} [{unit}]"
         if canonical_name != raw_name:
             n_canonicalized += 1
-            graph.add_recipe(
+            graph.add(
                 canonical_name,
                 lambda x: x,
-                deps=[raw_name],
+                needs=[raw_name],
                 cost=0.01,
                 metadata={"description": f"Canonicalize unit brackets for {raw_name}"},
             )
@@ -112,10 +112,10 @@ def build_unit_normalization_graph(
         if target_name == source_name and factor == 1:
             continue
         n_converted += 1
-        graph.add_recipe(
+        graph.add(
             target_name,
             lambda x, factor=factor: factor * np.asarray(x),
-            deps=[source_name],
+            needs=[source_name],
             cost=0.05,
             metadata={"description": f"Unit conversion {unit}->{si_unit}"},
         )
@@ -123,10 +123,10 @@ def build_unit_normalization_graph(
     graph.merge(build_coordinate_scale_graph(body_radius_m))
 
     if gamma is not None:
-        graph.add_recipe(
+        graph.add(
             "GAMMA [none]",
             lambda: float(gamma),
-            deps=[],
+            needs=[],
             cost=0.01,
             metadata={"description": "Configured gamma"},
         )
@@ -135,186 +135,186 @@ def build_unit_normalization_graph(
         "build_unit_normalization_graph canonicalized=%d converted=%d fields=%d",
         n_canonicalized,
         n_converted,
-        len(tuple(graph.list_fields())),
+        len(tuple(graph.fields())),
     )
     return graph
 
 
 def build_coordinate_scale_graph(body_radius_m: float | None = None):
     log.debug("build_coordinate_scale_graph body_radius_m=%s", body_radius_m is not None)
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
     if body_radius_m is not None:
         log.debug("build_coordinate_scale_graph adding RBODY [m]")
-        graph.add_recipe(
+        graph.add(
             "RBODY [m]",
             lambda: float(body_radius_m),
-            deps=[],
+            needs=[],
             cost=0.0,
             metadata={"description": "Configured body radius"},
         )
     for axis in ("X", "Y", "Z"):
         source = f"{axis} [R]"
         target = f"{axis} [m]"
-        graph.add_recipe(
+        graph.add(
             target,
             lambda x, rbody: np.asarray(rbody) * np.asarray(x),
-            deps=[source, "RBODY [m]"],
+            needs=[source, "RBODY [m]"],
             cost=0.05,
             metadata={"description": "Scale body-radius coordinates to meters"},
         )
-    graph.add_recipe(
+    graph.add(
         "R [m]",
         lambda r, rbody: np.asarray(rbody) * np.asarray(r),
-        deps=["R [R]", "RBODY [m]"],
+        needs=["R [R]", "RBODY [m]"],
         cost=0.05,
         metadata={"description": "Scale spherical radius to meters"},
     )
-    log.debug("build_coordinate_scale_graph complete fields=%s", tuple(graph.list_fields()))
+    log.debug("build_coordinate_scale_graph complete fields=%s", tuple(graph.fields()))
     return graph
 
 
 def build_common_derived_graph():
     log.debug("build_common_derived_graph...")
-    graph = griblet.ComputationGraph()
+    graph = griblet.Graph()
 
     # Sound speed c_s [m/s]
-    graph.add_recipe(
+    graph.add(
         "c_s [m/s]",
         lambda P, rho: np.sqrt(_DEFAULT_GAMMA * np.asarray(P) / np.asarray(rho)),
-        deps=["P [Pa]", "Rho [kg/m^3]"],
+        needs=["P [Pa]", "Rho [kg/m^3]"],
         cost=0.25,
         metadata={"description": "Adiabatic sound speed with fallback gamma=5/3"},
     )
-    graph.add_recipe(
+    graph.add(
         "c_s [m/s]",
         lambda P, rho, gamma: np.sqrt(_safe_gamma(gamma) * np.asarray(P) / np.asarray(rho)),
-        deps=["P [Pa]", "Rho [kg/m^3]", "GAMMA [none]"],
+        needs=["P [Pa]", "Rho [kg/m^3]", "GAMMA [none]"],
         cost=0.2,
         metadata={"description": "Adiabatic sound speed using GAMMA aux"},
     )
 
     # Alfven speed and Alfven Mach
-    graph.add_recipe(
+    graph.add(
         "c_A [m/s]",
         lambda B, rho: np.asarray(B) / np.sqrt(mu_0 * np.asarray(rho)),
-        deps=["B [T]", "Rho [kg/m^3]"],
+        needs=["B [T]", "Rho [kg/m^3]"],
         cost=0.2,
         metadata={"description": "Alfven speed"},
     )
-    graph.add_recipe(
+    graph.add(
         "M_A [none]",
         lambda U, cA: np.asarray(U) / np.asarray(cA),
-        deps=["U [m/s]", "c_A [m/s]"],
+        needs=["U [m/s]", "c_A [m/s]"],
         cost=0.1,
         metadata={"description": "Alfven Mach number"},
     )
-    graph.add_recipe(
+    graph.add(
         "Ma [none]",
         lambda U, cs: np.asarray(U) / np.asarray(cs),
-        deps=["U [m/s]", "c_s [m/s]"],
+        needs=["U [m/s]", "c_s [m/s]"],
         cost=0.1,
         metadata={"description": "Sonic Mach number"},
     )
-    graph.add_recipe(
+    graph.add(
         "P_b [Pa]",
         lambda B: np.asarray(B) ** 2 / (2.0 * mu_0),
-        deps=["B [T]"],
+        needs=["B [T]"],
         cost=0.12,
         metadata={"description": "Magnetic pressure"},
     )
-    graph.add_recipe(
+    graph.add(
         "ram_pressure [Pa]",
         lambda rho, U: np.asarray(rho) * (np.asarray(U) ** 2),
-        deps=["Rho [kg/m^3]", "U [m/s]"],
+        needs=["Rho [kg/m^3]", "U [m/s]"],
         cost=0.12,
         metadata={"description": "Ram pressure"},
     )
-    graph.add_recipe(
+    graph.add(
         "standoff_distance [m]",
         _standoff_distance_from_rho_u,
-        deps=["Rho [kg/m^3]", "U [m/s]"],
+        needs=["Rho [kg/m^3]", "U [m/s]"],
         cost=0.2,
         metadata={"description": "Magnetospheric stand-off proxy from inertial ram pressure"},
     )
-    graph.add_recipe(
+    graph.add(
         "beta [none]",
         lambda P, Pb: np.asarray(P) / np.asarray(Pb),
-        deps=["P [Pa]", "P_b [Pa]"],
+        needs=["P [Pa]", "P_b [Pa]"],
         cost=0.12,
         metadata={"description": "Plasma beta"},
     )
 
-    graph.add_recipe(
+    graph.add(
         "mass_flux [kg/m^2/s]",
         lambda rho, ur: np.asarray(rho) * np.asarray(ur),
-        deps=["Rho [kg/m^3]", "U_r [m/s]"],
+        needs=["Rho [kg/m^3]", "U_r [m/s]"],
         cost=0.12,
         metadata={"description": "Radial mass flux density"},
     )
-    graph.add_recipe(
+    graph.add(
         "energy_flux [W/m^2]",
         lambda e, ur: np.asarray(e) * np.asarray(ur),
-        deps=["E [J/m^3]", "U_r [m/s]"],
+        needs=["E [J/m^3]", "U_r [m/s]"],
         cost=0.12,
         metadata={"description": "Radial energy flux density"},
     )
 
-    graph.add_recipe(
+    graph.add(
         "cylindrical_radius [R]",
         lambda x, y: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2),
-        deps=["X [R]", "Y [R]"],
+        needs=["X [R]", "Y [R]"],
         cost=0.1,
         metadata={"description": "Cylindrical radius from body-radius coordinates"},
     )
-    graph.add_recipe(
+    graph.add(
         "cylindrical_radius [m]",
         lambda x, y: np.sqrt(np.asarray(x) ** 2 + np.asarray(y) ** 2),
-        deps=["X [m]", "Y [m]"],
+        needs=["X [m]", "Y [m]"],
         cost=0.1,
         metadata={"description": "Cylindrical radius from SI coordinates"},
     )
 
-    graph.add_recipe(
+    graph.add(
         "magnetic_torque_density [N/m]",
         lambda varpi, bphi, br: -np.asarray(varpi) * np.asarray(bphi) * np.asarray(br) / mu_0,
-        deps=["cylindrical_radius [m]", "B_a [T]", "B_r [T]"],
+        needs=["cylindrical_radius [m]", "B_a [T]", "B_r [T]"],
         cost=0.2,
         metadata={"description": "Magnetic z-torque density (shell form)"},
     )
-    graph.add_recipe(
+    graph.add(
         "dynamic_torque_density [N/m]",
         lambda varpi, rho, uphi, ur: np.asarray(varpi) * np.asarray(rho) * np.asarray(uphi) * np.asarray(ur),
-        deps=["cylindrical_radius [m]", "Rho [kg/m^3]", "U_a [m/s]", "U_r [m/s]"],
+        needs=["cylindrical_radius [m]", "Rho [kg/m^3]", "U_a [m/s]", "U_r [m/s]"],
         cost=0.2,
         metadata={"description": "Dynamic z-torque density (shell form)"},
     )
-    graph.add_recipe(
+    graph.add(
         "total_torque_density [N/m]",
         lambda tmag, tdyn: np.asarray(tmag) + np.asarray(tdyn),
-        deps=["magnetic_torque_density [N/m]", "dynamic_torque_density [N/m]"],
+        needs=["magnetic_torque_density [N/m]", "dynamic_torque_density [N/m]"],
         cost=0.05,
         metadata={"description": "Total z-torque density (shell form)"},
     )
 
-    graph.add_recipe(
+    graph.add(
         "B_meridional [T]",
         lambda bp: -np.asarray(bp),
-        deps=["B_p [T]"],
+        needs=["B_p [T]"],
         cost=0.05,
         metadata={"description": "Meridional magnetic component (northward)"},
     )
-    graph.add_recipe(
+    graph.add(
         "B_tangential [T]",
         lambda ba, bmer: np.sqrt(np.asarray(ba) ** 2 + np.asarray(bmer) ** 2),
-        deps=["B_a [T]", "B_meridional [T]"],
+        needs=["B_a [T]", "B_meridional [T]"],
         cost=0.08,
         metadata={"description": "Tangential magnetic magnitude on spherical shell"},
     )
 
     log.debug(
         "build_common_derived_graph complete fields=%d names=%s",
-        len(tuple(graph.list_fields())),
-        tuple(graph.list_fields()),
+        len(tuple(graph.fields())),
+        tuple(graph.fields()),
     )
     return graph
 
