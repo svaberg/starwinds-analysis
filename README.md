@@ -1,5 +1,10 @@
 # batwind
 
+[![Python package](https://github.com/svaberg/batwind/actions/workflows/python-package.yml/badge.svg)](https://github.com/svaberg/batwind/actions/workflows/python-package.yml)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/7b25b26a82334daf9c6224c25a40d4bb)](https://app.codacy.com/gh/svaberg/batwind/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Coverage/6236f7130d7f4b0caab5ee221430e74b)](https://app.codacy.com/gh/svaberg/batwind/dashboard?utm_source=github.com&utm_medium=referral&utm_content=svaberg/batwind&utm_campaign=Badge_Coverage)
+[![DOI](https://zenodo.org/badge/634176378.svg)](https://doi.org/10.5281/zenodo.19064165)
+
 `batwind` lets you explore three-dimensional SWMF/BATSRUS results with a simple workflow and a minimum of costly dependencies.
 
 ## Example workflow
