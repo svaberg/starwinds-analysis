@@ -26,6 +26,19 @@ Keep the core centered on:
 Prefer to keep numerical and analysis logic independent of PyVista/VTK unless the
 task is explicitly about visualization or mesh operations.
 
+## Main branch shape
+- `griblet` is the canonical derivation system.
+- Do not add a second local derivation path for fields that already belong in the `griblet` graph.
+- If `B_r`, `U_r`, pressure terms, torque terms, or similar derived quantities are needed, prefer adding them to the `griblet` graph rather than reimplementing them elsewhere.
+- `SmartDs` is the core wrapper around `batread.Dataset`, with graph-backed field access and resampling support.
+- `SmartDs` should always have a computation graph. An empty graph is fine; `None` is not the design target.
+- Keep `batwind/analysis` thin. It is for sampling, shell/slice helpers, summaries, and related glue.
+- Put actual science calculations in `batwind/physics`.
+- Keep `batwind/pipelines` as the workflow layer.
+- Do not bring back `batwind/octree` onto `main`.
+- Do not reintroduce the old large `analysis/*` science modules that were split out into `physics`.
+- Do not duplicate workflow layers unless there is a clear present need.
+
 ## General coding bias
 Prefer the simplest implementation that satisfies the current requirements.
 
