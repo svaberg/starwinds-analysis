@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from scipy.interpolate import LinearNDInterpolator  # This is much slower but should be used for generating the final figures.
-from starwinds_readplt.dataset import Dataset
+from batread import Dataset
 
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.cm import ScalarMappable

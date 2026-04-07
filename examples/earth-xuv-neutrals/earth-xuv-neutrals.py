@@ -1,21 +1,24 @@
 import argparse
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 from pathlib import Path
 
+from batread import Dataset
+from batwind.visualisation.histograms import plot_binned_vs_radius
+from batwind.visualisation.histograms import plot_cumulative_hists
+from batwind.visualisation.histograms import plot_vs_radius
+from batwind.visualisation.slice import auto_coords
+from batwind.visualisation.slice import plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords
+from batwind.visualisation.slice import plot_xz_slice_with_marginal_points
+from batwind.visualisation.slice import triangles
 from scipy.interpolate import LinearNDInterpolator  # This is much slower but should be used for generating the final figures.
 
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap
 import re
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 k_B = 1.380649e-23      # J/K
 amu = 1.66053906660e-27  # kg
 
@@ -67,10 +70,6 @@ pattern = run_root / args.pattern
 output_dir = Path(__file__).resolve().parent / output_label_from_io2_path(pattern.parent)
 output_dir.mkdir(parents=True, exist_ok=True)
 os.chdir(output_dir)
-
-from starwinds_readplt.dataset import Dataset
-from batwind.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
-from batwind.visualisation.slice import auto_coords, triangles, plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords, plot_xz_slice_with_marginal_points
 
 
 def extract_index(p):
