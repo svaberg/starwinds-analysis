@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from batread import Dataset
 from matplotlib.colors import LogNorm
 
 log = logging.getLogger(__name__)

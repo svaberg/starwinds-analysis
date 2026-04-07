@@ -1,15 +1,10 @@
 import logging
-from pathlib import Path
 import re
 
-import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import tri
 
-from batread import Dataset
 from batwind.data.field_names import DEFAULT_XYZ_NAMES
-
-from matplotlib.colors import LogNorm
 
 log = logging.getLogger(__name__)
 

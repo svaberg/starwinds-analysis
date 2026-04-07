@@ -1,17 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import tri
 
 from pathlib import Path
 
-from scipy.interpolate import NearestNDInterpolator  # This is fast and should be used for testing and development.
 from scipy.interpolate import LinearNDInterpolator  # This is much slower but should be used for generating the final figures.
 from batread.dataset import Dataset
 
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import LinearSegmentedColormap
-import regex as re
 
 from batwind.utils import auto_coords, triangles, extract_index, sort_key
 from batwind.visualisation.histograms import plot_cumulative_hists, plot_vs_radius, plot_binned_vs_radius
