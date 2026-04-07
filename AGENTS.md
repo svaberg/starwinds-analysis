@@ -130,6 +130,17 @@ Avoid:
 - object-oriented structure where stateless functions are sufficient
 - configuration plumbing unless it is required by the task
 
+## Data and workflow boundaries
+- Keep raw data in its native meaning. If node data must become cell data, or raw coordinates must become derived coordinates, do the conversion explicitly and close to the operation that needs it.
+- Do not silently reinterpret geometry or units for convenience.
+- Keep orchestration separate from implementation. High-level workflows should coordinate steps; reusable numerical work should live in reusable modules.
+- Keep entrypoints readable: load -> compute -> visualize/save -> report.
+- Prefer field- or metric-parameterized interfaces over duplicating near-identical quantity-specific APIs.
+- Define each core formula, conversion, and constant once and reuse it. Avoid scattered hard-coded unit conversions and repeated numeric constants.
+- Keep imports and ownership clean. Avoid circular imports and layer inversions; import from the owning module when that is clear.
+- Log at workflow boundaries and major steps, not in hot loops. Avoid print-based logging in library code.
+- Prefer explicit return shapes over large ad hoc dictionaries unless a mapping is genuinely the right abstraction.
+
 ## Numerics-specific guidance
 Assume the code is written for known scientific/numerical use cases, not hostile or arbitrary inputs, unless stated otherwise.
 
