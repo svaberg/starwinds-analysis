@@ -70,7 +70,7 @@ files_sorted = sorted(files, key=sort_key)
 def good_files(files):
     for file in files:
         try:
-            ds = Dataset.from_file(str(file))
+            Dataset.from_file(str(file))
             yield file
         except ValueError as e:
             print(f"Error reading file {file}: {e}")
