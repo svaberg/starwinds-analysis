@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 # DONE(debt): Reuse the shared `MU0` constant from `batwind.constants`.
 
+
 def surface_escape_speed(star_mass_kg, star_radius_m):
     """
     Surface escape speed `sqrt(2GM/R)`.
@@ -38,6 +39,7 @@ def surface_escape_speed(star_mass_kg, star_radius_m):
     if non_finite > 0:
         log.warning("surface_escape_speed output has %d/%d non-finite values", non_finite, int(np.size(out)))
     return out
+
 
 def open_wind_magnetisation(open_flux_wb, mass_loss_kg_s, star_mass_kg, star_radius_m):
     """

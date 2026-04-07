@@ -17,6 +17,7 @@ from batwind.recipes.vectors import build_vector_graph
 
 log = logging.getLogger(__name__)
 
+
 def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     """
     Velocity from explicit trajectory points and strictly increasing sample times.
@@ -43,6 +44,7 @@ def trajectory_velocity(points, time, *, coordinate_scale: float = 1.0):
     log.debug("trajectory_velocity edge_order=%d n_points=%d", edge_order, pts.shape[0])
     return np.gradient(pts, t, axis=0, edge_order=edge_order)
 
+
 def circular_orbit_points(
     radius,
     *,
@@ -64,6 +66,7 @@ def circular_orbit_points(
     points[:, 2] = 0.0
     log.debug("circular_orbit_points radius=%g n_points=%d", radius, points.shape[0])
     return points
+
 
 def sample_curve(
     smart_ds,
@@ -104,6 +107,7 @@ def sample_curve(
         sampled_curve.raw.points.shape,
     )
     return sampled_curve
+
 
 def sample_trajectory(
     smart_ds,

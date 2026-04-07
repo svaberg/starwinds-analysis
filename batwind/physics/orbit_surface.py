@@ -65,6 +65,7 @@ def surface_of_revolution_from_trajectory(points, *, n_longitudes: int = 199):
         "R [R]": np.sqrt(np.sum(surface * surface, axis=-1)),
     }
 
+
 def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
     """Build integration/summary weights for one sampled surface."""
     az_w = np.full(int(n_longitudes), 1.0 / float(n_longitudes), dtype=float)
@@ -80,6 +81,7 @@ def surface_sample_weights(n_phase, n_longitudes, *, time_weight=None):
         t_w = t_w / sw
     return np.outer(t_w, az_w)
 
+
 def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     """Compute phase-binned quantiles for 2D sampled values."""
     arr = np.array(values_2d)
@@ -88,6 +90,7 @@ def phase_quantile_rows(values_2d, q=(0.0, 0.25, 0.5, 0.75, 1.0)):
     q = np.array(q)
     out = np.quantile(arr, q, axis=1).T
     return q, out
+
 
 def surface_point_normals_and_areas(surface_points):
     """Estimate point normals and point-associated areas on a structured surface."""
@@ -103,6 +106,7 @@ def surface_point_normals_and_areas(surface_points):
     area = np.sqrt(np.sum(cross * cross, axis=-1))
     normals = cross / area[..., None]
     return normals, area
+
 
 def phase_line_integrals(values_2d, area_2d):
     """Integrate sampled surface density values over longitude for each phase."""

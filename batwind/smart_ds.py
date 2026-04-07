@@ -17,6 +17,7 @@ from batwind.recipes.spherical import build_spherical_graph
 
 log = logging.getLogger(__name__)
 
+
 class SmartDs:
     """
     Lightweight wrapper around ``batread.Dataset`` with graph-backed derived fields.

@@ -9,6 +9,7 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+
 def build_vector_graph(variable_names: set[str] | Sequence[str]):
     variable_names = tuple(variable_names)
     log.info("build_vector_graph...")

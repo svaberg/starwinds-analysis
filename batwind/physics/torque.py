@@ -38,6 +38,7 @@ def spherical_wind_torque_density_terms(
     dynamic = cylindrical_radius * rho * U_a * U_r
     return magnetic, dynamic
 
+
 def rotational_frame_velocity(U_xyz, xyz, angvel):
     """
     Convert inertial velocity `u` to rotating-frame velocity `V = u - Omega x r`

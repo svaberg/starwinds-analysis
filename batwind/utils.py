@@ -31,8 +31,6 @@ def auto_coords(ds, names=None):
         return "X [R]", "Y [R]"
 
 
-
-
 def triangles(ds, uname=None, vname=None):
     """ """
 
@@ -48,7 +46,6 @@ def triangles(ds, uname=None, vname=None):
     triangles = np.vstack((ds.corners[:, [0, 1, 2]], ds.corners[:, [2, 3, 0]]))
     log.debug("triangles u=%s v=%s triangles=%d", uname, vname, triangles.shape[0])
     return tri.Triangulation(pu, pv, triangles)
-
 
 
 def extract_index(p):

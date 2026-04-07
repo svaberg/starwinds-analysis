@@ -4,9 +4,9 @@
 # BATSRUS itself parses these files line by line. Non-command lines are ignored
 # until a line starting with `#` is encountered, at which point BATSRUS switches
 # into command-specific parsing and consumes a hard-coded number of following
-# parameter lines for that command. Sessions are demarcated by `#END` or `#RUN`. 
+# parameter lines for that command. Sessions are demarcated by `#END` or `#RUN`.
 # In the SWMF layer, components are additional structure layered on top.
-# 
+#
 # This reader is intentionally more permissive: it flattens resolvable
 # `#INCLUDE` statements, preserves sessions/components/duplicate commands, and
 # stores command blocks for inspection without hard-coding command arity.
@@ -174,7 +174,7 @@ def _split_value_and_label(line: str) -> tuple[str, str]:
     for index in range(len(text) - 1):
         if text[index].isspace() and text[index + 1].isspace():
             value = text[:index].strip()
-            label = text[index + 1 :].strip()
+            label = text[index + 1:].strip()
             while label and label[0].isspace():
                 label = label[1:]
             return value, label
@@ -279,7 +279,7 @@ class ParamIn:
             if not line or line.split()[0] != "#STAR":
                 continue
 
-            inline_name = line[len("#STAR") :].strip()
+            inline_name = line[len("#STAR"):].strip()
             block: list[str] = []
             next_id = line_id + 1
             while next_id < len(self.flat_lines):

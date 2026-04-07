@@ -7,6 +7,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
+
 def data_dir() -> Path:
     """
     Return the repository's `sample_data` directory.
@@ -15,6 +16,7 @@ def data_dir() -> Path:
     path = Path(__file__).resolve().parents[2] / "sample_data"
     log.debug("data_dir resolved to %s", path)
     return path
+
 
 def data_file(name: str, *, echo: bool = False) -> Path:
     """

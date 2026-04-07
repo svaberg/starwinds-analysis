@@ -34,6 +34,7 @@ SOLAR_SYSTEM_PLANETS: dict[str, PlanetOrbitElements] = {
     "Mars": PlanetOrbitElements(1.523679 * AU_M, 0.0934, 0.0, 5.65),
 }
 
+
 def orbital_period(semi_major_axis_m, star_mass_kg):
     """
     Keplerian orbital period for a test particle around a point mass.
@@ -52,6 +53,7 @@ def orbital_period(semi_major_axis_m, star_mass_kg):
     period = 2.0 * math.pi * math.sqrt(a**3 / (GRAVITATIONAL_CONSTANT * m))
     log.debug("orbital_period computed period=%g", period)
     return period
+
 
 def orbital_velocity(radial_distance_m, star_mass_kg, semi_major_axis_m):
     """

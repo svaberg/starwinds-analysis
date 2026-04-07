@@ -6,6 +6,7 @@ from matplotlib.colors import LogNorm
 
 log = logging.getLogger(__name__)
 
+
 def plot_cumulative_hists(
     ds,
     axes,
@@ -55,7 +56,6 @@ def plot_cumulative_hists(
         ax.set_xlabel(field)
         if i == 0:
             ax.set_ylabel(ylabel)
-
 
 
 def plot_vs_radius(

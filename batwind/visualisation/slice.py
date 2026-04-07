@@ -95,6 +95,7 @@ def plot_xz_slice_tripcolor_with_marginals(
     log.debug("plot_xz_slice_tripcolor_with_marginals complete")
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
+
 def plot_xz_slice_tripcolor_with_cross_quantiles(
     ds,
     *,
@@ -214,7 +215,6 @@ def plot_xz_slice_tripcolor_with_cross_quantiles(
     return fig, (ax_main, ax_left, ax_bottom), cbar
 
 
-
 def plot_xz_slice_with_marginal_points(
     ds,
     *,
@@ -300,7 +300,7 @@ def plot_xz_slice_tripcolor_with_marginal_quantiles_by_unique_coords(
         out = np.full((len(qs), uc.size), np.nan)
 
         for i, (s, n) in enumerate(zip(start, counts)):
-            seg = v[s : s + n]
+            seg = v[s: s + n]
             out[:, i] = np.quantile(seg, qs)
 
         return uc, out

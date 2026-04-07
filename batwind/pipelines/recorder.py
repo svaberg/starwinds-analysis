@@ -259,7 +259,7 @@ class BatwindRecordHandler(logging.Handler):
         if parsed is None:
             return
         key, value = parsed
-        module_name = record.name[len("recorder.") :] if record.name.startswith("recorder.") else record.name
+        module_name = record.name[len("recorder."):] if record.name.startswith("recorder.") else record.name
         normalized = normalize_recorded_value(
             value,
             file_key=self.file_key,

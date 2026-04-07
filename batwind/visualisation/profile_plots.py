@@ -17,6 +17,7 @@ import numpy as np
 SHELL_HEIGHT_XLABEL = "Height over surface [R]"
 log = logging.getLogger(__name__)
 
+
 def shell_profile_height(profile) -> np.ndarray:
     """
     Return `height [R]` from a shell-profile dict (fallback from radius).
@@ -29,6 +30,7 @@ def shell_profile_height(profile) -> np.ndarray:
         return np.array(profile["radius [R]"]) - 1.0
     log.error("shell_profile_height failed: missing height/radius keys")
     raise KeyError("Profile must contain 'height [R]' or 'radius [R]'")
+
 
 def plot_shell_height_series(
     ax,

@@ -27,7 +27,7 @@ def fibonacci_sphere(num_points, randomize=False):
     -------
     points : ndarray of shape (num_points, 3)
         Cartesian coordinates (x, y, z) of points on the unit sphere.
-    """    
+    """
     num_points = int(num_points)
     if num_points <= 0:
         raise ValueError("num_points must be > 0")
@@ -81,7 +81,6 @@ class PolarAzimuthalGrid:
             self._polar.size - 1,
             self._azimuthal.size - 1,
         )
-
 
     @property
     def polar_edges(self):

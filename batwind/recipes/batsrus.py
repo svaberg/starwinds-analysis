@@ -318,6 +318,7 @@ def build_common_derived_graph():
     )
     return graph
 
+
 def _parse_var_name(name: str):
     """
     Parse BATSRUS variable names.
@@ -336,6 +337,7 @@ def _parse_var_name(name: str):
         if "/" in unit or unit.isalpha() or any(ch.isdigit() for ch in unit):
             return base, unit
     return None
+
 
 def _safe_gamma(gamma):
     g = float(gamma)
