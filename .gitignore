@@ -27,5 +27,6 @@ myresults.xml
 artifacts
 *.pickle
 pytest-cobertura.xml
+dist/
 
 examples/*.plt
