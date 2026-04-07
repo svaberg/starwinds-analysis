@@ -29,7 +29,7 @@ def plot_cumulative_hists(
     log.debug("plot_cumulative_hists fields=%d bins=%s", len(fields), bins)
 
     for i, (ax, field) in enumerate(zip(axes, fields)):
-        x = np.asarray(ds(field)).ravel()
+        x = np.asarray(ds[field]).ravel()
         x = x[np.isfinite(x)]
         if x.size == 0:
             continue
@@ -75,16 +75,16 @@ def plot_vs_radius(
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.asarray(ds["X [R]"]).ravel()
+    Y = np.asarray(ds["Y [R]"]).ravel()
+    Z = np.asarray(ds["Z [R]"]).ravel()
     r = np.sqrt(X**2 + Y**2 + Z**2)
 
     rmask = np.isfinite(r)
     r = r[rmask]
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[rmask]
+        f = np.asarray(ds[field]).ravel()[rmask]
         mask = np.isfinite(f)
 
         ax.scatter(r[mask], f[mask], s=s, color=color, alpha=alpha)
@@ -111,9 +111,9 @@ def plot_binned_vs_radius(
     if axes.size < len(fields):
         raise ValueError("Not enough axes for number of fields")
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.asarray(ds["X [R]"]).ravel()
+    Y = np.asarray(ds["Y [R]"]).ravel()
+    Z = np.asarray(ds["Z [R]"]).ravel()
 
     r = np.sqrt(X**2 + Y**2 + Z**2)
     mask = np.isfinite(r)
@@ -137,7 +137,7 @@ def plot_binned_vs_radius(
     valid = (bin_index >= 0) & (bin_index < bins)
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[mask]
+        f = np.asarray(ds[field]).ravel()[mask]
         fmask = np.isfinite(f) & valid
 
         y = np.full(bins, np.nan)
@@ -193,9 +193,9 @@ def plot_radial_hist2d(
         raise ValueError("Not enough axes for number of fields")
     log.debug("plot_radial_hist2d fields=%d bins=%s normalize=%s", len(fields), bins, normalize)
 
-    X = np.asarray(ds("X [R]")).ravel()
-    Y = np.asarray(ds("Y [R]")).ravel()
-    Z = np.asarray(ds("Z [R]")).ravel()
+    X = np.asarray(ds["X [R]"]).ravel()
+    Y = np.asarray(ds["Y [R]"]).ravel()
+    Z = np.asarray(ds["Z [R]"]).ravel()
     r = np.sqrt(X**2 + Y**2 + Z**2)
     rmask = np.isfinite(r)
     r = r[rmask]
@@ -214,7 +214,7 @@ def plot_radial_hist2d(
     if weights is None:
         w_all = None
     elif isinstance(weights, str):
-        w_all = np.asarray(ds(weights)).ravel()[rmask]
+        w_all = np.asarray(ds[weights]).ravel()[rmask]
     else:
         w_all = np.asarray(weights, dtype=float).ravel()[rmask]
 
@@ -223,7 +223,7 @@ def plot_radial_hist2d(
     r_bins, v_bins = int(bins[0]), int(bins[1])
 
     for ax, field in zip(axes, fields):
-        f = np.asarray(ds(field)).ravel()[rmask]
+        f = np.asarray(ds[field]).ravel()[rmask]
         mask = np.isfinite(r) & np.isfinite(f)
         if w_all is not None:
             mask &= np.isfinite(w_all)
