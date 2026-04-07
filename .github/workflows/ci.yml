@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+      MPLBACKEND: Agg
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
