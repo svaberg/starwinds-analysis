@@ -2,13 +2,9 @@ from pathlib import Path
 
 import griblet
 import numpy as np
-import pytest
 
 from batread import Dataset
-from griblet.pathfinder import Pathfinder
-from griblet.pathfinder import explain_field as explain_graph_field
 
-from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
 from batwind.smart_ds import SmartDs
 
@@ -17,7 +13,8 @@ EXAMPLE_PLT = Path("examples/3d__var_1_n00000000.plt")
 
 
 def explain_field(sds: SmartDs, name: str) -> str:
-    cost, tree = Pathfinder(sds.computation_graph).find_path(name)
+    tree = sds.computation_graph.path(name)
+    cost = tree.cost
     lines: list[str] = []
 
     def walk(node, depth=0):
@@ -75,6 +72,29 @@ def make_dataset_3d_vectors():
     return Dataset(points, corners, aux={}, title="demo3d", variables=variables, zone="z3d")
 
 
+def make_dataset_3d_one_cell():
+    variables = [
+        "X [R]",
+        "Y [R]",
+        "Z [R]",
+    ]
+    points = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [0.0, 1.0, 1.0],
+        ],
+        dtype=float,
+    )
+    corners = np.array([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=int)
+    return Dataset(points, corners, aux={}, title="cube", variables=variables, zone="zcube")
+
+
 def test_passthrough_raw_field():
     sds = SmartDs(make_dataset_2d())
 
@@ -115,6 +135,35 @@ def test_resample_linear_interpolates_inside_hull():
     )
 
     np.testing.assert_allclose(out["Q [none]"], [0.75, 0.70], rtol=0, atol=1e-12)
+
+
+def test_resample_octree_interpolates_derived_field():
+    sds = SmartDs(make_dataset_3d_one_cell())
+    graph = griblet.Graph()
+    graph.add(
+        "S [none]",
+        lambda x, y, z: x + 2.0 * y + 3.0 * z,
+        needs=["X [R]", "Y [R]", "Z [R]"],
+        cost=0.1,
+    )
+    sds.merge_computation_graph(graph)
+    target = np.array([[0.25, 0.50, 0.75], [0.80, 0.20, 0.10]])
+
+    out = sds.resample(
+        target,
+        fields=["S [none]"],
+        method="octree",
+    )
+
+    np.testing.assert_allclose(out["X [R]"], target[:, 0])
+    np.testing.assert_allclose(out["Y [R]"], target[:, 1])
+    np.testing.assert_allclose(out["Z [R]"], target[:, 2])
+    np.testing.assert_allclose(
+        out["S [none]"],
+        target[:, 0] + 2.0 * target[:, 1] + 3.0 * target[:, 2],
+        rtol=0,
+        atol=1e-12,
+    )
 
 
 def test_spherical_graph_computes_geometry_and_vector_components():
@@ -222,7 +271,7 @@ def test_griblet_spherical_graph_on_real_example_data():
     finite_polar = np.isfinite(polar)
     assert np.all((polar[finite_polar] >= 0.0) & (polar[finite_polar] <= np.pi))
 
-    expl = explain_graph_field(sds.computation_graph, "B_r [Gauss]")
+    expl = explain_field(sds, "B_r [Gauss]")
     assert "B_r [Gauss]" in expl
     assert "B_x [Gauss]" in expl
 

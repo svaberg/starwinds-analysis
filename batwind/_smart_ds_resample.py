@@ -9,6 +9,7 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
+from batcamp import Octree
 from batcamp import OctreeInterpolator
 from batread import Dataset
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
@@ -23,7 +24,7 @@ def _get_spatial_cache(smart_ds, coordinate_fields):
         spatial_cache = {
             "nearest_tree": None,
             "linear_triangulation": None,
-            "octree_interpolator": None,
+            "octree_tree": None,
         }
         smart_ds._resample_spatial_cache[coordinate_fields] = spatial_cache
     else:
@@ -94,31 +95,6 @@ def _interpolate_field(
             out = out[np.newaxis]
         return out, nearest_indices
 
-    if method == "octree":
-        if name not in smart_ds.raw.variables:
-            log.debug("_interpolate_field octree rejected non-raw field=%s", name)
-            raise ValueError(
-                f"method='octree' requires raw source fields; '{name}' is not raw. "
-                "Pass smart_ds.source_fields(...) into resample()."
-            )
-        interpolator = spatial_cache.get("octree_interpolator")
-        if interpolator is None:
-            log.debug("_interpolate_field octree building interpolator field=%s", name)
-            interpolator = OctreeInterpolator(
-                smart_ds.raw,
-                [name],
-                fill_value=fill_value,
-            )
-            spatial_cache["octree_interpolator"] = interpolator
-        else:
-            log.debug("_interpolate_field octree reusing interpolator field=%s", name)
-            interpolator.set_fields([name], fill_value=fill_value)
-
-        out = np.asarray(interpolator(flat_sample_points), dtype=float)
-        if out.ndim == 0:
-            out = out[np.newaxis]
-        return out, nearest_indices
-
     raise ValueError(f"method must be one of {RESAMPLE_METHODS!r}")
 
 
@@ -146,6 +122,69 @@ def _interpolate_fields(
         coordinate_fields,
         len(value_names),
     )
+    if method == "octree":
+        octree_tree = spatial_cache["octree_tree"]
+        if octree_tree is None:
+            log.debug("_interpolate_fields octree building shared tree")
+            octree_tree = Octree.from_ds(smart_ds.raw)
+            spatial_cache["octree_tree"] = octree_tree
+
+        if coordinate_fields == ("X [R]", "Y [R]", "Z [R]"):
+            octree_points = flat_sample_points
+            query_coord = "xyz"
+        elif coordinate_fields == ("R [R]", "polar [rad]", "azimuth [rad]"):
+            if octree_tree.tree_coord == "rpa":
+                octree_points = flat_sample_points
+                query_coord = "rpa"
+            else:
+                radius = flat_sample_points[:, 0]
+                polar = flat_sample_points[:, 1]
+                azimuth = flat_sample_points[:, 2]
+                sin_polar = np.sin(polar)
+                octree_points = np.column_stack(
+                    (
+                        radius * sin_polar * np.cos(azimuth),
+                        radius * sin_polar * np.sin(azimuth),
+                        radius * np.cos(polar),
+                    )
+                )
+                query_coord = "xyz"
+        else:
+            raise ValueError(
+                "method='octree' requires coordinate_fields to be "
+                "('X [R]', 'Y [R]', 'Z [R]') or "
+                "('R [R]', 'polar [rad]', 'azimuth [rad]')."
+            )
+
+        value_columns = []
+        for name in value_names:
+            values = np.asarray(smart_ds[name]).ravel()
+            if values.shape[0] != source_coords.shape[0]:
+                raise ValueError(
+                    f"Field '{name}' has length {values.shape[0]} but coordinates have "
+                    f"length {source_coords.shape[0]}"
+                )
+            value_columns.append(values)
+        point_values = np.column_stack(value_columns)
+        interpolator = OctreeInterpolator(
+            octree_tree,
+            point_values,
+            fill_value=fill_value,
+        )
+        out_values = np.asarray(
+            interpolator(octree_points, query_coord=query_coord),
+            dtype=float,
+        )
+        if out_values.ndim == 1:
+            out_values = out_values[:, np.newaxis]
+        log.debug(
+            "_interpolate_fields complete method=%s value_fields=%d in %.2f s.",
+            method,
+            len(value_names),
+            perf_counter() - stage_start,
+        )
+        return value_names, out_values
+
     out_values = np.full((flat_sample_points.shape[0], len(value_names)), np.nan, dtype=float)
     nearest_indices = None
     for i, name in enumerate(value_names):
@@ -341,7 +380,7 @@ def resample_smart_ds(
     out = type(smart_ds)(
         new_dataset,
         cache_enabled=smart_ds._cache_enabled,
-        computation_graph=smart_ds._computation_graph,
+        computation_graph=smart_ds.recipe_graph,
     )
     log.debug("resample_smart_ds complete in %.2f s.", perf_counter() - stage_start)
     return out

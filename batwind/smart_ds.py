@@ -14,7 +14,6 @@ from batwind.param_in import stellar_aux_from_nearby_param_in
 from batwind._smart_ds_resample import resample_smart_ds
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
-from griblet.pathfinder import Pathfinder
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +46,9 @@ class SmartDs:
         self._cache_enabled = bool(cache_enabled)
         self._cache: dict[str, np.ndarray] = {}
         self._resample_spatial_cache: dict[tuple[str, ...], dict[str, object]] = {}
-        self._computation_graph = griblet.Graph()
-        self.clear_computation_graph()
+        self._source_graph = self._build_source_graph()
+        self._recipe_graph = griblet.Graph()
+        self._computation_graph_cache: griblet.Graph | None = None
         if computation_graph is not None:
             self.merge_computation_graph(computation_graph)
         log.debug(
@@ -103,12 +103,16 @@ class SmartDs:
         sds = cls(raw, **kwargs)
         if batsrus:
             log.debug("SmartDs.from_file merging BATSRUS graph")
-            sds.computation_graph.merge(
-                build_batsrus_graph(sds.raw.variables, gamma=sds.raw.aux.get("GAMMA"), body_radius_m=body_radius_m)
+            sds.merge_computation_graph(
+                build_batsrus_graph(
+                    sds.raw.variables,
+                    gamma=sds.raw.aux.get("GAMMA"),
+                    body_radius_m=body_radius_m,
+                )
             )
         if spherical:
             log.debug("SmartDs.from_file merging spherical graph")
-            sds.computation_graph.merge(build_spherical_graph(tuple(sds)))
+            sds.merge_computation_graph(build_spherical_graph(tuple(sds)))
         log.debug("SmartDs.from_file complete in %.2f s.", perf_counter() - stage_start)
         return sds
 
@@ -135,11 +139,19 @@ class SmartDs:
 
     @property
     def computation_graph(self):
-        return self._computation_graph
+        if self._computation_graph_cache is None:
+            graph = griblet.Graph(self._source_graph)
+            graph.merge(self._recipe_graph)
+            self._computation_graph_cache = graph
+        return self._computation_graph_cache
+
+    @property
+    def recipe_graph(self) -> griblet.Graph:
+        return self._recipe_graph
 
     def __iter__(self):
         names = list(self._dataset.variables)
-        for name in self._computation_graph.fields():
+        for name in self.computation_graph.fields():
             if name not in names:
                 names.append(name)
         return iter(names)
@@ -162,33 +174,29 @@ class SmartDs:
             return value
 
         try:
-            cost, _path = Pathfinder(self._computation_graph).find_path(name)
-        except griblet.NoPathError as e:
+            path = self.computation_graph.path(name)
+        except (KeyError, griblet.NoPathError) as e:
             log.debug("SmartDs.__getitem__ unresolved field=%s", name)
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             ) from e
+        cost = path.cost
         if not np.isfinite(cost):
             log.debug("SmartDs.__getitem__ non-finite resolve cost field=%s cost=%s", name, cost)
             raise IndexError(
                 f"Field '{name}' not available. Raw fields: {self._dataset.variables}."
             )
         log.debug("SmartDs.__getitem__ graph resolve field=%s cost=%s", name, cost)
-        value = self._computation_graph.compute(name)
+        value = self.computation_graph.compute(path)
         if self._cache_enabled:
             self._cache[name] = value
             log.debug("SmartDs.__getitem__ cached derived field=%s", name)
         return value
 
-    def clear_computation_graph(self):
-        log.debug(
-            "SmartDs.clear_computation_graph raw_fields=%d aux_fields=%d",
-            len(self._dataset.variables),
-            len(self._dataset.aux),
-        )
-        self._computation_graph = griblet.Graph()
+    def _build_source_graph(self) -> griblet.Graph:
+        graph = griblet.Graph()
         for raw_name in self._dataset.variables:
-            self._computation_graph.add(
+            graph.add(
                 raw_name,
                 lambda raw_name=raw_name: self._dataset[raw_name],
                 needs=[],
@@ -196,33 +204,34 @@ class SmartDs:
                 metadata={"description": "Dataset raw field", "loader": True},
             )
         for key, value in self._dataset.aux.items():
-            self._computation_graph.add(
+            graph.add(
                 key,
                 lambda value=value: value,
                 needs=[],
                 cost=0.0,
                 metadata={"description": "Dataset aux", "loader": True},
             )
+        return graph
+
+    def _invalidate_computation_graph(self) -> None:
+        self._computation_graph_cache = None
+
+    def clear_computation_graph(self):
+        log.debug(
+            "SmartDs.clear_computation_graph recipe_fields=%d",
+            len(self._recipe_graph.fields()),
+        )
+        self._recipe_graph = griblet.Graph()
+        self._invalidate_computation_graph()
         return self
 
     def merge_computation_graph(self, graph):
-        # Loader recipes close over this SmartDs' dataset, so we must not blindly
-        # merge them forward into another SmartDs that may wrap different raw data.
-        merged = 0
-        for field, ways in graph.ways.items():
-            for way in ways:
-                metadata = dict(way.get("metadata", {}) or {})
-                if metadata.get("loader"):
-                    continue
-                merged += 1
-                self._computation_graph.add(
-                    field,
-                    way["func"],
-                    needs=way["needs"],
-                    cost=way["cost"],
-                    metadata=metadata,
-                )
-        log.debug("SmartDs.merge_computation_graph merged_recipes=%d", merged)
+        self._recipe_graph.merge(graph)
+        self._invalidate_computation_graph()
+        log.debug(
+            "SmartDs.merge_computation_graph recipe_fields=%d",
+            len(self._recipe_graph.fields()),
+        )
         return self
 
     def clear_cache(self, *names: str) -> None:
@@ -239,6 +248,7 @@ class SmartDs:
         unique_fields = tuple(dict.fromkeys(fields))
         log.debug("SmartDs.source_fields requested_fields=%d", len(unique_fields))
         base_fields: list[str] = []
+        graph = self.computation_graph
 
         for field in unique_fields:
             if field in self._dataset.variables:
@@ -246,8 +256,8 @@ class SmartDs:
                 log.debug("SmartDs.source_fields raw field=%s", field)
                 continue
             try:
-                _cost, path = Pathfinder(self._computation_graph).find_path(field)
-            except griblet.NoPathError:
+                path = graph.path(field)
+            except (KeyError, griblet.NoPathError):
                 if field not in base_fields:
                     base_fields.append(field)
                 log.debug("SmartDs.source_fields unresolved passthrough=%s", field)
@@ -361,7 +371,7 @@ class SmartDs:
         out = type(self)(
             new_dataset,
             cache_enabled=self._cache_enabled,
-            computation_graph=self._computation_graph,
+            computation_graph=self._recipe_graph,
         )
         log.debug(
             "SmartDs.append_fields complete new_variables=%d",
