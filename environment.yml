@@ -13,7 +13,7 @@ dependencies:
   - git
   - pip:
     - pytest-console-scripts
-    - batread
+    - batread>=1.1.0
     - griblet
     - batcamp>=0.2.1
     
