@@ -14,7 +14,7 @@ dependencies:
   - pip:
     - pytest-console-scripts
     - batread>=1.1.0
-    - griblet
+    - griblet>=0.3.0
     - batcamp>=0.2.1
     
   #
