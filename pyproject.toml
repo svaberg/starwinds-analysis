@@ -16,4 +16,4 @@ build-backend = "setuptools.build_meta"
 include = ["batwind*"]
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-console-scripts", ]
+tests = ["pytest", "pytest-console-scripts", "pytest-cov", "flake8"]
