@@ -27,9 +27,9 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 LOS_GRID_N = 512
 
 
-def render_rho2_los_image(smart_ds: SmartDs, *, body_radius_m: float, image_n: int) -> tuple[np.ndarray, tuple[float, float, float, float], np.ndarray]:
+def build_rho2_los_renderer(smart_ds: SmartDs) -> tuple[OctreeRayTracer, OctreeInterpolator, tuple[float, float, float, float, float, float]]:
     """
-    Render one physical-unit LOS image of `rho^2` through the octree along +Z.
+    Build the shared octree LOS renderer state for `rho^2`.
     """
     x = np.asarray(smart_ds["X [R]"], dtype=float)
     y = np.asarray(smart_ds["Y [R]"], dtype=float)
@@ -40,28 +40,63 @@ def render_rho2_los_image(smart_ds: SmartDs, *, body_radius_m: float, image_n: i
     y_max = float(np.nanmax(y))
     z_min = float(np.nanmin(z))
     z_max = float(np.nanmax(z))
-    x_center = 0.5 * (x_min + x_max)
-    y_center = 0.5 * (y_min + y_max)
-    z_span = z_max - z_min
-    z_pad = max(1.0e-6 * z_span, 1.0e-6)
-
     tree = Octree.from_ds(smart_ds.raw)
     rho = np.asarray(smart_ds["Rho [kg/m^3]"], dtype=float)
     interp = OctreeInterpolator(tree, rho**2)
     tracer = OctreeRayTracer(tree)
-    origins, directions = camera_rays(
-        origin=(x_center, y_center, z_min - z_pad),
-        target=(x_center, y_center, z_max + z_pad),
-        up=(0.0, 1.0, 0.0),
-        nx=image_n,
-        ny=image_n,
-        width=x_max - x_min,
-        height=y_max - y_min,
-        projection="parallel",
-    )
+    return tracer, interp, (x_min, x_max, y_min, y_max, z_min, z_max)
+
+
+def render_rho2_los_image(
+    tracer: OctreeRayTracer,
+    interp: OctreeInterpolator,
+    bounds_r: tuple[float, float, float, float, float, float],
+    *,
+    body_radius_m: float,
+    image_n: int,
+    view_axis: str,
+) -> tuple[np.ndarray, tuple[float, float, float, float], np.ndarray]:
+    """
+    Render one physical-unit LOS image of `rho^2` through the octree.
+    """
+    x_min, x_max, y_min, y_max, z_min, z_max = bounds_r
+    x_center = 0.5 * (x_min + x_max)
+    y_center = 0.5 * (y_min + y_max)
+    z_center = 0.5 * (z_min + z_max)
+    x_span = x_max - x_min
+    z_span = z_max - z_min
+    x_pad = max(1.0e-6 * x_span, 1.0e-6)
+    z_pad = max(1.0e-6 * z_span, 1.0e-6)
+
+    if view_axis == "+Z":
+        origins, directions = camera_rays(
+            origin=(x_center, y_center, z_min - z_pad),
+            target=(x_center, y_center, z_max + z_pad),
+            up=(0.0, 1.0, 0.0),
+            nx=image_n,
+            ny=image_n,
+            width=x_max - x_min,
+            height=y_max - y_min,
+            projection="parallel",
+        )
+        extent = (x_min, x_max, y_min, y_max)
+    elif view_axis == "+X":
+        origins, directions = camera_rays(
+            origin=(x_min - x_pad, y_center, z_center),
+            target=(x_max + x_pad, y_center, z_center),
+            up=(0.0, 0.0, 1.0),
+            nx=image_n,
+            ny=image_n,
+            width=y_max - y_min,
+            height=z_max - z_min,
+            projection="parallel",
+        )
+        extent = (y_min, y_max, z_min, z_max)
+    else:
+        raise ValueError(f"Unsupported LOS view_axis {view_axis!r}")
+
     image_r_units, counts = tracer.trilinear_image(interp, origins, directions)
     image_m_units = np.asarray(image_r_units, dtype=float) * float(body_radius_m)
-    extent = (x_min, x_max, y_min, y_max)
     return image_m_units, extent, counts
 
 
@@ -225,14 +260,26 @@ def process_plt_file(file_path: str | Path) -> None:
         axes[1, 1].set_axis_off()
     log.debug("Computing energy flux complete in %.2f s.", perf_counter() - stage_start)
 
-    # Start: render one physical-unit LOS rho^2 image through the octree.
+    # Start: build LOS renderer once, then render the face-on and side views.
     stage_start = perf_counter()
-    log.info("Rendering LOS rho^2 image...")
+    log.info("Rendering LOS rho^2 images...")
     image_n = LOS_GRID_N
+    tracer, interp, bounds_r = build_rho2_los_renderer(smart_ds)
     rho_sq_los, los_extent, los_counts = render_rho2_los_image(
-        smart_ds,
+        tracer,
+        interp,
+        bounds_r,
         body_radius_m=body_radius,
         image_n=image_n,
+        view_axis="+Z",
+    )
+    rho_sq_los_side, los_side_extent, los_side_counts = render_rho2_los_image(
+        tracer,
+        interp,
+        bounds_r,
+        body_radius_m=body_radius,
+        image_n=image_n,
+        view_axis="+X",
     )
     positive = rho_sq_los[np.isfinite(rho_sq_los) & (rho_sq_los > 0.0)]
     los_fig, los_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
@@ -252,12 +299,37 @@ def process_plt_file(file_path: str | Path) -> None:
     los_png = output_dir / f"{prefix}.rho2_los.png"
     los_fig.savefig(los_png)
     plt.close(los_fig)
+    positive_side = rho_sq_los_side[np.isfinite(rho_sq_los_side) & (rho_sq_los_side > 0.0)]
+    los_side_fig, los_side_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
+    los_side_norm = (
+        LogNorm(vmin=float(np.nanmin(positive_side)), vmax=float(np.nanmax(positive_side)))
+        if positive_side.size
+        else None
+    )
+    image_side = los_side_ax.imshow(
+        rho_sq_los_side,
+        origin="lower",
+        extent=los_side_extent,
+        cmap="magma",
+        norm=los_side_norm,
+        aspect="equal",
+    )
+    los_side_ax.set_title(r"Side LOS $\int \rho^2\,dl$")
+    los_side_ax.set_xlabel("Y [R]")
+    los_side_ax.set_ylabel("Z [R]")
+    los_side_fig.colorbar(image_side, ax=los_side_ax, label=r"$\int \rho^2\,dl$ [kg$^2$/m$^5$]")
+    los_side_png = output_dir / f"{prefix}.rho2_los_side.png"
+    los_side_fig.savefig(los_side_png)
+    plt.close(los_side_fig)
     add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
+    add_record("volume_rho2_los_side_png %r", str(los_side_png.relative_to(path.parent)))
     add_record("volume_rho2_los_image_n %r", image_n)
     add_record("volume_rho2_los_view_axis %r", "+Z")
+    add_record("volume_rho2_los_side_view_axis %r", "+X")
     add_record("volume_rho2_los_unit %r", "kg^2/m^5")
     add_record("volume_rho2_los_nonempty_rays %r", int(np.count_nonzero(np.asarray(los_counts) > 0)))
-    log.debug("Rendering LOS rho^2 image complete in %.2f s.", perf_counter() - stage_start)
+    add_record("volume_rho2_los_side_nonempty_rays %r", int(np.count_nonzero(np.asarray(los_side_counts) > 0)))
+    log.debug("Rendering LOS rho^2 images complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: save the figure and record the output artifact.
     stage_start = perf_counter()
