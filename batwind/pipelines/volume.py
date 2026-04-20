@@ -10,11 +10,14 @@ from time import perf_counter
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
+from batcamp import camera_rays
+from batcamp import Octree
+from batcamp import OctreeInterpolator
+from batcamp import OctreeRayTracer
 
 from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
-from batwind.data.field_names import DEFAULT_XYZ_NAMES
 from batwind.pipelines.utils import output_prefix_from_input_file
 from batwind.smart_ds import SmartDs
 
@@ -22,6 +25,44 @@ log = logging.getLogger(__name__)
 # Method for recording structured, machine-ingested pipeline payloads.
 add_record = logging.getLogger(f"recorder.{__name__}").debug
 LOS_GRID_N = 512
+
+
+def render_rho2_los_image(smart_ds: SmartDs, *, body_radius_m: float, image_n: int) -> tuple[np.ndarray, tuple[float, float, float, float], np.ndarray]:
+    """
+    Render one physical-unit LOS image of `rho^2` through the octree along +Z.
+    """
+    x = np.asarray(smart_ds["X [R]"], dtype=float)
+    y = np.asarray(smart_ds["Y [R]"], dtype=float)
+    z = np.asarray(smart_ds["Z [R]"], dtype=float)
+    x_min = float(np.nanmin(x))
+    x_max = float(np.nanmax(x))
+    y_min = float(np.nanmin(y))
+    y_max = float(np.nanmax(y))
+    z_min = float(np.nanmin(z))
+    z_max = float(np.nanmax(z))
+    x_center = 0.5 * (x_min + x_max)
+    y_center = 0.5 * (y_min + y_max)
+    z_span = z_max - z_min
+    z_pad = max(1.0e-6 * z_span, 1.0e-6)
+
+    tree = Octree.from_ds(smart_ds.raw)
+    rho = np.asarray(smart_ds["Rho [kg/m^3]"], dtype=float)
+    interp = OctreeInterpolator(tree, rho**2)
+    tracer = OctreeRayTracer(tree)
+    origins, directions = camera_rays(
+        origin=(x_center, y_center, z_min - z_pad),
+        target=(x_center, y_center, z_max + z_pad),
+        up=(0.0, 1.0, 0.0),
+        nx=image_n,
+        ny=image_n,
+        width=x_max - x_min,
+        height=y_max - y_min,
+        projection="parallel",
+    )
+    image_r_units, counts = tracer.trilinear_image(interp, origins, directions)
+    image_m_units = np.asarray(image_r_units, dtype=float) * float(body_radius_m)
+    extent = (x_min, x_max, y_min, y_max)
+    return image_m_units, extent, counts
 
 
 def process_plt_file(file_path: str | Path) -> None:
@@ -184,47 +225,39 @@ def process_plt_file(file_path: str | Path) -> None:
         axes[1, 1].set_axis_off()
     log.debug("Computing energy flux complete in %.2f s.", perf_counter() - stage_start)
 
-    # Start: resample onto a regular 3D cube and make a fake LOS rho^2 image.
+    # Start: render one physical-unit LOS rho^2 image through the octree.
     stage_start = perf_counter()
-    log.info("Computing fake LOS rho^2 image...")
-    x = np.asarray(smart_ds["X [R]"], dtype=float)
-    y = np.asarray(smart_ds["Y [R]"], dtype=float)
-    z = np.asarray(smart_ds["Z [R]"], dtype=float)
-    cube_n = LOS_GRID_N
-    x_lin = np.linspace(float(np.nanmin(x)), float(np.nanmax(x)), cube_n)
-    y_lin = np.linspace(float(np.nanmin(y)), float(np.nanmax(y)), cube_n)
-    z_lin = np.linspace(float(np.nanmin(z)), float(np.nanmax(z)), cube_n)
-    grid_x, grid_y, grid_z = np.meshgrid(x_lin, y_lin, z_lin, indexing="ij")
-    cube_points = np.stack([grid_x, grid_y, grid_z], axis=-1)
-    los_cube = smart_ds.resample(
-        cube_points,
-        coordinate_fields=DEFAULT_XYZ_NAMES,
-        fields=smart_ds.source_fields(("Rho [kg/m^3]",)),
-        method="octree",
+    log.info("Rendering LOS rho^2 image...")
+    image_n = LOS_GRID_N
+    rho_sq_los, los_extent, los_counts = render_rho2_los_image(
+        smart_ds,
+        body_radius_m=body_radius,
+        image_n=image_n,
     )
-    rho = np.asarray(los_cube["Rho [kg/m^3]"], dtype=float)
-    rho_sq_los = np.nansum(rho**2, axis=2)
     positive = rho_sq_los[np.isfinite(rho_sq_los) & (rho_sq_los > 0.0)]
     los_fig, los_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
     los_norm = LogNorm(vmin=float(np.nanmin(positive)), vmax=float(np.nanmax(positive))) if positive.size else None
     image = los_ax.imshow(
-        rho_sq_los.T,
+        rho_sq_los,
         origin="lower",
-        extent=(x_lin[0], x_lin[-1], y_lin[0], y_lin[-1]),
+        extent=los_extent,
         cmap="magma",
         norm=los_norm,
         aspect="equal",
     )
-    los_ax.set_title(r"Fake LOS $\rho^2$")
+    los_ax.set_title(r"LOS $\int \rho^2\,dl$")
     los_ax.set_xlabel("X [R]")
     los_ax.set_ylabel("Y [R]")
-    los_fig.colorbar(image, ax=los_ax, label=r"$\sum \rho^2$")
+    los_fig.colorbar(image, ax=los_ax, label=r"$\int \rho^2\,dl$ [kg$^2$/m$^5$]")
     los_png = output_dir / f"{prefix}.rho2_los.png"
     los_fig.savefig(los_png)
     plt.close(los_fig)
     add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
-    add_record("volume_rho2_los_grid_n %r", cube_n)
-    log.debug("Computing fake LOS rho^2 image complete in %.2f s.", perf_counter() - stage_start)
+    add_record("volume_rho2_los_image_n %r", image_n)
+    add_record("volume_rho2_los_view_axis %r", "+Z")
+    add_record("volume_rho2_los_unit %r", "kg^2/m^5")
+    add_record("volume_rho2_los_nonempty_rays %r", int(np.count_nonzero(np.asarray(los_counts) > 0)))
+    log.debug("Rendering LOS rho^2 image complete in %.2f s.", perf_counter() - stage_start)
 
     # Start: save the figure and record the output artifact.
     stage_start = perf_counter()
