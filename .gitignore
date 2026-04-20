@@ -30,3 +30,9 @@ pytest-cobertura.xml
 dist/
 
 examples/*.plt
+sample_data/*
+!sample_data/PARAM.in
+!sample_data/STAR.in
+!sample_data/POYNTINGFLUX.in
+!sample_data/3d__var_2_n00006003.plt
+!sample_data/3d__var_2_n00060005.plt

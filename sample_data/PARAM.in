@@ -1,0 +1,396 @@
+Begin session: 1
+
+#DESCRIPTION
+Param/CORONA/PARAM.in.Awsom: Input file for creating a steady state solar corona		StringDescription
+
+#UPDATECHECK
+T			UseUpdateCheck
+40.			RhoMinPercent
+400.			RhoMaxPercent
+40.			pMinPercent
+400.			pMaxPercent
+
+#COMPONENT
+SC			NameComp
+
+#TIMEACCURATE
+F			IsTimeAccurate
+
+#STARTTIME
+2011			iYear
+2			iMonth
+16			iDay
+17			iHour
+26			iMinute
+0			iSecond
+
+#SAVERESTART
+T			DoSaveRestart
+1000			DnSaveRestart
+-1.0			DtSaveRestart
+
+#COORDSYSTEM
+HGR			TypeCoordSystem
+
+#INCLUDE
+STAR.in 				File containing the #STAR command
+
+#PLASMA
+1.0			FluidMass [amu]
+1.0			IonCharge [e]
+1.0			ElectronTemperatureRatio
+
+#HARMONICSFILE
+TauBoo-Jeffers-test_feb17_wso.c1   NameHarmonicsFile
+
+HARMONICSGRID
+1.0			rMagnetogram
+50.0			rSourceSurface
+T			IsLogRadius
+180			MaxOrder
+100			nR
+180			nLon
+90			nLat
+
+#INCLUDE
+FACTORB0.in
+
+#CURLB0
+T			UseCurlB0
+50.0			rCurrentFreeB0
+F			UseB0MomentumFlux
+
+#INCLUDE
+POYNTINGFLUX.in
+
+
+#CORONALHEATING
+turbulentcascade	TypeCoronalHeating
+1.5e5			LperpTimesSqrtBSi (read for turbulentcascade only)
+0.0			rMinWaveReflection
+F			UseReynoldsDecomposition
+1.0			KarmanTaylorBeta (for UseReynoldsDecomposition only)
+
+#HEATPARTITIONING
+stochasticheating		TypeHeatPartitioning
+0.21			StochasticExponent
+0.18			StochasticAmplitude
+
+#RADIATIVECOOLING
+T			UseRadCooling
+
+#USERSWITCH
++init +ic		StringSwitch
+
+#COARSEAXIS
+T			UseCoarseAxis
+2			nCoarseLayer
+
+#USERINPUTBEGIN -----------------------------------
+
+#CHROMOBC
+2e17			NchromoSi
+5e4			TchromoSi
+
+#USERINPUTEND -------------------------------------
+
+#TRANSITIONREGION
+T			DoExtendTransitionRegion
+2.2e5			TeTransitionRegionSi
+1.0e1			DeltaTeModSi
+
+#GRIDGEOMETRY
+spherical_genr		TypeGeometry
+Param/CORONA/grid_awsom.dat		NameGridFile
+
+! Use a true sphere, so box is made much larger
+#GRID
+1			nRootBlock1
+2			nRootBlock2
+1			nRootBlock3
+-200.0			xMin
+ 200.0			xMax
+-200.0			yMin
+ 200.0			yMax
+-200.0			zMin
+ 200.0			zMax
+
+#GRIDBLOCKALL
+10000			MaxBlock
+
+#LIMITRADIUS
+1.0			rMin
+148.0			rMax
+
+#AMRREGION
+InnerShell		NameRegion
+shell0			StringShape
+1.0			RadiusInner
+1.7			Radius
+
+#AMRREGION
+LargeShell		NameRegion
+shell0			StringShape
+1.0			RadiusInner
+2.0			Radius
+
+#AMRCRITERIARESOLUTION
+4			nRefineCrit
+Level +InnerShell		StringRefine
+4			RefineTo
+4			CoarsenFrom
+currentsheet +LargeShell -InnerShell		StringRefine
+0.5			CoarsenLimit
+0.5			RefineLimit
+3.0			MaxResolution
+Level			StringRefine
+4			RefineTo
+4			CoarsenFrom
+currentsheet -LargeShell		StringRefine
+0.5			CoarsenLimit
+0.5			RefineLimit
+3.0			MaxResolution
+
+#GRIDRESOLUTION
+12.0			Resolution
+initial			StringShape
+
+#LOOKUPTABLE
+radcool			NameTable
+load			NameCommand
+RadCoolCorona.dat		NameFile
+ascii			TypeFile
+
+#DOAMR
+T			DoAmr
+1000		DnAmr
+-1			DtAmr
+T			IsStrictAmr
+
+#SAVEPLOTSAMR
+T           DoSavePlotsAmr
+
+
+#TIMESTEPPING
+2			nStage
+0.8			CflExpl
+
+#SCHEME
+2			nOrder (1 or 2)
+Linde			TypeFlux
+minmod			TypeLimiter
+
+Sokolov			TypeFlux (Roe, Rusanov, Linde, Sokolov
+mc3			TypeLimiter
+1.2			LimiterBeta
+
+#LIMITER
+T			UseLogRhoLimiter
+T			UseLogPLimiter
+F			UseRhoRatioLimiter
+
+#MINIMUMTEMPERATURE
+5.0e4			TminDim
+5.0e4			TeMinDim
+
+#MINIMUMPRESSURE
+1.0E-9			pMinDim
+1.0e-9			PeMinDim
+
+#MINIMUMRADIALSPEED
+T			UseSpeedMin
+10			rSpeedMin
+250			SpeedMinDim
+10 h			TauSpeedMinDim
+
+#NONCONSERVATIVE
+T			UseNonConservative
+
+#MESSAGEPASS
+all			TypeMessagePass
+
+#RESCHANGE
+T			UseAccurateReschange
+
+#SAVELOGFILE
+T			DoSaveLogfile
+RAW			StringLog
+1			DnSaveLogfile
+-1.			DtSaveLogfile
+
+#OUTERBOUNDARY
+user			TypeBc1   user for spherical and user_outerbcs
+float			TypeBc2
+periodic		TypeBc3
+periodic		TypeBc4
+periodic		TypeBc5
+periodic		TypeBc6
+
+#SAVEPLOT
+3			    nPlotFile
+3d VAR tec      StringPlot
+5000			DnSavePlot
+-1.			    DtSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p pe e ehot qrad qheat refl jx jy jz		NameVars
+g rbody
+x=0 VAR tec		StringPlot
+1000			DnSavePlot 
+10.0			DtSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p pe e ehot qrad qheat refl jx jy jz		NameVars
+{default}		NamePars
+z=0 VAR tec		StringPlot
+1000			DnSavePlot 
+10.0			DtSavePlot
+rho ux uy uz ti te bx by bz I01 I02 p pe e ehot qrad qheat refl jx jy jz		NameVars
+{default}		NamePars
+
+x=0 RAY tec		StringPlot
+1000			DnSavePlot 5000
+10.0			DtSavePlot
+y=0 RAY tec		StringPlot
+1000			DnSavePlot 5000
+10.0			DtSavePlot
+cut RAY tec		StringPlot
+-1  			DnSavePlot
+60.0			DtSavePlot
+1.0			xMinCut
+10.0			xMaxCut
+0.0			yMinCut
+360.0			yMaxCut
+-90.0			zMinCut
++90.0			zMaxCut
+x=0 VAR tec		StringPlot
+10000			DnSavePlot
+-1.			DtSavePlot
+rho ux uy uz ti bx by bz I01 I02 p
+g rbody
+3d VAR tec
+50000			DnSavePlot
+-1.			DtSavePlot
+rho ux uy uz ti bx by bz I01 I02 p
+g rbody
+
+
+#SAVEINITIAL
+T			DoSaveInitial
+
+#STOP
+15000			MaxIteration
+-1.0			tSimulationMax
+
+#RUN ##########################################################################
+Begin session: 2
+
+#DOAMR
+F
+
+#STOP
+60000			MaxIteration
+-1.0			tSimulationMax
+
+#END ##########################################################################
+#AMR
+-1			DnRefine
+
+#TIMEACCURATE
+T			IsTimeAccurate
+
+! Perturb with GL CME
+#USERSWITCH
++perturb -ic		StringSwitch
+
+#CME
+T			UseCme
+T			DoAddFluxRope
+80.0			LongitudeCme
+-10.0			LatitudeCme
+0.0			OrientationCme
+SPHEROMAK		TypeCme
+1.4			BStrength
+-1			iHelicity
+1.03			Radius
+0.7			Stretch
+1.13			ApexHeight
+600			uCme
+
+#STOP
+-1			MaxIteration
+5.0			tSimulationMax
+
+#RUN ##########################################################################
+
+! Perturb with TD CME
+#USERSWITCH
++perturb		StringSwitch
+
+#CME
+T			UseCme
+T			DoAddFluxRope
+270.0			LongitudeCme
+15.0			LatitudeCme
+120.0			OrientationCme
+TD			TypeCme
++1			iHelicity
+1.005747126436782		RadiusMajor
+0.431034482758621		RadiusMinor
+0.1436781609195402		Depth
+T			UsePlasmaBeta
+0.1			PlasmaBeta
+5.0e4			EjectaTemperature
+readbstrap		TypeBStrap
+11.976710014764566		bStrappingDim
+none			TypeCharge
+
+#HELIOUPDATEB0
+1.0			DtUpdateB0
+
+#STOP
+-1			MaxIteration
+8.0			tSimulationMax
+
+#RUN ##########################################################################
+
+! perturb again with new TD14 CME
+#USERSWITCH
++perturb		StringSwitch
+
+#CME
+T			UseCme
+T			DoAddFluxRope
+180.0			LongitudeCme
+15.0			LatitudeCme
+120.0			OrientationCme
+TD14			TypeCme
++1			iHelicity
+1.005747126436782		RadiusMajor
+0.431034482758621		RadiusMinor
+0.1436781609195402		Depth
+cancelflux		TypeBStrap
+1.79519580205131		BcTubeDim
+5.9916085277386298E+02		bQStrapFraction ! Increased to notice effect
+0.4			qDistance
+10			UChargeX
+
+#TIMESTEPLIMIT
+T			UseDtLimit
+5.0			DtLimitDim [sec] (read if UseDtLimit is true)
+
+#STOP
+-1			MaxIteration
+10.0			tSimulationMax
+
+#RUN ##########################################################################
+
+#HELIOUPDATEB0
+-1.0			DtUpdateB0
+
+#TIMESTEPLIMIT
+T			UseDtLimit
+5.0			DtLimitDim [sec] (read if UseDtLimit is true)
+
+#UPDATECHECK
+F			UseUpdateCheck
+
+#STOP
+-1			MaxIteration
+100.0			tSimulationMax
