@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import logging
+import pytest
 
 from batwind.param_in import ParamIn
 from batwind.param_in import flatten_includes
@@ -59,6 +60,7 @@ def test_param_in_preserves_components_sessions_and_duplicate_commands(tmp_path)
     assert config.get_param("#GRID", 0, session=1) == 1
 
 
+@pytest.mark.pooch
 def test_param_in_parses_sample_file():
     config = ParamIn.from_file(SAMPLE_PARAM_IN)
 
@@ -75,6 +77,7 @@ def test_param_in_parses_sample_file():
     assert config.get_named_params("#AMRREGION", occurrence=1)["NameRegion"] == "LargeShell"
 
 
+@pytest.mark.pooch
 def test_param_in_extracts_stellar_params_and_nearby_lookup():
     config = ParamIn.from_file(SAMPLE_PARAM_IN)
     star = config.stellar_params()

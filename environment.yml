@@ -23,6 +23,7 @@ dependencies:
   - pytest
   - pytest-cov
   - flake8
+  - pooch
     
   #
   # This package is used for Codacy integration

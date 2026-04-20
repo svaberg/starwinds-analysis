@@ -17,4 +17,9 @@ build-backend = "setuptools.build_meta"
 include = ["batwind*"]
 
 [project.optional-dependencies]
-tests = ["pytest", "pytest-console-scripts", "pytest-cov", "flake8"]
+tests = ["pytest", "pytest-console-scripts", "pytest-cov", "flake8", "pooch"]
+
+[tool.pytest.ini_options]
+markers = [
+  "pooch: tests that fetch sample files via pooch/network",
+]
