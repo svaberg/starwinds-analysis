@@ -15,7 +15,7 @@ dependencies:
     - pytest-console-scripts
     - batread>=1.1.0
     - griblet>=0.3.0
-    - batcamp>=0.2.1
+    - batcamp>=0.3.1
     
   #
   # These packages are used for testing
