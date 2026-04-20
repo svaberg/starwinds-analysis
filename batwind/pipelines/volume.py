@@ -100,6 +100,80 @@ def render_rho2_los_image(
     return image_m_units, extent, counts
 
 
+def save_los_colormesh_npz(
+    npz_path: Path,
+    image: np.ndarray,
+    extent: tuple[float, float, float, float],
+    counts: np.ndarray,
+    *,
+    view_axis: str,
+) -> None:
+    """
+    Save one LOS image as a reusable colormesh product.
+    """
+    x_min, x_max, y_min, y_max = extent
+    y_n, x_n = image.shape
+    x = np.linspace(x_min, x_max, x_n)
+    y = np.linspace(y_min, y_max, y_n)
+    if view_axis == "+Z":
+        xlabel = "X [R]"
+        ylabel = "Y [R]"
+        title = r"LOS $\int \rho^2\,dl$"
+    elif view_axis == "+X":
+        xlabel = "Y [R]"
+        ylabel = "Z [R]"
+        title = r"Side LOS $\int \rho^2\,dl$"
+    else:
+        raise ValueError(f"Unsupported LOS view_axis {view_axis!r}")
+    np.savez_compressed(
+        npz_path,
+        x=x,
+        y=y,
+        image=np.asarray(image, dtype=float),
+        counts=np.asarray(counts),
+        view_axis=np.asarray(view_axis),
+        xlabel=np.asarray(xlabel),
+        ylabel=np.asarray(ylabel),
+        title=np.asarray(title),
+        colorbar_label=np.asarray(r"$\int \rho^2\,dl$ [kg$^2$/m$^5$]"),
+        unit=np.asarray("kg^2/m^5"),
+    )
+
+
+def plot_los_colormesh_npz(npz_path: Path, png_path: Path) -> None:
+    """
+    Plot one saved LOS colormesh product.
+    """
+    with np.load(npz_path, allow_pickle=False) as data:
+        x = np.asarray(data["x"], dtype=float)
+        y = np.asarray(data["y"], dtype=float)
+        image = np.asarray(data["image"], dtype=float)
+        xlabel = str(data["xlabel"])
+        ylabel = str(data["ylabel"])
+        title = str(data["title"])
+        colorbar_label = str(data["colorbar_label"])
+    x_mesh, y_mesh = np.meshgrid(x, y)
+    positive = image[np.isfinite(image) & (image > 0.0)]
+    norm = LogNorm(vmin=float(np.nanmin(positive)), vmax=float(np.nanmax(positive))) if positive.size else None
+    fig, ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
+    mesh = ax.pcolormesh(
+        x_mesh,
+        y_mesh,
+        image,
+        cmap="magma",
+        norm=norm,
+        shading="gouraud",
+        rasterized=True,
+    )
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_aspect("equal")
+    fig.colorbar(mesh, ax=ax, label=colorbar_label)
+    fig.savefig(png_path)
+    plt.close(fig)
+
+
 def process_plt_file(file_path: str | Path) -> None:
     """Process one 3D `.plt` file into a shell PNG and recorded diagnostics."""
     # Start: resolve input/output paths and log the file being processed.
@@ -281,47 +355,29 @@ def process_plt_file(file_path: str | Path) -> None:
         image_n=image_n,
         view_axis="+X",
     )
-    positive = rho_sq_los[np.isfinite(rho_sq_los) & (rho_sq_los > 0.0)]
-    los_fig, los_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
-    los_norm = LogNorm(vmin=float(np.nanmin(positive)), vmax=float(np.nanmax(positive))) if positive.size else None
-    image = los_ax.imshow(
-        rho_sq_los,
-        origin="lower",
-        extent=los_extent,
-        cmap="magma",
-        norm=los_norm,
-        aspect="equal",
-    )
-    los_ax.set_title(r"LOS $\int \rho^2\,dl$")
-    los_ax.set_xlabel("X [R]")
-    los_ax.set_ylabel("Y [R]")
-    los_fig.colorbar(image, ax=los_ax, label=r"$\int \rho^2\,dl$ [kg$^2$/m$^5$]")
+    los_npz = output_dir / f"{prefix}.rho2_los.npz"
     los_png = output_dir / f"{prefix}.rho2_los.png"
-    los_fig.savefig(los_png)
-    plt.close(los_fig)
-    positive_side = rho_sq_los_side[np.isfinite(rho_sq_los_side) & (rho_sq_los_side > 0.0)]
-    los_side_fig, los_side_ax = plt.subplots(figsize=(6, 5), constrained_layout=True)
-    los_side_norm = (
-        LogNorm(vmin=float(np.nanmin(positive_side)), vmax=float(np.nanmax(positive_side)))
-        if positive_side.size
-        else None
+    save_los_colormesh_npz(
+        los_npz,
+        rho_sq_los,
+        los_extent,
+        los_counts,
+        view_axis="+Z",
     )
-    image_side = los_side_ax.imshow(
-        rho_sq_los_side,
-        origin="lower",
-        extent=los_side_extent,
-        cmap="magma",
-        norm=los_side_norm,
-        aspect="equal",
-    )
-    los_side_ax.set_title(r"Side LOS $\int \rho^2\,dl$")
-    los_side_ax.set_xlabel("Y [R]")
-    los_side_ax.set_ylabel("Z [R]")
-    los_side_fig.colorbar(image_side, ax=los_side_ax, label=r"$\int \rho^2\,dl$ [kg$^2$/m$^5$]")
+    plot_los_colormesh_npz(los_npz, los_png)
+    los_side_npz = output_dir / f"{prefix}.rho2_los_side.npz"
     los_side_png = output_dir / f"{prefix}.rho2_los_side.png"
-    los_side_fig.savefig(los_side_png)
-    plt.close(los_side_fig)
+    save_los_colormesh_npz(
+        los_side_npz,
+        rho_sq_los_side,
+        los_side_extent,
+        los_side_counts,
+        view_axis="+X",
+    )
+    plot_los_colormesh_npz(los_side_npz, los_side_png)
+    add_record("volume_rho2_los_npz %r", str(los_npz.relative_to(path.parent)))
     add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
+    add_record("volume_rho2_los_side_npz %r", str(los_side_npz.relative_to(path.parent)))
     add_record("volume_rho2_los_side_png %r", str(los_side_png.relative_to(path.parent)))
     add_record("volume_rho2_los_image_n %r", image_n)
     add_record("volume_rho2_los_view_axis %r", "+Z")
