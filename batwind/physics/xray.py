@@ -181,33 +181,11 @@ def unblocked_solid_angle(radial_distance_r: np.ndarray) -> np.ndarray:
     return 2.0 * np.pi * (1.0 + np.sqrt(np.clip(1.0 - radial_distance_r**-2, 0.0, None)))
 
 
-def point_radius_r(smart_ds: SmartDs) -> np.ndarray:
-    """
-    Return point radii in stellar-radius units.
-
-    Prefer the graph-backed ``R [R]`` field when available, otherwise compute
-    the radius directly from the raw Cartesian point coordinates.
-    """
-    try:
-        return np.asarray(smart_ds["R [R]"], dtype=float)
-    except IndexError:
-        x_r = np.asarray(smart_ds["X [R]"], dtype=float)
-        y_r = np.asarray(smart_ds["Y [R]"], dtype=float)
-        z_r = np.asarray(smart_ds["Z [R]"], dtype=float)
-        return np.sqrt(x_r**2 + y_r**2 + z_r**2)
-
-
 def point_unblocked_solid_angle_sr(smart_ds: SmartDs) -> np.ndarray:
     """
     Return the exterior unblocked solid angle in steradians at every dataset point.
-
-    Prefer the graph-backed field when available so the same geometry primitive
-    is reused consistently across the library.
     """
-    try:
-        return np.asarray(smart_ds["unblocked_solid_angle [sr]"], dtype=float)
-    except IndexError:
-        return unblocked_solid_angle(point_radius_r(smart_ds))
+    return np.asarray(smart_ds["unblocked_solid_angle [sr]"], dtype=float)
 
 
 def band_luminosity_si(
@@ -244,7 +222,7 @@ def band_luminosity_si(
     if occultation:
         solid_angle_sr = point_unblocked_solid_angle_sr(smart_ds)
     else:
-        solid_angle_sr = np.full_like(point_radius_r(smart_ds), 4.0 * np.pi)
+        solid_angle_sr = np.full(point_emissivity_w_m3_sr.shape, 4.0 * np.pi, dtype=float)
     point_luminosity_density_w_m3 = point_emissivity_w_m3_sr * solid_angle_sr
     luminosity_integral_w = (
         np.asarray(OctreeInterpolator(tree, point_luminosity_density_w_m3).cell_integrals(leaf_ids), dtype=float)

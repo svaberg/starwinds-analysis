@@ -258,7 +258,7 @@ def build_common_derived_graph():
         metadata={"description": "Electron number density in cgs units"},
     )
 
-    # `unblocked_solid_angle [sr]` is the paper's exterior visibility factor
+    # `unblocked_solid_angle [sr]` is the exterior visibility factor
     # `omega(r) = 2*pi*(1 + sqrt(1 - r^-2))` for `r >= 1` in stellar-radius units.
     graph.add(
         "unblocked_solid_angle [sr]",

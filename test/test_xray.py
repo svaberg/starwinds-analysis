@@ -53,7 +53,8 @@ def test_band_emissivity_si_tracks_si_units():
 
 
 def test_band_luminosity_si_matches_off_star_single_cell_formula():
-    dataset = make_one_cell_dataset((1.0, 1.0, 1.0), 1.0, variables=["X [R]", "Y [R]", "Z [R]"])
+    dataset = make_one_cell_dataset((1.0, 1.0, 1.0), 1.0, variables=["X [R]", "Y [R]", "Z [R]", "R [R]"])
+    dataset.points[:, 3] = np.sqrt(np.sum(dataset.points[:, :3] ** 2, axis=1))
     sds = SmartDs(dataset)
     sds.merge_computation_graph(build_batsrus_graph(tuple(dataset.variables), body_radius_m=2.0))
     point_emissivity = np.full(8, 3.0, dtype=float)
