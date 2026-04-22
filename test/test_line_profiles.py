@@ -10,8 +10,8 @@ import pytest
 from matplotlib.cm import ScalarMappable
 from colorspacious import cspace_convert
 
-from batcamp import Octree
 from batcamp.camera import camera_rays
+from batcamp.octree import Octree
 from batread import Dataset
 
 from batwind.algorithms.line_profiles import histogram_leaf_los_velocity

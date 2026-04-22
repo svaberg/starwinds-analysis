@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from batcamp import Octree
-from batcamp import OctreeInterpolator
+from batcamp.interpolator import OctreeInterpolator
+from batcamp.octree import Octree
 from batcamp.raytracing import OctreeRayTracer
 from batcamp.raytracing import TracedRays
 

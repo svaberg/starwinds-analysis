@@ -9,8 +9,8 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy.spatial import Delaunay
 from scipy.spatial import cKDTree
 
-from batcamp import Octree
-from batcamp import OctreeInterpolator
+from batcamp.interpolator import OctreeInterpolator
+from batcamp.octree import Octree
 from batread import Dataset
 RESAMPLE_METHODS = ("nearest", "linear", "octree")
 

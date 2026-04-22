@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import numpy as np
-from batcamp import Octree
-from batcamp import OctreeInterpolator
-from batcamp import camera_rays
+from batcamp.camera import camera_rays
+from batcamp.interpolator import OctreeInterpolator
+from batcamp.octree import Octree
 from batcamp.raytracing import OctreeRayTracer
 
 from batwind.smart_ds import SmartDs
@@ -128,13 +128,29 @@ def _render_traced_scalar_image(
     *,
     length_scale: float,
     occultation: bool,
+    sphere_radius_r: float,
 ) -> np.ndarray:
     """
     Integrate one point-valued scalar field along traced rays.
 
     With local emissivity units ``W m^-3 sr^-1`` and ``length_scale`` in metres,
     the returned image has units ``W m^-2 sr^-1``.
+
+    Implementation note:
+    - for ``occultation=False`` this uses ``batcamp``'s exact
+      ``OctreeRayTracer.trilinear_image(...)`` path and then rescales the
+      native coordinate length to metres
+    - for ``occultation=True`` this falls back to one local traced-segment path
+      because the current public ``batcamp`` image integrator accepts only one
+      global ``t_max`` and therefore cannot stop each ray at its own first
+      sphere intersection time
     """
+    interpolator = OctreeInterpolator(tree, np.asarray(point_values, dtype=float))
+    if not occultation:
+        tracer = OctreeRayTracer(tree)
+        image_native, _ = tracer.trilinear_image(interpolator, origins, directions)
+        return np.asarray(image_native, dtype=float) * float(length_scale)
+
     tracer = OctreeRayTracer(tree)
     traced = tracer.trace(origins, directions, t_min=0.0, t_max=np.inf)
     cell_counts = np.diff(traced.ray_offsets)
@@ -150,12 +166,10 @@ def _render_traced_scalar_image(
         directions_flat = np.asarray(traced.directions, dtype=float).reshape(n_rays, 3)
     direction_norm = np.linalg.norm(directions_flat, axis=1)
     stop_time = (
-        _first_sphere_intersection_time(origins_flat, directions_flat)
+        _first_sphere_intersection_time(origins_flat, directions_flat, sphere_radius_r=sphere_radius_r)
         if occultation
         else np.full(n_rays, np.inf, dtype=float)
     )
-    interpolator = OctreeInterpolator(tree, np.asarray(point_values, dtype=float))
-
     segment_ray_ids: list[np.ndarray] = []
     segment_midpoints: list[np.ndarray] = []
     segment_lengths: list[np.ndarray] = []
@@ -200,6 +214,7 @@ def band_intensity_image_si(
     image_n: int = 128,
     side_length_r: float = 4.0,
     occultation: bool = True,
+    sphere_radius_r: float = 1.0,
     tree: Octree | None = None,
 ) -> dict[str, np.ndarray | tuple[float, float, float, float]]:
     """
@@ -227,6 +242,7 @@ def band_intensity_image_si(
         directions,
         length_scale=body_radius_m,
         occultation=occultation,
+        sphere_radius_r=float(sphere_radius_r),
     )
     return {
         "image": image_w_m2_sr,
@@ -267,6 +283,7 @@ def band_light_curve_si(
     image_n: int = 128,
     side_length_r: float = 4.0,
     occultation: bool = True,
+    sphere_radius_r: float = 1.0,
     tree: Octree | None = None,
 ) -> dict[str, np.ndarray]:
     """
@@ -289,6 +306,7 @@ def band_light_curve_si(
             image_n=image_n,
             side_length_r=side_length_r,
             occultation=occultation,
+            sphere_radius_r=sphere_radius_r,
             tree=tree,
         )
         radiant_intensity_w_sr[phase_id] = integrate_image_radiant_intensity_si(
