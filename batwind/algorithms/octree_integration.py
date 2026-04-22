@@ -3,6 +3,12 @@ from __future__ import annotations
 import numpy as np
 
 from batcamp import Octree
+from batcamp import OctreeInterpolator
+
+
+def _finite_radial_edges_r(tree: Octree) -> np.ndarray:
+    radial_edges_r = np.asarray(tree.radial_edges, dtype=float)
+    return radial_edges_r[np.isfinite(radial_edges_r)]
 
 
 def compute_octree_leaf_centers_and_volumes(tree: Octree, length_scale: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
@@ -116,3 +122,130 @@ def radial_emission_profile(
     cumulative = np.cumsum(shell_emission)
     cumulative_fraction = cumulative / cumulative[-1] if cumulative.size and cumulative[-1] > 0.0 else cumulative
     return radial_centers, shell_emission, cumulative_fraction
+
+
+def integrate_radial_shells_exact_rpa(
+    tree: Octree,
+    point_values: np.ndarray,
+    radial_edges_r: np.ndarray,
+    *,
+    length_scale: float = 1.0,
+) -> np.ndarray:
+    """
+    Integrate one point-valued scalar field over full spherical radial slabs.
+
+    This is exact for the ``batcamp`` trilinear interpolant in native ``rpa``
+    coordinates. Each slab spans
+
+    - radius: ``[r_i, r_{i+1}]`` in ``R_*``
+    - polar angle: ``[0, pi]``
+    - azimuth: ``[0, 2pi]``
+
+    For ``tree_coord="rpa"``, ``batcamp`` integrates with the physical
+    spherical measure ``dV = r^2 sin(theta) dr dtheta dphi``. The explicit
+    ``length_scale`` therefore converts the native ``R_*^3`` volume factor into
+    one physical unit such as ``m^3`` or ``cm^3``.
+    """
+    if tree.tree_coord != "rpa":
+        raise ValueError(f"Expected one spherical tree_coord='rpa', got {tree.tree_coord!r}.")
+    radial_edges_r = np.asarray(radial_edges_r, dtype=float)
+    interpolator = OctreeInterpolator(tree, np.asarray(point_values, dtype=float))
+    shell_integrals = np.empty(radial_edges_r.size - 1, dtype=float)
+    for shell_id, (r0, r1) in enumerate(zip(radial_edges_r[:-1], radial_edges_r[1:], strict=True)):
+        shell_integrals[shell_id] = float(
+            interpolator.integrate_box(
+                np.array([r0, 0.0, 0.0], dtype=float),
+                np.array([r1, np.pi, 2.0 * np.pi], dtype=float),
+            )
+        )
+    return shell_integrals * float(length_scale) ** 3
+
+
+def radial_emission_profile_exact_rpa(
+    tree: Octree,
+    point_values: np.ndarray,
+    *,
+    length_scale: float = 1.0,
+    radial_edges_r: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Return one exact full-shell radial emission profile on an ``rpa`` tree.
+
+    The shell integrals are exact for the backend trilinear interpolant over
+    the native radial slabs defined by ``radial_edges_r``. When omitted, the
+    tree's own radial lattice is used.
+    """
+    if radial_edges_r is None:
+        radial_edges_r = _finite_radial_edges_r(tree)
+    radial_edges_r = np.asarray(radial_edges_r, dtype=float)
+    shell_emission = integrate_radial_shells_exact_rpa(
+        tree,
+        point_values,
+        radial_edges_r,
+        length_scale=length_scale,
+    )
+    radial_centers_r = np.sqrt(radial_edges_r[:-1] * radial_edges_r[1:])
+    cumulative = np.cumsum(shell_emission)
+    cumulative_fraction = cumulative / cumulative[-1] if cumulative.size and cumulative[-1] > 0.0 else cumulative
+    return radial_centers_r, shell_emission, cumulative_fraction
+
+
+def cumulative_radius_exact_rpa(
+    tree: Octree,
+    point_values: np.ndarray,
+    fraction: float,
+    *,
+    length_scale: float = 1.0,
+    radial_edges_r: np.ndarray | None = None,
+    n_bisection_steps: int = 48,
+) -> float:
+    """
+    Return the exact cumulative-emission radius on an ``rpa`` tree.
+
+    The cumulative profile is built from exact full-shell integrals of the
+    backend trilinear interpolant. Inside the one shell containing the target
+    fraction, the radius is refined by bisection on an exact partial-shell
+    integral.
+
+    This assumes the integrated quantity is non-negative, which is the relevant
+    X-ray-emissivity case.
+    """
+    if tree.tree_coord != "rpa":
+        raise ValueError(f"Expected one spherical tree_coord='rpa', got {tree.tree_coord!r}.")
+    if radial_edges_r is None:
+        radial_edges_r = _finite_radial_edges_r(tree)
+    radial_edges_r = np.asarray(radial_edges_r, dtype=float)
+    interpolator = OctreeInterpolator(tree, np.asarray(point_values, dtype=float))
+    shell_emission = integrate_radial_shells_exact_rpa(
+        tree,
+        point_values,
+        radial_edges_r,
+        length_scale=length_scale,
+    )
+    cumulative = np.cumsum(shell_emission)
+    total = float(cumulative[-1])
+    if total <= 0.0:
+        return float("nan")
+    target = float(fraction) * total
+    shell_id = int(np.searchsorted(cumulative, target, side="left"))
+    shell_id = min(shell_id, shell_emission.size - 1)
+    lower_r = float(radial_edges_r[shell_id])
+    upper_r = float(radial_edges_r[shell_id + 1])
+    cumulative_before = float(cumulative[shell_id - 1]) if shell_id > 0 else 0.0
+    if shell_emission[shell_id] <= 0.0:
+        return upper_r
+    low = lower_r
+    high = upper_r
+    for _ in range(int(n_bisection_steps)):
+        mid = 0.5 * (low + high)
+        partial = float(
+            interpolator.integrate_box(
+                np.array([lower_r, 0.0, 0.0], dtype=float),
+                np.array([mid, np.pi, 2.0 * np.pi], dtype=float),
+            )
+        ) * float(length_scale) ** 3
+        if cumulative_before + partial < target:
+            low = mid
+        else:
+            high = mid
+    return 0.5 * (low + high)

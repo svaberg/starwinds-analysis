@@ -16,10 +16,8 @@ from batcamp import Octree
 from batcamp import OctreeInterpolator
 from batcamp.raytracing import OctreeRayTracer
 
-from batwind.algorithms.octree_integration import compute_octree_leaf_geometry
-from batwind.algorithms.octree_integration import cumulative_radius
-from batwind.algorithms.octree_integration import leaf_point_mean
-from batwind.algorithms.octree_integration import radial_emission_profile
+from batwind.algorithms.octree_integration import cumulative_radius_exact_rpa
+from batwind.algorithms.octree_integration import radial_emission_profile_exact_rpa
 from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
@@ -777,7 +775,6 @@ def process_plt_file(file_path: str | Path) -> None:
         )
         for band_name, raw_band_emissivity in raw_band_emissivities.items()
     }
-    cell_radius_r, cell_volume_cm3 = compute_octree_leaf_geometry(tree, body_radius_cm)
     xray_band_stats = {}
     xray_band_profiles = {}
     for band_name, emissivity in band_emissivities.items():
@@ -814,7 +811,6 @@ def process_plt_file(file_path: str | Path) -> None:
         add_record(f"volume_{band_name}_los_example_png %r", str(band_png.relative_to(path.parent)))
         add_record(f"volume_{band_name}_los_example_response %r", str(response_path))
 
-        raw_cell_emissivity = leaf_point_mean(tree, raw_band_emissivities[band_name])
         directional_image, directional_extent, _ = render_rho2_los_image(
             tracer,
             build_los_interpolator(tree, raw_band_emissivities[band_name]),
@@ -824,12 +820,40 @@ def process_plt_file(file_path: str | Path) -> None:
             view_axis=X_RAY_SINGLE_DIRECTION_VIEW_AXIS,
         )
         directional_total = integrate_image_total(directional_image, directional_extent, body_radius_cm)
-        unblocked_total_cells = raw_cell_emissivity * compute_unblocked_solid_angle(cell_radius_r) * cell_volume_cm3 * 1.0e-26
-        four_pi_total_cells = raw_cell_emissivity * (4.0 * np.pi) * cell_volume_cm3 * 1.0e-26
-        unblocked_total = float(np.sum(unblocked_total_cells))
-        four_pi_total = float(np.sum(four_pi_total_cells))
-        r90_r = cumulative_radius(cell_radius_r, unblocked_total_cells, 0.90)
-        r99_r = cumulative_radius(cell_radius_r, unblocked_total_cells, 0.99)
+        point_radius_r = np.asarray(smart_ds["R [R]"], dtype=float)
+        point_unblocked_luminosity_density = (
+            raw_band_emissivities[band_name] * compute_unblocked_solid_angle(point_radius_r)
+        )
+        point_four_pi_luminosity_density = raw_band_emissivities[band_name] * (4.0 * np.pi)
+        radius_r, unblocked_shell_total, unblocked_cumulative_fraction = radial_emission_profile_exact_rpa(
+            tree,
+            point_unblocked_luminosity_density,
+            length_scale=body_radius_cm,
+        )
+        unblocked_shell_total = 1.0e-26 * unblocked_shell_total
+        unblocked_total = float(np.sum(unblocked_shell_total))
+        four_pi_total = float(
+            np.sum(
+                1.0e-26
+                * radial_emission_profile_exact_rpa(
+                    tree,
+                    point_four_pi_luminosity_density,
+                    length_scale=body_radius_cm,
+                )[1]
+            )
+        )
+        r90_r = cumulative_radius_exact_rpa(
+            tree,
+            point_unblocked_luminosity_density,
+            0.90,
+            length_scale=body_radius_cm,
+        )
+        r99_r = cumulative_radius_exact_rpa(
+            tree,
+            point_unblocked_luminosity_density,
+            0.99,
+            length_scale=body_radius_cm,
+        )
         xray_band_stats[band_name] = {
             "directional_total": directional_total,
             "unblocked_total": unblocked_total,
@@ -838,7 +862,7 @@ def process_plt_file(file_path: str | Path) -> None:
             "r90_r": r90_r,
             "r99_r": r99_r,
         }
-        xray_band_profiles[band_name] = radial_emission_profile(cell_radius_r, unblocked_total_cells)
+        xray_band_profiles[band_name] = (radius_r, unblocked_shell_total, unblocked_cumulative_fraction)
         add_record(f"volume_{band_name}_directional_total_1e_minus26_cm2 %r", directional_total)
         add_record(f"volume_{band_name}_unblocked_total_1e_minus26_cm2 %r", unblocked_total)
         add_record(f"volume_{band_name}_four_pi_total_1e_minus26_cm2 %r", four_pi_total)
@@ -850,9 +874,15 @@ def process_plt_file(file_path: str | Path) -> None:
     np.savez_compressed(
         xray_summary_npz,
         bands=np.asarray(["hard", "rosat", "euv"]),
-        directional_total_1e_minus26_cm2=np.asarray([xray_band_stats[name]["directional_total"] for name in ("hard", "rosat", "euv")]),
-        unblocked_total_1e_minus26_cm2=np.asarray([xray_band_stats[name]["unblocked_total"] for name in ("hard", "rosat", "euv")]),
-        four_pi_total_1e_minus26_cm2=np.asarray([xray_band_stats[name]["four_pi_total"] for name in ("hard", "rosat", "euv")]),
+        directional_total_1e_minus26_cm2=np.asarray(
+            [xray_band_stats[name]["directional_total"] for name in ("hard", "rosat", "euv")]
+        ),
+        unblocked_total_1e_minus26_cm2=np.asarray(
+            [xray_band_stats[name]["unblocked_total"] for name in ("hard", "rosat", "euv")]
+        ),
+        four_pi_total_1e_minus26_cm2=np.asarray(
+            [xray_band_stats[name]["four_pi_total"] for name in ("hard", "rosat", "euv")]
+        ),
         r90_r=np.asarray([xray_band_stats[name]["r90_r"] for name in ("hard", "rosat", "euv")]),
         r99_r=np.asarray([xray_band_stats[name]["r99_r"] for name in ("hard", "rosat", "euv")]),
         directional_total_unit=np.asarray(X_RAY_EMISSION_TOTAL_UNIT),

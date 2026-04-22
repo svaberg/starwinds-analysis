@@ -1,5 +1,7 @@
 import numpy as np
 
+from batcamp import Octree
+from batcamp import OctreeInterpolator
 from batread import Dataset
 
 from batwind.physics.xray import band_emissivity_si
@@ -54,10 +56,20 @@ def test_band_luminosity_si_matches_off_star_single_cell_formula():
     point_emissivity = np.full(8, 3.0, dtype=float)
 
     expected_volume_m3 = (1.0 * 2.0) ** 3
-    expected_radius_r = np.linalg.norm([1.5, 1.5, 1.5])
+    tree = Octree.from_ds(dataset)
 
     luminosity_unocculted = band_luminosity_si(sds, point_emissivity, occultation=False)
     luminosity_occulted = band_luminosity_si(sds, point_emissivity, occultation=True)
 
     np.testing.assert_allclose(luminosity_unocculted, 3.0 * 4.0 * np.pi * expected_volume_m3)
-    np.testing.assert_allclose(luminosity_occulted, 3.0 * unblocked_solid_angle(expected_radius_r) * expected_volume_m3)
+    point_radius_r = np.sqrt(
+        np.asarray(sds["X [R]"], dtype=float) ** 2
+        + np.asarray(sds["Y [R]"], dtype=float) ** 2
+        + np.asarray(sds["Z [R]"], dtype=float) ** 2
+    )
+    point_luminosity_density = point_emissivity * unblocked_solid_angle(point_radius_r)
+    expected_occulted = float(
+        np.asarray(OctreeInterpolator(tree, point_luminosity_density).cell_integrals(np.array([0], dtype=int)), dtype=float)[0]
+        * float(sds["RBODY [m]"]) ** 3
+    )
+    np.testing.assert_allclose(luminosity_occulted, expected_occulted)

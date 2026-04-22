@@ -4,14 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from batcamp import Octree
+from batcamp import OctreeInterpolator
 from batread import Dataset
 
 from batwind.algorithms.octree_integration import compute_octree_leaf_geometry
 from batwind.algorithms.octree_integration import compute_octree_leaf_centers_and_volumes
 from batwind.algorithms.octree_integration import cumulative_radius
+from batwind.algorithms.octree_integration import cumulative_radius_exact_rpa
 from batwind.algorithms.octree_integration import integrate_leaf_scalar
+from batwind.algorithms.octree_integration import integrate_radial_shells_exact_rpa
 from batwind.algorithms.octree_integration import leaf_point_mean
 from batwind.algorithms.octree_integration import radial_emission_profile
+from batwind.algorithms.octree_integration import radial_emission_profile_exact_rpa
 from batwind.data.samples import data_file
 
 
@@ -143,3 +147,47 @@ def test_radial_emission_profile_bins_and_accumulates():
     assert radius_r.shape == (3,)
     np.testing.assert_allclose(shell_emission.sum(), 10.0)
     np.testing.assert_allclose(cumulative_fraction[-1], 1.0)
+
+
+def test_exact_rpa_radial_shells_sum_to_full_spherical_volume_integral():
+    ds = Dataset.from_file(str(data_file("3d__var_2_n00060005.plt")))
+    tree = Octree.from_ds(ds)
+    assert tree.tree_coord == "rpa"
+
+    point_values = np.ones(ds.points.shape[0], dtype=float)
+    radial_edges_r = np.asarray(tree.radial_edges, dtype=float)
+    radial_edges_r = radial_edges_r[np.isfinite(radial_edges_r)]
+    shell_integrals = integrate_radial_shells_exact_rpa(tree, point_values, radial_edges_r, length_scale=1.0)
+    full_integral = float(
+        OctreeInterpolator(tree, point_values).integrate_box(
+            np.array([radial_edges_r[0], 0.0, 0.0], dtype=float),
+            np.array([radial_edges_r[-1], np.pi, 2.0 * np.pi], dtype=float),
+        )
+    )
+
+    np.testing.assert_allclose(np.sum(shell_integrals), full_integral)
+
+
+def test_exact_rpa_cumulative_radius_matches_analytic_full_sphere_volume_for_constant_field():
+    ds = Dataset.from_file(str(data_file("3d__var_2_n00060005.plt")))
+    tree = Octree.from_ds(ds)
+    assert tree.tree_coord == "rpa"
+
+    point_values = np.ones(ds.points.shape[0], dtype=float)
+    radial_edges_r = np.asarray(tree.radial_edges, dtype=float)
+    radial_edges_r = radial_edges_r[np.isfinite(radial_edges_r)]
+    r_min = float(radial_edges_r[0])
+    r_max = float(radial_edges_r[-1])
+    expected_r90 = (r_min**3 + 0.90 * (r_max**3 - r_min**3)) ** (1.0 / 3.0)
+
+    r90 = cumulative_radius_exact_rpa(tree, point_values, 0.90, length_scale=1.0)
+    radius_r, shell_emission, cumulative_fraction = radial_emission_profile_exact_rpa(
+        tree,
+        point_values,
+        length_scale=1.0,
+    )
+
+    np.testing.assert_allclose(r90, expected_r90, rtol=0.0, atol=1.0e-6)
+    np.testing.assert_allclose(np.sum(shell_emission), 4.0 * np.pi * (r_max**3 - r_min**3) / 3.0)
+    np.testing.assert_allclose(cumulative_fraction[-1], 1.0)
+    assert radius_r.shape == shell_emission.shape

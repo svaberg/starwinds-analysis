@@ -6,7 +6,6 @@ import numpy as np
 from batcamp import Octree
 from batcamp import OctreeInterpolator
 
-from batwind.algorithms.octree_integration import compute_octree_leaf_centers_and_volumes
 from batwind.smart_ds import SmartDs
 
 DEFAULT_RESPONSE_FUNCTION_PATH = Path("/Users/dagfev/Documents/starwinds/g_lambda_T/TestResposne.dat")
@@ -141,6 +140,22 @@ def unblocked_solid_angle(radial_distance_r: np.ndarray) -> np.ndarray:
     return 2.0 * np.pi * (1.0 + np.sqrt(np.clip(1.0 - radial_distance_r**-2, 0.0, None)))
 
 
+def point_radius_r(smart_ds: SmartDs) -> np.ndarray:
+    """
+    Return point radii in stellar-radius units.
+
+    Prefer the graph-backed ``R [R]`` field when available, otherwise compute
+    the radius directly from the raw Cartesian point coordinates.
+    """
+    try:
+        return np.asarray(smart_ds["R [R]"], dtype=float)
+    except IndexError:
+        x_r = np.asarray(smart_ds["X [R]"], dtype=float)
+        y_r = np.asarray(smart_ds["Y [R]"], dtype=float)
+        z_r = np.asarray(smart_ds["Z [R]"], dtype=float)
+        return np.sqrt(x_r**2 + y_r**2 + z_r**2)
+
+
 def band_luminosity_si(
     smart_ds: SmartDs,
     point_emissivity_w_m3_sr: np.ndarray,
@@ -161,26 +176,25 @@ def band_luminosity_si(
     - luminosity ``L``: ``W``
 
     Implementation note:
-    - the emissivity volume integral is delegated to ``batcamp`` via
-      ``OctreeInterpolator.cell_integrals()``
-    - the self-occultation factor ``omega(r)`` is still applied once per leaf
-      at the leaf-center radius, matching the existing octree-center
-      approximation used elsewhere in this branch
+    - the self-occultation factor ``omega(r)`` is evaluated at every dataset
+      point and folded into a point-valued luminosity-density field
+    - the volume integral of that weighted point field is then delegated to
+      ``batcamp`` via exact whole-cell trilinear integrals
     """
     point_emissivity_w_m3_sr = np.asarray(point_emissivity_w_m3_sr, dtype=float)
     if tree is None:
         tree = Octree.from_ds(smart_ds.raw)
     body_radius_m = float(smart_ds["RBODY [m]"])
-    leaf_centers_r, _ = compute_octree_leaf_centers_and_volumes(tree, length_scale=body_radius_m)
-    radial_distance_r = np.linalg.norm(leaf_centers_r, axis=1)
+    radial_distance_r = point_radius_r(smart_ds)
     leaf_count = int(np.asarray(tree.corners).shape[0])
     leaf_ids = np.arange(leaf_count, dtype=int)
-    emissivity_integral_w_sr = (
-        np.asarray(OctreeInterpolator(tree, point_emissivity_w_m3_sr).cell_integrals(leaf_ids), dtype=float)
-        * body_radius_m**3
-    )
     if occultation:
         solid_angle_sr = unblocked_solid_angle(radial_distance_r)
     else:
         solid_angle_sr = np.full_like(radial_distance_r, 4.0 * np.pi)
-    return float(np.sum(emissivity_integral_w_sr * solid_angle_sr))
+    point_luminosity_density_w_m3 = point_emissivity_w_m3_sr * solid_angle_sr
+    luminosity_integral_w = (
+        np.asarray(OctreeInterpolator(tree, point_luminosity_density_w_m3).cell_integrals(leaf_ids), dtype=float)
+        * body_radius_m**3
+    )
+    return float(np.sum(luminosity_integral_w))
