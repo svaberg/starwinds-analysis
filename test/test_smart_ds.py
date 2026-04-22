@@ -208,6 +208,25 @@ def test_batsrus_graph_computes_electron_density_fields():
     np.testing.assert_allclose(ne_cm3, 1.0e-6 * ne_m3)
 
 
+def test_batsrus_graph_computes_unblocked_solid_angle():
+    variables = ["X [R]", "Y [R]", "Z [R]", "R [R]"]
+    points = np.array(
+        [
+            [1.0, 0.0, 0.0, 1.0],
+            [2.0, 0.0, 0.0, 2.0],
+        ],
+        dtype=float,
+    )
+    corners = np.empty((0, 0), dtype=int)
+    sds = SmartDs(Dataset(points, corners, aux={}, title="geom", variables=variables, zone="zgeom"))
+    sds.merge_computation_graph(build_batsrus_graph(tuple(sds.raw.variables)))
+
+    out = np.asarray(sds["unblocked_solid_angle [sr]"], dtype=float)
+    expected = 2.0 * np.pi * (1.0 + np.sqrt(np.clip(1.0 - np.array([1.0, 2.0]) ** -2, 0.0, None)))
+
+    np.testing.assert_allclose(out, expected)
+
+
 def test_spherical_graph_on_real_example_data():
     sds = SmartDs.from_file(str(EXAMPLE_PLT), spherical=True)
 

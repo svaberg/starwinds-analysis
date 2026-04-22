@@ -258,6 +258,16 @@ def build_common_derived_graph():
         metadata={"description": "Electron number density in cgs units"},
     )
 
+    # `unblocked_solid_angle [sr]` is the paper's exterior visibility factor
+    # `omega(r) = 2*pi*(1 + sqrt(1 - r^-2))` for `r >= 1` in stellar-radius units.
+    graph.add(
+        "unblocked_solid_angle [sr]",
+        lambda r: 2.0 * np.pi * (1.0 + np.sqrt(np.clip(1.0 - np.asarray(r) ** -2, 0.0, None))),
+        needs=["R [R]"],
+        cost=0.08,
+        metadata={"description": "Exterior unblocked solid angle outside one opaque stellar sphere"},
+    )
+
     graph.add(
         "mass_flux [kg/m^2/s]",
         lambda rho, ur: np.asarray(rho) * np.asarray(ur),

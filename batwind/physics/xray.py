@@ -197,6 +197,19 @@ def point_radius_r(smart_ds: SmartDs) -> np.ndarray:
         return np.sqrt(x_r**2 + y_r**2 + z_r**2)
 
 
+def point_unblocked_solid_angle_sr(smart_ds: SmartDs) -> np.ndarray:
+    """
+    Return the exterior unblocked solid angle in steradians at every dataset point.
+
+    Prefer the graph-backed field when available so the same geometry primitive
+    is reused consistently across the library.
+    """
+    try:
+        return np.asarray(smart_ds["unblocked_solid_angle [sr]"], dtype=float)
+    except IndexError:
+        return unblocked_solid_angle(point_radius_r(smart_ds))
+
+
 def band_luminosity_si(
     smart_ds: SmartDs,
     point_emissivity_w_m3_sr: np.ndarray,
@@ -226,13 +239,12 @@ def band_luminosity_si(
     if tree is None:
         tree = Octree.from_ds(smart_ds.raw)
     body_radius_m = float(smart_ds["RBODY [m]"])
-    radial_distance_r = point_radius_r(smart_ds)
     leaf_count = int(np.asarray(tree.corners).shape[0])
     leaf_ids = np.arange(leaf_count, dtype=int)
     if occultation:
-        solid_angle_sr = unblocked_solid_angle(radial_distance_r)
+        solid_angle_sr = point_unblocked_solid_angle_sr(smart_ds)
     else:
-        solid_angle_sr = np.full_like(radial_distance_r, 4.0 * np.pi)
+        solid_angle_sr = np.full_like(point_radius_r(smart_ds), 4.0 * np.pi)
     point_luminosity_density_w_m3 = point_emissivity_w_m3_sr * solid_angle_sr
     luminosity_integral_w = (
         np.asarray(OctreeInterpolator(tree, point_luminosity_density_w_m3).cell_integrals(leaf_ids), dtype=float)

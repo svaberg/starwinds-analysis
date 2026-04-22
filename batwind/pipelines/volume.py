@@ -23,8 +23,7 @@ from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
 from batwind.physics.xray import band_emissivity_from_response_table_legacy
 from batwind.physics.xray import DEFAULT_RESPONSE_FUNCTION_PATH
-from batwind.physics.xray import point_radius_r
-from batwind.physics.xray import unblocked_solid_angle
+from batwind.physics.xray import point_unblocked_solid_angle_sr
 from batwind.pipelines.utils import output_prefix_from_input_file
 from batwind.smart_ds import SmartDs
 
@@ -692,8 +691,7 @@ def process_plt_file(file_path: str | Path) -> None:
     response_path = DEFAULT_RESPONSE_FUNCTION_PATH
     body_radius_cm = 1.0e2 * body_radius
     path_length_scale_cgs = 1.0e-26 * body_radius_cm
-    point_radius_r_values = point_radius_r(smart_ds)
-    point_unblocked_solid_angle = unblocked_solid_angle(point_radius_r_values)
+    point_unblocked_solid_angle = point_unblocked_solid_angle_sr(smart_ds)
     raw_band_emissivities = {
         band_name: band_emissivity_from_response_table_legacy(
             smart_ds,
