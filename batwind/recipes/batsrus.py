@@ -6,7 +6,7 @@ import re
 
 import griblet
 import numpy as np
-from scipy.constants import atomic_mass, mu_0
+from scipy.constants import atomic_mass, mu_0, proton_mass
 
 from batwind.recipes.vectors import build_vector_graph
 
@@ -242,6 +242,20 @@ def build_common_derived_graph():
         needs=["P [Pa]", "P_b [Pa]"],
         cost=0.12,
         metadata={"description": "Plasma beta"},
+    )
+    graph.add(
+        "Ne [1/m^3]",
+        lambda rho: np.asarray(rho) / proton_mass,
+        needs=["Rho [kg/m^3]"],
+        cost=0.12,
+        metadata={"description": "Electron number density assuming ionized hydrogen"},
+    )
+    graph.add(
+        "Ne [1/cm^3]",
+        lambda ne_m3: 1.0e-6 * np.asarray(ne_m3),
+        needs=["Ne [1/m^3]"],
+        cost=0.02,
+        metadata={"description": "Electron number density in cgs units"},
     )
 
     graph.add(

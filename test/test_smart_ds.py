@@ -5,6 +5,7 @@ import numpy as np
 
 from batread import Dataset
 
+from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.recipes.spherical import build_spherical_graph
 from batwind.smart_ds import SmartDs
 
@@ -191,6 +192,20 @@ def test_spherical_graph_computes_geometry_and_vector_components():
     np.testing.assert_allclose(b_r[0], 1.0)
     np.testing.assert_allclose(b_p[0], -3.0)
     np.testing.assert_allclose(b_a[0], 2.0)
+
+
+def test_batsrus_graph_computes_electron_density_fields():
+    variables = ["Rho [kg/m^3]"]
+    points = np.array([[1.0], [2.5]], dtype=float)
+    corners = np.empty((0, 0), dtype=int)
+    sds = SmartDs(Dataset(points, corners, aux={}, title="rho", variables=variables, zone="zrho"))
+    sds.merge_computation_graph(build_batsrus_graph(tuple(sds.raw.variables)))
+
+    ne_m3 = np.asarray(sds["Ne [1/m^3]"])
+    ne_cm3 = np.asarray(sds["Ne [1/cm^3]"])
+
+    np.testing.assert_allclose(ne_m3, points[:, 0] / 1.67262192595e-27)
+    np.testing.assert_allclose(ne_cm3, 1.0e-6 * ne_m3)
 
 
 def test_spherical_graph_on_real_example_data():
