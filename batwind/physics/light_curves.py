@@ -4,7 +4,7 @@ import numpy as np
 from batcamp import camera_rays
 from batcamp import Octree
 from batcamp import OctreeInterpolator
-from batcamp.raytracing import OctreeRayTracer
+from batcamp import OctreeRayTracer
 
 from batwind.smart_ds import SmartDs
 

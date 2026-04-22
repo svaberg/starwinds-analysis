@@ -4,8 +4,8 @@ import numpy as np
 
 from batcamp import Octree
 from batcamp import OctreeInterpolator
-from batcamp.raytracing import OctreeRayTracer
-from batcamp.raytracing import TracedRays
+from batcamp import OctreeRayTracer
+from batcamp import TracedRays
 
 from batwind.algorithms.octree_integration import compute_octree_leaf_centers_and_volumes
 from batwind.algorithms.octree_integration import leaf_point_mean

@@ -5,7 +5,10 @@ from batcamp import OctreeInterpolator
 from batread import Dataset
 
 from batwind.physics.xray import band_emissivity_si
+from batwind.physics.xray import band_emissivity_from_response_table_si
+from batwind.physics.xray import band_emissivity_from_response_table_legacy
 from batwind.physics.xray import band_luminosity_si
+from batwind.physics.xray import LEGACY_EMISSIVITY_SCALE_TO_SI
 from batwind.physics.xray import unblocked_solid_angle
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.smart_ds import SmartDs
@@ -73,3 +76,16 @@ def test_band_luminosity_si_matches_off_star_single_cell_formula():
         * float(sds["RBODY [m]"]) ** 3
     )
     np.testing.assert_allclose(luminosity_occulted, expected_occulted)
+
+
+def test_legacy_and_si_response_table_emissivities_match_by_unit_conversion():
+    dataset = make_one_cell_dataset((1.2, 0.0, 0.0), 0.4, variables=["X [R]", "Y [R]", "Z [R]", "te [K]", "Rho [kg/m^3]"])
+    dataset.points[:, 3] = 1.0e5
+    dataset.points[:, 4] = 2.0 * 1.67262192595e-27
+    sds = SmartDs(dataset)
+    sds.merge_computation_graph(build_batsrus_graph(tuple(dataset.variables), body_radius_m=1.0))
+
+    legacy = band_emissivity_from_response_table_legacy(sds, "rosat")
+    si = band_emissivity_from_response_table_si(sds, "rosat")
+
+    np.testing.assert_allclose(LEGACY_EMISSIVITY_SCALE_TO_SI * legacy, si)

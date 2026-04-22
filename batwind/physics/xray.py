@@ -18,6 +18,10 @@ BAND_COMPONENTS = {
 # 10^-26 erg cm^3 s^-1 sr^-1. Convert that once to SI:
 # 10^-26 * (1e-7 J / erg) * (1e-6 m^3 / cm^3) = 1e-39 W m^3 sr^-1.
 LEGACY_RESPONSE_SCALE_TO_SI = 1.0e-39
+# After multiplying by ``Ne^2`` in ``cm^-6``, the legacy emissivity units become
+# 10^-26 erg cm^-3 s^-1 sr^-1, which convert to SI as
+# 10^-26 * (1e-7 W s / erg) * (1e6 cm^3 / m^3) = 1e-27 W m^-3 sr^-1.
+LEGACY_EMISSIVITY_SCALE_TO_SI = 1.0e-27
 
 
 def load_response_table(
@@ -65,6 +69,16 @@ def band_response_values_si(
     for component_name in component_names:
         response_values_legacy = response_values_legacy + np.asarray(response_components[component_name], dtype=float)
     return LEGACY_RESPONSE_SCALE_TO_SI * response_values_legacy
+
+
+def band_response_values_legacy(
+    response_components: dict[str, np.ndarray],
+    band_name: str,
+) -> np.ndarray:
+    """
+    Return one band-integrated contribution function in the table's legacy units.
+    """
+    return band_response_values_si(response_components, band_name) / LEGACY_RESPONSE_SCALE_TO_SI
 
 
 def interpolate_band_contribution_function_si(
@@ -126,6 +140,33 @@ def band_emissivity_from_response_table_si(
     response_log10_temperature, response_components = load_response_table(response_path)
     response_values_si = band_response_values_si(response_components, band_name)
     return band_emissivity_si(smart_ds, response_log10_temperature, response_values_si)
+
+
+def band_emissivity_from_response_table_legacy(
+    smart_ds: SmartDs,
+    band_name: str,
+    *,
+    response_path: Path = DEFAULT_RESPONSE_FUNCTION_PATH,
+) -> np.ndarray:
+    """
+    Return one band emissivity field in the legacy paper-table units.
+
+    This keeps the original ``Ne [1/cm^3]`` and response-table convention used
+    by the old volume quicklook path.
+    """
+    response_log10_temperature, response_components = load_response_table(response_path)
+    response_values_legacy = band_response_values_legacy(response_components, band_name)
+    temperature_k = np.asarray(smart_ds["te [K]"], dtype=float)
+    electron_density_cm3 = np.asarray(smart_ds["Ne [1/cm^3]"], dtype=float)
+    target_log10_temperature = np.log10(np.clip(temperature_k, 10 ** response_log10_temperature[0], None))
+    band_response_legacy = np.interp(
+        target_log10_temperature,
+        response_log10_temperature,
+        response_values_legacy,
+        left=response_values_legacy[0],
+        right=response_values_legacy[-1],
+    )
+    return np.asarray(electron_density_cm3**2 * band_response_legacy, dtype=float)
 
 
 def unblocked_solid_angle(radial_distance_r: np.ndarray) -> np.ndarray:

@@ -14,13 +14,17 @@ from matplotlib import ticker
 from batcamp import camera_rays
 from batcamp import Octree
 from batcamp import OctreeInterpolator
-from batcamp.raytracing import OctreeRayTracer
+from batcamp import OctreeRayTracer
 
 from batwind.algorithms.octree_integration import cumulative_radius_exact_rpa
 from batwind.algorithms.octree_integration import radial_emission_profile_exact_rpa
 from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
+from batwind.physics.xray import band_emissivity_from_response_table_legacy
+from batwind.physics.xray import DEFAULT_RESPONSE_FUNCTION_PATH
+from batwind.physics.xray import point_radius_r
+from batwind.physics.xray import unblocked_solid_angle
 from batwind.pipelines.utils import output_prefix_from_input_file
 from batwind.smart_ds import SmartDs
 
@@ -30,12 +34,6 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 LOS_GRID_N = 512
 LOS_EXAMPLE_GRID_N = 192
 LOS_EXAMPLE_SIDE_LENGTH_R = 2.0
-DEFAULT_RESPONSE_FUNCTION_PATH = Path("/Users/dagfev/Documents/starwinds/g_lambda_T/TestResposne.dat")
-X_RAY_BAND_COMPONENTS = {
-    "hard": ("Hard_line", "Hard_cont"),
-    "rosat": ("ROSAT_line", "ROSAT_cont"),
-    "euv": ("EUV_line", "EUV_cont"),
-}
 X_RAY_BAND_LABELS = {
     "hard": r"Hard X-ray band intensity [$10^{-26}$]",
     "rosat": r"ROSAT band intensity [$10^{-26}$]",
@@ -82,79 +80,6 @@ def build_rho2_los_renderer(
     rho = np.asarray(smart_ds["Rho [kg/m^3]"], dtype=float)
     interp = build_los_interpolator(tree, rho**2)
     return tracer, interp, bounds_r
-
-
-def load_xray_response_table(
-    response_path: Path = DEFAULT_RESPONSE_FUNCTION_PATH,
-) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """
-    Load the old response-function table used for the paper-band images.
-    """
-    with response_path.open("r", encoding="utf-8") as stream:
-        next(stream)
-        next(stream)
-        shape = tuple(int(value) for value in next(stream).split())[::-1]
-        names = next(stream).split()
-        data = np.loadtxt(stream)
-    if tuple(names[:2]) != ("l10T", "l10ne"):
-        raise ValueError(f"Unexpected response-table columns in {response_path!s}: {names[:2]!r}")
-    if shape[0] != 1:
-        raise ValueError(f"Expected a single-density response table in {response_path!s}, got shape {shape!r}")
-    temperature_log10 = np.asarray(data[:, 0].reshape(shape)[0], dtype=float)
-    components = {
-        name: np.asarray(data[:, col_id].reshape(shape)[0], dtype=float)
-        for col_id, name in enumerate(names[2:], start=2)
-    }
-    return temperature_log10, components
-
-
-def compute_unblocked_solid_angle(radial_distance_r: np.ndarray) -> np.ndarray:
-    """
-    Return the unobscured solid angle for one exterior radius field.
-    """
-    return 2.0 * np.pi * (np.sqrt(np.clip(1.0 - radial_distance_r ** -2, 0.0, None)) + 1.0)
-
-
-def build_xray_band_raw_emissivities(
-    smart_ds: SmartDs,
-    response_path: Path = DEFAULT_RESPONSE_FUNCTION_PATH,
-) -> dict[str, np.ndarray]:
-    """
-    Build the three band emissivity fields from `Ne^2 G(T)`.
-    """
-    temperature_log10, components = load_xray_response_table(response_path)
-    temperature_k = np.asarray(smart_ds["te [K]"], dtype=float)
-    electron_density_cm3 = np.asarray(smart_ds["Ne [1/cm^3]"], dtype=float)
-    target_temperature_log10 = np.log10(np.clip(temperature_k, 10 ** temperature_log10[0], None))
-    band_emissivities = {}
-    for band_name, component_names in X_RAY_BAND_COMPONENTS.items():
-        response_values = np.zeros_like(temperature_log10)
-        for component_name in component_names:
-            response_values = response_values + components[component_name]
-        band_response = np.interp(
-            target_temperature_log10,
-            temperature_log10,
-            response_values,
-            left=response_values[0],
-            right=response_values[-1],
-        )
-        band_emissivities[band_name] = np.asarray(electron_density_cm3 ** 2 * band_response, dtype=float)
-    return band_emissivities
-
-
-def build_xray_band_emissivities(
-    smart_ds: SmartDs,
-    response_path: Path = DEFAULT_RESPONSE_FUNCTION_PATH,
-) -> dict[str, np.ndarray]:
-    """
-    Build the three band emissivity fields scaled by the unblocked solid angle.
-    """
-    raw_emissivities = build_xray_band_raw_emissivities(smart_ds, response_path=response_path)
-    unblocked_solid_angle = compute_unblocked_solid_angle(np.asarray(smart_ds["R [R]"], dtype=float))
-    return {
-        band_name: np.asarray(raw_emissivity * unblocked_solid_angle, dtype=float)
-        for band_name, raw_emissivity in raw_emissivities.items()
-    }
 
 
 def integrate_image_total(
@@ -767,10 +692,19 @@ def process_plt_file(file_path: str | Path) -> None:
     response_path = DEFAULT_RESPONSE_FUNCTION_PATH
     body_radius_cm = 1.0e2 * body_radius
     path_length_scale_cgs = 1.0e-26 * body_radius_cm
-    raw_band_emissivities = build_xray_band_raw_emissivities(smart_ds, response_path=response_path)
+    point_radius_r_values = point_radius_r(smart_ds)
+    point_unblocked_solid_angle = unblocked_solid_angle(point_radius_r_values)
+    raw_band_emissivities = {
+        band_name: band_emissivity_from_response_table_legacy(
+            smart_ds,
+            band_name,
+            response_path=response_path,
+        )
+        for band_name in ("hard", "rosat", "euv")
+    }
     band_emissivities = {
         band_name: np.asarray(
-            raw_band_emissivity * compute_unblocked_solid_angle(np.asarray(smart_ds["R [R]"], dtype=float)),
+            raw_band_emissivity * point_unblocked_solid_angle,
             dtype=float,
         )
         for band_name, raw_band_emissivity in raw_band_emissivities.items()
@@ -820,10 +754,7 @@ def process_plt_file(file_path: str | Path) -> None:
             view_axis=X_RAY_SINGLE_DIRECTION_VIEW_AXIS,
         )
         directional_total = integrate_image_total(directional_image, directional_extent, body_radius_cm)
-        point_radius_r = np.asarray(smart_ds["R [R]"], dtype=float)
-        point_unblocked_luminosity_density = (
-            raw_band_emissivities[band_name] * compute_unblocked_solid_angle(point_radius_r)
-        )
+        point_unblocked_luminosity_density = raw_band_emissivities[band_name] * point_unblocked_solid_angle
         point_four_pi_luminosity_density = raw_band_emissivities[band_name] * (4.0 * np.pi)
         radius_r, unblocked_shell_total, unblocked_cumulative_fraction = radial_emission_profile_exact_rpa(
             tree,
