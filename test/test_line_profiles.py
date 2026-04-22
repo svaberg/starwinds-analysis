@@ -321,7 +321,6 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     y_min, y_max = float(np.min(y)), float(np.max(y))
     z_min, z_max = float(np.min(z)), float(np.max(z))
     x_center = 0.5 * (x_min + x_max)
-    y_center = 0.5 * (y_min + y_max)
     z_center = 0.5 * (z_min + z_max)
     width = 4.0
     height = 4.0
@@ -425,9 +424,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     assert png_path.exists()
 
     summary = summarize_spectral_cube(cube, velocity_centers)
-    total_intensity = summary["total_intensity"]
     mean_velocity = summary["mean_velocity"]
-    concentration = summary["concentration"]
     # The current summary image is built from histogram moments after binning in
     # LOS velocity. If the visual banding becomes too strong, first consider
     # increasing the number of velocity bins, or alternatively accumulating the

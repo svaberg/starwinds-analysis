@@ -52,6 +52,31 @@ def integrate_leaf_scalar(tree: Octree, point_values: np.ndarray, *, length_scal
     return float(np.sum(leaf_values * leaf_volumes))
 
 
+def integrate_leaf_mean_field_with_cell_weight(
+    tree: Octree,
+    point_values: np.ndarray,
+    cell_weight: np.ndarray,
+    *,
+    length_scale: float = 1.0,
+) -> float:
+    """
+    Integrate one point-valued field times one leaf-defined weight over octree volume.
+
+    The point-valued field is first averaged to each leaf from its corner values.
+    The returned scalar is then
+
+        sum_leaf(leaf_mean_value * cell_weight * leaf_volume).
+
+    This is the direct octree-aware shape needed for quantities such as
+    ``\\int omega(r) epsilon dV``, where ``epsilon`` is point-valued on the
+    octree corners, ``omega`` is naturally defined once per leaf, and ``dV`` is
+    the leaf volume in one explicit length unit.
+    """
+    _, leaf_volumes = compute_octree_leaf_centers_and_volumes(tree, length_scale=length_scale)
+    leaf_values = leaf_point_mean(tree, point_values)
+    return float(np.sum(leaf_values * np.asarray(cell_weight, dtype=float) * leaf_volumes))
+
+
 def cumulative_radius(radial_distance_r: np.ndarray, cell_emission: np.ndarray, fraction: float) -> float:
     """
     Return the radius containing the requested cumulative emission fraction.
