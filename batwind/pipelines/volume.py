@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 from matplotlib import ticker
-from batcamp.camera import camera_rays
-from batcamp.interpolator import OctreeInterpolator
-from batcamp.octree import Octree
+from batcamp import camera_rays
+from batcamp import Octree
+from batcamp import OctreeInterpolator
 from batcamp.raytracing import OctreeRayTracer
 
 from batwind.algorithms.octree_integration import compute_octree_leaf_geometry

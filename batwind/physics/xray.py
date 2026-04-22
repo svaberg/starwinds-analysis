@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-from batcamp.interpolator import OctreeInterpolator
-from batcamp.octree import Octree
+from batcamp import Octree
+from batcamp import OctreeInterpolator
 
 from batwind.algorithms.octree_integration import compute_octree_leaf_centers_and_volumes
 from batwind.smart_ds import SmartDs

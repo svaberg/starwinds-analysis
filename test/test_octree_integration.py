@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from batcamp.octree import Octree
+from batcamp import Octree
 from batread import Dataset
 
 from batwind.algorithms.octree_integration import compute_octree_leaf_geometry

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from batcamp.octree import Octree
+from batcamp import Octree
 
 
 def compute_octree_leaf_centers_and_volumes(tree: Octree, length_scale: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
