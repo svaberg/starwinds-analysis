@@ -4,12 +4,12 @@ from batcamp import Octree
 from batcamp import OctreeInterpolator
 from batread import Dataset
 
-from batwind.physics.xray import band_emissivity_si
-from batwind.physics.xray import band_emissivity_from_response_table_si
-from batwind.physics.xray import band_emissivity_from_response_table_legacy
-from batwind.physics.xray import band_luminosity_si
-from batwind.physics.xray import LEGACY_EMISSIVITY_SCALE_TO_SI
-from batwind.physics.xray import unblocked_solid_angle
+from batwind.physics.emission import band_emissivity_si
+from batwind.physics.emission import band_emissivity_from_response_table_si
+from batwind.physics.emission import band_emissivity_from_response_table_legacy
+from batwind.physics.emission import band_luminosity_si
+from batwind.physics.emission import LEGACY_EMISSIVITY_SCALE_TO_SI
+from batwind.physics.emission import unblocked_solid_angle
 from batwind.recipes.batsrus import build_batsrus_graph
 from batwind.smart_ds import SmartDs
 

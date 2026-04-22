@@ -21,9 +21,9 @@ from batwind.algorithms.octree_integration import radial_emission_profile_exact_
 from batwind.constants import DEFAULT_QUICKLOOK_RADII_R
 from batwind.analysis.shells import integrate_shell_scalar
 from batwind.analysis.shells import sample_spherical_shells_fibonacci
-from batwind.physics.xray import band_emissivity_from_response_table_legacy
-from batwind.physics.xray import DEFAULT_RESPONSE_FUNCTION_PATH
-from batwind.physics.xray import point_unblocked_solid_angle_sr
+from batwind.physics.emission import band_emissivity_from_response_table_si
+from batwind.physics.emission import DEFAULT_RESPONSE_FUNCTION_PATH
+from batwind.physics.emission import point_unblocked_solid_angle_sr
 from batwind.pipelines.utils import output_prefix_from_input_file
 from batwind.smart_ds import SmartDs
 
@@ -34,12 +34,14 @@ LOS_GRID_N = 512
 LOS_EXAMPLE_GRID_N = 192
 LOS_EXAMPLE_SIDE_LENGTH_R = 2.0
 X_RAY_BAND_LABELS = {
-    "hard": r"Hard X-ray band intensity [$10^{-26}$]",
-    "rosat": r"ROSAT band intensity [$10^{-26}$]",
-    "euv": r"EUV band intensity [$10^{-26}$]",
+    "hard": r"Hard X-ray band intensity [W m$^{-2}$ sr$^{-1}$]",
+    "rosat": r"ROSAT band intensity [W m$^{-2}$ sr$^{-1}$]",
+    "euv": r"EUV band intensity [W m$^{-2}$ sr$^{-1}$]",
 }
-X_RAY_EMISSION_TOTAL_UNIT = r"$10^{-26}$ cm$^2$"
-X_RAY_DIRECTIONAL_EMISSIVITY_UNIT = r"$10^{-26}$ cm$^{-1}$"
+X_RAY_IMAGE_INTENSITY_UNIT = r"W m$^{-2}$ sr$^{-1}$"
+X_RAY_RADIANT_INTENSITY_UNIT = r"W sr$^{-1}$"
+X_RAY_LUMINOSITY_UNIT = r"W"
+X_RAY_EMISSIVITY_UNIT = r"W m$^{-3}$ sr$^{-1}$"
 X_RAY_SINGLE_DIRECTION_VIEW_AXIS = "+Y"
 X_RAY_TOTALS_IMAGE_N = 512
 
@@ -81,19 +83,24 @@ def build_rho2_los_renderer(
     return tracer, interp, bounds_r
 
 
-def integrate_image_total(
+def integrate_image_radiant_intensity(
     image: np.ndarray,
     extent: tuple[float, float, float, float],
-    body_radius_cm: float,
+    body_radius_m: float,
 ) -> float:
     """
-    Integrate one LOS image over its image-plane area.
+    Integrate one LOS intensity image over projected image-plane area.
+
+    Units:
+    - image intensity: ``W m^-2 sr^-1``
+    - projected area: ``m^2``
+    - returned radiant intensity: ``W sr^-1``
     """
     x_min, x_max, y_min, y_max = extent
-    pixel_area_cm2 = (
-        (float(x_max - x_min) * body_radius_cm) * (float(y_max - y_min) * body_radius_cm) / float(image.size)
+    pixel_area_m2 = (
+        (float(x_max - x_min) * body_radius_m) * (float(y_max - y_min) * body_radius_m) / float(image.size)
     )
-    return float(np.nansum(np.asarray(image, dtype=float)) * pixel_area_cm2)
+    return float(np.nansum(np.asarray(image, dtype=float)) * pixel_area_m2)
 
 
 def plot_xray_radial_summary(
@@ -124,7 +131,7 @@ def plot_xray_radial_summary(
     axes[0].set_xscale("log")
     axes[0].set_yscale("log")
     axes[1].set_xscale("log")
-    axes[0].set_ylabel(f"Shell emission [{X_RAY_EMISSION_TOTAL_UNIT}]")
+    axes[0].set_ylabel(f"Shell luminosity [{X_RAY_LUMINOSITY_UNIT}]")
     axes[1].set_ylabel("Cumulative fraction [-]")
     axes[1].set_xlabel(r"Radius [$R_\star$]")
     axes[0].set_title("X-ray Band Emission by Radius")
@@ -151,13 +158,13 @@ def plot_xray_unit_summary(
     ax.axis("off")
     lines = [
         "X-ray emission unit trace",
-        r"$G(T)$: response table values [cm$^5$/10$^{26}$]",
-        r"$N_e$: electron density [cm$^{-3}$]",
-        rf"$\epsilon = N_e^2 G(T)$ [{X_RAY_DIRECTIONAL_EMISSIVITY_UNIT}]",
-        r"$I_{\mathrm{dir}} = \int \epsilon \, dl$ [$10^{-26}$]",
-        rf"$L_{{\mathrm{{dir,{view_axis}}}}} = \int I_{{\mathrm{{dir}}}} \, dA$ [{X_RAY_EMISSION_TOTAL_UNIT}]",
-        rf"$L_{{\Omega}} = \int \epsilon \, \Omega_{{\mathrm{{unblocked}}}} \, dV$ [{X_RAY_EMISSION_TOTAL_UNIT}]",
-        rf"$L_{{4\pi}} = \int \epsilon \, 4\pi \, dV$ [{X_RAY_EMISSION_TOTAL_UNIT}]",
+        r"$G(T)$: response table values [W m$^3$ sr$^{-1}$]",
+        r"$N_e$: electron density [m$^{-3}$]",
+        rf"$\epsilon = N_e^2 G(T)$ [{X_RAY_EMISSIVITY_UNIT}]",
+        rf"$I_{{\mathrm{{dir}}}} = \int \epsilon \, dl$ [{X_RAY_IMAGE_INTENSITY_UNIT}]",
+        rf"$J_{{\mathrm{{dir,{view_axis}}}}} = \int I_{{\mathrm{{dir}}}} \, dA$ [{X_RAY_RADIANT_INTENSITY_UNIT}]",
+        rf"$L_{{\Omega}} = \int \epsilon \, \Omega_{{\mathrm{{unblocked}}}} \, dV$ [{X_RAY_LUMINOSITY_UNIT}]",
+        rf"$L_{{4\pi}} = \int \epsilon \, 4\pi \, dV$ [{X_RAY_LUMINOSITY_UNIT}]",
         "",
         "Band totals",
     ]
@@ -167,7 +174,7 @@ def plot_xray_unit_summary(
             [
                 (
                     f"{band_name}: "
-                    f"L_dir={band_stats['directional_total']:.3e}, "
+                    f"J_dir={band_stats['directional_radiant_intensity']:.3e}, "
                     f"L_Ω={band_stats['unblocked_total']:.3e}, "
                     f"L_4π={band_stats['four_pi_total']:.3e}"
                 ),
@@ -689,33 +696,25 @@ def process_plt_file(file_path: str | Path) -> None:
     plot_example_los_colormesh_npz(los_example_npz, los_example_png)
 
     response_path = DEFAULT_RESPONSE_FUNCTION_PATH
-    body_radius_cm = 1.0e2 * body_radius
-    path_length_scale_cgs = 1.0e-26 * body_radius_cm
+    body_radius_m = body_radius
     point_unblocked_solid_angle = point_unblocked_solid_angle_sr(smart_ds)
     raw_band_emissivities = {
-        band_name: band_emissivity_from_response_table_legacy(
+        band_name: band_emissivity_from_response_table_si(
             smart_ds,
             band_name,
             response_path=response_path,
         )
         for band_name in ("hard", "rosat", "euv")
     }
-    band_emissivities = {
-        band_name: np.asarray(
-            raw_band_emissivity * point_unblocked_solid_angle,
-            dtype=float,
-        )
-        for band_name, raw_band_emissivity in raw_band_emissivities.items()
-    }
     xray_band_stats = {}
     xray_band_profiles = {}
-    for band_name, emissivity in band_emissivities.items():
+    for band_name, emissivity in raw_band_emissivities.items():
         band_interp = build_los_interpolator(tree, emissivity)
         band_image, band_extent, band_counts = render_rho2_los_image(
             tracer,
             band_interp,
             bounds_r,
-            path_length_scale=path_length_scale_cgs,
+            path_length_scale=body_radius_m,
             image_n=LOS_EXAMPLE_GRID_N,
             view_axis="+Y",
             width=2.0 * LOS_EXAMPLE_SIDE_LENGTH_R,
@@ -735,7 +734,7 @@ def process_plt_file(file_path: str | Path) -> None:
             band_npz,
             side_length_r=LOS_EXAMPLE_SIDE_LENGTH_R,
             colorbar_label=X_RAY_BAND_LABELS[band_name],
-            unit="band-intensity",
+            unit="W/m^2/sr",
         )
         band_png = output_dir / f"{prefix}.{band_name}_los_example.png"
         plot_example_los_colormesh_npz(band_npz, band_png)
@@ -747,27 +746,25 @@ def process_plt_file(file_path: str | Path) -> None:
             tracer,
             build_los_interpolator(tree, raw_band_emissivities[band_name]),
             bounds_r,
-            path_length_scale=path_length_scale_cgs,
+            path_length_scale=body_radius_m,
             image_n=X_RAY_TOTALS_IMAGE_N,
             view_axis=X_RAY_SINGLE_DIRECTION_VIEW_AXIS,
         )
-        directional_total = integrate_image_total(directional_image, directional_extent, body_radius_cm)
+        directional_radiant_intensity = integrate_image_radiant_intensity(directional_image, directional_extent, body_radius_m)
         point_unblocked_luminosity_density = raw_band_emissivities[band_name] * point_unblocked_solid_angle
         point_four_pi_luminosity_density = raw_band_emissivities[band_name] * (4.0 * np.pi)
         radius_r, unblocked_shell_total, unblocked_cumulative_fraction = radial_emission_profile_exact_rpa(
             tree,
             point_unblocked_luminosity_density,
-            length_scale=body_radius_cm,
+            length_scale=body_radius_m,
         )
-        unblocked_shell_total = 1.0e-26 * unblocked_shell_total
         unblocked_total = float(np.sum(unblocked_shell_total))
         four_pi_total = float(
             np.sum(
-                1.0e-26
-                * radial_emission_profile_exact_rpa(
+                radial_emission_profile_exact_rpa(
                     tree,
                     point_four_pi_luminosity_density,
-                    length_scale=body_radius_cm,
+                    length_scale=body_radius_m,
                 )[1]
             )
         )
@@ -775,16 +772,16 @@ def process_plt_file(file_path: str | Path) -> None:
             tree,
             point_unblocked_luminosity_density,
             0.90,
-            length_scale=body_radius_cm,
+            length_scale=body_radius_m,
         )
         r99_r = cumulative_radius_exact_rpa(
             tree,
             point_unblocked_luminosity_density,
             0.99,
-            length_scale=body_radius_cm,
+            length_scale=body_radius_m,
         )
         xray_band_stats[band_name] = {
-            "directional_total": directional_total,
+            "directional_radiant_intensity": directional_radiant_intensity,
             "unblocked_total": unblocked_total,
             "four_pi_total": four_pi_total,
             "unblocked_over_four_pi": unblocked_total / four_pi_total if four_pi_total > 0.0 else float("nan"),
@@ -792,31 +789,34 @@ def process_plt_file(file_path: str | Path) -> None:
             "r99_r": r99_r,
         }
         xray_band_profiles[band_name] = (radius_r, unblocked_shell_total, unblocked_cumulative_fraction)
-        add_record(f"volume_{band_name}_directional_total_1e_minus26_cm2 %r", directional_total)
-        add_record(f"volume_{band_name}_unblocked_total_1e_minus26_cm2 %r", unblocked_total)
-        add_record(f"volume_{band_name}_four_pi_total_1e_minus26_cm2 %r", four_pi_total)
+        add_record(f"volume_{band_name}_directional_radiant_intensity_w_sr %r", directional_radiant_intensity)
+        add_record(f"volume_{band_name}_unblocked_luminosity_w %r", unblocked_total)
+        add_record(f"volume_{band_name}_four_pi_luminosity_w %r", four_pi_total)
         add_record(f"volume_{band_name}_r90_R %r", r90_r)
         add_record(f"volume_{band_name}_r99_R %r", r99_r)
-        add_record(f"volume_{band_name}_emissivity_unit %r", X_RAY_DIRECTIONAL_EMISSIVITY_UNIT)
-        add_record(f"volume_{band_name}_total_unit %r", X_RAY_EMISSION_TOTAL_UNIT)
+        add_record(f"volume_{band_name}_image_intensity_unit %r", X_RAY_IMAGE_INTENSITY_UNIT)
+        add_record(f"volume_{band_name}_radiant_intensity_unit %r", X_RAY_RADIANT_INTENSITY_UNIT)
+        add_record(f"volume_{band_name}_emissivity_unit %r", X_RAY_EMISSIVITY_UNIT)
+        add_record(f"volume_{band_name}_luminosity_unit %r", X_RAY_LUMINOSITY_UNIT)
     xray_summary_npz = output_dir / f"{prefix}.xray_summary.npz"
     np.savez_compressed(
         xray_summary_npz,
         bands=np.asarray(["hard", "rosat", "euv"]),
-        directional_total_1e_minus26_cm2=np.asarray(
-            [xray_band_stats[name]["directional_total"] for name in ("hard", "rosat", "euv")]
+        directional_radiant_intensity_w_sr=np.asarray(
+            [xray_band_stats[name]["directional_radiant_intensity"] for name in ("hard", "rosat", "euv")]
         ),
-        unblocked_total_1e_minus26_cm2=np.asarray(
+        unblocked_luminosity_w=np.asarray(
             [xray_band_stats[name]["unblocked_total"] for name in ("hard", "rosat", "euv")]
         ),
-        four_pi_total_1e_minus26_cm2=np.asarray(
+        four_pi_luminosity_w=np.asarray(
             [xray_band_stats[name]["four_pi_total"] for name in ("hard", "rosat", "euv")]
         ),
         r90_r=np.asarray([xray_band_stats[name]["r90_r"] for name in ("hard", "rosat", "euv")]),
         r99_r=np.asarray([xray_band_stats[name]["r99_r"] for name in ("hard", "rosat", "euv")]),
-        directional_total_unit=np.asarray(X_RAY_EMISSION_TOTAL_UNIT),
-        total_emission_unit=np.asarray(X_RAY_EMISSION_TOTAL_UNIT),
-        emissivity_unit=np.asarray(X_RAY_DIRECTIONAL_EMISSIVITY_UNIT),
+        image_intensity_unit=np.asarray(X_RAY_IMAGE_INTENSITY_UNIT),
+        directional_radiant_intensity_unit=np.asarray(X_RAY_RADIANT_INTENSITY_UNIT),
+        luminosity_unit=np.asarray(X_RAY_LUMINOSITY_UNIT),
+        emissivity_unit=np.asarray(X_RAY_EMISSIVITY_UNIT),
         radius_unit=np.asarray(r"$R_\star$"),
         view_axis=np.asarray(X_RAY_SINGLE_DIRECTION_VIEW_AXIS),
     )
