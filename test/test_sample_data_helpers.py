@@ -59,7 +59,7 @@ def test_data_file_missing_lists_available_fixtures(monkeypatch):
 
 
 @pytest.mark.pooch
-def test_data_file_falls_back_to_pooch(monkeypatch, tmp_path):
+def test_data_file_falls_back_to_archive_fetch(monkeypatch, tmp_path):
     expected = tmp_path / "3d__var_2_n00060005.plt"
     expected.write_text("", encoding="utf-8")
 

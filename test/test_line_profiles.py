@@ -25,6 +25,12 @@ TOY_LINE_LOG10_T_PEAK = 5.90
 TOY_LINE_LOG10_T_WIDTH = 0.08
 TOY_LINE_PEAK_CONTRIBUTION_W_M3_SR = 1.0
 TOY_LINE_VELOCITY_LIMIT_KMS = 5.0
+SC_SAMPLE = "3d__var_4_n00044000.plt"
+
+
+@pytest.fixture
+def sc_sample_path() -> Path:
+    return data_file(SC_SAMPLE)
 
 
 def toy_line_contribution_function_w_m3_sr(temperature_k: np.ndarray) -> np.ndarray:
@@ -182,8 +188,8 @@ def test_histogram_leaf_los_velocity_plot(tmp_path: Path):
 
 
 @pytest.mark.pooch
-def test_histogram_leaf_los_velocity_plot_on_pooch_sample(tmp_path: Path):
-    dataset = Dataset.from_file(str(data_file("3d__var_4_n00044000.plt")))
+def test_histogram_leaf_los_velocity_plot_on_sc_sample(tmp_path: Path, sc_sample_path: Path):
+    dataset = Dataset.from_file(str(sc_sample_path))
     tree = Octree.from_ds(dataset)
     variables = {name: i for i, name in enumerate(dataset.variables)}
     point_velocity_vectors = np.column_stack(
@@ -209,9 +215,9 @@ def test_histogram_leaf_los_velocity_plot_on_pooch_sample(tmp_path: Path):
     ax.stairs(out["histogram"], out["velocity_edges"], linewidth=2.0)
     ax.set_xlabel("LOS velocity along +Y [km/s]")
     ax.set_ylabel(r"Volume per bin [$R_*^3$]")
-    ax.set_title("Pooch sample LOS velocity histogram")
+    ax.set_title("SC sample LOS velocity histogram")
     ax.grid(True, alpha=0.3)
-    png_path = tmp_path / "pooch_sample_los_velocity_histogram.png"
+    png_path = tmp_path / "sc_sample_los_velocity_histogram.png"
     fig.savefig(png_path, dpi=200)
     plt.close(fig)
 
@@ -226,7 +232,7 @@ def test_histogram_leaf_los_velocity_plot_on_pooch_sample(tmp_path: Path):
     ax.plot(out["velocity_centers"], cumulative_fraction, linewidth=2.0)
     ax.set_xlabel("LOS velocity along +Y [km/s]")
     ax.set_ylabel("Cumulative volume fraction")
-    ax.set_title("Pooch sample cumulative LOS velocity distribution")
+    ax.set_title("SC sample cumulative LOS velocity distribution")
     ax.set_ylim(0.0, 1.02)
     ax.grid(True, alpha=0.3)
 
@@ -236,7 +242,7 @@ def test_histogram_leaf_los_velocity_plot_on_pooch_sample(tmp_path: Path):
     ax2.set_ylabel(r"Density [1 / (km/s)]", color="C1")
     ax2.tick_params(axis="y", labelcolor="C1")
 
-    cumulative_png_path = tmp_path / "pooch_sample_los_velocity_cumulative.png"
+    cumulative_png_path = tmp_path / "sc_sample_los_velocity_cumulative.png"
     fig.savefig(cumulative_png_path, dpi=200)
     plt.close(fig)
 
@@ -244,9 +250,8 @@ def test_histogram_leaf_los_velocity_plot_on_pooch_sample(tmp_path: Path):
 
 
 @pytest.mark.pooch
-def test_weighted_line_profile_plot_on_pooch_sample(tmp_path: Path):
-    path = data_file("3d__var_4_n00044000.plt")
-    sds = SmartDs.from_file(path)
+def test_weighted_line_profile_plot_on_sc_sample(tmp_path: Path, sc_sample_path: Path):
+    sds = SmartDs.from_file(sc_sample_path)
     tree = Octree.from_ds(sds.raw)
     variables = {name: i for i, name in enumerate(sds.raw.variables)}
     point_velocity_vectors = np.column_stack(
@@ -290,7 +295,7 @@ def test_weighted_line_profile_plot_on_pooch_sample(tmp_path: Path):
     ax2.set_ylabel(r"Line fraction density [1 / (km/s)]", color="C1")
     ax2.tick_params(axis="y", labelcolor="C1")
 
-    png_path = tmp_path / "pooch_sample_weighted_line_profile.png"
+    png_path = tmp_path / "sc_sample_weighted_line_profile.png"
     fig.savefig(png_path, dpi=200)
     plt.close(fig)
 
@@ -299,9 +304,8 @@ def test_weighted_line_profile_plot_on_pooch_sample(tmp_path: Path):
 
 
 @pytest.mark.pooch
-def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
-    path = data_file("3d__var_4_n00044000.plt")
-    sds = SmartDs.from_file(path)
+def test_weighted_line_spectral_image_plot_on_sc_sample(tmp_path: Path, sc_sample_path: Path):
+    sds = SmartDs.from_file(sc_sample_path)
     tree = Octree.from_ds(sds.raw)
     variables = {name: i for i, name in enumerate(sds.raw.variables)}
     point_velocity_vectors = np.column_stack(
@@ -339,9 +343,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     velocity_edges = np.linspace(-TOY_LINE_VELOCITY_LIMIT_KMS, TOY_LINE_VELOCITY_LIMIT_KMS, 18)
     cache_dir = Path(tempfile.gettempdir()) / "batwind-line-profile-cache"
     cache_dir.mkdir(exist_ok=True)
-    cube_cache_path = (
-        cache_dir / f"pooch_sc_weighted_line_spectral_cube_{image_size}x{image_size}_17bins_pm5kms_si_line.npz"
-    )
+    cube_cache_path = cache_dir / f"sc_weighted_line_spectral_cube_{image_size}x{image_size}_17bins_pm5kms_si_line.npz"
     if cube_cache_path.exists():
         cached = np.load(cube_cache_path)
         cube = np.asarray(cached["spectral_cube"], dtype=float)
@@ -364,7 +366,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
             velocity_centers=velocity_centers,
         )
 
-    cube_artifact_path = tmp_path / "pooch_sample_weighted_line_spectral_cube.npz"
+    cube_artifact_path = tmp_path / "sc_weighted_line_spectral_cube.npz"
     np.savez(
         cube_artifact_path,
         spectral_cube=cube,
@@ -391,7 +393,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     ax.set_ylabel("Z [R]")
     one_bin_cbar = fig.colorbar(im, ax=ax, shrink=0.85)
     one_bin_cbar.set_label(r"Weighted line intensity [W m$^{-2}$ sr$^{-1}$]")
-    one_bin_png_path = tmp_path / "pooch_sample_weighted_line_one_bin.png"
+    one_bin_png_path = tmp_path / "sc_weighted_line_one_bin.png"
     fig.savefig(one_bin_png_path, dpi=200)
     plt.close(fig)
 
@@ -416,7 +418,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
         ax.set_ylabel("Z [R]")
         fig.colorbar(im, ax=ax, shrink=0.8)
 
-    png_path = tmp_path / "pooch_sample_weighted_line_spectral_image.png"
+    png_path = tmp_path / "sc_weighted_line_spectral_image.png"
     fig.savefig(png_path, dpi=200)
     plt.close(fig)
 
@@ -465,7 +467,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     ax.set_ylabel("Z [R]")
     pure_intensity_cbar = fig.colorbar(im, ax=ax, shrink=0.85)
     pure_intensity_cbar.set_label(r"Display brightness [dimensionless]")
-    intensity_png_path = tmp_path / "pooch_sample_weighted_line_pure_intensity.png"
+    intensity_png_path = tmp_path / "sc_weighted_line_pure_intensity.png"
     fig.savefig(intensity_png_path, dpi=200)
     plt.close(fig)
 
@@ -485,7 +487,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     cbar.set_label("Mean LOS velocity [km/s]")
     cbar.ax.yaxis.set_ticks(velocity_edges[1:-1], minor=True)
     cbar.ax.tick_params(which="minor", length=2.5)
-    tint_png_path = tmp_path / "pooch_sample_weighted_line_pure_tint.png"
+    tint_png_path = tmp_path / "sc_weighted_line_pure_tint.png"
     fig.savefig(tint_png_path, dpi=200)
     plt.close(fig)
 
@@ -515,7 +517,7 @@ def test_weighted_line_spectral_image_plot_on_pooch_sample(tmp_path: Path):
     tint_cbar.set_label("Mean LOS velocity [km/s]")
     tint_cbar.ax.yaxis.set_ticks(velocity_edges[1:-1], minor=True)
     tint_cbar.ax.tick_params(which="minor", length=2.5)
-    summary_png_path = tmp_path / "pooch_sample_weighted_line_summary.png"
+    summary_png_path = tmp_path / "sc_weighted_line_summary.png"
     fig.savefig(summary_png_path, dpi=200)
     plt.close(fig)
 
