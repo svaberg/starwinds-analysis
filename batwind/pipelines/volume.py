@@ -33,17 +33,31 @@ add_record = logging.getLogger(f"recorder.{__name__}").debug
 LOS_GRID_N = 512
 LOS_EXAMPLE_GRID_N = 192
 LOS_EXAMPLE_SIDE_LENGTH_R = 2.0
-X_RAY_BAND_LABELS = {
-    "hard": r"Hard X-ray band intensity [W m$^{-2}$ sr$^{-1}$]",
-    "rosat": r"ROSAT band intensity [W m$^{-2}$ sr$^{-1}$]",
-    "euv": r"EUV band intensity [W m$^{-2}$ sr$^{-1}$]",
+CORONAL_EMISSION_BANDS = {
+    "hard": {
+        "response_components": ("Hard_line", "Hard_cont"),
+        "display_label": "Hard X-ray",
+    },
+    "rosat": {
+        "response_components": ("ROSAT_line", "ROSAT_cont"),
+        "display_label": "ROSAT",
+    },
+    "euv": {
+        "response_components": ("EUV_line", "EUV_cont"),
+        "display_label": "EUV",
+    },
 }
-X_RAY_IMAGE_INTENSITY_UNIT = r"W m$^{-2}$ sr$^{-1}$"
-X_RAY_RADIANT_INTENSITY_UNIT = r"W sr$^{-1}$"
-X_RAY_LUMINOSITY_UNIT = r"W"
-X_RAY_EMISSIVITY_UNIT = r"W m$^{-3}$ sr$^{-1}$"
-X_RAY_SINGLE_DIRECTION_VIEW_AXIS = "+Y"
-X_RAY_TOTALS_IMAGE_N = 512
+CORONAL_EMISSION_BAND_NAMES = tuple(CORONAL_EMISSION_BANDS)
+CORONAL_EMISSION_BAND_LABELS = {
+    band_name: rf"{CORONAL_EMISSION_BANDS[band_name]['display_label']} band intensity [W m$^{{-2}}$ sr$^{{-1}}$]"
+    for band_name in CORONAL_EMISSION_BAND_NAMES
+}
+CORONAL_EMISSION_IMAGE_INTENSITY_UNIT = r"W m$^{-2}$ sr$^{-1}$"
+CORONAL_EMISSION_RADIANT_INTENSITY_UNIT = r"W sr$^{-1}$"
+CORONAL_EMISSION_LUMINOSITY_UNIT = r"W"
+CORONAL_EMISSION_EMISSIVITY_UNIT = r"W m$^{-3}$ sr$^{-1}$"
+CORONAL_EMISSION_SINGLE_DIRECTION_VIEW_AXIS = "+Y"
+CORONAL_EMISSION_TOTALS_IMAGE_N = 512
 
 
 def build_los_geometry(smart_ds: SmartDs) -> tuple[Octree, OctreeRayTracer, tuple[float, float, float, float, float, float]]:
@@ -103,7 +117,7 @@ def integrate_image_radiant_intensity(
     return float(np.nansum(np.asarray(image, dtype=float)) * pixel_area_m2)
 
 
-def plot_xray_radial_summary(
+def plot_coronal_emission_radial_summary(
     radial_png_path: Path,
     profiles: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]],
     stats: dict[str, dict[str, float]],
@@ -111,8 +125,9 @@ def plot_xray_radial_summary(
     """
     Plot per-band radial emission and cumulative-fraction summaries.
     """
+    band_names = tuple(profiles)
     fig, axes = plt.subplots(2, 1, figsize=(7.0, 7.5), constrained_layout=True, sharex=True)
-    colors = {"hard": "C0", "rosat": "C1", "euv": "C2"}
+    colors = {band_name: f"C{band_id}" for band_id, band_name in enumerate(band_names)}
     for band_name, (radius_r, shell_emission, cumulative_fraction) in profiles.items():
         positive_shell_emission = np.where(np.asarray(shell_emission, dtype=float) > 0.0, shell_emission, np.nan)
         axes[0].plot(
@@ -131,10 +146,10 @@ def plot_xray_radial_summary(
     axes[0].set_xscale("log")
     axes[0].set_yscale("log")
     axes[1].set_xscale("log")
-    axes[0].set_ylabel(f"Shell luminosity [{X_RAY_LUMINOSITY_UNIT}]")
+    axes[0].set_ylabel(f"Shell luminosity [{CORONAL_EMISSION_LUMINOSITY_UNIT}]")
     axes[1].set_ylabel("Cumulative fraction [-]")
     axes[1].set_xlabel(r"Radius [$R_\star$]")
-    axes[0].set_title("X-ray Band Emission by Radius")
+    axes[0].set_title("Coronal Band Emission by Radius")
     axes[1].set_title("Cumulative Emission Fraction")
     axes[1].axhline(0.90, color="0.3", linestyle="--", linewidth=0.8)
     axes[1].axhline(0.99, color="0.3", linestyle=":", linewidth=0.8)
@@ -145,7 +160,7 @@ def plot_xray_radial_summary(
     plt.close(fig)
 
 
-def plot_xray_unit_summary(
+def plot_coronal_emission_unit_summary(
     summary_png_path: Path,
     stats: dict[str, dict[str, float]],
     *,
@@ -157,18 +172,18 @@ def plot_xray_unit_summary(
     fig, ax = plt.subplots(figsize=(8.5, 5.8), constrained_layout=True)
     ax.axis("off")
     lines = [
-        "X-ray emission unit trace",
+        "Coronal emission unit trace",
         r"$G(T)$: response table values [W m$^3$ sr$^{-1}$]",
         r"$N_e$: electron density [m$^{-3}$]",
-        rf"$\epsilon = N_e^2 G(T)$ [{X_RAY_EMISSIVITY_UNIT}]",
-        rf"$I_{{\mathrm{{dir}}}} = \int \epsilon \, dl$ [{X_RAY_IMAGE_INTENSITY_UNIT}]",
-        rf"$J_{{\mathrm{{dir,{view_axis}}}}} = \int I_{{\mathrm{{dir}}}} \, dA$ [{X_RAY_RADIANT_INTENSITY_UNIT}]",
-        rf"$L_{{\Omega}} = \int \epsilon \, \Omega_{{\mathrm{{unblocked}}}} \, dV$ [{X_RAY_LUMINOSITY_UNIT}]",
-        rf"$L_{{4\pi}} = \int \epsilon \, 4\pi \, dV$ [{X_RAY_LUMINOSITY_UNIT}]",
+        rf"$\epsilon = N_e^2 G(T)$ [{CORONAL_EMISSION_EMISSIVITY_UNIT}]",
+        rf"$I_{{\mathrm{{dir}}}} = \int \epsilon \, dl$ [{CORONAL_EMISSION_IMAGE_INTENSITY_UNIT}]",
+        rf"$J_{{\mathrm{{dir,{view_axis}}}}} = \int I_{{\mathrm{{dir}}}} \, dA$ [{CORONAL_EMISSION_RADIANT_INTENSITY_UNIT}]",
+        rf"$L_{{\Omega}} = \int \epsilon \, \Omega_{{\mathrm{{unblocked}}}} \, dV$ [{CORONAL_EMISSION_LUMINOSITY_UNIT}]",
+        rf"$L_{{4\pi}} = \int \epsilon \, 4\pi \, dV$ [{CORONAL_EMISSION_LUMINOSITY_UNIT}]",
         "",
         "Band totals",
     ]
-    for band_name in ("hard", "rosat", "euv"):
+    for band_name in stats:
         band_stats = stats[band_name]
         lines.extend(
             [
@@ -701,13 +716,13 @@ def process_plt_file(file_path: str | Path) -> None:
     raw_band_emissivities = {
         band_name: band_emissivity_from_response_table_si(
             smart_ds,
-            band_name,
+            CORONAL_EMISSION_BANDS[band_name]["response_components"],
             response_path=response_path,
         )
-        for band_name in ("hard", "rosat", "euv")
+        for band_name in CORONAL_EMISSION_BAND_NAMES
     }
-    xray_band_stats = {}
-    xray_band_profiles = {}
+    coronal_emission_band_stats = {}
+    coronal_emission_band_profiles = {}
     for band_name, emissivity in raw_band_emissivities.items():
         band_interp = build_los_interpolator(tree, emissivity)
         band_image, band_extent, band_counts = render_rho2_los_image(
@@ -733,7 +748,7 @@ def process_plt_file(file_path: str | Path) -> None:
             band_npz_full,
             band_npz,
             side_length_r=LOS_EXAMPLE_SIDE_LENGTH_R,
-            colorbar_label=X_RAY_BAND_LABELS[band_name],
+            colorbar_label=CORONAL_EMISSION_BAND_LABELS[band_name],
             unit="W/m^2/sr",
         )
         band_png = output_dir / f"{prefix}.{band_name}_los_example.png"
@@ -747,8 +762,8 @@ def process_plt_file(file_path: str | Path) -> None:
             build_los_interpolator(tree, raw_band_emissivities[band_name]),
             bounds_r,
             path_length_scale=body_radius_m,
-            image_n=X_RAY_TOTALS_IMAGE_N,
-            view_axis=X_RAY_SINGLE_DIRECTION_VIEW_AXIS,
+            image_n=CORONAL_EMISSION_TOTALS_IMAGE_N,
+            view_axis=CORONAL_EMISSION_SINGLE_DIRECTION_VIEW_AXIS,
         )
         directional_radiant_intensity = integrate_image_radiant_intensity(directional_image, directional_extent, body_radius_m)
         point_unblocked_luminosity_density = raw_band_emissivities[band_name] * point_unblocked_solid_angle
@@ -780,7 +795,7 @@ def process_plt_file(file_path: str | Path) -> None:
             0.99,
             length_scale=body_radius_m,
         )
-        xray_band_stats[band_name] = {
+        coronal_emission_band_stats[band_name] = {
             "directional_radiant_intensity": directional_radiant_intensity,
             "unblocked_total": unblocked_total,
             "four_pi_total": four_pi_total,
@@ -788,45 +803,53 @@ def process_plt_file(file_path: str | Path) -> None:
             "r90_r": r90_r,
             "r99_r": r99_r,
         }
-        xray_band_profiles[band_name] = (radius_r, unblocked_shell_total, unblocked_cumulative_fraction)
+        coronal_emission_band_profiles[band_name] = (radius_r, unblocked_shell_total, unblocked_cumulative_fraction)
         add_record(f"volume_{band_name}_directional_radiant_intensity_w_sr %r", directional_radiant_intensity)
         add_record(f"volume_{band_name}_unblocked_luminosity_w %r", unblocked_total)
         add_record(f"volume_{band_name}_four_pi_luminosity_w %r", four_pi_total)
         add_record(f"volume_{band_name}_r90_R %r", r90_r)
         add_record(f"volume_{band_name}_r99_R %r", r99_r)
-        add_record(f"volume_{band_name}_image_intensity_unit %r", X_RAY_IMAGE_INTENSITY_UNIT)
-        add_record(f"volume_{band_name}_radiant_intensity_unit %r", X_RAY_RADIANT_INTENSITY_UNIT)
-        add_record(f"volume_{band_name}_emissivity_unit %r", X_RAY_EMISSIVITY_UNIT)
-        add_record(f"volume_{band_name}_luminosity_unit %r", X_RAY_LUMINOSITY_UNIT)
-    xray_summary_npz = output_dir / f"{prefix}.xray_summary.npz"
+        add_record(f"volume_{band_name}_image_intensity_unit %r", CORONAL_EMISSION_IMAGE_INTENSITY_UNIT)
+        add_record(f"volume_{band_name}_radiant_intensity_unit %r", CORONAL_EMISSION_RADIANT_INTENSITY_UNIT)
+        add_record(f"volume_{band_name}_emissivity_unit %r", CORONAL_EMISSION_EMISSIVITY_UNIT)
+        add_record(f"volume_{band_name}_luminosity_unit %r", CORONAL_EMISSION_LUMINOSITY_UNIT)
+    coronal_emission_summary_npz = output_dir / f"{prefix}.coronal_emission_summary.npz"
     np.savez_compressed(
-        xray_summary_npz,
-        bands=np.asarray(["hard", "rosat", "euv"]),
+        coronal_emission_summary_npz,
+        bands=np.asarray(CORONAL_EMISSION_BAND_NAMES),
         directional_radiant_intensity_w_sr=np.asarray(
-            [xray_band_stats[name]["directional_radiant_intensity"] for name in ("hard", "rosat", "euv")]
+            [coronal_emission_band_stats[name]["directional_radiant_intensity"] for name in CORONAL_EMISSION_BAND_NAMES]
         ),
         unblocked_luminosity_w=np.asarray(
-            [xray_band_stats[name]["unblocked_total"] for name in ("hard", "rosat", "euv")]
+            [coronal_emission_band_stats[name]["unblocked_total"] for name in CORONAL_EMISSION_BAND_NAMES]
         ),
         four_pi_luminosity_w=np.asarray(
-            [xray_band_stats[name]["four_pi_total"] for name in ("hard", "rosat", "euv")]
+            [coronal_emission_band_stats[name]["four_pi_total"] for name in CORONAL_EMISSION_BAND_NAMES]
         ),
-        r90_r=np.asarray([xray_band_stats[name]["r90_r"] for name in ("hard", "rosat", "euv")]),
-        r99_r=np.asarray([xray_band_stats[name]["r99_r"] for name in ("hard", "rosat", "euv")]),
-        image_intensity_unit=np.asarray(X_RAY_IMAGE_INTENSITY_UNIT),
-        directional_radiant_intensity_unit=np.asarray(X_RAY_RADIANT_INTENSITY_UNIT),
-        luminosity_unit=np.asarray(X_RAY_LUMINOSITY_UNIT),
-        emissivity_unit=np.asarray(X_RAY_EMISSIVITY_UNIT),
+        r90_r=np.asarray([coronal_emission_band_stats[name]["r90_r"] for name in CORONAL_EMISSION_BAND_NAMES]),
+        r99_r=np.asarray([coronal_emission_band_stats[name]["r99_r"] for name in CORONAL_EMISSION_BAND_NAMES]),
+        image_intensity_unit=np.asarray(CORONAL_EMISSION_IMAGE_INTENSITY_UNIT),
+        directional_radiant_intensity_unit=np.asarray(CORONAL_EMISSION_RADIANT_INTENSITY_UNIT),
+        luminosity_unit=np.asarray(CORONAL_EMISSION_LUMINOSITY_UNIT),
+        emissivity_unit=np.asarray(CORONAL_EMISSION_EMISSIVITY_UNIT),
         radius_unit=np.asarray(r"$R_\star$"),
-        view_axis=np.asarray(X_RAY_SINGLE_DIRECTION_VIEW_AXIS),
+        view_axis=np.asarray(CORONAL_EMISSION_SINGLE_DIRECTION_VIEW_AXIS),
     )
-    xray_radial_png = output_dir / f"{prefix}.xray_radial_summary.png"
-    plot_xray_radial_summary(xray_radial_png, xray_band_profiles, xray_band_stats)
-    xray_units_png = output_dir / f"{prefix}.xray_unit_summary.png"
-    plot_xray_unit_summary(xray_units_png, xray_band_stats, view_axis=X_RAY_SINGLE_DIRECTION_VIEW_AXIS)
-    add_record("volume_xray_summary_npz %r", str(xray_summary_npz.relative_to(path.parent)))
-    add_record("volume_xray_radial_summary_png %r", str(xray_radial_png.relative_to(path.parent)))
-    add_record("volume_xray_unit_summary_png %r", str(xray_units_png.relative_to(path.parent)))
+    coronal_emission_radial_png = output_dir / f"{prefix}.coronal_emission_radial_summary.png"
+    plot_coronal_emission_radial_summary(
+        coronal_emission_radial_png,
+        coronal_emission_band_profiles,
+        coronal_emission_band_stats,
+    )
+    coronal_emission_units_png = output_dir / f"{prefix}.coronal_emission_unit_summary.png"
+    plot_coronal_emission_unit_summary(
+        coronal_emission_units_png,
+        coronal_emission_band_stats,
+        view_axis=CORONAL_EMISSION_SINGLE_DIRECTION_VIEW_AXIS,
+    )
+    add_record("volume_coronal_emission_summary_npz %r", str(coronal_emission_summary_npz.relative_to(path.parent)))
+    add_record("volume_coronal_emission_radial_summary_png %r", str(coronal_emission_radial_png.relative_to(path.parent)))
+    add_record("volume_coronal_emission_unit_summary_png %r", str(coronal_emission_units_png.relative_to(path.parent)))
     add_record("volume_rho2_los_npz %r", str(los_npz.relative_to(path.parent)))
     add_record("volume_rho2_los_png %r", str(los_png.relative_to(path.parent)))
     add_record("volume_rho2_los_side_npz %r", str(los_side_npz.relative_to(path.parent)))
